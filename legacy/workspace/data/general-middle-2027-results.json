@@ -1,0 +1,19 @@
+{
+  "classes": 19,
+  "teachers": 34,
+  "weeklySlots": 627,
+  "demands": 336,
+  "events": 73,
+  "planEntries": 253,
+  "planNotices": 42,
+  "trips": 40,
+  "discussions": 40,
+  "tasks": 58,
+  "forms": 1,
+  "formEntries": 12,
+  "annualDays": 196,
+  "term1": 99,
+  "term2": 97,
+  "academicConflicts": 0,
+  "warnings": []
+}

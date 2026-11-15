@@ -1,0 +1,21 @@
+'use client';
+import {useState} from 'react';
+import {ArrowLeftRight,CheckCircle2,Plus,ShieldAlert} from 'lucide-react';
+import {proposeMakeup,proposeSwap} from '../lib/timetable-changes';
+export default function TimetableChanges({plan,events=[],editPlan,notify}){
+ const [mode,setMode]=useState('swap');const [classId,setClassId]=useState(plan.classes?.[0]?.id||'');
+ const [aDate,setADate]=useState(`${plan.year}-03-02`),[bDate,setBDate]=useState(`${plan.year}-03-03`);
+ const [aPeriod,setAPeriod]=useState(1),[bPeriod,setBPeriod]=useState(2);
+ const [subjectId,setSubjectId]=useState(plan.subjects?.[0]?.id||''),[teacherId,setTeacherId]=useState(''),[room,setRoom]=useState('');
+ const [proposal,setProposal]=useState(null);
+ const update=(fn)=>(...args)=>{setProposal(null);fn(...args)};
+ const inspect=()=>{const out=mode==='swap'?proposeSwap(plan,events,{classId,firstDate:aDate,firstPeriod:aPeriod,secondDate:bDate,secondPeriod:bPeriod}):proposeMakeup(plan,events,{classId,date:aDate,period:aPeriod,subjectId,teacherId,room});setProposal(out);};
+ const commit=()=>{if(!proposal?.ok)return;
+ const latest=mode==='swap'?proposeSwap(plan,events,{classId,firstDate:aDate,firstPeriod:aPeriod,secondDate:bDate,secondPeriod:bPeriod}):proposeMakeup(plan,events,{classId,date:aDate,period:aPeriod,subjectId,teacherId,room});
+ if(!latest.ok||JSON.stringify(latest.changes)!==JSON.stringify(proposal.changes)){setProposal(null);notify?.('그 사이 시간표 또는 행사가 변경되었습니다. 충돌 확인을 다시 해 주세요.');return;}
+ if(!window.confirm(`${mode==='swap'?'수업 교환':'보강'} 변경을 날짜별 시간표에 반영할까요? 기본 시간표는 유지됩니다.`))return;editPlan(p=>{const affected=new Set(proposal.changes.map(x=>`${x.date}|${x.scopeId}|${x.period}`));return {...p,overrides:[...(p.overrides||[]).filter(x=>!affected.has(`${x.date}|${x.scopeId}|${x.period}`)),...proposal.changes]};},'수업 변경을 저장했어요. 날짜별 시간표 및 예정시수에 반영됩니다.');setProposal(null);};
+ return <section className="academic-card tt-change-card"><div className="tt-panel-head"><div><h3>수업 교환·보강</h3><p>기본 시간표를 변경하지 않고 지정한 날짜의 실제 수업만 바꿉니다.</p></div><div className="tt-actions"><button className={`tt-btn ${mode==='swap'?'primary':''}`} onClick={()=>{setMode('swap');setProposal(null);}}><ArrowLeftRight size={14}/> 교환</button><button className={`tt-btn ${mode==='makeup'?'primary':''}`} onClick={()=>{setMode('makeup');setProposal(null);}}><Plus size={14}/> 보강</button></div></div>
+ <div className="tt-change-input"><label>대상 학급<select value={classId} onChange={e=>{setClassId(e.target.value);setProposal(null);}}>{(plan.classes||[]).map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label><label>{mode==='swap'?'첫 수업 날짜':'보강 날짜'}<input type="date" value={aDate} onChange={e=>{setADate(e.target.value);setProposal(null);}}/></label><label>{mode==='swap'?'첫 수업 교시':'보강 교시'}<select value={aPeriod} onChange={e=>{setAPeriod(Number(e.target.value));setProposal(null);}}>{Array.from({length:12},(_,i)=><option key={i} value={i+1}>{i+1}교시</option>)}</select></label>
+ {mode==='swap'?<><label>교환 대상 날짜<input type="date" value={bDate} onChange={e=>{setBDate(e.target.value);setProposal(null);}}/></label><label>교환 대상 교시<select value={bPeriod} onChange={e=>{setBPeriod(Number(e.target.value));setProposal(null);}}>{Array.from({length:12},(_,i)=><option key={i} value={i+1}>{i+1}교시</option>)}</select></label></>:<><label>보강 과목<select value={subjectId} onChange={e=>{setSubjectId(e.target.value);setProposal(null);}}>{(plan.subjects||[]).map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></label><label>담당 교사<select value={teacherId} onChange={e=>{setTeacherId(e.target.value);setProposal(null);}}><option value="">미지정</option>{(plan.teachers||[]).map(t=><option key={t.id} value={t.id}>{t.label}</option>)}</select></label><label>장소<input value={room} onChange={e=>{setRoom(e.target.value);setProposal(null);}} placeholder="선택"/></label></>}
+ </div><div className="tt-foot"><span>학사행사·휴업일과 겹치는 교환은 제한되고, 교사·특별실 중복을 사전에 점검합니다.</span><div className="tt-actions"><button className="tt-btn" onClick={inspect}>충돌 확인</button><button className="tt-btn primary" disabled={!proposal?.ok} onClick={commit}><CheckCircle2 size={15}/> 변경 적용</button></div></div>{proposal&&<div className={`tt-result ${proposal.ok?'success':'error'}`}>{proposal.ok?'충돌 없음. 변경을 적용할 수 있습니다.':proposal.errors.map((m,i)=><p key={i}>{m}</p>)}</div>}</section>;
+}

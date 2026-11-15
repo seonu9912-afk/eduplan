@@ -1,0 +1,31 @@
+.staff-roster .panel-head h3{display:flex;align-items:center;gap:9px}
+.staff-counter{font-size:12px;font-weight:700;color:#3269c4;background:#edf4ff;border-radius:999px;padding:8px 12px;white-space:nowrap}
+.staff-roster-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(265px,1fr);gap:22px;align-items:start}
+.staff-roster-left{min-width:0;display:flex;flex-direction:column;gap:18px}
+.staff-roster-scroll{max-width:100%;overflow-x:auto;border:1px solid #e7edf5;border-radius:10px}
+.staff-roster-table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+.staff-roster-table th,.staff-roster-table td{padding:12px 10px;text-align:left;border-bottom:1px solid #ecf0f6}
+.staff-roster-table th{background:#f7faff;color:#778ba6;font-size:11px;font-weight:750}
+.staff-roster-table td strong,.staff-roster-table td small{display:block}
+.staff-roster-table td small{font-size:10px;color:#8d9cb0;margin-top:5px}
+.staff-on,.staff-off{border-radius:30px;padding:5px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+.staff-on{background:#e8f8ef;color:#237e57}.staff-off{background:#f1f3f7;color:#7a8698}
+.staff-actions{display:flex;gap:6px}.staff-actions button{border:1px solid #e0e8f3;border-radius:7px;color:#6582a5;padding:7px}
+.staff-actions button:hover{color:#235dba;background:#f0f6ff}
+.staff-empty{font-size:12px;color:#8a99af;border:1px dashed #d6e2f2;border-radius:10px;padding:30px 16px;text-align:center}
+.staff-roster-form{border:1px solid #e3eaf6;background:#fafcff;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.staff-form-title{display:flex;align-items:center;justify-content:space-between}.staff-form-title h4{font-size:14px;color:#344866}
+.staff-roster-form label,.staff-quota-inputs label{display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:750;color:#6a7f9c;min-width:0}
+.staff-roster-form input,.staff-roster-form select,.staff-quota-inputs input,.staff-quota-inputs select{border:1px solid #dfe8f4;background:white;border-radius:8px;padding:10px;font-size:12px;min-width:0;width:100%;color:#263a58}
+.staff-form-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.staff-save,.staff-quota-inputs button{background:#2769d6;color:#fff;border-radius:8px;padding:11px;display:flex;justify-content:center;align-items:center;gap:7px;font-size:12px;font-weight:750}
+.staff-help{font-size:11px;color:#7d90ac;line-height:1.7;display:flex;align-items:flex-start;gap:8px}
+.staff-help svg{flex-shrink:0;margin-top:2px}
+.staff-quota{background:#f8fbff;border:1px solid #e4ebf6;border-radius:11px;padding:15px;display:flex;flex-direction:column;gap:12px}
+.staff-quota-head h4{font-size:13px}.staff-quota-head p{font-size:11px;color:#8796aa;line-height:1.6;margin-top:5px}
+.staff-quota-inputs{display:grid;grid-template-columns:minmax(0,1fr) 90px 75px;gap:8px;align-items:end}
+.staff-quota-inputs button{min-height:36px;padding:10px 8px}
+.staff-quota-tags{display:flex;flex-wrap:wrap;gap:7px}.staff-quota-tags button{font-size:11px;background:white;border:1px solid #dfe8f7;border-radius:7px;padding:7px 10px;color:#506e9c}
+.staff-quota-tags small{font-size:11px;color:#98a5b9}
+@media(max-width:1080px){.staff-roster-layout{grid-template-columns:1fr}}
+@media(max-width:530px){.staff-form-pair{grid-template-columns:1fr}.staff-quota-inputs{grid-template-columns:1fr 80px}.staff-quota-inputs button{grid-column:1/-1}}
