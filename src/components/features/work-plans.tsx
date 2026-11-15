@@ -1,0 +1,623 @@
+"use client";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  PrintButton,
+  InlineNotice,
+  Empty,
+  Modal,
+  useMutation,
+} from "@/components/common";
+import { annualSchema, defaultAnnual, type AnnualPlan } from "@/lib/academic";
+import {
+  addDays,
+  calendarDays,
+  weekRange,
+  monthRange,
+  moveMonth,
+} from "@/lib/domain";
+import { saveAnnual } from "@/app/actions";
+import type { Context } from "@/lib/models";
+type Business = AnnualPlan["business"][number];
+const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
+export function WorkPlans({
+  context: c,
+  today,
+  onDirtyChange,
+}: {
+  context: Context;
+  today: string;
+  onDirtyChange: (v: boolean) => void;
+}) {
+  const start = `${c.year?.year ?? 2026}-03-01`,
+    end = monthRange(`${(c.year?.year ?? 2026) + 1}-02`).end;
+  const clamp = (d: string) => (d < start ? start : d > end ? end : d);
+  const [plan, setPlan] = useState<AnnualPlan>(() =>
+    c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(c.grades),
+  );
+  const [version, setVersion] = useState(c.annual?.version ?? 0),
+    [date, setDate] = useState(clamp(today)),
+    [view, setView] = useState<"week" | "month">("week"),
+    [monthList, setMonthList] = useState(false),
+    [dirty, setDirty] = useState(false);
+  const [editing, setEditing] = useState<Partial<Business> | null>(null),
+    [error, setError] = useState("");
+  const m = useMutation();
+  if (!c.year)
+    return (
+      <Empty
+        title="학년도를 먼저 설정해 주세요"
+        description="설정에서 학년도를 개설한 뒤 업무계획을 작성합니다."
+      />
+    );
+  const editable = c.role !== "viewer",
+    duty =
+      plan.workSettings?.dutyEnabled ??
+      plan.business.some((b) => b.kind === "당직");
+  const range =
+    view === "week"
+      ? { start: weekRange(date).start, end: addDays(weekRange(date).start, 5) }
+      : monthRange(date.slice(0, 7));
+  const dates =
+    view === "week"
+      ? Array.from({ length: 6 }, (_, i) => addDays(range.start, i))
+      : calendarDays(date.slice(0, 7)).slice(
+          0,
+          Math.ceil((weekday(range.start) + Number(range.end.slice(-2))) / 7) *
+            7,
+        );
+  const change = (next: AnnualPlan) => {
+    setPlan(next);
+    setDirty(true);
+    onDirtyChange(true);
+  };
+  const open = (d: string, kind: Business["kind"] = "업무") => {
+    setError("");
+    setEditing({ date: clamp(d), kind });
+  };
+  const navigate = (direction: number) =>
+    setDate(
+      clamp(
+        view === "week"
+          ? addDays(date, direction * 7)
+          : `${moveMonth(date.slice(0, 7), direction)}-01`,
+      ),
+    );
+  const deptTag = (department: string) => (
+    <span
+      className={`department-chip dept-${Math.max(0, plan.departments.indexOf(department)) % 6}`}
+    >
+      {department || "학교"}
+    </span>
+  );
+  const businessCard = (b: Business) => (
+    <article className="work-card" key={b.id}>
+      {deptTag(b.department)}
+      <div>
+        {editable ? (
+          <button
+            className="work-card-title"
+            onClick={() => {
+              setError("");
+              setEditing(b);
+            }}
+            aria-label={`${b.text} 수정`}
+          >
+            {b.text}
+          </button>
+        ) : (
+          <strong>{b.text}</strong>
+        )}
+        {(b.time || b.location || b.participants) && (
+          <small>
+            {[b.time, b.location, b.participants].filter(Boolean).join(" · ")}
+          </small>
+        )}
+      </div>
+    </article>
+  );
+  const dayContent = (d: string) => {
+    const inYear = d >= start && d <= end;
+    return (
+      <>
+        <div className="work-day-events">
+          {plan.holidays[d] && (
+            <p className="work-holiday">{plan.holidays[d]}</p>
+          )}
+          {plan.vacations
+            .filter((v) => d >= v.start && d <= v.end)
+            .map((v, i) => (
+              <p className="work-vacation" key={i}>
+                {v.name}
+              </p>
+            ))}
+          {c.events
+            .filter((e) => e.start_date <= d && e.end_date >= d)
+            .map((e) => (
+              <article key={e.id} className="work-card academic-work-card">
+                {deptTag(e.department)}
+                <div>
+                  <strong>{e.title}</strong>
+                  <small>
+                    학사일정
+                    {e.activity_area !== "없음" ? ` · ${e.activity_area}` : ""}
+                  </small>
+                </div>
+              </article>
+            ))}
+          {plan.allocations
+            .filter(
+              (a) => a.date === d && !c.events.some((e) => e.id === a.eventId),
+            )
+            .map((a) => (
+              <article key={a.id} className="work-card academic-work-card">
+                {deptTag(a.department)}
+                <div>
+                  <strong>{a.title}</strong>
+                  <small>
+                    {a.start}~{a.end}교시 ·{" "}
+                    {[...new Set(Object.values(a.areas))].join(", ")}
+                  </small>
+                </div>
+              </article>
+            ))}
+          {plan.business
+            .filter((b) => b.date === d && b.kind === "업무")
+            .map(businessCard)}
+          {editable && inYear && (
+            <button
+              className="add-work no-print"
+              aria-label={`${d} 일정 추가`}
+              onClick={() => open(d)}
+            >
+              <Plus size={15} /> 일정 추가
+            </button>
+          )}
+        </div>
+        <div className="work-day-extras">
+          {(["당직", "출장"] as const)
+            .filter(
+              (k) =>
+                (k !== "당직" || duty) &&
+                (view === "week" ||
+                  plan.business.some((b) => b.date === d && b.kind === k)),
+            )
+            .map((k) => (
+              <section key={k}>
+                <div className="work-extra-heading">
+                  <b>{k}</b>
+                  {editable && inYear && (
+                    <button
+                      className="no-print"
+                      aria-label={`${d} ${k} 추가`}
+                      onClick={() => open(d, k)}
+                    >
+                      + 추가
+                    </button>
+                  )}
+                </div>
+                {plan.business
+                  .filter((b) => b.date === d && b.kind === k)
+                  .map(businessCard)}
+                {!plan.business.some((b) => b.date === d && b.kind === k) && (
+                  <small className="muted">없음</small>
+                )}
+              </section>
+            ))}
+        </div>
+      </>
+    );
+  };
+  const notices = plan.business.filter(
+    (b) =>
+      b.kind === "협의사항" && b.date >= range.start && b.date <= range.end,
+  );
+  return (
+    <>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">SCHOOL WORK PLANS</span>
+          <h1>월중·주간 업무계획</h1>
+          <p>
+            학사일정과 부서별 업무를 한눈에 확인하고 날짜에서 바로 추가하세요.
+          </p>
+        </div>
+        <div className="heading-actions">
+          <PrintButton />
+          {editable && (
+            <Button
+              disabled={!dirty || m.pending}
+              onClick={() =>
+                m.execute(
+                  () =>
+                    saveAnnual({
+                      workspaceId: c.workspace.id,
+                      yearId: c.year!.id,
+                      version,
+                      document: plan,
+                    }),
+                  (v) => {
+                    setVersion(v);
+                    setDirty(false);
+                    onDirtyChange(false);
+                  },
+                )
+              }
+            >
+              업무계획 저장
+            </Button>
+          )}
+        </div>
+      </div>
+      <InlineNotice mutation={m} />
+      <div className="work-toolbar no-print">
+        <div className="work-view-tabs">
+          {(["week", "month"] as const).map((v) => (
+            <button
+              key={v}
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+            >
+              {v === "week" ? "주간계획" : "월중계획"}
+            </button>
+          ))}
+        </div>
+        <div className="work-date-controls">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={view === "week" ? "이전 주" : "이전 달"}
+            disabled={range.start <= start}
+            onClick={() => navigate(-1)}
+          >
+            <ChevronLeft />
+          </Button>
+          <label>
+            <span className="sr-only">업무계획 기준 날짜</span>
+            <input
+              type="date"
+              value={date}
+              min={start}
+              max={end}
+              onChange={(e) => {
+                if (e.target.value) setDate(clamp(e.target.value));
+              }}
+            />
+          </label>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={view === "week" ? "다음 주" : "다음 달"}
+            disabled={range.end >= end}
+            onClick={() => navigate(1)}
+          >
+            <ChevronRight />
+          </Button>
+          <Button variant="outline" onClick={() => setDate(clamp(today))}>
+            오늘
+          </Button>
+        </div>
+        {view === "month" && (
+          <div className="work-view-tabs">
+            <button
+              aria-pressed={!monthList}
+              onClick={() => setMonthList(false)}
+            >
+              달력
+            </button>
+            <button aria-pressed={monthList} onClick={() => setMonthList(true)}>
+              목록
+            </button>
+          </div>
+        )}
+        {dirty && <span className="muted">저장하지 않은 변경사항</span>}
+      </div>
+      <div
+        className={`work-layout ${view === "month" ? "work-layout-month" : ""}`}
+      >
+        <aside className="panel work-sidebar">
+          <div className="work-mini-calendar no-print">
+            <h2>
+              {date.slice(0, 4)}년 {Number(date.slice(5, 7))}월
+            </h2>
+            <div>
+              {weekdays.map((w) => (
+                <b key={w}>{w}</b>
+              ))}
+              {calendarDays(date.slice(0, 7)).map((d) => (
+                <button
+                  key={d}
+                  disabled={d < start || d > end}
+                  className={`${d >= range.start && d <= range.end ? "in-range" : ""} ${d === date ? "selected" : ""} ${!d.startsWith(date.slice(0, 7)) ? "muted" : ""}`}
+                  aria-label={`${d} 선택`}
+                  aria-pressed={d === date}
+                  onClick={() => setDate(d)}
+                >
+                  {Number(d.slice(-2))}
+                </button>
+              ))}
+            </div>
+          </div>
+          <section className="work-notices">
+            <h2>{view === "week" ? "주간" : "월중"} 공지·협의사항</h2>
+            <p className="muted">
+              {range.start} ~ {range.end}
+            </p>
+            {notices.length ? (
+              notices.map(businessCard)
+            ) : (
+              <p className="muted">등록된 공지·협의사항이 없습니다.</p>
+            )}
+            {editable && (
+              <button
+                className="add-work no-print"
+                onClick={() => open(range.start, "협의사항")}
+              >
+                + 공지·협의사항 추가
+              </button>
+            )}
+          </section>
+        </aside>
+        <section className="panel work-board-panel">
+          <h2>
+            {c.year.year}학년도{" "}
+            {view === "week"
+              ? `${range.start} ~ ${range.end} 주간계획`
+              : `${Number(date.slice(5, 7))}월 월중계획`}
+          </h2>
+          <div
+            className="work-board-scroll"
+            tabIndex={0}
+            role="region"
+            aria-label={view === "week" ? "요일별 주간계획" : "월중계획 달력"}
+          >
+            <div
+              className={`work-plan-table ${view === "week" ? "work-week-board" : monthList ? "work-month-list" : "work-month-board"}`}
+            >
+              {view === "month" &&
+                !monthList &&
+                weekdays.map((w) => (
+                  <div className="work-weekday" key={w}>
+                    {w}요일
+                  </div>
+                ))}
+              {dates
+                .filter(
+                  (d) =>
+                    view !== "month" ||
+                    !monthList ||
+                    d.startsWith(date.slice(0, 7)),
+                )
+                .map((d) => (
+                  <section
+                    key={d}
+                    className={`work-day ${weekday(d) === 0 || weekday(d) === 6 ? "work-weekend" : ""} ${view === "month" && !d.startsWith(date.slice(0, 7)) ? "outside-month" : ""} ${d === today ? "work-today" : ""}`}
+                  >
+                    <h3>
+                      <span>
+                        {view === "week"
+                          ? `${weekdays[weekday(d)]}요일`
+                          : Number(d.slice(-2))}
+                      </span>
+                      <span>
+                        {view === "week"
+                          ? `${Number(d.slice(5, 7))}.${Number(d.slice(-2))}`
+                          : weekdays[weekday(d)]}
+                      </span>
+                    </h3>
+                    {dayContent(d)}
+                  </section>
+                ))}
+            </div>
+          </div>
+          {view === "week" && (
+            <p className="muted work-footnote">
+              주간표는 월~토요일입니다. 일요일 일정은 월중계획에서 확인할 수
+              있습니다.
+            </p>
+          )}
+        </section>
+      </div>
+      {editable && (
+        <details className="panel work-options no-print">
+          <summary>업무계획 설정</summary>
+          <label className="duty-option">
+            <input
+              type="checkbox"
+              checked={duty}
+              onChange={(e) =>
+                change({
+                  ...plan,
+                  workSettings: { dutyEnabled: e.target.checked },
+                })
+              }
+            />
+            당직 사용
+          </label>
+          <p className="muted">
+            당직을 사용하지 않으면 입력과 표시를 숨깁니다. 기존 기록은
+            보존됩니다. 변경 후 업무계획을 저장하세요.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const departments = [
+                ...new Set(
+                  String(new FormData(e.currentTarget).get("departments"))
+                    .split("\n")
+                    .map((v) => v.trim())
+                    .filter(Boolean),
+                ),
+              ];
+              if (
+                plan.business.some((b) => !departments.includes(b.department))
+              ) {
+                setError(
+                  "업무가 있는 부서는 먼저 업무를 옮긴 뒤 삭제해 주세요.",
+                );
+                return;
+              }
+              const v = annualSchema.safeParse({ ...plan, departments });
+              if (v.success) {
+                change(v.data);
+                setError("");
+              } else setError(v.error.issues[0].message);
+            }}
+          >
+            <label>
+              한 줄에 한 부서
+              <textarea
+                name="departments"
+                defaultValue={plan.departments.join("\n")}
+                rows={6}
+              />
+            </label>
+            <Button variant="outline">부서 목록 적용</Button>
+          </form>
+          {error && !editing && <p role="alert">{error}</p>}
+        </details>
+      )}
+      {editing && (
+        <Modal
+          title={editing.id ? "업무 수정" : "업무 추가"}
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditing(null);
+          }}
+        >
+          <form
+            className="annual-form-grid"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const f = new FormData(e.currentTarget);
+              const row = {
+                id: editing.id ?? crypto.randomUUID(),
+                date: String(f.get("date")),
+                department: String(f.get("department")),
+                kind: String(f.get("kind")),
+                text: String(f.get("text")).trim(),
+                time: String(f.get("time")),
+                location: String(f.get("location")),
+                participants: String(f.get("participants")),
+              };
+              const checked = annualSchema.safeParse({
+                ...plan,
+                business: [
+                  ...plan.business.filter((b) => b.id !== editing.id),
+                  row,
+                ],
+              });
+              if (checked.success) {
+                change(checked.data);
+                setEditing(null);
+                setError("");
+              } else setError(checked.error.issues[0].message);
+            }}
+          >
+            <label>
+              업무 날짜
+              <input
+                name="date"
+                type="date"
+                min={start}
+                max={end}
+                defaultValue={editing.date ?? date}
+                required
+              />
+            </label>
+            <label>
+              부서
+              <select
+                name="department"
+                defaultValue={editing.department ?? plan.departments[0]}
+              >
+                {plan.departments.map((d) => (
+                  <option key={d}>{d}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              업무 구분
+              <select name="kind" defaultValue={editing.kind ?? "업무"}>
+                {["업무", "출장", ...(duty ? ["당직"] : []), "협의사항"].map(
+                  (k) => (
+                    <option key={k}>{k}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            <label>
+              시간
+              <input
+                name="time"
+                defaultValue={editing.time}
+                maxLength={120}
+                placeholder="예: 13:20~15:00"
+              />
+            </label>
+            <label>
+              장소
+              <input
+                name="location"
+                defaultValue={editing.location}
+                maxLength={120}
+              />
+            </label>
+            <label>
+              대상·참석자
+              <input
+                name="participants"
+                defaultValue={editing.participants}
+                maxLength={120}
+              />
+            </label>
+            <label className="annual-wide">
+              내용
+              <textarea
+                name="text"
+                defaultValue={editing.text}
+                maxLength={2000}
+                required
+                rows={4}
+              />
+            </label>
+            {error && <p role="alert">{error}</p>}
+            <Button>{editing.id ? "수정 적용" : "업무 추가"}</Button>
+            {editing.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "이 업무를 삭제할까요? 저장하면 삭제가 반영됩니다.",
+                    )
+                  ) {
+                    change({
+                      ...plan,
+                      business: plan.business.filter(
+                        (b) => b.id !== editing.id,
+                      ),
+                    });
+                    setEditing(null);
+                  }
+                }}
+              >
+                이 업무 삭제
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditing(null)}
+            >
+              취소
+            </Button>
+          </form>
+        </Modal>
+      )}
+    </>
+  );
+}
