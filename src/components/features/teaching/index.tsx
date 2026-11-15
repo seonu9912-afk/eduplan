@@ -7,7 +7,7 @@ import {
 import { defaultReportFormat } from "@/lib/teaching-format";
 import { TeachingConnections } from "./teaching-connections";
 import { ReportFormatEditor } from "./report-format-editor";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useEffectEvent } from "react";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
 import {
@@ -33,17 +33,20 @@ import {
 } from "@/lib/teaching";
 import type { Context, Row } from "@/lib/models";
 import { CourseForm } from "./course-form";
-import { LessonEditor } from "./lesson-editor";
+import { WeeklyPlanGrid } from "./weekly-plan-grid";
+import { linkedTeachingCalendar } from "@/lib/teaching-calendar-context";
+import { formatProjectedUnits } from "@/lib/teaching-calendar-grid";
 import { AssessmentEditor } from "./assessment-editor";
 import { ReferencePanel } from "./reference-panel";
 import { TeachingReview } from "./review";
 import { TeachingPrint } from "./teaching-print";
-type Tab = "overview" | "lesson" | "assessment" | "review";
+type Tab = "overview" | "lesson" | "assessment" | "review" | "document";
 const tabs: [Tab, string][] = [
   ["overview", "수업 현황"],
   ["lesson", "교수학습계획"],
   ["assessment", "평가계획"],
   ["review", "검토·출력"],
+  ["document", "전체 문서 미리보기"],
 ];
 const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
@@ -54,7 +57,7 @@ export function TeachingModule({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const router = useRouter(),
-    [tab, setTab] = useState<Tab>("overview"),
+    [tab, setTab] = useState<Tab>("lesson"),
     [selected, setSelected] = useState<string | null>(null),
     [dirty, setDirty] = useState(false),
     [creating, setCreating] = useState(false);
@@ -94,23 +97,24 @@ export function TeachingModule({
       )) &&
     (f.ownership === "all" || p.owner_id === c.userId);
   const courses = data.courses.filter((p) => matches(p, filters)),
-    course = data.courses.find((p) => p.id === selected);
+    course = data.courses.find((p) => p.id === (selected ?? courses[0]?.id));
   const select = (id: string, nextTab: Tab = "lesson") => {
-    if (id !== selected && !canLeave()) return;
-    if (id !== selected) changed(false);
+    if (id !== course?.id && !canLeave()) return;
+    if (id !== course?.id) changed(false);
     setSelected(id);
     setTab(nextTab);
   };
   const filter = (next: Partial<typeof filters>) => {
     const f = { ...filters, ...next },
       available = data.courses.filter((p) => matches(p, f)),
-      id = available.some((p) => p.id === selected)
-        ? selected
+      id = available.some((p) => p.id === course?.id)
+        ? course!.id
         : (available[0]?.id ?? null);
-    if (id !== selected && !canLeave()) return;
-    if (id !== selected) changed(false);
+    if (id !== course?.id && !canLeave()) return;
+    if (id !== course?.id) changed(false);
     setFilters(f);
     setSelected(id);
+    if (id) setTab("lesson");
   };
   const classNames = (id: string) =>
     c.classes
@@ -356,7 +360,7 @@ export function TeachingModule({
               편집할 수업
               <select
                 aria-label="편집할 수업"
-                value={selected ?? ""}
+                value={course?.id ?? ""}
                 onChange={(e) => select(e.target.value, tab)}
               >
                 <option value="" disabled>
@@ -439,6 +443,9 @@ function CourseEditor({
       ),
     ),
     [dirty, setDirty] = useState(false),
+    [weeklyDraft, setWeeklyDraft] = useState(false),
+    [autoActive, setAutoActive] = useState(false),
+    [autoError, setAutoError] = useState(""),
     [editing, setEditing] = useState(false),
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
@@ -446,6 +453,9 @@ function CourseEditor({
     [printMode, setPrintMode] = useState<"lesson" | "assessment" | "both">(
       "both",
     );
+  const revision = useRef(0);
+  const autoInFlight = useRef(false);
+  const attempted = useRef(-1);
   const m = useMutation(),
     editable =
       c.role !== "viewer" &&
@@ -454,7 +464,7 @@ function CourseEditor({
       !course.archived;
   // Revalidation must never replace unsaved teacher input. Keep the loaded
   // version for CAS until a successful save or an explicit navigation.
-  if (serverCourse.version !== course.version && !dirty && !m.pending) {
+  if (serverCourse.version > course.version && !dirty && !m.pending && !autoActive) {
     setCourse(serverCourse);
     setDoc(
       teachingDocumentSchema.parse(
@@ -477,20 +487,57 @@ function CourseEditor({
         status: e.status === "확정" ? "작성 중" : e.status,
       }));
     }
+    revision.current++;
     setDoc(normalized);
     setDirty(true);
     onDirtyChange(true);
   };
   const saved = () => {
     setDirty(false);
+    setWeeklyDraft(false);
+    setAutoError("");
     onDirtyChange(false);
   };
   const busy = m.pending || referencePending || restorePending;
+  const serverPlan = c.teaching!.plans.find(p => p.course_id === course.id);
+  const previousDocument = serverPlan && teachingDocumentSchema.safeParse(serverPlan.document).data;
+  const previousUnitsLocked = previousDocument?.lesson_status === "확정" ||
+    !!previousDocument?.evaluations.some(v => v.status === "확정");
+  const automaticSave = useEffectEvent(async () => {
+    const submittedRevision = revision.current;
+    if (autoInFlight.current || attempted.current === submittedRevision || !dirty || !weeklyDraft) return;
+    autoInFlight.current = true;
+    attempted.current = submittedRevision;
+    setAutoActive(true);
+    setAutoError("");
+    try {
+      const response = await saveTeachingPlan(course.id, course.version, doc, false);
+      if (!response.ok) { setAutoError(response.error); return; }
+      setCourse(value => ({ ...value, version: response.data }));
+      if (revision.current === submittedRevision) saved();
+    } catch {
+      setAutoError("서버 연결을 확인해 주세요. 입력 내용은 이 화면에 유지됩니다.");
+    } finally {
+      autoInFlight.current = false;
+      setAutoActive(false);
+    }
+  });
+  const hasConfirmation = doc.lesson_status === "확정" || doc.evaluations.some(v => v.status === "확정");
+  useEffect(() => {
+    if (!dirty || !weeklyDraft || !editable || busy || autoActive || previousUnitsLocked || hasConfirmation) return;
+    const timer = window.setTimeout(() => void automaticSave(), 1000);
+    return () => window.clearTimeout(timer);
+  }, [doc, course.version, dirty, weeklyDraft, editable, busy, autoActive, previousUnitsLocked, hasConfirmation]);
   const ev =
     doc.evaluations.find((v) => v.semester === evaluation) ??
     doc.evaluations[0];
+  const calendar = linkedTeachingCalendar(c, course.semester, course.grade);
+  const projected = { ...doc, units: formatProjectedUnits(calendar.weeks, doc.units) };
+  const reportDocument = doc.lesson_status === "확정" ? doc : {
+    ...doc, units: formatProjectedUnits(calendar.weeks, doc.units, true),
+  };
   const issues = reviewTeaching(
-    doc,
+    projected,
     course,
     c.year!.year,
     c.semesters,
@@ -512,6 +559,7 @@ function CourseEditor({
         "편성·수동 기준 차시가 없습니다. 차시 합계를 비교할 수 없습니다.",
     });
   const save = () => {
+    if (autoInFlight.current) return;
     const confirm =
       doc.lesson_status === "확정" ||
       doc.evaluations.some((v) => v.status === "확정");
@@ -524,7 +572,10 @@ function CourseEditor({
       return;
     m.execute(
       () => saveTeachingPlan(course.id, course.version, doc, confirm),
-      saved,
+      version => {
+        setCourse(value => ({ ...value, version }));
+        saved();
+      },
       "계획을 저장했습니다.",
     );
   };
@@ -555,9 +606,11 @@ function CourseEditor({
               {period(course.semester)}
             </strong>
             <span aria-live="polite">
-              {m.pending
+              {autoActive
+                ? "자동 저장 중…"
+                : m.pending
                 ? "저장 중…"
-                : m.notice.error
+                : m.notice.error || autoError
                   ? "저장 실패 · 입력 내용 유지"
                   : dirty
                     ? "저장하지 않은 변경사항"
@@ -579,7 +632,7 @@ function CourseEditor({
                 >
                   <Settings2 /> 수업 설정
                 </Button>
-                <Button disabled={!dirty || busy} onClick={save}>
+                <Button disabled={!dirty || busy || autoActive} onClick={save}>
                   <Save />
                   {m.pending ? "저장 중…" : "계획 저장"}
                 </Button>
@@ -593,7 +646,8 @@ function CourseEditor({
           </div>
         </div>
         <InlineNotice mutation={m} />
-        {dirty && serverCourse.version !== course.version && (
+        {autoError && <p role="alert" className="notice notice-error">{autoError}</p>}
+        {dirty && serverCourse.version > course.version && !autoActive && (
           <p role="alert" className="notice notice-error">
             다른 곳에서 이 계획이 변경되었습니다. 현재 입력은 유지했습니다.
             필요한 내용을 복사해 둔 뒤 새로고침하여 최신 계획과 비교하세요.
@@ -652,18 +706,19 @@ function CourseEditor({
                 />
               </label>
               <p>
-                학사일정은 참고 자료입니다. 실제 과목 차시는 수업 요일과
-                시간표를 확인해 배당하세요.
+                주차와 자동 비고는 학사일정에서 가져옵니다.
               </p>
             </div>
-            <LessonEditor
+            <WeeklyPlanGrid
+              calendar={calendar}
               context={c}
               course={course}
               units={doc.units}
               choices={assessmentChoices(doc)}
               onOpenAssessment={openAssessment}
               editable={editable && !busy}
-              onChange={(units) =>
+              onChange={(units) => {
+                setWeeklyDraft(true);
                 change({
                   ...doc,
                   units,
@@ -671,8 +726,8 @@ function CourseEditor({
                     doc.lesson_status === "확정"
                       ? "작성 중"
                       : doc.lesson_status,
-                })
-              }
+                });
+              }}
             />
           </>
         )}
@@ -768,6 +823,7 @@ function CourseEditor({
               context={c}
               course={course}
               document={doc}
+              printDocument={reportDocument}
               dirty={dirty}
               editable={editable && !busy}
               onChange={(report) =>
@@ -786,6 +842,10 @@ function CourseEditor({
               }
             />
           </>
+        )}
+        {tab === "document" && (
+          <TeachingPrint context={c} course={course} document={reportDocument}
+            dirty={dirty} mode="both" preview />
         )}
         <footer className="teaching-plan-footer">
           <p>
@@ -842,7 +902,7 @@ function CourseEditor({
       <TeachingPrint
         context={c}
         course={course}
-        document={doc}
+        document={reportDocument}
         dirty={dirty}
         mode={printMode}
       />

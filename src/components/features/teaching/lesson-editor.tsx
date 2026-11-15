@@ -18,6 +18,7 @@ export function LessonEditor({
   onOpenAssessment,
   onChange,
   editable,
+  legacyOnly = false,
 }: {
   context: Context;
   course: Row<"teaching_courses">;
@@ -26,6 +27,7 @@ export function LessonEditor({
   onOpenAssessment: (id: string, semester: number) => void;
   onChange: (units: TeachingUnit[]) => void;
   editable: boolean;
+  legacyOnly?: boolean;
 }) {
   const [draftOpen, setDraftOpen] = useState(false);
   const draft = draftOpen
@@ -59,7 +61,7 @@ export function LessonEditor({
             평가과제를 여러 수업에 연결할 수 있습니다.
           </p>
         </div>
-        {editable && (
+        {editable && !legacyOnly && (
           <div className="teaching-actions">
             <Button variant="outline" onClick={() => setDraftOpen(true)}>
               학사일정으로 주차 초안
@@ -328,7 +330,7 @@ export function LessonEditor({
                       </button>
                       <button
                         aria-label={`${i + 1}번 단원 복제`}
-                        disabled={!editable}
+                        disabled={!editable || legacyOnly}
                         onClick={() => {
                           const next = [...units];
                           next.splice(i + 1, 0, {

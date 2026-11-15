@@ -1,0 +1,21 @@
+/* Weekly plan and document preview */
+
+.teaching-week-grid { min-width: 1240px; }
+.teaching-week-grid th { text-align: left; }
+.teaching-week-grid td { vertical-align: top; }
+.teaching-week-grid td:first-child, .teaching-week-grid td:nth-child(2) { width: 2.5rem; }
+.teaching-week-grid td:nth-child(3) { white-space: nowrap; }
+.teaching-week-cell textarea, .teaching-expanded-cell { width: 100%; white-space: pre-wrap; }
+.teaching-cell-expand { color: var(--primary); font-size: .75rem; margin-top: .25rem; }
+.teaching-week-grid [aria-label="학사일정 연동 비고"] { color: var(--muted-foreground); margin: 0 0 .5rem; font-size: .8rem; }
+.teaching-unlinked { margin-block: 1rem; }
+.teaching-unlinked summary { cursor: pointer; }
+.teaching-report-preview .report-page { background: #fff; border: 1px solid var(--border); border-radius: .5rem; padding: 1rem; margin: 1rem 0; overflow-x: auto; }
+.teaching-report-preview h1 { font-size: 1.2rem; margin-block: .5rem 1rem; text-align: center; }
+.teaching-report-preview h2 { margin-block: 1rem .5rem; font-weight: 700; }
+.teaching-report-preview table { width: 100%; border-collapse: collapse; margin-block: .5rem 1rem; }
+.teaching-report-preview th, .teaching-report-preview td { border: 1px solid var(--border); padding: .5rem; vertical-align: top; white-space: pre-wrap; }
+.teaching-report-preview th { background: var(--muted); }
+.teaching-week-options { font-size: .75rem; margin-top: .375rem; }
+.teaching-week-options label { display: block; }
+.teaching-week-options input, .teaching-week-options select { max-width: 8rem; }

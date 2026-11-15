@@ -25,6 +25,7 @@ export function ReportFormatEditor({
   context,
   course,
   document: doc,
+  printDocument,
   dirty,
   editable,
   onChange,
@@ -32,6 +33,7 @@ export function ReportFormatEditor({
   context: Context;
   course: Row<"teaching_courses">;
   document: TeachingDocument;
+  printDocument?: TeachingDocument;
   dirty: boolean;
   editable: boolean;
   onChange: (v: NonNullable<TeachingDocument["report"]>) => void;
@@ -69,7 +71,7 @@ export function ReportFormatEditor({
       if (!validFormat(f))
         throw new Error("출력할 열과 항목을 하나 이상 선택하세요.");
       const { exportTeachingHwpx } = await import("@/lib/teaching-hwpx");
-      const report = buildTeachingReport(context, course, doc, mode, dirty);
+      const report = buildTeachingReport(context, course, printDocument ?? doc, mode, dirty);
       const bytes = await exportTeachingHwpx(report);
       saveDownload(
         new Blob([new Uint8Array(bytes)], { type: "application/hwp+zip" }),

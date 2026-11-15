@@ -7,16 +7,18 @@ export function TeachingPrint({
   document,
   mode,
   dirty,
+  preview = false,
 }: {
   context: Context;
   course: Row<"teaching_courses">;
   document: TeachingDocument;
   mode: ReportMode;
   dirty: boolean;
+  preview?: boolean;
 }) {
   const report = buildTeachingReport(context, course, document, mode, dirty);
   return (
-    <div className="print-only teaching-print">
+    <div className={preview ? "teaching-report-preview" : "print-only teaching-print"}>
       {report.sections.map((section, i) => (
         <section
           key={i}
