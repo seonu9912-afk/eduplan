@@ -1,6 +1,6 @@
 import { defaultAnnual } from "../../lib/academic";
 import type { Context, Row } from "../../lib/models";
-import { emptyAssessment, emptyTeachingDocument, emptyUnit } from "../../lib/teaching";
+import { currentTeachingReference, emptyAssessment, emptyTeachingDocument, emptyUnit } from "../../lib/teaching";
 
 const id = (n: number) => `d1500000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
@@ -25,7 +25,7 @@ export function recoveryPreviewContext(): Context {
   const course: Row<"teaching_courses"> = { id: courseId, workspace_id: workspaceId,
     academic_year_id: yearId, archived: false, expected_hours: 68, grade: 2, manual_hours: null,
     owner_id: userId, reference_snapshot: {}, semester: 1, subject_id: null,
-    subject_name: "국어", teacher_name: "가상 교사", updated_at: at, version: 1, visibility: "school" };
+    subject_name: "국어", teacher_name: "가상 교사", updated_at: at, version: 1, visibility: "workspace" };
   const teaching = emptyTeachingDocument(1);
   teaching.units = [{ ...emptyUnit(), id: id(15), start: "2027-03-02", end: "2027-03-04",
     title: "우리의 경험을 담은 글", content: "표현의 효과를 근거와 함께 설명하기", note: "초고에 짧은 교사 피드백" }];
@@ -44,7 +44,7 @@ export function recoveryPreviewContext(): Context {
   const hours = grades.flatMap((grade) => [1, 2].flatMap((semester) => subjects.map((subject, i) =>
     ({ workspace_id: workspaceId, school_id: null, plan_id: plans[grade - 1].id, subject_id: subject.id,
       grade, semester, hours: i === 0 ? 520 : 55 }))));
-  return {
+  const context: Context = {
     userId, email: "preview@example.invalid", role: "viewer", workspace, workspaces: [workspace],
     profile: { id: userId, display_name: "검증용 사용자", default_workspace_id: workspaceId },
     schoolType: "중학교", grades, year, years: [year], classes,
@@ -60,4 +60,6 @@ export function recoveryPreviewContext(): Context {
     }], classes: [{ academic_year_id: yearId, class_id: classes[2].id,
       workspace_id: workspaceId, course_id: courseId, grade: 2 }], copies: [], standards: [] },
   };
+  course.reference_snapshot = currentTeachingReference(context, course.grade, course.semester, course.subject_id);
+  return context;
 }

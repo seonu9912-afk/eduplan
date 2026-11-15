@@ -409,11 +409,12 @@ export function reviewTeaching(
   return issues;
 }
 export function referenceKey(
-  ref: TeachingReference,
+  ref: Partial<TeachingReference> | null,
   part: "curriculum" | "calendar",
 ) {
   if (part === "curriculum") {
-    const v = ref.curriculum;
+    const v = ref?.curriculum;
+    if (!v || typeof v.unit !== "string") return null;
     return JSON.stringify([
       v.plan_id,
       v.version,
@@ -422,7 +423,10 @@ export function referenceKey(
       v.unit,
     ]);
   }
-  const v = ref.calendar;
+  const v = ref?.calendar;
+  if (!v || !Array.isArray(v.events) || !Array.isArray(v.terms) ||
+      v.events.some((event) => typeof event?.id !== "string" || typeof event.version !== "number") ||
+      v.terms.some((term) => typeof term?.number !== "number")) return null;
   return JSON.stringify([
     v.year_version,
     v.annual_version,

@@ -37,15 +37,14 @@ export function ReferencePanel({
       course.semester,
       course.subject_id,
     ),
-    saved = course.reference_snapshot as unknown as TeachingReference;
+    saved = course.reference_snapshot as Partial<TeachingReference> | null;
   const changed =
       referenceKey(current, "curriculum") !== referenceKey(saved, "curriculum"),
     calendarChanged =
       referenceKey(current, "calendar") !== referenceKey(saved, "calendar");
-  const plan = c.annual
-      ? annualSchema.parse(c.annual.document)
-      : defaultAnnual(c.grades),
-    days = academicDays(c.year!.year, plan, c.semesters).filter(
+  const parsedPlan = annualSchema.safeParse(c.annual?.document);
+  const plan = parsedPlan.success ? parsedPlan.data : defaultAnnual(c.grades);
+  const days = academicDays(c.year!.year, plan, c.semesters).filter(
       (d) => !course.semester || d.semester === course.semester,
     );
   const dates = new Set(days.map((d) => d.date));

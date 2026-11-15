@@ -3,10 +3,20 @@ import { Workbook } from "exceljs";
 import { academicDays, defaultAnnual, effectiveAcademicTerms } from "../../src/lib/academic";
 import { applyEventPeriods, curriculumTargets, datePeriod } from "../../src/lib/academic-rebuild";
 import { buildAcademicWorkbook } from "../../src/lib/academic-workbook";
+import { referenceKey } from "../../src/lib/teaching";
 import { linkedTeachingCalendar } from "../../src/lib/teaching-calendar-context";
 import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 
 describe("integrated academic calendar", () => {
+  it("handles missing reference snapshots while retaining the preview's calendar reference", () => {
+    expect(referenceKey({}, "curriculum")).toBeNull();
+    expect(referenceKey({}, "calendar")).toBeNull();
+    const reference = recoveryPreviewContext().teaching!.courses[0].reference_snapshot;
+    expect(reference).toMatchObject({
+      curriculum: { unit: "hours" },
+      calendar: { annual_version: 1, events: [{ version: 1 }] },
+    });
+  });
   it("preserves custom dates and government holidays in the period preview", () => {
     const context = recoveryPreviewContext();
     const plan = defaultAnnual(context.grades);
