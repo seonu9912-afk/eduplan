@@ -5251,3 +5251,47 @@ button[data-slot="button"][data-size="icon"] {
 }
 .week-draft-list { max-height: 45vh; overflow: auto; padding: 0 1.5rem; }
 .week-draft-list p { margin-block: .35rem; }
+
+.academic-date-editor {
+  position: sticky;
+  top: 1rem;
+  z-index: 5;
+  box-shadow: 0 8px 30px #152e5f1a;
+  max-height: min(70vh, 33rem);
+  overflow: auto;
+}
+.academic-date-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+.academic-period-conflict { display: block; margin: .35rem 0; }
+.academic-period-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: .45rem;
+  margin: 1rem 0;
+}
+.academic-period-slots > * {
+  text-align: center;
+  border: 1px solid #d7e2f2;
+  border-radius: .5rem;
+  padding: .45rem;
+}
+.academic-period-slots button[aria-pressed="true"], .calendar-focus {
+  background: #dceaff;
+  color: #173e82;
+}
+.build-info {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: .45rem .75rem;
+  margin-top: .75rem;
+}
+.build-info dd { overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .academic-date-editor { top: .35rem; max-height: 53dvh; }
+  .academic-date-heading { align-items: start; }
+}

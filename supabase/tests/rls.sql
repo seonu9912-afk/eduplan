@@ -45,8 +45,8 @@ insert into public.workspace_members(workspace_id,user_id,role) values
  ((select v::uuid from test_state where k='school_a'),(select v::uuid from test_state where k='viewer'),'viewer');
 set local role authenticated;
 select set_config('request.jwt.claim.sub',(select v from test_state where k='editor'),true);
-update public.events set title='가상 행사 수정' where id=(select v::uuid from test_state where k='event_a');
-select pg_temp.ok((select version from public.events where id=(select v::uuid from test_state where k='event_a'))=2,'editor can update event and increments version');
+with changed as (update public.events set title='가상 행사 수정' where id=(select v::uuid from test_state where k='event_a') returning id)
+select pg_temp.ok((select count(*) from changed)=0, 'editor can read but cannot update academic events');
 select pg_temp.denied(format('select public.create_invitation(%L,''teacher@example.test'',''editor'')',(select v from test_state where k='school_a')),'editor cannot invite');
 select pg_temp.denied(format('select public.save_academic_year(%L,2027,0,''[]'',array[1,1,1])',(select v from test_state where k='school_a')),'editor cannot change school settings');
 select pg_temp.denied(format('insert into public.workspace_members values(%L,%L,''admin'',now())',(select v from test_state where k='school_b'),(select v from test_state where k='editor')),'membership escalation blocked');

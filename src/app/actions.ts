@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   academicSchema,
   schoolTypeSchema,
+  gradesForSchoolType,
   eventSchema,
   hourSchema,
   schoolYearSchema,
@@ -193,7 +194,7 @@ export async function saveYear(input: unknown) {
 export async function saveEvent(input: unknown) {
   return run(async () => {
     const { id, version, ...value } = eventSchema.parse(input);
-    const { db } = await authorized(value.workspace_id);
+    const { db } = await authorized(value.workspace_id, ["admin"]);
     const result = id
       ? await db
           .from("events")
@@ -221,7 +222,7 @@ export async function deleteEvent(
   return run(async () => {
     uuid.parse(id);
     z.number().int().positive().parse(version);
-    const { db } = await authorized(workspaceId);
+    const { db } = await authorized(workspaceId, ["admin"]);
     const { data, error } = await db
       .from("events")
       .delete()
@@ -398,16 +399,31 @@ export async function setSchoolType(workspaceId: string, schoolType: string) {
 
 export async function saveAnnual(input: unknown) {
   return run(async () => {
-    const { annualSchema } = await import("@/lib/academic");
+    const { annualSchema, defaultAnnual } = await import("@/lib/academic");
     const v = z
       .object({
         workspaceId: uuid,
         yearId: uuid,
         version: z.number().int().min(0),
         document: annualSchema,
+        workPlans: z.boolean().default(false),
       })
       .parse(input);
-    const { db } = await authorized(v.workspaceId);
+    const { db } = await authorized(v.workspaceId, v.workPlans ? ["admin", "editor"] : ["admin"]);
+    if (v.workPlans) {
+      const [existing, workspace] = await Promise.all([
+        db.from("annual_academic_plans").select("document").eq("workspace_id", v.workspaceId)
+          .eq("academic_year_id", v.yearId).maybeSingle(),
+        db.from("workspaces").select("school_type").eq("id", v.workspaceId).single(),
+      ]);
+      if (existing.error) throw existing.error;
+      if (workspace.error) throw workspace.error;
+      const plan = existing.data
+        ? annualSchema.parse(existing.data.document)
+        : defaultAnnual(gradesForSchoolType(schoolTypeSchema.parse(workspace.data.school_type)));
+      v.document = { ...plan, business: v.document.business,
+        departments: v.document.departments, workSettings: v.document.workSettings };
+    }
     const { data: year } = await db
       .from("academic_years")
       .select("year")
@@ -438,6 +454,19 @@ export async function saveAnnual(input: unknown) {
     return data;
   });
 }
+export async function confirmAcademicCalendar(input: unknown) {
+  return run(async () => {
+    const v = z.object({ workspaceId: uuid, yearId: uuid, version: z.number().int().positive() }).parse(input);
+    const { db } = await authorized(v.workspaceId, ["admin"]);
+    const { data, error } = await db.rpc("confirm_academic_calendar", {
+      target: v.workspaceId, year_id: v.yearId, expected_version: v.version,
+    });
+    if (error) throw error;
+    refresh();
+    return data;
+  });
+}
+
 export async function previewHolidays(workspaceId: string, year: number) {
   return run(async () => {
     await authorized(workspaceId);
@@ -461,7 +490,7 @@ export async function previewWeather(workspaceId: string, settings: unknown) {
 export async function saveSemesters(input: unknown) {
   return run(async () => {
     const value = academicSchema.parse(input);
-    const { db } = await authorized(value.target);
+    const { db } = await authorized(value.target, ["admin"]);
     const { data: year, error: readError } = await db
       .from("academic_years")
       .select("id")

@@ -42,10 +42,14 @@ export function Calendar({
   context: c,
   today,
   plansOnly = false,
+  focusDate,
+  onFocusDate,
 }: {
   context: Context;
   today: string;
   plansOnly?: boolean;
+  focusDate?: string;
+  onFocusDate?: (date: string) => void;
 }) {
   const initialMonth =
     c.year &&
@@ -53,12 +57,12 @@ export function Calendar({
       c.year.year
       ? today.slice(0, 7)
       : `${c.year?.year ?? Number(today.slice(0, 4))}-03`;
-  const [month, setMonth] = useState(initialMonth);
+  const [month, setMonth] = useState(focusDate?.slice(0, 7) ?? initialMonth);
   const [weekDate, setWeekDate] = useState(
-    today.startsWith(initialMonth) ? today : `${initialMonth}-01`,
+    focusDate ?? (today.startsWith(initialMonth) ? today : `${initialMonth}-01`),
   );
   const [view, setView] = useState<"calendar" | "month" | "week">(
-    plansOnly ? "month" : "calendar",
+    plansOnly || focusDate ? "month" : "calendar",
   );
   const [type, setType] = useState("all");
   const [grade, setGrade] = useState("all");
@@ -67,7 +71,11 @@ export function Calendar({
   const [open, setOpen] = useState(false);
   const [newDate, setNewDate] = useState(`${initialMonth}-01`);
   const [message, setMessage] = useState("");
-  const editable = c.role !== "viewer";
+  const editable = c.role === "admin";
+  function selectMonth(nextMonth: string) {
+    setMonth(nextMonth);
+    if (focusDate && !focusDate.startsWith(nextMonth)) onFocusDate?.(`${nextMonth}-01`);
+  }
   const range = view === "week" ? weekRange(weekDate) : monthRange(month);
   const start = c.year ? `${c.year.year}-03-01` : "";
   const end = c.year ? monthRange(`${c.year.year + 1}-02`).end : "";
@@ -83,9 +91,11 @@ export function Calendar({
   const visible = filtered.filter((e) => overlaps(e, range.start, range.end));
   const changePeriod = (n: number) => {
     if (view === "week") {
-      setWeekDate(addDays(weekDate, n * 7));
+      const nextDate = addDays(weekDate, n * 7);
+      setWeekDate(nextDate);
+      onFocusDate?.(nextDate < start ? start : nextDate > end ? end : nextDate);
     } else {
-      setMonth(moveMonth(month, n));
+      selectMonth(moveMonth(month, n));
     }
   };
   const previous =
@@ -102,6 +112,7 @@ export function Calendar({
   }
   function create(date: string) {
     setEditing(null);
+    onFocusDate?.(date);
     setNewDate(date);
     setOpen(true);
   }
@@ -150,7 +161,7 @@ export function Calendar({
           {editable ? (
             <Button
               onClick={() =>
-                create(today >= start && today <= end ? today : `${month}-01`)
+                create(focusDate ?? (today >= start && today <= end ? today : `${month}-01`))
               }
               className="no-print"
             >
@@ -224,7 +235,11 @@ export function Calendar({
                 value={weekDate}
                 min={start}
                 max={end}
-                onChange={(e) => e.target.value && setWeekDate(e.target.value)}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setWeekDate(e.target.value);
+                  onFocusDate?.(e.target.value);
+                }}
               />
             ) : (
               <input
@@ -233,13 +248,13 @@ export function Calendar({
                 value={month}
                 min={start.slice(0, 7)}
                 max={end.slice(0, 7)}
-                onChange={(e) => e.target.value && setMonth(e.target.value)}
+                onChange={(e) => e.target.value && selectMonth(e.target.value)}
               />
             )}
             <Button
               variant="outline"
               onClick={() => {
-                setMonth(initialMonth);
+                selectMonth(initialMonth);
                 setWeekDate(
                   today.startsWith(initialMonth) ? today : `${initialMonth}-01`,
                 );
@@ -318,7 +333,7 @@ export function Calendar({
                   return (
                     <div
                       key={date}
-                      className={`calendar-cell ${date.slice(0, 7) !== month ? "outside" : ""} ${date === today ? "is-today" : ""} ${i % 7 === 0 ? "sunday" : i % 7 === 6 ? "saturday" : ""}`}
+                      className={`calendar-cell ${date.slice(0, 7) !== month ? "outside" : ""} ${date === today ? "is-today" : ""} ${date === focusDate ? "calendar-focus" : ""} ${i % 7 === 0 ? "sunday" : i % 7 === 6 ? "saturday" : ""}`}
                     >
                       <button
                         className="day-number"
@@ -366,7 +381,7 @@ export function Calendar({
               </thead>
               <tbody>
                 {visible.map((e) => (
-                  <tr key={e.id}>
+                  <tr key={e.id} className={focusDate && overlaps(e, focusDate, focusDate) ? "calendar-focus" : undefined}>
                     <td className="nowrap">
                       {dateLabel(e.start_date)}
                       {e.end_date !== e.start_date
@@ -421,7 +436,7 @@ export function Calendar({
             학교 행사 일정은 월중·주간 업무계획에서도 함께 표시됩니다.
           </span>
           <span>
-            {c.role === "viewer"
+            {!editable
               ? "조회 전용"
               : "날짜를 클릭해 일정을 추가하세요."}
           </span>
@@ -461,7 +476,7 @@ function EventForm({
 }) {
   const m = useMutation();
   const [confirm, setConfirm] = useState(false);
-  const editable = c.role !== "viewer";
+  const editable = c.role === "admin";
   return (
     <>
       <form

@@ -1,10 +1,14 @@
 "use client";
 import { SemesterSettings } from "./semester-settings";
-import { useState, useRef, useMemo, type ReactNode } from "react";
+import { useState, useRef, useMemo } from "react";
+import { AcademicEventPeriods } from "./academic-event-periods";
+import { Calendar } from "./calendar";
+import { AcademicWorkbookPanel } from "./academic-workbook-panel";
+import { parseAcademicConfirmation } from "@/lib/academic-confirmation";
+import { curriculumTargets, datePeriod } from "@/lib/academic-rebuild";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
-  Modal,
   InlineNotice,
   PrintButton,
   useMutation,
@@ -14,12 +18,15 @@ import {
   annualSchema,
   defaultAnnual,
   calculateAcademic,
+  academicDays,
+  isTeachingDay,
+  effectiveAcademicTerms,
   dayTypes,
   areas,
   type AnnualPlan,
 } from "@/lib/academic";
-import { addDays, monthRange } from "@/lib/domain";
-import { saveAnnual, previewHolidays, previewWeather } from "@/app/actions";
+import { monthRange } from "@/lib/domain";
+import { saveAnnual, confirmAcademicCalendar, previewHolidays, previewWeather } from "@/app/actions";
 import {
   downloadBlob,
   exportAcademic,
@@ -70,21 +77,33 @@ function fillActivityForm(
 }
 export function AnnualAcademic({
   context: c,
-  children,
+  today,
   onDirtyChange,
 }: {
   context: Context;
-  children: ReactNode;
+  today: string;
   onDirtyChange: (v: boolean) => void;
 }) {
   const [plan, setPlan] = useState<AnnualPlan>(() =>
     c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(c.grades),
   );
+  const confirmed = parseAcademicConfirmation(c.annual?.calendar_confirmation);
+  const confirmAvailable = c.annual?.calendar_confirmation !== undefined;
   const [version, setVersion] = useState(c.annual?.version ?? 0);
   const [dirty, setDirty] = useState(false);
   const [tab, setTab] = useState("연간 기본안");
-  const [selected, setSelected] = useState(`${c.year?.year ?? 2026}-03-01`);
-  const [until, setUntil] = useState(selected);
+  const [selected, setSelected] = useState(() => {
+    const initialYear = c.year?.year ?? Number(today.slice(0, 4));
+    const first = `${initialYear}-03-01`;
+    return today >= first && today < `${initialYear + 1}-03-01` ? today : first;
+  });
+  const [periodMode, setPeriodMode] = useState(false);
+  const [dateDraft, setDateDraft] = useState(false);
+  const [periodPreview, setPeriodPreview] = useState<{
+    days: ReturnType<typeof datePeriod>;
+    rule: AnnualPlan["days"][string];
+    selected: string[];
+  } | null>(null);
   const [holiday, setHoliday] = useState<{
     ok: boolean;
     days: Record<string, string>;
@@ -101,7 +120,7 @@ export function AnnualAcademic({
   const dayTrigger = useRef<HTMLButtonElement>(null);
   const recurringForm = useRef<HTMLFormElement>(null);
   const allocationForm = useRef<HTMLFormElement>(null);
-  const editable = c.role !== "viewer";
+  const editable = c.role === "admin";
   const year = c.year?.year ?? 2026;
   const start = `${year}-03-01`,
     end = monthRange(`${year + 1}-02`).end;
@@ -109,6 +128,39 @@ export function AnnualAcademic({
     () => calculateAcademic(year, plan, c.grades, c.semesters),
     [year, plan, c.grades, c.semesters],
   );
+  const targets = useMemo(() => curriculumTargets(year, c), [year, c]);
+  const termDates = effectiveAcademicTerms(year, plan, c.semesters);
+  const confirmedEvents = new Map(confirmed?.source.events.map((event) => [event.id, event.version]));
+  let changedEvents = 0;
+  if (confirmed) {
+    changedEvents = c.events.filter((event) => confirmedEvents.get(event.id) !== event.version).length +
+      confirmed.source.events.filter((event) => !c.events.some((e) => e.id === event.id)).length;
+  }
+  const revisionCount = confirmed ? Math.max(version - confirmed.version, 0) : 0;
+  const status = confirmed ? dirty || revisionCount || changedEvents ? "재확인 필요" : "확정" : "초안";
+  function closeDateEditor() {
+    setDayOpen(false);
+    setDateDraft(false);
+    setPeriodPreview(null);
+    onDirtyChange(dirty);
+  }
+  function mayLeaveDateEditor() {
+    return !dateDraft || window.confirm("날짜 편집창에 저장하지 않은 변경이 있습니다. 이동할까요?");
+  }
+  function openDateEditor(date: string, period: boolean) {
+    if (!mayLeaveDateEditor()) return;
+    setSelected(date);
+    setDateDraft(false);
+    setPeriodMode(period);
+    setPeriodPreview(null);
+    setDayOpen(true);
+    onDirtyChange(dirty);
+  }
+  function showTab(next: string) {
+    if (!mayLeaveDateEditor()) return;
+    closeDateEditor();
+    setTab(next);
+  }
   const update = (next: AnnualPlan | ((current: AnnualPlan) => AnnualPlan)) => {
     setPlan(next);
     setDirty(true);
@@ -123,34 +175,39 @@ export function AnnualAcademic({
     );
   const chosen = result.days.find((d) => d.date === selected)!;
   function applyDay(form: FormData) {
-    if (
-      !selected ||
-      !until ||
-      until < selected ||
-      selected < start ||
-      until > end
-    ) {
-      setMessage("학년도 안의 날짜 범위를 선택해 주세요.");
+    const first = periodMode ? String(form.get("first")) : selected;
+    const last = periodMode ? String(form.get("last")) : selected;
+    const rows = datePeriod(year, first, last, plan);
+    const rule = {
+      type: String(form.get("type")) as keyof typeof dayTypes,
+      name: String(form.get("name")),
+      enabled: form.get("enabled") === "on",
+      weekday: Number(form.get("weekday")),
+      start: Number(form.get("start")),
+      end: Number(form.get("end")),
+    };
+    if (!rows.length || !annualSchema.safeParse({
+      ...plan, days: { ...plan.days, [rows[0].date]: rule },
+    }).success) {
+      setMessage("날짜 범위와 교시를 확인해 주세요.");
       return;
     }
-    const days = { ...plan.days };
-    for (let d = selected; d <= until; d = addDays(d, 1))
-      days[d] = {
-        type: String(form.get("type")) as keyof typeof dayTypes,
-        name: String(form.get("name")),
-        enabled: form.get("enabled") === "on",
-        weekday: Number(form.get("weekday")),
-        start: Number(form.get("start")),
-        end: Number(form.get("end")),
-      };
-    const check = annualSchema.safeParse({ ...plan, days });
-    if (!check.success) {
-      setMessage("교시와 날짜를 확인해 주세요.");
+    if (periodMode) {
+      setPeriodPreview({ days: rows, rule, selected: rows.filter((r) => !r.conflict).map((r) => r.date) });
       return;
     }
-    update(check.data);
-    setDayOpen(false);
-    setMessage("선택한 기간에 적용했습니다. 연간 계획 저장을 눌러 주세요.");
+    update({ ...plan, days: { ...plan.days, [selected]: rule } });
+    setDateDraft(false);
+    setMessage("날짜 설정을 적용했습니다. 연간 계획을 저장해 주세요.");
+  }
+  function confirmPeriod() {
+    if (!periodPreview?.selected.length) return;
+    const days = {
+      ...plan.days, ...Object.fromEntries(periodPreview.selected.map((date) => [date, periodPreview.rule])),
+    };
+    closeDateEditor();
+    update({ ...plan, days });
+    setMessage(`${periodPreview.selected.length}일에 적용했습니다. 연간 계획을 저장해 주세요.`);
   }
   return (
     <>
@@ -165,7 +222,7 @@ export function AnnualAcademic({
           {editable && (
             <Button
               disabled={
-                m.pending || holidayMutation.pending || (!dirty && version > 0)
+                m.pending || holidayMutation.pending || dateDraft || (!dirty && version > 0)
               }
               onClick={() =>
                 m.execute(
@@ -195,7 +252,7 @@ export function AnnualAcademic({
         {dirty
           ? "저장하지 않은 변경사항이 있습니다."
           : version
-            ? `저장본 v${version}`
+            ? `${status} · 저장본 v${version}`
             : "요일별 1~6교시 초안 · 방학과 실제 교시를 확인해 주세요."}
       </div>
       <InlineNotice mutation={m} />
@@ -209,10 +266,11 @@ export function AnnualAcademic({
             "수업·창체",
             "행사 일정",
             "집계·점검",
+            "통합 Excel",
             "자료·이력",
             "날씨",
           ].map((t) => (
-            <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+            <button key={t} aria-pressed={tab === t} onClick={() => showTab(t)}>
               {t}
             </button>
           ))}
@@ -226,7 +284,7 @@ export function AnnualAcademic({
                 {start} ~ {end}
               </strong>
               <p>
-                {c.semesters
+                {termDates
                   .map((s) => `${s.number}학기 ${s.start_date} ~ ${s.end_date}`)
                   .join(" · ")}
               </p>
@@ -309,148 +367,80 @@ export function AnnualAcademic({
             onChange={update}
             onMessage={setMessage}
           />
-          <AnnualCalendar
-            days={result.days}
-            plan={plan}
-            events={c.events}
-            selected={selected}
+          <div className="heading-actions no-print">
+            {editable && <Button variant="outline" onClick={() => openDateEditor(selected, true)}>기간 설정</Button>}
+            <Button variant="outline" onClick={() => showTab("행사 일정")}>선택 날짜의 행사 편성</Button>
+          </div>
+          {dayOpen && editable && (
+            <section className="panel annual-section academic-date-editor no-print"
+              aria-label={periodMode ? "기간 설정" : selected + " 날짜 설정"}>
+              <div className="academic-date-heading">
+                <h3>{periodMode ? "기간 설정" : selected + " 날짜 설정"}</h3>
+                <Button type="button" variant="outline" onClick={() => {
+                  if (mayLeaveDateEditor()) { closeDateEditor(); dayTrigger.current?.focus(); }
+                }}>닫기</Button>
+              </div>
+              <form key={selected + String(periodMode)} className="annual-editor"
+                onChange={() => { setDateDraft(true); setPeriodPreview(null); onDirtyChange(true); }}
+                onSubmit={(e) => { e.preventDefault(); applyDay(new FormData(e.currentTarget)); }}>
+                <div className="annual-form-grid">
+                  {periodMode && <>
+                    <Input label="적용 시작일" name="first" type="date" min={start} max={end} defaultValue={selected} required />
+                    <Input label="적용 종료일" name="last" type="date" min={start} max={end} defaultValue={selected} required />
+                  </>}
+                  <Select label="학사일 유형" name="type" defaultValue={periodMode ? "vacation" : chosen?.type}>
+                    {Object.entries(dayTypes).map(([key, name]) =>
+                      <option key={key} value={key}>{name}</option>)}
+                  </Select>
+                  <Input label="명칭" name="name" defaultValue={periodMode ? "" : chosen?.name} maxLength={100} />
+                </div>
+                <details>
+                  <summary>고급 설정</summary>
+                  <div className="annual-form-grid">
+                    <Select label="교체 대상 요일" name="weekday" defaultValue={
+                      chosen?.weekday && chosen.weekday <= 5 ? chosen.weekday : 1}>
+                      {[1, 2, 3, 4, 5].map((w) => <option value={w} key={w}>{weekdays[w]}요일</option>)}
+                    </Select>
+                    <Input label="시작교시" name="start" type="number" min={1} max={12} defaultValue={chosen?.start ?? 1} required />
+                    <Input label="종료교시" name="end" type="number" min={1} max={12} defaultValue={chosen?.end ?? 6} required />
+                    <label><input type="checkbox" name="enabled" defaultChecked={periodMode || chosen?.enabled} /> 사용</label>
+                  </div>
+                </details>
+                <div className="heading-actions">
+                  <Button type="submit">{periodMode ? "변경 미리보기" : "날짜 설정 적용"}</Button>
+                  {!periodMode && plan.days[selected] &&
+                    <Button type="button" variant="outline" onClick={() => {
+                      const days = { ...plan.days };
+                      delete days[selected];
+                      closeDateEditor();
+                      update({ ...plan, days });
+                    }}>개별 설정 해제</Button>}
+                </div>
+              </form>
+              {periodPreview && <div className="info-box">
+                <p>선택 {periodPreview.selected.length}일 / 전체 {periodPreview.days.length}일</p>
+                <p>수업일수 {result.days.filter(isTeachingDay).length}일 → {
+                  academicDays(year, { ...plan, days: {
+                    ...plan.days, ...Object.fromEntries(periodPreview.selected.map((date) => [date, periodPreview.rule])),
+                  } }, c.semesters).filter(isTeachingDay).length
+                }일</p>
+                {periodPreview.days.filter((item) => item.conflict).map(({ date, conflict }) =>
+                  <label className="academic-period-conflict" key={date}>
+                    <input type="checkbox" checked={periodPreview.selected.includes(date)} onChange={(e) =>
+                      setPeriodPreview({ ...periodPreview, selected: e.target.checked
+                        ? [...periodPreview.selected, date] : periodPreview.selected.filter((d) => d !== date) })} />
+                    {date} · {conflict} 변경
+                  </label>)}
+                <Button type="button" disabled={!periodPreview.selected.length} onClick={confirmPeriod}>선택 날짜에 적용</Button>
+              </div>}
+            </section>
+          )}
+          <AnnualCalendar days={result.days} plan={plan} selected={selected}
             onSelect={(date, button) => {
               dayTrigger.current = button;
-              setSelected(date);
-              setUntil(date);
-              setDayOpen(true);
-            }}
-          />
-          <Modal
-            open={dayOpen}
-            onOpenChange={setDayOpen}
-            title="날짜·기간 편집"
-            description="선택한 날짜 또는 기간의 학사일 유형과 교시를 설정합니다."
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              dayTrigger.current?.focus({ preventScroll: true });
-            }}
-          >
-            <div className="annual-editor">
-              <form
-                key={selected}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  applyDay(new FormData(e.currentTarget));
-                }}
-              >
-                <Input
-                  label="적용 시작일"
-                  type="date"
-                  min={start}
-                  max={end}
-                  value={selected}
-                  onChange={(e) => {
-                    setSelected(e.target.value);
-                    setUntil(e.target.value);
-                  }}
-                  required
-                />
-                <Input
-                  label="적용 종료일"
-                  type="date"
-                  min={selected}
-                  max={end}
-                  value={until}
-                  onChange={(e) => setUntil(e.target.value)}
-                  required
-                />
-                <fieldset disabled={!editable}>
-                  <Select
-                    label="학사일 유형"
-                    name="type"
-                    defaultValue={chosen?.type}
-                  >
-                    {Object.entries(dayTypes).map(([key, name]) => (
-                      <option key={key} value={key}>
-                        {name}
-                      </option>
-                    ))}
-                  </Select>
-                  <Input
-                    label="명칭"
-                    name="name"
-                    defaultValue={chosen?.name}
-                    maxLength={100}
-                  />
-                  <Select
-                    label="적용 수업 요일"
-                    name="weekday"
-                    defaultValue={
-                      chosen?.weekday && chosen.weekday <= 5
-                        ? chosen.weekday
-                        : 1
-                    }
-                  >
-                    {[1, 2, 3, 4, 5].map((w) => (
-                      <option value={w} key={w}>
-                        {weekdays[w]}요일
-                      </option>
-                    ))}
-                  </Select>
-                  <div className="annual-inline">
-                    <Input
-                      label="시작교시"
-                      name="start"
-                      type="number"
-                      min={1}
-                      max={12}
-                      defaultValue={chosen?.start ?? 1}
-                    />
-                    <Input
-                      label="종료교시"
-                      name="end"
-                      type="number"
-                      min={1}
-                      max={12}
-                      defaultValue={chosen?.end ?? 6}
-                    />
-                  </div>
-                  <label>
-                    <input
-                      type="checkbox"
-                      name="enabled"
-                      defaultChecked={chosen?.enabled ?? true}
-                    />{" "}
-                    사용
-                  </label>
-                  <Button type="submit">선택 기간 적용</Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (
-                        !selected ||
-                        !until ||
-                        until < selected ||
-                        selected < start ||
-                        until > end
-                      ) {
-                        setMessage("학년도 안의 날짜 범위를 선택해 주세요.");
-                        return;
-                      }
-                      const days = { ...plan.days };
-                      for (let d = selected; d <= until; d = addDays(d, 1))
-                        delete days[d];
-                      update({ ...plan, days });
-                      setDayOpen(false);
-                    }}
-                  >
-                    선택 기간 수동 수정 해제
-                  </Button>
-                </fieldset>
-              </form>
-              <p className="field-hint">
-                수동 수정은 방학·공휴일을 다시 불러와도 보존됩니다. 교시를 직접
-                지정한 날에는 요일별 기본 교시보다 우선 적용됩니다.
-              </p>
-            </div>
-          </Modal>
+              if (editable) openDateEditor(date, false);
+              else setSelected(date);
+            }} />
         </>
       )}
       {tab === "수업·창체" && (
@@ -788,13 +778,25 @@ export function AnnualAcademic({
           )}
         </section>
       )}
-      {tab === "행사 일정" && children}
+      {tab === "행사 일정" && <>
+        <Calendar context={c} today={today} focusDate={selected} onFocusDate={setSelected} />
+        <AcademicEventPeriods key={selected} context={c} plan={plan} focusDate={selected}
+          onChange={update} onMessage={setMessage} />
+      </>}
       {tab === "집계·점검" && (
         <section className="panel annual-section">
-          <h2>수업일수·시수 집계</h2>
+          <div className="academic-date-heading">
+            <h2>수업일수·시수 집계</h2>
+            {editable && confirmAvailable && <Button disabled={!version || dirty || m.pending}
+              onClick={() => {
+                if (window.confirm("저장된 편성안과 행사·시수 기준을 확정본으로 저장할까요?"))
+                  m.execute(() => confirmAcademicCalendar({ workspaceId: c.workspace.id,
+                    yearId: c.year!.id, version }), undefined, "현재 편성안을 확정했습니다.");
+              }}>저장된 편성안 확정</Button>}
+          </div>
+          {confirmed && <p>확정본 이후 저장 {revisionCount}건 · 추가·변경·삭제된 행사 {changedEvents}건</p>}
           <p>
-            사용 해제일·휴일·방학·학기 밖 날짜를 제외합니다. 영역별 법정 기준은
-            제공해 주실 교육과정 총론을 확인한 후 적용합니다.
+            학교의 교육과정 편성표에 입력한 교과·창체 시수를 목표로 비교합니다.
           </p>
           <div className="table-scroll">
             <table className="plan-table">
@@ -806,6 +808,9 @@ export function AnnualAcademic({
                     "수업일수",
                     "전체 시수",
                     "중복 교시",
+                    "교과 목표",
+                    "창체 목표",
+                    "교과 시수 차이",
                     ...areas.filter((a) => a !== "없음"),
                   ].map((a) => (
                     <th key={a}>{a}</th>
@@ -813,20 +818,24 @@ export function AnnualAcademic({
                 </tr>
               </thead>
               <tbody>
-                {result.totals.map((t) => (
-                  <tr key={`${t.grade}-${t.semester}`}>
+                {result.totals.map((t) => {
+                  const goal = targets.find((item) => item.grade === t.grade && item.semester === t.semester);
+                  return <tr key={`${t.grade}-${t.semester}`}>
                     <th>{t.grade}학년</th>
                     <td>{t.semester}학기</td>
                     <td>{t.days}</td>
                     <td>{t.hours}</td>
                     <td>{t.conflicts}</td>
+                    <td>{goal?.subject ?? "미설정"}</td>
+                    <td>{goal?.creative ?? "미설정"}</td>
+                    <td>{goal?.subject == null || t.conflicts ? "—" : (t.counts["교과"] ?? 0) - goal.subject}</td>
                     {areas
                       .filter((a) => a !== "없음")
                       .map((a) => (
                         <td key={a}>{t.counts[a] ?? 0}</td>
                       ))}
-                  </tr>
-                ))}
+                  </tr>;
+                })}
               </tbody>
             </table>
           </div>
@@ -842,6 +851,9 @@ export function AnnualAcademic({
           )}
         </section>
       )}
+      {tab === "통합 Excel" &&
+        <AcademicWorkbookPanel year={year} plan={plan} context={c}
+          currentStatus={status} confirmed={confirmed} />}
       {tab === "자료·이력" && (
         <section className="panel annual-section">
           <h2>Excel · 백업 · 변경 이력</h2>

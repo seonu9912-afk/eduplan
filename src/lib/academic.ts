@@ -158,39 +158,63 @@ export function defaultAnnual(grades: number[]): AnnualPlan {
     weather: { nx: 60, ny: 127, landCode: "11B00000", tempCode: "11B10101" },
   };
 }
+type TermDates = { number: number; start_date: string; end_date: string };
+
+function dateRules(date: string, plan: AnnualPlan) {
+  const weekday = new Date(date + "T12:00:00Z").getUTCDay();
+  const vacation = plan.vacations.find((v) => date >= v.start && date <= v.end);
+  const holiday = plan.holidays[date] || (date.endsWith("-03-01") ? "삼일절" : "");
+  const override: AnnualPlan['days'][string] | undefined = Object.hasOwn(plan.days, date) ? plan.days[date] : undefined;
+  const type = holiday
+    ? "holiday"
+    : vacation
+      ? "vacation"
+      : weekday === 0 || weekday === 6 ? "weekend" : "instructional";
+  return {
+    date, type, name: holiday || vacation?.name || "", enabled: true,
+    ...override,
+    weekday: override?.type === "swap" ? override.weekday : weekday,
+  } satisfies Omit<AcademicDay, "semester">;
+}
+
+export function effectiveAcademicTerms(
+  year: number,
+  plan: AnnualPlan,
+  terms: TermDates[],
+): TermDates[] {
+  const summer = [
+    ...plan.vacations.filter((v) => /여름|하계/.test(v.name)),
+    ...Object.entries(plan.days).filter(([, rule]) =>
+      rule.enabled && rule.type === "vacation" && /여름|하계/.test(rule.name),
+    ).map(([date]) => ({ start: date, end: date })),
+  ].sort((a, b) => a.start.localeCompare(b.start));
+  const first = terms.find((t) => t.number === 1);
+  const second = terms.find((t) => t.number === 2);
+  if (!summer.length || !first || !second) return terms;
+  const lastSummer = summer.map((v) => v.end).sort().at(-1)!;
+  const firstEnd = addDays(summer[0].start, -1);
+  if (firstEnd < first.start_date) return terms;
+  const end = monthRange(`${year + 1}-02`).end;
+  for (let date = addDays(lastSummer, 1); date <= end && date <= second.end_date; date = addDays(date, 1)) {
+    if (isTeachingDay({ ...dateRules(date, plan), semester: 2 }))
+      return terms.map((t) => t.number === 1 ? { ...t, end_date: firstEnd }
+        : t.number === 2 ? { ...t, start_date: date } : t);
+  }
+  return terms;
+}
+
 export function academicDays(
   year: number,
   plan: AnnualPlan,
-  terms: { number: number; start_date: string; end_date: string }[],
+  savedTerms: TermDates[],
 ): AcademicDay[] {
+  const terms = effectiveAcademicTerms(year, plan, savedTerms);
   const result: AcademicDay[] = [];
   const end = monthRange(`${year + 1}-02`).end;
   for (let date = `${year}-03-01`; date <= end; date = addDays(date, 1)) {
-    const weekday = new Date(date + "T12:00:00Z").getUTCDay();
-    const vacation = plan.vacations.find(
-      (v) => date >= v.start && date <= v.end,
-    );
-    const holiday =
-      plan.holidays[date] || (date.endsWith("-03-01") ? "삼일절" : "");
-    const override: Partial<AnnualPlan["days"][string]> = plan.days[date] ?? {};
-    const type = holiday
-      ? "holiday"
-      : vacation
-        ? "vacation"
-        : weekday === 0 || weekday === 6
-          ? "weekend"
-          : "instructional";
     result.push({
-      date,
-      type,
-      name: holiday || vacation?.name || "",
-      enabled: true,
-      semester:
-        terms.find((t) => date >= t.start_date && date <= t.end_date)?.number ??
-        0,
-      ...override,
-      weekday:
-        override?.type === "swap" ? (override.weekday ?? weekday) : weekday,
+      ...dateRules(date, plan),
+      semester: terms.find((t) => date >= t.start_date && date <= t.end_date)?.number ?? 0,
     });
   }
   return result;

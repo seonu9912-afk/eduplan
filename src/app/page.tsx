@@ -9,6 +9,8 @@ export default async function Landing({
 }: {
   searchParams: Promise<{ next?: string; error?: string }>;
 }) {
+  if (process.env.EDUPLAN_BUILD_ENV === "preview" && !process.env.NEXT_PUBLIC_SUPABASE_URL)
+    redirect("/recovery-preview");
   const q = await searchParams;
   const db = await createClient();
   const { data } = await db.auth.getUser();

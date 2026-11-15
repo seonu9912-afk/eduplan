@@ -142,6 +142,7 @@ export type Database = {
         Row: {
           academic_year_id: string;
           document: Json;
+          calendar_confirmation?: Json;
           history: Json;
           updated_at: string;
           version: number;
@@ -150,6 +151,7 @@ export type Database = {
         Insert: {
           academic_year_id: string;
           document: Json;
+          calendar_confirmation?: Json;
           history?: Json;
           updated_at?: string;
           version?: number;
@@ -158,6 +160,7 @@ export type Database = {
         Update: {
           academic_year_id?: string;
           document?: Json;
+          calendar_confirmation?: Json;
           history?: Json;
           updated_at?: string;
           version?: number;
@@ -987,6 +990,10 @@ export type Database = {
           target: string;
           terms: Json;
         };
+        Returns: string;
+      };
+      confirm_academic_calendar: {
+        Args: { expected_version: number; target: string; year_id: string };
         Returns: string;
       };
       save_annual_plan: {

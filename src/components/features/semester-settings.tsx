@@ -3,8 +3,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, InlineNotice, useMutation } from "@/components/common";
 import { saveSemesters } from "@/app/actions";
-import { addDays, monthRange } from "@/lib/domain";
-import type { AnnualPlan } from "@/lib/academic";
+import { monthRange } from "@/lib/domain";
+import { effectiveAcademicTerms, type AnnualPlan } from "@/lib/academic";
 import type { Context } from "@/lib/models";
 export function SemesterSettings({
   context: c,
@@ -25,7 +25,10 @@ export function SemesterSettings({
         monthRange(`${y.year + 1}-02`).end,
     })),
   );
-  const summer = plan.vacations.find((v) => v.name.includes("여름"));
+  const effective = effectiveAcademicTerms(y.year, plan, c.semesters);
+  const automaticStart = effective !== c.semesters
+    ? effective.find((term) => term.number === 2)?.start_date
+    : null;
   return (
     <details className="panel vacation-settings no-print">
       <summary>
@@ -56,7 +59,7 @@ export function SemesterSettings({
           학기와 방학 기간을 함께 확인하세요. 학기 밖 날짜는 수업일수에서
           제외됩니다.
         </p>
-        <fieldset disabled={c.role === "viewer" || m.pending}>
+        <fieldset disabled={c.role !== "admin" || m.pending}>
           {terms.map((t, i) => (
             <div className="term-row" key={i}>
               <strong>{i + 1}학기</strong>
@@ -85,24 +88,10 @@ export function SemesterSettings({
               ))}
             </div>
           ))}
-          {summer && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                setTerms([
-                  {
-                    start_date: terms[0].start_date,
-                    end_date: addDays(summer.start, -1),
-                  },
-                  {
-                    start_date: addDays(summer.end, 1),
-                    end_date: terms[1].end_date,
-                  },
-                ])
-              }
-            >
-              여름방학 전후로 학기 날짜 맞추기
+          {automaticStart && (
+            <Button type="button" variant="outline" onClick={() => setTerms(
+              effective.map((term) => ({ start_date: term.start_date, end_date: term.end_date })))}>
+              자동 산정한 2학기 시작일 적용 ({automaticStart})
             </Button>
           )}
           {c.role !== "viewer" && (

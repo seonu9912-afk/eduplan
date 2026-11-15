@@ -233,6 +233,7 @@ export function WorkPlans({
                 m.execute(
                   () =>
                     saveAnnual({
+                      workPlans: true,
                       workspaceId: c.workspace.id,
                       yearId: c.year!.id,
                       version,

@@ -27,13 +27,13 @@ import {
   ProfileForm,
 } from "@/components/features/workspace-forms";
 import { Dashboard } from "@/components/features/dashboard";
-import { Calendar } from "@/components/features/calendar";
 import { Curriculum } from "@/components/features/curriculum";
 import { SchoolSettings } from "@/components/features/settings";
 import { Members } from "@/components/features/members";
 import { logout } from "@/app/actions";
 import { roles, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
+import { buildInfo } from "@/lib/build-info";
 const sections: Record<string, string> = {
   home: "홈",
   calendar: "학사운영",
@@ -89,7 +89,7 @@ export function WorkspaceApp({
         <div className="header-inner">
           <Brand />
           <div className="header-right">
-            <span className="version-chip">MVP</span>
+            <span className="version-chip">v{buildInfo.version}</span>
             <span className="header-date">
               {today.slice(0, 4)}년 {dateLabel(today)}
             </span>
@@ -265,9 +265,8 @@ export function WorkspaceApp({
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
             onDirtyChange={setDirty}
-          >
-            <Calendar context={c} today={today} />
-          </AnnualAcademic>
+            today={today}
+          />
         ) : null}
         {section === "plans" ? (
           <WorkPlans

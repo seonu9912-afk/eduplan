@@ -11,13 +11,6 @@ import {
 } from "@/lib/academic";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-type Event = {
-  id: string;
-  start_date: string;
-  end_date: string;
-  title: string;
-  activity_area: string;
-};
 
 export function TeachingSummary({
   days,
@@ -69,13 +62,11 @@ export function TeachingSummary({
 export function AnnualCalendar({
   days,
   plan,
-  events,
   selected,
   onSelect,
 }: {
   days: AcademicDay[];
   plan: AnnualPlan;
-  events: Event[];
   selected: string;
   onSelect: (date: string, button: HTMLButtonElement) => void;
 }) {
@@ -85,19 +76,6 @@ export function AnnualCalendar({
     const d = byDate.get(date);
     if (!d) return null;
     const actual = new Date(date + "T12:00:00Z").getUTCDay();
-    const titles = [
-      ...events
-        .filter((e) => e.start_date <= date && e.end_date >= date)
-        .map(
-          (e) =>
-            `${e.title}${e.activity_area !== "없음" ? ` (${e.activity_area})` : ""}`,
-        ),
-      ...plan.allocations
-        .filter(
-          (a) => a.date === date && !events.some((e) => e.id === a.eventId),
-        )
-        .map((a) => a.title),
-    ];
     const label = d.name || dayTypes[d.type];
     return (
       <button
@@ -114,7 +92,6 @@ export function AnnualCalendar({
               ? "수업일"
               : "수업일 제외",
           !d.semester ? "학기 밖" : `${d.semester}학기`,
-          ...titles,
         ].join(" · ")}
         onClick={(event) => onSelect(date, event.currentTarget)}
       >
@@ -127,9 +104,6 @@ export function AnnualCalendar({
           <small>
             {d.start}~{d.end}교시
           </small>
-        )}
-        {!!titles.length && (
-          <small className="day-event">{titles.join(" · ")}</small>
         )}
         {!d.enabled && <small>사용 해제</small>}
       </button>
