@@ -77,6 +77,9 @@ function fillActivityForm(
   }
   form.scrollIntoView({ behavior: "smooth", block: "center" });
 }
+const calendarTabs = ["연간 학사력", "행사 편성", "시수 확인", "편성 점검", "Excel 출력"] as const;
+type CalendarView = (typeof calendarTabs)[number] | "자료·이력" | "날씨";
+
 export function AnnualAcademic({
   context: c,
   today,
@@ -94,7 +97,7 @@ export function AnnualAcademic({
   const confirmAvailable = c.annual?.calendar_confirmation !== undefined;
   const [version, setVersion] = useState(c.annual?.version ?? 0);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState("연간 기본안");
+  const [tab, setTab] = useState<CalendarView>("연간 학사력");
   const [selected, setSelected] = useState(() => {
     const initialYear = c.year?.year ?? Number(today.slice(0, 4));
     const first = `${initialYear}-03-01`;
@@ -188,7 +191,7 @@ export function AnnualAcademic({
     closeDateEditor();
     dayTrigger.current?.focus();
   }
-  function showTab(next: string) {
+  function showTab(next: CalendarView) {
     if (!mayLeaveDateEditor()) return;
     closeDateEditor();
     setTab(next);
@@ -355,23 +358,21 @@ export function AnnualAcademic({
       </section>}
       <TeachingSummary days={result.days} plan={plan} />
       <nav className="annual-tabs no-print" aria-label="학사일정 편집">
-        <>
-          {[
-            "연간 기본안",
-            "수업·창체",
-            "행사 일정",
-            "집계·점검",
-            "통합 Excel",
-            "자료·이력",
-            "날씨",
-          ].map((t) => (
-            <button key={t} aria-pressed={tab === t} onClick={() => showTab(t)}>
-              {t}
-            </button>
-          ))}
-        </>
+        {calendarTabs.map((view) => (
+          <button key={view} type="button" aria-pressed={tab === view} onClick={() => showTab(view)}>
+            {view}
+          </button>
+        ))}
       </nav>
-      {tab === "연간 기본안" && (
+      <div className="heading-actions no-print" role="group" aria-label="학사일정 도구">
+        {(["자료·이력", "날씨"] as const).map((view) => (
+          <Button key={view} variant={tab === view ? "secondary" : "ghost"}
+            type="button" aria-pressed={tab === view} onClick={() => showTab(view)}>
+            {view}
+          </Button>
+        ))}
+      </div>
+      {tab === "연간 학사력" && (
         <>
           <div className="annual-plan-tools no-print">
             <div>
@@ -464,7 +465,7 @@ export function AnnualAcademic({
           />
           <div className="heading-actions no-print">
             {editable && <Button variant="outline" onClick={(event) => openDateEditor(selected, true, event.currentTarget)}>기간 설정</Button>}
-            <Button variant="outline" onClick={() => showTab("행사 일정")}>선택 날짜의 행사 편성</Button>
+            <Button variant="outline" onClick={() => showTab("행사 편성")}>선택 날짜의 행사 편성</Button>
           </div>
           {dayOpen && editable && (
             <section className="panel annual-section academic-date-editor no-print"
@@ -552,8 +553,9 @@ export function AnnualAcademic({
             }} />
         </>
       )}
-      {tab === "수업·창체" && (
-        <section className="panel annual-section">
+      {tab === "연간 학사력" && (
+        <details className="panel annual-section">
+          <summary>기본 운영 교시·반복 창체</summary>
           <h2>요일별 기본 교시</h2>
           <p>
             학년별 월~금 운영 교시를 설정합니다. 빈 요일은 시수 집계에서 미설정으로 표시합니다.
@@ -731,10 +733,17 @@ export function AnnualAcademic({
               <Button>반복 활동 적용</Button>
             </form>
           )}
+        </details>
+      )}
+      {tab === "행사 편성" && <>
+        <Calendar context={c} today={today} focusDate={selected} onFocusDate={setSelected} />
+        <AcademicEventPeriods key={selected} context={c} plan={plan} days={result.days} focusDate={selected}
+          onChange={update} onMessage={setMessage} />
+        <details className="panel annual-section">
+          <summary>기존 교시 배정 관리</summary>
           <h2>행사 교시 배정</h2>
           <p>
-            학년별로 다른 활동 영역을 배정할 수 있습니다. 학교 공통 행사·일정은
-            ‘행사 일정’에서 관리합니다.
+            학년별로 다른 활동 영역을 배정할 수 있습니다. 등록된 행사의 날짜별·교시별 편성은 위에서 관리합니다.
           </p>
           <ul>
             {plan.allocations.map((a) => (
@@ -888,14 +897,9 @@ export function AnnualAcademic({
               <Button>교시 행사 적용</Button>
             </form>
           )}
-        </section>
-      )}
-      {tab === "행사 일정" && <>
-        <Calendar context={c} today={today} focusDate={selected} onFocusDate={setSelected} />
-        <AcademicEventPeriods key={selected} context={c} plan={plan} days={result.days} focusDate={selected}
-          onChange={update} onMessage={setMessage} />
+        </details>
       </>}
-      {tab === "집계·점검" && (
+      {tab === "시수 확인" && (
         <section className="panel annual-section">
           <div className="academic-date-heading">
             <h2>수업일수·시수 집계</h2>
@@ -978,7 +982,11 @@ export function AnnualAcademic({
               </table>
             </div>
           </details>}
-          <h3>배정 점검 {result.warnings.length}건</h3>
+        </section>
+      )}
+      {tab === "편성 점검" && (
+        <section className="panel annual-section">
+          <h2>배정 점검 {result.warnings.length}건</h2>
           {result.warnings.length ? (
             <ul>
               {result.warnings.slice(0, 100).map((w) => (
@@ -990,7 +998,7 @@ export function AnnualAcademic({
           )}
         </section>
       )}
-      {tab === "통합 Excel" &&
+      {tab === "Excel 출력" &&
         <AcademicWorkbookPanel year={year} plan={plan} context={c}
           currentStatus={status} confirmed={confirmed} />}
       {tab === "자료·이력" && (

@@ -72,17 +72,26 @@ export function Calendar({
   const [newDate, setNewDate] = useState(`${initialMonth}-01`);
   const [message, setMessage] = useState("");
   const editable = c.role === "admin";
-  function selectMonth(nextMonth: string) {
-    setMonth(nextMonth);
-    if (focusDate && !focusDate.startsWith(nextMonth)) onFocusDate?.(`${nextMonth}-01`);
-  }
-  const range = view === "week" ? weekRange(weekDate) : monthRange(month);
+  const embedded = focusDate !== undefined;
+  const showMonthGrid = view === "calendar" || (embedded && view === "month");
   const start = c.year ? `${c.year.year}-03-01` : "";
   const end = c.year ? monthRange(`${c.year.year + 1}-02`).end : "";
+  function selectMonth(nextMonth: string) {
+    if (nextMonth < start.slice(0, 7) || nextMonth > end.slice(0, 7)) return;
+    if (focusDate && !focusDate.startsWith(nextMonth)) selectDate(`${nextMonth}-01`);
+    else setMonth(nextMonth);
+  }
+  function selectDate(date: string) {
+    if (date < start || date > end) return;
+    setMonth(date.slice(0, 7));
+    setWeekDate(date);
+    onFocusDate?.(date);
+  }
+  const range = view === "week" ? weekRange(weekDate) : monthRange(month);
   const filtered = c.events.filter(
     (e) =>
       (type === "all" || e.event_type === type) &&
-      (grade === "all" || e.target_grades.includes(Number(grade))) &&
+      (grade === "all" || !e.target_grades.length || e.target_grades.includes(Number(grade))) &&
       (!query ||
         `${e.title} ${e.department} ${e.description}`
           .toLocaleLowerCase()
@@ -149,7 +158,7 @@ export function Calendar({
           <span className="eyebrow">
             {plansOnly ? "SCHOOL PLANS" : "ACADEMIC CALENDAR"}
           </span>
-          <h1>{plansOnly ? "월중·주간계획" : "학사일정"}</h1>
+          {embedded ? <h2>학교 행사</h2> : <h1>{plansOnly ? "월중·주간계획" : "학사일정"}</h1>}
           <p>
             {plansOnly
               ? "학사일정과 같은 자료로 우리 학교의 계획을 정리합니다."
@@ -185,7 +194,7 @@ export function Calendar({
               { id: "week", name: "주별 행사", icon: CalendarRange },
             ] as const
           )
-            .filter((v) => !plansOnly || v.id !== "calendar")
+            .filter((v) => !(plansOnly || embedded) || v.id !== "calendar")
             .map(({ id, name, icon: Icon }) => (
               <button
                 key={id}
@@ -236,7 +245,7 @@ export function Calendar({
                 min={start}
                 max={end}
                 onChange={(e) => {
-                  if (!e.target.value) return;
+                  if (!e.target.value || e.target.value < start || e.target.value > end) return;
                   setWeekDate(e.target.value);
                   onFocusDate?.(e.target.value);
                 }}
@@ -317,7 +326,7 @@ export function Calendar({
               ? "월별 행사"
               : "학사력"}
         </div>
-        {view === "calendar" ? (
+        {showMonthGrid && (
           <div className="calendar-scroll">
             <div className="month-grid">
               <div className="weekdays">
@@ -337,9 +346,10 @@ export function Calendar({
                     >
                       <button
                         className="day-number"
-                        aria-label={`${date} 일정 등록`}
-                        disabled={!editable || date < start || date > end}
-                        onClick={() => create(date)}
+                        aria-label={`${date} ${embedded ? "날짜 선택" : "일정 등록"}`}
+                        aria-pressed={embedded ? date === focusDate : undefined}
+                        disabled={(!embedded && !editable) || date < start || date > end}
+                        onClick={() => embedded ? selectDate(date) : create(date)}
                       >
                         {Number(date.slice(8, 10))}
                         {date === today ? <small>오늘</small> : null}
@@ -366,7 +376,8 @@ export function Calendar({
               </div>
             </div>
           </div>
-        ) : visible.length ? (
+        )}
+        {(!showMonthGrid || embedded) && (visible.length ? (
           <div className="table-scroll">
             <table className="plan-table">
               <thead>
@@ -403,7 +414,7 @@ export function Calendar({
                       ) : null}
                     </td>
                     <td>
-                      {e.target_grades.length === c.grades.length
+                      {!e.target_grades.length || e.target_grades.length === c.grades.length
                         ? "전 학년"
                         : `${e.target_grades.join("·")}학년`}
                     </td>
@@ -429,7 +440,7 @@ export function Calendar({
             title="해당 기간에 일정이 없어요"
             description="일정을 등록하거나 검색 조건을 변경해 주세요."
           />
-        )}
+        ))}
         <div className="calendar-bottom">
           <span>
             <span className="status-dot" />
@@ -438,7 +449,7 @@ export function Calendar({
           <span>
             {!editable
               ? "조회 전용"
-              : "날짜를 클릭해 일정을 추가하세요."}
+              : embedded ? "날짜를 선택한 뒤 일정 등록을 누르세요." : "날짜를 클릭해 일정을 추가하세요."}
           </span>
         </div>
       </section>

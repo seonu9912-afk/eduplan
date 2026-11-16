@@ -434,7 +434,7 @@ test("teaching lifecycle: shared classes, standards, weighted/free-semester, his
   );
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "행사 일정", exact: true }),
+    page.getByRole("button", { name: "행사 편성", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "교육과정", exact: true }).click();
   await expect(

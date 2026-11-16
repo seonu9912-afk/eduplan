@@ -204,7 +204,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await page.reload();
   await expect(page.getByLabel("2학년 학급 수")).toHaveValue("3");
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
-  await page.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await page.getByRole("button", { name: "행사 편성", exact: true }).click();
   await page.getByLabel("기간 선택").fill("2026-11");
   await page.getByRole("button", { name: "일정 등록", exact: true }).click();
   dialog = page.getByRole("dialog");
@@ -218,6 +218,11 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await dialog.getByRole("button", { name: "저장하기", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(page.getByTitle("가상 공개수업").first()).toBeVisible();
+  const dateButton = page.getByRole("button", { name: "2026-11-09 날짜 선택", exact: true });
+  await dateButton.click();
+  await expect(dateButton).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("row").filter({ hasText: "가상 공개수업" })).toHaveClass("calendar-focus");
   await page.getByRole("tab", { name: "월별 행사", exact: true }).click();
   await expect(
     page.getByRole("row").filter({ hasText: "가상 공개수업" }),
@@ -237,7 +242,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
     page.getByRole("row").filter({ hasText: "가상 공개수업 수정" }),
   ).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await page.getByRole("button", { name: "행사 편성", exact: true }).click();
   await page.getByLabel("기간 선택").fill("2026-11");
   await expect(page.getByTitle("가상 공개수업 수정").first()).toBeVisible();
   await page.screenshot({
@@ -343,7 +348,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await second.getByRole("button", { name: "초대 수락하고 참여하기" }).click();
   await expect(second).toHaveURL(new RegExp(`/app/${schoolId}/home`));
   await second.getByRole("link", { name: "학사운영", exact: true }).click();
-  await second.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await second.getByRole("button", { name: "행사 편성", exact: true }).click();
   await expect(
     second.getByRole("button", { name: "일정 등록", exact: true }),
   ).toHaveCount(0);
@@ -393,7 +398,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await page.getByRole("link", { name: "교육과정", exact: true }).click();
   await expect(page.getByLabel("국어 1학년 1학기 시수")).toHaveValue("68");
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
-  await page.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await page.getByRole("button", { name: "행사 편성", exact: true }).click();
   await page.getByLabel("기간 선택").fill("2026-11");
   await page.getByTitle("가상 공개수업 수정").first().click();
   await page
@@ -464,7 +469,7 @@ test("school levels persist across settings, events and six-year curriculum", as
     "6",
   );
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
-  await page.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await page.getByRole("button", { name: "행사 편성", exact: true }).click();
   await page.getByLabel("기간 선택").fill("2026-11");
   await page.getByRole("button", { name: "일정 등록", exact: true }).click();
   dialog = page.getByRole("dialog");
@@ -672,7 +677,7 @@ test("annual plan editing, export, restore and department work plans", async ({
     .getByRole("button", { name: "연간 계획 저장", exact: true })
     .click();
   await expect(page.getByText("저장본 v3", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "연간 기본안", exact: true }).click();
+  await page.getByRole("button", { name: "연간 학사력", exact: true }).click();
   await page
     .getByRole("button", { name: "2026-03-02 수업일", exact: true })
     .click();
@@ -814,7 +819,7 @@ test("guideline draft, semester operations, activity areas and optional duty boa
   await expect(page.getByLabel("2학기 시작일", { exact: true })).toHaveValue(
     "2026-08-24",
   );
-  await page.getByRole("button", { name: "행사 일정", exact: true }).click();
+  await page.getByRole("button", { name: "행사 편성", exact: true }).click();
   await page.getByLabel("기간 선택").fill("2026-11");
   await page.getByRole("button", { name: "일정 등록", exact: true }).click();
   dialog = page.getByRole("dialog");
@@ -826,7 +831,7 @@ test("guideline draft, semester operations, activity areas and optional duty boa
     .selectOption("진로");
   await dialog.getByRole("button", { name: "저장하기", exact: true }).click();
   await expect(dialog).not.toBeVisible();
-  await page.getByRole("button", { name: "수업·창체", exact: true }).click();
+  await page.getByText("기존 교시 배정 관리", { exact: true }).click();
   await page
     .getByLabel("등록 행사에서 가져오기")
     .selectOption({ label: "2026-11-09 · 가상 진로 탐색 · 진로" });
@@ -838,7 +843,7 @@ test("guideline draft, semester operations, activity areas and optional duty boa
     .getByRole("button", { name: "연간 계획 저장", exact: true })
     .click();
   await expect(page.getByText("저장본 v1", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "연간 기본안", exact: true }).click();
+  await page.getByRole("button", { name: "연간 학사력", exact: true }).click();
   if (process.env.BASE_URL?.startsWith("https://")) {
     await page
       .getByRole("button", { name: "공휴일 불러오기", exact: true })
@@ -861,7 +866,7 @@ test("guideline draft, semester operations, activity areas and optional duty boa
       .getByRole("button", { name: "미리보기 적용", exact: true })
       .click();
     await page
-      .getByRole("button", { name: "연간 기본안", exact: true })
+      .getByRole("button", { name: "연간 학사력", exact: true })
       .click();
   }
   await page.setViewportSize({ width: 390, height: 844 });
