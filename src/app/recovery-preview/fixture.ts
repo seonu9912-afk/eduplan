@@ -55,7 +55,7 @@ export function recoveryPreviewContext(): Context {
       start_date: number === 1 ? "2027-03-01" : "2027-08-18", end_date: number === 1 ? "2027-07-23" : "2028-02-29",
     })),
     events: [event], activities: [], groups: [group, creativeGroup], subjects, plans, hours, members: [],
-    invitations: [], teaching: { courses: [course], plans: [{
+    invitations: [], teaching: { courses: [course], editors: [], plans: [{
       academic_year_id: yearId, workspace_id: workspaceId, course_id: courseId, document: teaching,
     }], classes: [{ academic_year_id: yearId, class_id: classes[2].id,
       workspace_id: workspaceId, course_id: courseId, grade: 2 }], copies: [], standards: [] },

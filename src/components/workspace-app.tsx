@@ -60,6 +60,7 @@ export function WorkspaceApp({
   const [dirty, setDirty] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const base = `/app/${c.workspace.id}`;
+  const activeYearId = c.year?.id;
   const suffix = c.year ? `?year=${c.year.year}` : "";
   function allowNavigation() {
     return (
@@ -83,6 +84,18 @@ export function WorkspaceApp({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
+  useEffect(() => {
+    if ((section !== "calendar" && section !== "teaching") || !activeYearId) return;
+    const refresh = () => {
+      if (document.visibilityState === "visible") router.refresh();
+    };
+    const interval = window.setInterval(refresh, 30000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [router, section, activeYearId]);
   return (
     <div className="app-shell">
       <header className="app-header no-print">

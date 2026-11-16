@@ -17,7 +17,8 @@ export function CourseForm({
   const [grade, setGrade] = useState(course?.grade ?? 1),
     [semester, setSemester] = useState(course?.semester ?? 1),
     [subject, setSubject] = useState(course?.subject_id ?? ""),
-    [copy, setCopy] = useState("");
+    [copy, setCopy] = useState(""),
+    [copyScope, setCopyScope] = useState<"all" | "lesson" | "assessment">("all");
   const m = useMutation(),
     data = c.teaching!;
   const ref = curriculumReference(c, grade, semester, subject || null),
@@ -43,6 +44,7 @@ export function CourseForm({
                 teacher_name: f.get("teacher_name"),
                 visibility: f.get("visibility"),
                 class_ids: f.getAll("class_ids"),
+                copy_scope: copy ? copyScope : undefined,
                 manual_hours: linked
                   ? (course?.manual_hours ?? null)
                   : f.get("manual_hours") === ""
@@ -181,10 +183,9 @@ export function CourseForm({
           </select>
         </Field>
         <p className="field-hint">
-          나만 보기는 소유자만 접근합니다. 학교 공유는 구성원이 열람하고
-          소유자·관리자가 편집합니다.
+          학교 공유 계획은 구성원이 열람합니다. 소유자와 관리자는 공동작성 담당자를 지정할 수 있습니다.
         </p>
-        {!course && (
+        {!course && <>
           <Field label="기존 계획 복사 (선택)" id="course-copy">
             <select
               id="course-copy"
@@ -201,15 +202,17 @@ export function CourseForm({
                   </option>
                 ))}
             </select>
-            {copy && (
-              <p className="field-hint">
-                같은 작업공간의 계획 내용을 복사합니다. 날짜·성취기준·배당
-                차시는 원본대로 복사되므로 새 학년도에 맞게 검토하세요. 상태는
-                작성 중으로 시작합니다.
-              </p>
-            )}
           </Field>
-        )}
+          {copy && <Field label="복사 범위" id="course-copy-scope">
+            <select id="course-copy-scope" value={copyScope}
+              onChange={(e) => setCopyScope(e.target.value as typeof copyScope)}>
+              <option value="all">교수학습·평가계획 전체</option>
+              <option value="lesson">교수학습계획만</option>
+              <option value="assessment">평가계획만</option>
+            </select>
+            <p className="field-hint">복사한 날짜와 차시를 새 학년도에 맞게 확인하세요. 복사본은 작성 중으로 시작합니다.</p>
+          </Field>}
+        </>}
       </fieldset>
       <InlineNotice mutation={m} />
       <Button disabled={m.pending}>

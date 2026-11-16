@@ -5,7 +5,8 @@ import { AcademicEventPeriods } from "./academic-event-periods";
 import { Calendar } from "./calendar";
 import { AcademicWorkbookPanel } from "./academic-workbook-panel";
 import { parseAcademicConfirmation } from "@/lib/academic-confirmation";
-import { curriculumTargets, datePeriod } from "@/lib/academic-rebuild";
+import { curriculumTargets, datePeriod, hoursRange } from "@/lib/academic-rebuild";
+import { describeDateRule, mergeAnnualPlans, sameAnnualValue } from "@/lib/academic-revisions";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -85,8 +86,9 @@ export function AnnualAcademic({
   onDirtyChange: (v: boolean) => void;
 }) {
   const [plan, setPlan] = useState<AnnualPlan>(() =>
-    c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(c.grades),
+    c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(),
   );
+  const [savedPlan, setSavedPlan] = useState(plan);
   const confirmed = parseAcademicConfirmation(c.annual?.calendar_confirmation);
   const confirmAvailable = c.annual?.calendar_confirmation !== undefined;
   const [version, setVersion] = useState(c.annual?.version ?? 0);
@@ -99,6 +101,10 @@ export function AnnualAcademic({
   });
   const [periodMode, setPeriodMode] = useState(false);
   const [dateDraft, setDateDraft] = useState(false);
+  const [dateFormEpoch, setDateFormEpoch] = useState(0);
+  const [choices, setChoices] = useState<{ version: number; items: Record<string, "draft" | "stored"> }>({
+    version: 0, items: {},
+  });
   const [periodPreview, setPeriodPreview] = useState<{
     days: ReturnType<typeof datePeriod>;
     rule: AnnualPlan["days"][string];
@@ -112,12 +118,27 @@ export function AnnualAcademic({
   const [dayOpen, setDayOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<AnnualPlan | null>(null);
+  const [historyVersion, setHistoryVersion] = useState(0);
   const [weather, setWeather] = useState<Awaited<
     ReturnType<typeof previewWeather>
   > | null>(null);
   const m = useMutation();
   const holidayMutation = useMutation();
+  const serverVersion = c.annual?.version ?? 0;
+  const needsSync = serverVersion > version;
+  const stored = useMemo(() => c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(), [c.annual]);
+  const activeChoices = choices.version === serverVersion ? choices.items : undefined;
+  const reconciliation = useMemo(() => needsSync && dirty && !dateDraft && !m.pending
+    ? mergeAnnualPlans(savedPlan, plan, stored, activeChoices) : null,
+    [needsSync, dirty, dateDraft, m.pending, savedPlan, plan, stored, activeChoices]);
+  if (needsSync && !dirty && !dateDraft && !m.pending) {
+    setPlan(stored);
+    setSavedPlan(stored);
+    setVersion(serverVersion);
+    setDateFormEpoch(dateFormEpoch + 1);
+  }
   const dayTrigger = useRef<HTMLButtonElement>(null);
+  const editRevision = useRef(0);
   const recurringForm = useRef<HTMLFormElement>(null);
   const allocationForm = useRef<HTMLFormElement>(null);
   const editable = c.role === "admin";
@@ -125,8 +146,8 @@ export function AnnualAcademic({
   const start = `${year}-03-01`,
     end = monthRange(`${year + 1}-02`).end;
   const result = useMemo(
-    () => calculateAcademic(year, plan, c.grades, c.semesters),
-    [year, plan, c.grades, c.semesters],
+    () => calculateAcademic(year, plan, c.grades, c.semesters, c.classes),
+    [year, plan, c.grades, c.semesters, c.classes],
   );
   const targets = useMemo(() => curriculumTargets(year, c), [year, c]);
   const termDates = effectiveAcademicTerms(year, plan, c.semesters);
@@ -162,6 +183,7 @@ export function AnnualAcademic({
     setTab(next);
   }
   const update = (next: AnnualPlan | ((current: AnnualPlan) => AnnualPlan)) => {
+    editRevision.current++;
     setPlan(next);
     setDirty(true);
     onDirtyChange(true);
@@ -174,17 +196,35 @@ export function AnnualAcademic({
       />
     );
   const chosen = result.days.find((d) => d.date === selected)!;
+  const history = (c.annual?.history ?? []) as unknown as {
+    version: number;
+    at: string;
+    actorId?: string;
+    document: AnnualPlan;
+  }[];
+  const earlier = history.find((entry) => entry.version === historyVersion);
+  const earlierPlan = earlier && annualSchema.safeParse(earlier.document);
+  const previousPlan = earlierPlan?.success ? earlierPlan.data : undefined;
+  const changedDates = previousPlan ? [...new Set([...Object.keys(previousPlan.days),
+    ...Object.keys(savedPlan.days)])].sort().filter((date) =>
+    !sameAnnualValue(previousPlan.days[date], savedPlan.days[date])) : [];
   function applyDay(form: FormData) {
     const first = periodMode ? String(form.get("first")) : selected;
     const last = periodMode ? String(form.get("last")) : selected;
     const rows = datePeriod(year, first, last, plan);
-    const rule = {
+    const gradePeriods = Object.fromEntries(c.grades.flatMap((grade) => {
+      const start = form.get(`grade-${grade}-start`);
+      const end = form.get(`grade-${grade}-end`);
+      return start || end ? [[grade, { start: Number(start), end: Number(end) }]] : [];
+    }));
+    const rule: AnnualPlan["days"][string] = {
       type: String(form.get("type")) as keyof typeof dayTypes,
       name: String(form.get("name")),
       enabled: form.get("enabled") === "on",
       weekday: Number(form.get("weekday")),
-      start: Number(form.get("start")),
-      end: Number(form.get("end")),
+      start: form.get("start") ? Number(form.get("start")) : undefined,
+      end: form.get("end") ? Number(form.get("end")) : undefined,
+      gradePeriods: Object.keys(gradePeriods).length ? gradePeriods : undefined,
     };
     if (!rows.length || !annualSchema.safeParse({
       ...plan, days: { ...plan.days, [rows[0].date]: rule },
@@ -222,9 +262,10 @@ export function AnnualAcademic({
           {editable && (
             <Button
               disabled={
-                m.pending || holidayMutation.pending || dateDraft || (!dirty && version > 0)
+                m.pending || holidayMutation.pending || dateDraft || needsSync || (!dirty && version > 0)
               }
-              onClick={() =>
+              onClick={() => {
+                const revision = editRevision.current;
                 m.execute(
                   () =>
                     saveAnnual({
@@ -235,13 +276,16 @@ export function AnnualAcademic({
                     }),
                   (v) => {
                     setVersion(v);
-                    setDirty(false);
-                    onDirtyChange(false);
-                    setMessage("");
+                    setSavedPlan(plan);
+                    if (revision === editRevision.current) {
+                      setDirty(false);
+                      onDirtyChange(false);
+                      setMessage("");
+                    }
                   },
                   "연간 계획을 저장했습니다.",
-                )
-              }
+                );
+              }}
             >
               {m.pending ? "저장 중…" : "연간 계획 저장"}
             </Button>
@@ -253,11 +297,49 @@ export function AnnualAcademic({
           ? "저장하지 않은 변경사항이 있습니다."
           : version
             ? `${status} · 저장본 v${version}`
-            : "요일별 1~6교시 초안 · 방학과 실제 교시를 확인해 주세요."}
+            : "초안 · 수업·창체에서 요일별 운영 교시를 설정해 주세요."}
       </div>
       <InlineNotice mutation={m} />
       <InlineNotice mutation={holidayMutation} />
       <Notice message={message} />
+      {needsSync && dateDraft && <Notice message="다른 사용자가 저장했습니다. 날짜 편집을 적용한 다음 최신 저장본과 비교할 수 있습니다." />}
+      {reconciliation && <section className="panel annual-section no-print" aria-label="다른 사용자의 변경 확인">
+        <h2>다른 사용자가 연간 계획을 저장했습니다</h2>
+        {reconciliation.conflicts.length === 0 && <p>서로 다른 항목을 수정했습니다. 최신 저장본에 현재 편집을 합칠 수 있습니다.</p>}
+        {reconciliation.conflicts.map(({ key, label, draft, stored }) => {
+          const describe = (value: unknown) => key.startsWith("days:")
+            ? describeDateRule(value as AnnualPlan["days"][string] | undefined)
+            : value === undefined ? "항목 없음" : JSON.stringify(value, null, 2);
+          return <fieldset key={key} className="annual-conflict">
+            <legend>{label}</legend>
+            <div className="annual-form-grid">
+              {([['stored', "서버 기록", stored], ['draft', "내 편집", draft]] as const).map(([value, text, entry]) =>
+                <label key={value}>
+                  <input type="radio" name={key} checked={activeChoices?.[key] === value}
+                    onChange={() => setChoices({ version: serverVersion, items: { ...activeChoices, [key]: value } })} />
+                  {text}
+                  <pre>{describe(entry)}</pre>
+                </label>)}
+            </div>
+          </fieldset>;
+        })}
+        <Button disabled={reconciliation.conflicts.some(({ key }) => !activeChoices?.[key])}
+          onClick={() => {
+            const parsed = annualSchema.safeParse(reconciliation.plan);
+            if (!parsed.success) {
+              setMessage("두 편집을 합친 뒤 교시와 입력값을 다시 확인해 주세요.");
+              return;
+            }
+            const changed = !sameAnnualValue(parsed.data, stored);
+            setSavedPlan(stored);
+            setPlan(parsed.data);
+            setVersion(serverVersion);
+            setDateFormEpoch(dateFormEpoch + 1);
+            setDirty(changed);
+            onDirtyChange(changed);
+            setMessage(changed ? "최신 저장본과 편집을 합쳤습니다. 연간 계획을 저장해 주세요." : "최신 저장본을 불러왔습니다.");
+          }}>최신 저장본과 합치기</Button>
+      </section>}
       <TeachingSummary days={result.days} plan={plan} />
       <nav className="annual-tabs no-print" aria-label="학사일정 편집">
         <>
@@ -380,8 +462,8 @@ export function AnnualAcademic({
                   if (mayLeaveDateEditor()) { closeDateEditor(); dayTrigger.current?.focus(); }
                 }}>닫기</Button>
               </div>
-              <form key={selected + String(periodMode)} className="annual-editor"
-                onChange={() => { setDateDraft(true); setPeriodPreview(null); onDirtyChange(true); }}
+              <form key={`${selected}-${periodMode}-${dateFormEpoch}`} className="annual-editor"
+                onChange={() => { editRevision.current++; setDateDraft(true); setPeriodPreview(null); onDirtyChange(true); }}
                 onSubmit={(e) => { e.preventDefault(); applyDay(new FormData(e.currentTarget)); }}>
                 <div className="annual-form-grid">
                   {periodMode && <>
@@ -401,10 +483,22 @@ export function AnnualAcademic({
                       chosen?.weekday && chosen.weekday <= 5 ? chosen.weekday : 1}>
                       {[1, 2, 3, 4, 5].map((w) => <option value={w} key={w}>{weekdays[w]}요일</option>)}
                     </Select>
-                    <Input label="시작교시" name="start" type="number" min={1} max={12} defaultValue={chosen?.start ?? 1} required />
-                    <Input label="종료교시" name="end" type="number" min={1} max={12} defaultValue={chosen?.end ?? 6} required />
+                    <Input label="공통 시작교시" name="start" type="number" min={1} max={12} defaultValue={periodMode ? undefined : chosen.start} />
+                    <Input label="공통 종료교시" name="end" type="number" min={1} max={12} defaultValue={periodMode ? undefined : chosen.end} />
                     <label><input type="checkbox" name="enabled" defaultChecked={periodMode || chosen?.enabled} /> 사용</label>
                   </div>
+                  {!periodMode && <fieldset>
+                    <legend>학년별 운영 교시 예외</legend>
+                    <p>비워 두면 공통 설정이나 해당 요일의 운영 교시를 사용합니다.</p>
+                    <div className="annual-form-grid">
+                      {c.grades.map((grade) => <div key={grade} className="annual-inline">
+                        <Input label={`${grade}학년 시작교시`} name={`grade-${grade}-start`} type="number"
+                          min={1} max={12} defaultValue={chosen.gradePeriods?.[grade]?.start} />
+                        <Input label={`${grade}학년 종료교시`} name={`grade-${grade}-end`} type="number"
+                          min={1} max={12} defaultValue={chosen.gradePeriods?.[grade]?.end} />
+                      </div>)}
+                    </div>
+                  </fieldset>}
                 </details>
                 <div className="heading-actions">
                   <Button type="submit">{periodMode ? "변경 미리보기" : "날짜 설정 적용"}</Button>
@@ -447,8 +541,7 @@ export function AnnualAcademic({
         <section className="panel annual-section">
           <h2>요일별 기본 교시</h2>
           <p>
-            학년별 월~금 교시를 정합니다. 날짜별 변동 교시는 연간 기본안에서
-            지정합니다.
+            학년별 월~금 운영 교시를 설정합니다. 빈 요일은 시수 집계에서 미설정으로 표시합니다.
           </p>
           <div className="table-scroll">
             <table className="plan-table">
@@ -478,17 +571,17 @@ export function AnnualAcademic({
                               type="number"
                               min={1}
                               max={12}
-                              value={t?.[k] ?? 1}
-                              onChange={(e) =>
-                                update({
-                                  ...plan,
-                                  timetable: plan.timetable.map((t) =>
-                                    t.grade === g && t.weekday === w
-                                      ? { ...t, [k]: Number(e.target.value) }
-                                      : t,
-                                  ),
-                                })
-                              }
+                              value={t?.[k] ?? ""}
+                              onChange={(e) => {
+                                const value = e.target.valueAsNumber;
+                                const timetable = plan.timetable.filter((row) => row !== t);
+                                if (Number.isInteger(value) && value >= 1 && value <= 12) {
+                                  timetable.push({ grade: g, weekday: w,
+                                    start: t?.start ?? 1, end: t?.end ?? value, [k]: value,
+                                  });
+                                }
+                                update({ ...plan, timetable });
+                              }}
                             />
                           ))}
                         </td>
@@ -633,9 +726,13 @@ export function AnnualAcademic({
               <li key={a.id}>
                 {a.date} {a.start}~{a.end}교시 · {a.title} ·{" "}
                 {Object.entries(a.areas)
-                  .map(([g, area]) => `${g}학년 ${area}`)
+                  .map(([g, area]) => {
+                    const classNumber = c.classes.find((item) => item.id === a.classId)?.class_number;
+                    const scope = a.classId ? classNumber ? `${classNumber}반` : "보관된 학급" : "";
+                    return `${g}학년 ${scope} ${area}`;
+                  })
                   .join(" / ")}{" "}
-                {editable && (
+                {editable && !a.classId && (
                   <button
                     onClick={() =>
                       fillActivityForm(allocationForm.current, {
@@ -780,7 +877,7 @@ export function AnnualAcademic({
       )}
       {tab === "행사 일정" && <>
         <Calendar context={c} today={today} focusDate={selected} onFocusDate={setSelected} />
-        <AcademicEventPeriods key={selected} context={c} plan={plan} focusDate={selected}
+        <AcademicEventPeriods key={selected} context={c} plan={plan} days={result.days} focusDate={selected}
           onChange={update} onMessage={setMessage} />
       </>}
       {tab === "집계·점검" && (
@@ -820,25 +917,52 @@ export function AnnualAcademic({
               <tbody>
                 {result.totals.map((t) => {
                   const goal = targets.find((item) => item.grade === t.grade && item.semester === t.semester);
+                  const classTotals = result.classTotals.filter((row) => row.grade === t.grade && row.semester === t.semester);
+                  const scopes = classTotals.length ? classTotals : [t];
+                  const complete = scopes.every((row) => !row.conflicts && !row.unconfigured);
+                  const goalHours = goal?.subject;
                   return <tr key={`${t.grade}-${t.semester}`}>
                     <th>{t.grade}학년</th>
                     <td>{t.semester}학기</td>
                     <td>{t.days}</td>
-                    <td>{t.hours}</td>
-                    <td>{t.conflicts}</td>
+                    <td>{t.unconfigured ? `${t.hours} (잠정)` : t.hours}</td>
+                    <td>{hoursRange(scopes.map((row) => row.conflicts))}</td>
                     <td>{goal?.subject ?? "미설정"}</td>
                     <td>{goal?.creative ?? "미설정"}</td>
-                    <td>{goal?.subject == null || t.conflicts ? "—" : (t.counts["교과"] ?? 0) - goal.subject}</td>
+                    <td>{goalHours == null || !complete ? "—" :
+                      hoursRange(scopes.map((row) => (row.counts["교과"] ?? 0) - goalHours))}</td>
                     {areas
                       .filter((a) => a !== "없음")
                       .map((a) => (
-                        <td key={a}>{t.counts[a] ?? 0}</td>
+                        <td key={a}>{hoursRange(scopes.map((row) => row.counts[a] ?? 0))}</td>
                       ))}
                   </tr>;
                 })}
               </tbody>
             </table>
           </div>
+          {result.classTotals.length > 0 && <details>
+            <summary>학급별 시수</summary>
+            <div className="table-scroll">
+              <table className="plan-table">
+                <thead><tr><th>학급</th><th>학기</th><th>교과 확보</th><th>교과 시수 차이</th>
+                  {areas.filter((area) => area !== "없음" && area !== "교과")
+                    .map((area) => <th key={area}>{area}</th>)}
+                </tr></thead>
+                <tbody>{result.classTotals.map((row) => {
+                  const goal = targets.find((item) => item.grade === row.grade && item.semester === row.semester)?.subject;
+                  const subject = row.counts["교과"] ?? 0;
+                  return <tr key={`${row.classId}-${row.semester}`}>
+                    <th>{row.grade}학년 {row.classNumber}반</th><td>{row.semester}학기</td>
+                    <td>{row.unconfigured || row.conflicts ? `${subject} (잠정)` : subject}</td>
+                    <td>{goal == null || row.unconfigured || row.conflicts ? "—" : subject - goal}</td>
+                    {areas.filter((area) => area !== "없음" && area !== "교과")
+                      .map((area) => <td key={area}>{row.counts[area] ?? 0}</td>)}
+                  </tr>;
+                })}</tbody>
+              </table>
+            </div>
+          </details>}
           <h3>배정 점검 {result.warnings.length}건</h3>
           {result.warnings.length ? (
             <ul>
@@ -957,18 +1081,38 @@ export function AnnualAcademic({
             </div>
           )}
           <h3>이전 저장본 (최대 30개)</h3>
-          {(
-            (c.annual?.history ?? []) as unknown as {
-              version: number;
-              at: string;
-              document: AnnualPlan;
-            }[]
-          ).map((h) => (
+          {history.length > 0 && <Select label="날짜별 변경 비교" value={historyVersion}
+            onChange={(e) => setHistoryVersion(Number(e.target.value))}>
+            <option value={0}>이전 저장본 선택</option>
+            {history.map((entry) => <option key={entry.version} value={entry.version}>v{entry.version}</option>)}
+          </Select>}
+          {previousPlan && <>
+            {changedDates.length ? <div className="table-scroll">
+              <table className="plan-table">
+                <thead><tr><th>날짜</th><th>v{historyVersion}</th><th>현재 저장본</th>{editable && <th>복원</th>}</tr></thead>
+                <tbody>{changedDates.map((date) => <tr key={date}>
+                  <th>{date}</th><td>{describeDateRule(previousPlan.days[date])}</td>
+                  <td>{describeDateRule(savedPlan.days[date])}</td>
+                  {editable && <td><Button variant="outline" disabled={needsSync || m.pending}
+                    onClick={() => {
+                      const days = { ...plan.days };
+                      const previous = previousPlan.days[date];
+                      if (previous) days[date] = previous;
+                      else delete days[date];
+                      update({ ...plan, days });
+                      setMessage(`${date}에 v${historyVersion} 날짜 설정을 적용했습니다. 연간 계획을 저장해 주세요.`);
+                    }}>{date} 설정 복원</Button></td>}
+                </tr>)}</tbody>
+              </table>
+            </div> : <p>선택한 저장본과 현재 저장본의 개별 날짜 설정이 같습니다.</p>}
+          </>}
+          {history.map((h) => (
             <p key={h.version}>
               v{h.version} ·{" "}
               {new Date(h.at).toLocaleString("ko-KR", {
                 timeZone: "Asia/Seoul",
               })}{" "}
+              {h.actorId && <span>· {c.members.find((member) => member.user_id === h.actorId)?.display_name ?? "이전 구성원"} </span>}
               {editable && (
                 <Button
                   variant="outline"

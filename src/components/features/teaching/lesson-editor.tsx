@@ -36,7 +36,7 @@ export function LessonEditor({
           c.year!.year,
           c.annual
             ? annualSchema.parse(c.annual.document)
-            : defaultAnnual(c.grades),
+            : defaultAnnual(),
           c.semesters,
         ).filter((d) =>
           course.semester ? d.semester === course.semester : d.semester !== 0,

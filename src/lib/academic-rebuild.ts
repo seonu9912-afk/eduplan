@@ -31,10 +31,11 @@ export function applyEventPeriods(
   slots: number[],
   area: AnnualPlan["allocations"][number]["areas"][string],
   makeId: () => string,
+  classId?: string,
 ) {
   const selected = new Set(slots);
   const relevant = (row: AnnualPlan["allocations"][number]) =>
-    row.eventId === event.eventId && row.date === event.date &&
+    row.eventId === event.eventId && row.date === event.date && row.classId === classId &&
     [...selected].some((period) => row.start <= period && period <= row.end);
   const rows = allocations.flatMap((row) => {
     if (!relevant(row) || !row.areas[grade]) return [row];
@@ -57,13 +58,24 @@ export function applyEventPeriods(
     return pieces;
   });
   if (area === "없음") return rows;
+  let last: AnnualPlan["allocations"][number] | undefined;
   for (const period of [...selected].sort((a, b) => a - b)) {
-    rows.push({ ...event, id: makeId(), start: period, end: period, areas: { [grade]: area } });
+    if (last?.end === period - 1) {
+      last.end = period;
+    } else {
+      last = { ...event, id: makeId(), classId, start: period, end: period, areas: { [grade]: area } };
+      rows.push(last);
+    }
   }
   return rows;
 }
 
 type CurriculumInput = Pick<Context, "plans" | "hours" | "subjects" | "groups" | "grades">;
+
+export function hoursRange(values: number[]) {
+  const min = Math.min(...values), max = Math.max(...values);
+  return min === max ? min : `${min}~${max}`;
+}
 
 export function curriculumTargets(year: number, context: CurriculumInput) {
   const groups = new Map(context.groups.map(({ id, name }) => [id, name]));

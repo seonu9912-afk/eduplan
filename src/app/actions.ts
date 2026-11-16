@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   academicSchema,
   schoolTypeSchema,
-  gradesForSchoolType,
   eventSchema,
   hourSchema,
   schoolYearSchema,
@@ -65,11 +64,12 @@ function refresh() {
   revalidatePath("/app", "layout");
 }
 function siteUrl() {
+  const deploymentHost = process.env.VERCEL_ENV === "preview"
+    ? process.env.VERCEL_URL
+    : process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const value =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : undefined);
+    (deploymentHost ? `https://${deploymentHost}` : undefined);
   if (!value) throw new Error("인증 주소 설정이 필요합니다.");
   return value.replace(/\/$/, "");
 }
@@ -411,16 +411,12 @@ export async function saveAnnual(input: unknown) {
       .parse(input);
     const { db } = await authorized(v.workspaceId, v.workPlans ? ["admin", "editor"] : ["admin"]);
     if (v.workPlans) {
-      const [existing, workspace] = await Promise.all([
-        db.from("annual_academic_plans").select("document").eq("workspace_id", v.workspaceId)
-          .eq("academic_year_id", v.yearId).maybeSingle(),
-        db.from("workspaces").select("school_type").eq("id", v.workspaceId).single(),
-      ]);
+      const existing = await db.from("annual_academic_plans").select("document").eq("workspace_id", v.workspaceId)
+        .eq("academic_year_id", v.yearId).maybeSingle();
       if (existing.error) throw existing.error;
-      if (workspace.error) throw workspace.error;
       const plan = existing.data
         ? annualSchema.parse(existing.data.document)
-        : defaultAnnual(gradesForSchoolType(schoolTypeSchema.parse(workspace.data.school_type)));
+        : defaultAnnual();
       v.document = { ...plan, business: v.document.business,
         departments: v.document.departments, workSettings: v.document.workSettings };
     }

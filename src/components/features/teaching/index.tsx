@@ -24,6 +24,7 @@ import { Empty, InlineNotice, Modal, useMutation } from "@/components/common";
 import {
   saveTeachingPlan,
   archiveTeachingCourse,
+  setTeachingPlanEditors,
 } from "@/app/teaching-actions";
 import {
   teachingDocumentSchema,
@@ -40,6 +41,7 @@ import { AssessmentEditor } from "./assessment-editor";
 import { ReferencePanel } from "./reference-panel";
 import { TeachingReview } from "./review";
 import { TeachingPrint } from "./teaching-print";
+import { SchoolTeachingReview } from "./school-review";
 type Tab = "overview" | "lesson" | "assessment" | "review" | "document";
 const tabs: [Tab, string][] = [
   ["overview", "수업 현황"],
@@ -95,7 +97,8 @@ export function TeachingModule({
       data.classes.some(
         (l) => l.course_id === p.id && l.class_id === f.classId,
       )) &&
-    (f.ownership === "all" || p.owner_id === c.userId);
+    (f.ownership === "all" || p.owner_id === c.userId ||
+      data.editors.some((editor) => editor.course_id === p.id && editor.user_id === c.userId));
   const courses = data.courses.filter((p) => matches(p, filters)),
     course = data.courses.find((p) => p.id === (selected ?? courses[0]?.id));
   const select = (id: string, nextTab: Tab = "lesson") => {
@@ -259,6 +262,7 @@ export function TeachingModule({
         </nav>
         {tab === "overview" ? (
           <section className="teaching-overview">
+            <SchoolTeachingReview context={c} openPlan={(id) => select(id, "review")} />
             <div className="section-title">
               <div>
                 <h2>
@@ -316,7 +320,9 @@ export function TeachingModule({
                       <h3>{p.subject_name}</h3>
                       <p className="course-teacher">
                         {p.teacher_name} ·{" "}
-                        {p.owner_id === c.userId ? "내 계획" : "공유 계획"}
+                        {p.owner_id === c.userId ? "내 계획" :
+                          data.editors.some((editor) => editor.course_id === p.id && editor.user_id === c.userId)
+                            ? "공동작성" : "공유 계획"}
                       </p>
                       <p className="course-class-list">{classNames(p.id)}</p>
                       <div className="course-hours">
@@ -447,6 +453,7 @@ function CourseEditor({
     [autoActive, setAutoActive] = useState(false),
     [autoError, setAutoError] = useState(""),
     [editing, setEditing] = useState(false),
+    [collaborating, setCollaborating] = useState(false),
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
     [evaluation, setEvaluation] = useState(course.semester || 1),
@@ -456,12 +463,13 @@ function CourseEditor({
   const revision = useRef(0);
   const autoInFlight = useRef(false);
   const attempted = useRef(-1);
-  const m = useMutation(),
-    editable =
-      c.role !== "viewer" &&
-      (course.owner_id === c.userId ||
-        (course.visibility === "workspace" && c.role === "admin")) &&
-      !course.archived;
+  const m = useMutation();
+  const managesCourse = c.role !== "viewer" && (course.owner_id === c.userId ||
+    (course.visibility === "workspace" && c.role === "admin"));
+  const assigned = c.role === "editor" && course.visibility === "workspace" && c.teaching!.editors.some(
+    (editor) => editor.course_id === course.id && editor.user_id === c.userId,
+  );
+  const editable = (managesCourse || assigned) && !course.archived;
   // Revalidation must never replace unsaved teacher input. Keep the loaded
   // version for CAS until a successful save or an explicit navigation.
   if (serverCourse.version > course.version && !dirty && !m.pending && !autoActive) {
@@ -625,13 +633,17 @@ function CourseEditor({
           <div className="teaching-actions">
             {editable && (
               <>
-                <Button
+                {managesCourse && <Button
                   variant="outline"
                   disabled={dirty || busy}
                   onClick={() => setEditing(true)}
                 >
                   <Settings2 /> 수업 설정
-                </Button>
+                </Button>}
+                {managesCourse && course.visibility === "workspace" && <Button variant="outline"
+                  disabled={dirty || busy} onClick={() => setCollaborating(true)}>
+                  <Users /> 공동작성 담당자
+                </Button>}
                 <Button disabled={!dirty || busy || autoActive} onClick={save}>
                   <Save />
                   {m.pending ? "저장 중…" : "계획 저장"}
@@ -656,7 +668,7 @@ function CourseEditor({
         <ReferencePanel
           context={c}
           course={course}
-          editable={editable && !busy}
+          editable={managesCourse && !course.archived && !busy}
           dirty={dirty}
           onSaved={saved}
           onBusyChange={setReferencePending}
@@ -805,7 +817,7 @@ function CourseEditor({
             <TeachingReview
               course={course}
               issues={issues}
-              editable={editable && !busy}
+              editable={managesCourse && !course.archived && !busy}
               dirty={dirty}
               onRestored={saved}
               onBusyChange={setRestorePending}
@@ -852,9 +864,7 @@ function CourseEditor({
             확정은 내부 관리 상태입니다. 학생별 채점·시간표 자동 배정·공식 결재
             연동은 제공하지 않습니다.
           </p>
-          {c.role !== "viewer" &&
-            (course.owner_id === c.userId ||
-              (course.visibility === "workspace" && c.role === "admin")) && (
+          {managesCourse && (
               <Button
                 variant="ghost"
                 disabled={dirty || busy}
@@ -898,6 +908,9 @@ function CourseEditor({
             }}
           />
         </Modal>
+        <Modal open={collaborating} onOpenChange={setCollaborating} title="공동작성 담당자">
+          <CourseEditors context={c} course={course} onDone={() => setCollaborating(false)} />
+        </Modal>
       </div>
       <TeachingPrint
         context={c}
@@ -908,4 +921,33 @@ function CourseEditor({
       />
     </>
   );
+}
+
+function CourseEditors({ context, course, onDone }: {
+  context: Context;
+  course: Row<"teaching_courses">;
+  onDone: () => void;
+}) {
+  const mutation = useMutation();
+  const assigned = new Set(context.teaching!.editors.filter((editor) => editor.course_id === course.id)
+    .map((editor) => editor.user_id));
+  const candidates = context.members.filter((item) => item.role === "editor" && item.user_id !== course.owner_id);
+  return <form className="form-stack" onSubmit={(event) => {
+    event.preventDefault();
+    const users = new FormData(event.currentTarget).getAll("editors");
+    mutation.execute(() => setTeachingPlanEditors(course.id, course.version, users), onDone);
+  }}>
+    <p>이 계획의 교수학습·평가 내용을 함께 작성할 교사를 선택하세요.</p>
+    {candidates.length ? <fieldset className="course-classes" disabled={mutation.pending}>
+      <legend>작업공간 편집자</legend>
+      {candidates.map((member) => <label key={member.user_id}>
+        <input type="checkbox" name="editors" value={member.user_id} defaultChecked={assigned.has(member.user_id)} />
+        {member.display_name}
+      </label>)}
+    </fieldset> : <p className="muted">현재 지정할 수 있는 작업공간 편집자가 없습니다.</p>}
+    <InlineNotice mutation={mutation} />
+    <Button type="submit" disabled={mutation.pending || (!candidates.length && !assigned.size)}>
+      {mutation.pending ? "저장 중…" : "담당자 저장"}
+    </Button>
+  </form>;
 }

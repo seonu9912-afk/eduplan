@@ -43,7 +43,7 @@ export function ReferencePanel({
     calendarChanged =
       referenceKey(current, "calendar") !== referenceKey(saved, "calendar");
   const parsedPlan = annualSchema.safeParse(c.annual?.document);
-  const plan = parsedPlan.success ? parsedPlan.data : defaultAnnual(c.grades);
+  const plan = parsedPlan.success ? parsedPlan.data : defaultAnnual();
   const days = academicDays(c.year!.year, plan, c.semesters).filter(
       (d) => !course.semester || d.semester === course.semester,
     );

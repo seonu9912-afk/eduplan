@@ -19,6 +19,7 @@ export const areas = [
   "없음",
 ] as const;
 const period = z.number().int().min(1).max(12);
+const gradeKey = z.string().regex(/^[1-6]$/);
 const range = z
   .object({ start: period, end: period })
   .refine((v) => v.start <= v.end, "종료 교시를 확인해 주세요.");
@@ -33,10 +34,12 @@ const day = z
     name: z.string().max(100),
     enabled: z.boolean(),
     weekday: z.number().int().min(1).max(5),
-    start: period,
-    end: period,
+    start: period.optional(),
+    end: period.optional(),
+    gradePeriods: z.record(gradeKey, range).optional(),
   })
-  .refine((v) => v.start <= v.end);
+  .refine((v) => (v.start == null && v.end == null) ||
+    (v.start != null && v.end != null && v.start <= v.end));
 export const annualSchema = z
   .object({
     vacations: z
@@ -83,12 +86,14 @@ export const annualSchema = z
           .object({
             id: z.string().max(80),
             eventId: z.string().max(80).optional(),
+            classId: z.uuid().optional(),
             date: isoDate,
             title: z.string().min(1).max(100),
             department: z.string().max(60),
-            areas: z.record(z.string().regex(/^[1-6]$/), z.enum(areas)),
+            areas: z.record(gradeKey, z.enum(areas)),
           })
-          .and(range),
+          .and(range)
+          .refine((v) => !v.classId || (!!v.eventId && Object.keys(v.areas).length === 1)),
       )
       .max(1500),
     departments: z.array(z.string().min(1).max(60)).min(1).max(20),
@@ -125,6 +130,7 @@ export const annualSchema = z
       });
   });
 export type AnnualPlan = z.infer<typeof annualSchema>;
+export type AcademicClass = { id: string; grade: number; class_number: number };
 export type AcademicDay = {
   date: string;
   type: keyof typeof dayTypes;
@@ -134,8 +140,9 @@ export type AcademicDay = {
   semester: number;
   start?: number;
   end?: number;
+  gradePeriods?: AnnualPlan["days"][string]["gradePeriods"];
 };
-export function defaultAnnual(grades: number[]): AnnualPlan {
+export function defaultAnnual(grades: number[] = []): AnnualPlan {
   return {
     vacations: [],
     days: {},
@@ -219,38 +226,53 @@ export function academicDays(
   }
   return result;
 }
+
+export function operatingPeriodRange(day: AcademicDay, plan: AnnualPlan, grade: number) {
+  return day.gradePeriods?.[grade] ??
+    (day.start != null && day.end != null ? { start: day.start, end: day.end } :
+      plan.timetable.find((row) => row.grade === grade && row.weekday === day.weekday));
+}
+
+export function eventPeriodAllocations(
+  rows: AnnualPlan["allocations"], grade: number, period: number, classId?: string,
+) {
+  const applicable = rows.filter((row) => row.start <= period && period <= row.end &&
+    row.areas[grade] && row.areas[grade] !== "없음");
+  const classEvents = new Set(applicable.filter((row) => row.classId === classId && row.classId)
+    .map((row) => row.eventId));
+  return applicable.filter((row) => row.classId ? row.classId === classId : !classEvents.has(row.eventId));
+}
+
 export function calculateAcademic(
   year: number,
   plan: AnnualPlan,
   grades: number[],
   terms: { number: number; start_date: string; end_date: string }[],
+  classes: AcademicClass[] = [],
 ) {
   const days = academicDays(year, plan, terms);
   const warnings: string[] = [];
-  const details = days.flatMap((day) =>
-    grades.map((grade) => {
-      const table = plan.timetable.find(
-        (t) => t.grade === grade && t.weekday === day.weekday,
-      );
-      const start = day.start ?? table?.start ?? 1,
-        end = day.end ?? table?.end ?? 0;
+  const byDate = new Map<string, AnnualPlan["allocations"]>();
+  for (const row of plan.allocations) {
+    const rows = byDate.get(row.date) ?? [];
+    rows.push(row);
+    byDate.set(row.date, rows);
+  }
+  function calculateDay(day: AcademicDay, grade: number, schoolClass?: AcademicClass) {
+      const periods = operatingPeriodRange(day, plan, grade);
+      const start = periods?.start ?? 1, end = periods?.end ?? 0;
       const active = isTeachingDay(day);
+      const scope = schoolClass ? `${grade}학년 ${schoolClass.class_number}반` : `${grade}학년`;
       if (active && end < start)
         warnings.push(
           `${day.date} ${grade}학년: 수업일의 기본 교시를 설정해 주세요.`,
         );
       const counts: Record<string, number> = {};
       let conflicts = 0;
+      const allocations = byDate.get(day.date) ?? [];
       if (active)
         for (let p = start; p <= end; p++) {
-          const events = plan.allocations.filter(
-            (a) =>
-              a.date === day.date &&
-              a.start <= p &&
-              a.end >= p &&
-              a.areas[String(grade)] &&
-              a.areas[String(grade)] !== "없음",
-          );
+          const events = eventPeriodAllocations(allocations, grade, p, schoolClass?.id);
           const rules = plan.recurring.filter(
             (r) =>
               r.grade === grade &&
@@ -268,21 +290,22 @@ export function calculateAcademic(
               );
           if (choices.length > 1) {
             conflicts++;
-            warnings.push(`${day.date} ${grade}학년 ${p}교시 중복 배정`);
+            warnings.push(`${day.date} ${scope} ${p}교시 중복 배정${events.length ?
+              ` (${events.map((event) => event.title).join(", ")})` : ""}`);
             continue;
           }
           const area = choices[0] ?? "교과";
           counts[area] = (counts[area] ?? 0) + 1;
         }
-      for (const a of plan.allocations.filter(
+      for (const a of allocations.filter(
         (a) =>
-          a.date === day.date &&
+          (!a.classId || a.classId === schoolClass?.id) &&
           a.areas[String(grade)] &&
           a.areas[String(grade)] !== "없음",
       ))
         if (!active || a.start < start || a.end > end)
           warnings.push(
-            `${day.date} ${grade}학년 ${a.title}: 수업일·교시 범위 확인`,
+            `${day.date} ${scope} ${a.title}: 수업일·교시 범위 확인`,
           );
       for (const r of plan.recurring.filter(
         (r) =>
@@ -304,29 +327,39 @@ export function calculateAcademic(
         counts,
         hours: active && end >= start ? end - start + 1 : 0,
         conflicts,
+        unconfigured: active && end < start,
       };
-    }),
-  );
-  const totals = grades.flatMap((grade) =>
-    [1, 2].map((semester) => {
-      const rows = details.filter(
-        (d) => d.grade === grade && d.semester === semester,
-      );
+  }
+  const details = days.flatMap((day) => grades.map((grade) => calculateDay(day, grade)));
+  function summarize(grade: number, details: ReturnType<typeof calculateDay>[]) {
+    return [1, 2].map((semester) => {
+      const rows = details.filter((d) => d.semester === semester);
       return {
         grade,
         semester,
         days: rows.filter((d) => d.active).length,
         hours: rows.reduce((n, d) => n + d.hours, 0),
         conflicts: rows.reduce((n, d) => n + d.conflicts, 0),
+        unconfigured: rows.filter((d) => d.unconfigured).length,
         counts: Object.fromEntries(
           areas
             .filter((a) => a !== "없음")
             .map((a) => [a, rows.reduce((n, d) => n + (d.counts[a] ?? 0), 0)]),
         ),
       };
-    }),
+    });
+  }
+  const totals = grades.flatMap((grade) => summarize(grade, details.filter((d) => d.grade === grade)));
+  const classTotals = classes.flatMap((schoolClass) =>
+    summarize(schoolClass.grade, days.map((day) => calculateDay(day, schoolClass.grade, schoolClass)))
+      .map((total) => ({ ...total, classId: schoolClass.id, classNumber: schoolClass.class_number })),
   );
-  return { days, details, totals, warnings: [...new Set(warnings)] };
+  const knownClasses = new Set(classes.map((schoolClass) => schoolClass.id));
+  if (classes.length) for (const row of plan.allocations) {
+    if (row.classId && !knownClasses.has(row.classId))
+      warnings.push(`${row.date} ${row.title}: 보관된 학급 예외 확인`);
+  }
+  return { days, details, totals, classTotals, warnings: [...new Set(warnings)] };
 }
 
 // School teaching days are counted once per date, independently of period setup.

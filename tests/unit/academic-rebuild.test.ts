@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Workbook } from "exceljs";
-import { academicDays, defaultAnnual, effectiveAcademicTerms } from "../../src/lib/academic";
+import { academicDays, annualSchema, calculateAcademic, defaultAnnual, effectiveAcademicTerms } from "../../src/lib/academic";
 import { applyEventPeriods, curriculumTargets, datePeriod } from "../../src/lib/academic-rebuild";
+import { mergeAnnualPlans } from "../../src/lib/academic-revisions";
 import { buildAcademicWorkbook } from "../../src/lib/academic-workbook";
 import { referenceKey } from "../../src/lib/teaching";
 import { linkedTeachingCalendar } from "../../src/lib/teaching-calendar-context";
@@ -49,6 +50,50 @@ describe("integrated academic calendar", () => {
       expect(slot.flatMap((row) => row.areas["2"] ?? [])).toEqual([p % 2 ? "봉사" : "진로"]);
     }
     expect(new Set(next.map((row) => row.id)).size).toBe(next.length);
+  });
+  it("uses the swapped weekday until a grade exception overrides its periods", () => {
+    const context = recoveryPreviewContext();
+    const plan = defaultAnnual([1, 2]);
+    plan.days["2027-03-04"] = { type: "swap", name: "월요일 수업", enabled: true, weekday: 1,
+      gradePeriods: { 2: { start: 1, end: 4 } } };
+    plan.timetable.find((row) => row.grade === 1 && row.weekday === 4)!.end = 5;
+    expect(annualSchema.safeParse(plan).success).toBe(true);
+    const report = calculateAcademic(2027, plan, [1, 2], context.semesters);
+    expect(report.details.filter((row) => row.date === "2027-03-04").map((row) => row.hours))
+      .toEqual([6, 4]);
+    expect(defaultAnnual().timetable).toEqual([]);
+  });
+  it("replaces only the specified class period and restores its grade rule when cleared", () => {
+    const context = recoveryPreviewContext();
+    const plan = defaultAnnual([2]);
+    const id = "eacd9ee8-7478-4e98-b9c3-20cbe3233756";
+    const event = { eventId: context.events[0].id, date: "2027-03-04", title: "행사", department: "" };
+    let counter = 0;
+    const makeId = () => `allocation-${++counter}`;
+    const common = applyEventPeriods([], event, 2, [1, 2], "진로", makeId);
+    plan.allocations = applyEventPeriods(common, event, 2, [1], "교과", makeId, id);
+    const classes = [{ id, grade: 2, class_number: 1 },
+      { id: "55635caa-4e62-43d4-bbb8-f5e8205ab4d9", grade: 2, class_number: 2 }];
+    const report = calculateAcademic(2027, plan, [2], context.semesters, classes);
+    const firstTerm = report.classTotals.filter((row) => row.semester === 1);
+    expect(firstTerm.map((row) => row.counts["진로"])).toEqual([1, 2]);
+    expect(firstTerm.map((row) => row.conflicts)).toEqual([0, 0]);
+    expect(applyEventPeriods(plan.allocations, event, 2, [1], "없음", makeId, id)).toEqual(common);
+  });
+  it("merges independent dates and work entries and requires a choice for conflicting edit or removal", () => {
+    const base = defaultAnnual();
+    const rule = { type: "discretionary" as const, name: "휴업", enabled: true, weekday: 1 };
+    base.days["2027-05-03"] = rule;
+    const draft = { ...base, days: { "2027-05-10": rule } };
+    const stored = { ...base, days: { "2027-05-03": { ...rule, name: "행사 휴업" }, "2027-06-07": rule },
+      business: [{ id: "business", date: "2027-05-10", department: "교무실", kind: "업무" as const, text: "회의" }] };
+    const result = mergeAnnualPlans(base, draft, stored);
+    expect(result.conflicts).toEqual([{ key: "days:2027-05-03", label: "2027-05-03", draft: undefined,
+      stored: { ...rule, name: "행사 휴업" } }]);
+    expect(Object.keys(result.plan.days)).toEqual(["2027-05-03", "2027-06-07", "2027-05-10"]);
+    const resolved = mergeAnnualPlans(base, draft, stored, { "days:2027-05-03": "draft" }).plan;
+    expect(resolved.days["2027-05-03"]).toBeUndefined();
+    expect(resolved.business).toEqual(stored.business);
   });
   it("uses the appropriate cohort and separates creative activity targets", () => {
     const c = recoveryPreviewContext();

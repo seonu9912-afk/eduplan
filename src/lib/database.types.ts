@@ -145,6 +145,7 @@ export type Database = {
           calendar_confirmation?: Json;
           history: Json;
           updated_at: string;
+          updated_by?: string | null;
           version: number;
           workspace_id: string;
         };
@@ -154,6 +155,7 @@ export type Database = {
           calendar_confirmation?: Json;
           history?: Json;
           updated_at?: string;
+          updated_by?: string | null;
           version?: number;
           workspace_id: string;
         };
@@ -163,6 +165,7 @@ export type Database = {
           calendar_confirmation?: Json;
           history?: Json;
           updated_at?: string;
+          updated_by?: string | null;
           version?: number;
           workspace_id?: string;
         };
@@ -620,6 +623,27 @@ export type Database = {
           },
         ];
       };
+      teaching_course_editors: {
+        Row: { course_id: string; workspace_id: string; user_id: string };
+        Insert: { course_id: string; workspace_id: string; user_id: string };
+        Update: { course_id?: string; workspace_id?: string; user_id?: string };
+        Relationships: [
+          {
+            foreignKeyName: "teaching_course_editors_course_id_workspace_id_fkey";
+            columns: ["course_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "teaching_courses";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "teaching_course_editors_workspace_id_user_id_fkey";
+            columns: ["workspace_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "workspace_members";
+            referencedColumns: ["workspace_id", "user_id"];
+          },
+        ];
+      };
       teaching_course_classes: {
         Row: {
           academic_year_id: string;
@@ -1027,6 +1051,10 @@ export type Database = {
           target_course: string;
         };
         Returns: string;
+      };
+      set_teaching_plan_editors: {
+        Args: { target_course: string; expected_version: number; editors: string[] };
+        Returns: number;
       };
       save_teaching_plan: {
         Args: {

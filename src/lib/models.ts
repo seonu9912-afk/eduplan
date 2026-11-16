@@ -11,6 +11,7 @@ export type Member = {
 };
 export type TeachingData = {
   courses: Row<"teaching_courses">[];
+  editors: Row<"teaching_course_editors">[];
   classes: Row<"teaching_course_classes">[];
   plans: Row<"teaching_plans">[];
   standards: Row<"achievement_standards">[];

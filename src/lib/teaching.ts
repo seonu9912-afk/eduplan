@@ -144,6 +144,7 @@ export const courseSchema = z.object({
   class_ids: z.array(uuid).max(30),
   visibility: z.enum(["private", "workspace"]),
   manual_hours: z.number().min(0).max(10000).nullable(),
+  copy_scope: z.enum(["all", "lesson", "assessment"]).optional(),
 });
 export const standardSchema = z.object({
   workspace_id: uuid,

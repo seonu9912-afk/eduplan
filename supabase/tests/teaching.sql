@@ -141,6 +141,38 @@ update teach_doc set value=jsonb_set(value,'{units,0,assessment_links}','[]');
 select pg_temp.ok(public.save_teaching_plan((select v from teach_test where k='course'),14,(select value from teach_doc),false)=15,'unlink lesson while retaining task');
 select pg_temp.ok((select document#>>'{evaluations,0,status}'='작성 중' from public.teaching_plans where course_id=(select v from teach_test where k='course')),'lesson relation change reopens confirmed assessment');
 
+insert into teach_test values('copy_lesson',public.save_teaching_course((select v from teach_test where k='school'),
+  null,0,(select value || '{"copy_scope":"lesson"}'::jsonb from teach_settings),(select v from teach_test where k='course')));
+insert into teach_test values('copy_assessment',public.save_teaching_course((select v from teach_test where k='school'),
+  null,0,(select value || '{"copy_scope":"assessment"}'::jsonb from teach_settings),(select v from teach_test where k='course')));
+select pg_temp.ok((select jsonb_array_length(document->'units')=1 and document#>'{units,0,assessment_links}' is null
+  and jsonb_array_length(document#>'{evaluations,0,items}')=0 from public.teaching_plans
+  where course_id=(select v from teach_test where k='copy_lesson')),'lesson-only copy removes dangling assessment references');
+select pg_temp.ok((select jsonb_array_length(document->'units')=0 and jsonb_array_length(document#>'{evaluations,0,items}')=1
+  from public.teaching_plans where course_id=(select v from teach_test where k='copy_assessment')),'assessment-only copy retains its task graph');
+
+select set_config('request.jwt.claim.sub',(select v::text from teach_test where k='admin'),true);
+select pg_temp.denied(format('select public.set_teaching_plan_editors(%L,15,array[%L]::uuid[])',
+  (select v from teach_test where k='course'),(select v from teach_test where k='viewer')));
+select pg_temp.ok(public.set_teaching_plan_editors((select v from teach_test where k='course'),15,
+  array[(select v from teach_test where k='colleague')])=16,'admin assigns an existing workspace editor');
+select set_config('request.jwt.claim.sub',(select v::text from teach_test where k='colleague'),true);
+select pg_temp.ok(public.save_teaching_plan((select v from teach_test where k='course'),16,
+  (select document from public.teaching_plans where course_id=(select v from teach_test where k='course')),false)=17,
+  'assigned colleague can save the shared plan');
+select pg_temp.denied(format('select public.set_teaching_plan_editors(%L,17,array[]::uuid[])',
+  (select v from teach_test where k='course')));
+select pg_temp.denied(format('select public.restore_teaching_plan(%L,17,16)',(select v from teach_test where k='course')));
+select pg_temp.denied(format('select public.save_teaching_plan(%L,16,%L,false)',(select v from teach_test where k='course'),
+  (select document from public.teaching_plans where course_id=(select v from teach_test where k='course'))));
+select set_config('request.jwt.claim.sub',(select v::text from teach_test where k='admin'),true);
+select pg_temp.ok(public.set_teaching_plan_editors((select v from teach_test where k='course'),17,array[]::uuid[])=18,
+  'admin revokes coauthorship');
+select set_config('request.jwt.claim.sub',(select v::text from teach_test where k='colleague'),true);
+select pg_temp.denied(format('select public.save_teaching_plan(%L,18,%L,false)',(select v from teach_test where k='course'),
+  (select document from public.teaching_plans where course_id=(select v from teach_test where k='course'))));
+select set_config('request.jwt.claim.sub',(select v::text from teach_test where k='admin'),true);
+
 -- Deferring the FK must not allow removal of an individually referenced class.
 reset role;
 do $$begin

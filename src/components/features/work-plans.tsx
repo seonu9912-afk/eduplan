@@ -35,7 +35,7 @@ export function WorkPlans({
     end = monthRange(`${(c.year?.year ?? 2026) + 1}-02`).end;
   const clamp = (d: string) => (d < start ? start : d > end ? end : d);
   const [plan, setPlan] = useState<AnnualPlan>(() =>
-    c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(c.grades),
+    c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(),
   );
   const [version, setVersion] = useState(c.annual?.version ?? 0),
     [date, setDate] = useState(clamp(today)),

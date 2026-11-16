@@ -92,6 +92,20 @@ export async function saveTeachingPlan(
     return data;
   });
 }
+export async function setTeachingPlanEditors(courseId: string, version: number, users: unknown) {
+  return run(async () => {
+    uuid.parse(courseId);
+    z.number().int().positive().parse(version);
+    const editors = z.array(uuid).max(50).parse(users);
+    const db = await dbClient();
+    const { data, error } = await db.rpc("set_teaching_plan_editors", {
+      target_course: courseId, expected_version: version, editors,
+    });
+    if (error) throw error;
+    refresh();
+    return data;
+  });
+}
 export async function registerStandard(input: unknown) {
   return run(async () => {
     const v = standardSchema.parse(input);

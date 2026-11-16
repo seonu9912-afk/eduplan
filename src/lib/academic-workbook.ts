@@ -1,10 +1,11 @@
-import { type AnnualPlan, calculateAcademic, dayTypes, isTeachingDay } from "./academic";
-import { academicEventInTerm, curriculumTargets } from "./academic-rebuild";
+import { type AcademicClass, type AnnualPlan, calculateAcademic, dayTypes, isTeachingDay } from "./academic";
+import { academicEventInTerm, curriculumTargets, hoursRange } from "./academic-rebuild";
 import type { PaperSize } from "exceljs";
 import type { Context, Row } from "./models";
 
 type ExportOptions = { paper: "A3" | "A4"; grade: number; semester: number };
 export type ExportData = Pick<Context, "grades" | "plans" | "hours" | "subjects" | "groups"> & {
+  classes?: AcademicClass[];
   semesters: Pick<Row<"semesters">, "number" | "start_date" | "end_date">[];
   events: Pick<Row<"events">, "id" | "title" | "start_date" | "end_date" |
     "target_grades" | "department" | "description" | "version">[];
@@ -14,7 +15,8 @@ export async function buildAcademicWorkbook(year: number, plan: AnnualPlan,
   data: ExportData, options: ExportOptions, label: string) {
   const { Workbook } = await import("exceljs");
   const book = new Workbook();
-  const report = calculateAcademic(year, plan, data.grades, data.semesters);
+  const report = calculateAcademic(year, plan, data.grades, data.semesters, data.classes);
+  const classNumbers = new Map(data.classes?.map((item) => [item.id, item.class_number]));
   const targets = curriculumTargets(year, data);
   const byDate = new Map(report.days.map((day) => [day.date, day]));
   const months = [...new Set(report.days.map((day) => day.date.slice(0, 7)))];
@@ -69,34 +71,54 @@ export async function buildAcademicWorkbook(year: number, plan: AnnualPlan,
     || a.title.localeCompare(b.title))) {
     const detail = event.allocations.flatMap((row) => Object.entries(row.areas)
       .filter(([grade, area]) => area !== "없음" && (!options.grade || Number(grade) === options.grade))
-      .map(([grade, area]) => `${row.date} ${row.start}~${row.end}교시 · ${grade}학년 ${area}`));
+      .map(([grade, area]) => {
+        const number = row.classId ? classNumbers.get(row.classId) : undefined;
+        const scope = row.classId ? number ? ` ${number}반` : " 보관된 학급" : "";
+        return `${row.date} ${row.start}~${row.end}교시 · ${grade}학년${scope} ${area}`;
+      }));
     const base = [event.start_date, event.end_date, event.title,
       event.target_grades.join(", ") || "전 학년", event.department];
-    if (!detail.length) events.addRow([...base, "", event.description]);
-    for (const line of detail) events.addRow([...base, line, event.description]);
+    events.addRow([...base, detail.join("\n"), event.description]).getCell(6).alignment = { wrapText: true };
   }
   events.autoFilter = "A2:G2";
   [16, 16, 32, 14, 20, 50, 38].forEach((width, i) => { events.getColumn(i + 1).width = width; });
 
-  hours.addRow(["학년", "구분", "수업일수", "운영 교시", "교과 확보", "교과 목표",
+  hours.addRow(["학년·학급", "구분", "수업일수", "운영 교시", "교과 확보", "교과 목표",
     "차이", "창체 확보", "창체 목표", "중복 교시"]);
   for (const grade of data.grades.filter((value) => !options.grade || options.grade === value)) {
     for (const semester of [1, 2, 0].filter((value) => !options.semester || !value || options.semester === value)) {
       const rows = report.totals.filter((row) => row.grade === grade && (!semester || semester === row.semester));
       const goals = targets.filter((goal) => goal.grade === grade && (!semester || semester === goal.semester));
-      const subject = rows.reduce((sum, row) => sum + (row.counts["교과"] ?? 0), 0);
       const creativeAreas = ["자율", "자율·자치", "동아리", "진로", "봉사"];
-      const creative = rows.reduce((sum, row) =>
-        sum + creativeAreas.reduce((total, area) => total + (row.counts[area] ?? 0), 0), 0);
-      const conflicts = rows.reduce((sum, row) => sum + row.conflicts, 0);
       const subjectGoal = goals.every((goal) => goal.subject !== null)
         ? goals.reduce((sum, goal) => sum + (goal.subject ?? 0), 0) : null;
       const creativeGoal = goals.every((goal) => goal.creative !== null)
         ? goals.reduce((sum, goal) => sum + (goal.creative ?? 0), 0) : null;
-      hours.addRow([grade, semester ? `${semester}학기` : "연간",
-        rows.reduce((sum, row) => sum + row.days, 0),
-        rows.reduce((sum, row) => sum + row.hours, 0), subject, subjectGoal ?? "미설정",
-        subjectGoal == null || conflicts ? "" : subject - subjectGoal, creative, creativeGoal ?? "미설정", conflicts]);
+      const classReports = (data.classes ?? []).filter((item) => item.grade === grade).map((item) => ({
+        label: `${grade}학년 ${item.class_number}반`,
+        rows: report.classTotals.filter((row) => row.classId === item.id && (!semester || semester === row.semester)),
+      }));
+      const summarize = (totals: typeof report.totals) => ({
+        subject: totals.reduce((sum, row) => sum + (row.counts["교과"] ?? 0), 0),
+        creative: totals.reduce((sum, row) => sum + creativeAreas.reduce(
+          (total, area) => total + (row.counts[area] ?? 0), 0), 0),
+        conflicts: totals.reduce((sum, row) => sum + row.conflicts, 0),
+        provisional: totals.some((row) => row.unconfigured || row.conflicts),
+      });
+      const addTotals = (label: string, summaries: ReturnType<typeof summarize>[]) => {
+        const provisional = summaries.some((value) => value.provisional);
+        const subject = hoursRange(summaries.map((value) => value.subject));
+        const difference = subjectGoal == null || provisional ? "" :
+          hoursRange(summaries.map((value) => value.subject - subjectGoal));
+        hours.addRow([label, semester ? `${semester}학기` : "연간",
+          rows.reduce((sum, row) => sum + row.days, 0), rows.reduce((sum, row) => sum + row.hours, 0),
+          provisional ? `${subject} (잠정)` : subject, subjectGoal ?? "미설정", difference,
+          hoursRange(summaries.map((value) => value.creative)), creativeGoal ?? "미설정",
+          hoursRange(summaries.map((value) => value.conflicts))]);
+      };
+      const summaries = classReports.map((item) => ({ label: item.label, totals: summarize(item.rows) }));
+      addTotals(`${grade}학년`, summaries.length ? summaries.map((item) => item.totals) : [summarize(rows)]);
+      for (const item of summaries) addTotals(item.label, [item.totals]);
     }
   }
   hours.columns.forEach((col) => { col.width = 17; });
