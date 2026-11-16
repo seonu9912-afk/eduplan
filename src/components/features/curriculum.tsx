@@ -9,7 +9,6 @@ import {
   Settings2,
   Table2,
   Info,
-  AlertCircle,
   Clipboard,
   Trash2,
 } from "lucide-react";
@@ -21,6 +20,7 @@ import {
   InlineNotice,
   Modal,
   PrintButton,
+  SaveStatus,
   SubmitButton,
   useMutation,
 } from "@/components/common";
@@ -203,7 +203,7 @@ export function Curriculum({
                   ) : undefined
                 }
               />
-            ) : !c.subjects.length ? (
+            ) : !c.subjects.length && !dirty ? (
               <Empty
                 icon={<Settings2 />}
                 title="편성할 과목을 등록해 주세요"
@@ -219,7 +219,7 @@ export function Curriculum({
               />
             ) : (
               <GridEditor
-                key={`${plan.id}-${plan.version}-${c.subjects.map((s) => s.id).join(",")}`}
+                key={plan.id}
                 context={c}
                 plan={plan}
                 onDirtyChange={setChanged}
@@ -286,7 +286,8 @@ function GridEditor({
   plan: Row<"curriculum_plans">;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const initial = () =>
+  const scope = JSON.stringify([c.grades, c.subjects.map((subject) => subject.id)]);
+  const createGrid = () =>
     Object.fromEntries(
       c.subjects.map((s) => [
         s.id,
@@ -303,10 +304,21 @@ function GridEditor({
         ),
       ]),
     );
-  const [grid, setGrid] = useState<Record<string, string[]>>(initial);
+  const [grid, setGrid] = useState(createGrid);
+  const [source, setSource] = useState(() => ({
+    version: plan.version, scope, grades: c.grades, subjects: c.subjects,
+  }));
   const [dirty, setDirty] = useState(false);
   const m = useMutation();
   const editable = c.role !== "viewer";
+  const scopeChanged = scope !== source.scope;
+  const sourceChanged = plan.version > source.version || scopeChanged;
+  const versionConflict = dirty && sourceChanged && !m.pending;
+  if (!dirty && !m.pending && sourceChanged) {
+    setGrid(createGrid());
+    setSource({ version: plan.version, scope, grades: c.grades, subjects: c.subjects });
+  }
+  const { grades, subjects } = source;
   const invalid = Object.values(grid)
     .flat()
     .filter((value) => {
@@ -324,8 +336,8 @@ function GridEditor({
       return 0;
     }
   };
-  const totals = Array.from({ length: c.grades.length * 2 }, (_, i) =>
-    c.subjects.reduce((sum, s) => sum + valueOf(grid[s.id][i]), 0),
+  const totals = Array.from({ length: grades.length * 2 }, (_, i) =>
+    subjects.reduce((sum, s) => sum + valueOf(grid[s.id][i]), 0),
   );
   function change(id: string, index: number, value: string) {
     setGrid((prev) => ({
@@ -348,8 +360,8 @@ function GridEditor({
         saveCurriculum({
           workspaceId: c.workspace.id,
           target_plan: plan.id,
-          expected_version: plan.version,
-          entries: c.subjects.flatMap((s) =>
+          expected_version: source.version,
+          entries: subjects.flatMap((s) =>
             grid[s.id].map((v, i) => ({
               subject_id: s.id,
               grade: Math.floor(i / 2) + 1,
@@ -358,7 +370,8 @@ function GridEditor({
             })),
           ),
         }),
-      () => {
+      (version) => {
+        setSource((previous) => ({ ...previous, version }));
         setDirty(false);
         onDirtyChange(false);
       },
@@ -368,20 +381,17 @@ function GridEditor({
   return (
     <>
       <div className="grid-tools no-print">
-        <span className={`save-status ${dirty ? "unsaved" : ""}`}>
-          {invalid ? <AlertCircle size={15} /> : <CheckCircle2 size={15} />}{" "}
-          {invalid
-            ? `${invalid}개 입력값 확인 필요`
-            : dirty
-              ? "저장하지 않은 변경사항"
-              : "모든 변경사항 저장됨"}
-        </span>
+        <SaveStatus state={m.pending ? "saving" : versionConflict ? "conflict" : invalid || m.notice.error ? "error" : dirty ? "dirty" : "saved"}>
+          {m.pending ? "저장 중…" : versionConflict ? "충돌 · 최신 저장본 확인 필요" :
+            invalid ? `${invalid}개 입력값 확인 필요` : m.notice.error ? "저장 실패 · 입력 내용 유지" :
+            dirty ? "저장하지 않은 변경사항" : "모든 변경사항 저장됨"}
+        </SaveStatus>
         <span className="grid-help">
           <Clipboard size={14} />
           엑셀에서 복사한 셀을 붙여넣을 수 있어요.
         </span>
         {editable ? (
-          <Button disabled={m.pending || !dirty} onClick={save}>
+          <Button disabled={m.pending || !dirty || versionConflict} onClick={save}>
             <Save />
             {m.pending ? "저장 중…" : "편성표 저장"}
           </Button>
@@ -390,9 +400,15 @@ function GridEditor({
         )}
       </div>
       <InlineNotice mutation={m} />
+      {versionConflict && <p className="notice notice-error" role="alert">
+        최신 편성표가 변경되었습니다. 현재 입력은 표에 남아 있습니다. 필요한 시수를 복사한 뒤 최신 편성표를 열어 주세요.
+      </p>}
+      {dirty && m.notice.error && !versionConflict && <Button variant="outline" onClick={m.refresh}>
+        최신 저장본 확인
+      </Button>}
       <div className="table-scroll curriculum-grid">
         <table
-          className={c.grades.length === 6 ? "six-grade-table" : undefined}
+          className={grades.length === 6 ? "six-grade-table" : undefined}
         >
           <caption className="sr-only">
             {plan.cohort_year}학년도 입학생의 학년·학기별 교과{" "}
@@ -406,23 +422,23 @@ function GridEditor({
               <th rowSpan={2} className="subject-column">
                 과목
               </th>
-              {c.grades.map((g) => (
+              {grades.map((g) => (
                 <th key={g} colSpan={2} className="grade-heading">
                   {g}학년 <small>{plan.cohort_year + g - 1}학년도</small>
                 </th>
               ))}
               <th rowSpan={2} className="total-column">
-                {c.grades.length}개년 합계
+                {grades.length}개년 합계
               </th>
             </tr>
             <tr>
-              {c.grades.flatMap((g) =>
+              {grades.flatMap((g) =>
                 [1, 2].map((s) => <th key={`${g}-${s}`}>{s}학기</th>),
               )}
             </tr>
           </thead>
           <tbody>
-            {c.subjects.map((subject, row) => (
+            {subjects.map((subject, row) => (
               <tr key={subject.id}>
                 <td className="group-column">
                   {c.groups.find((g) => g.id === subject.group_id)?.name}
@@ -479,8 +495,8 @@ function GridEditor({
                           try {
                             const pasted = parseGridPaste(
                               text,
-                              c.subjects.length - row,
-                              c.grades.length * 2 - col,
+                              subjects.length - row,
+                              grades.length * 2 - col,
                             );
                             setGrid((prev) => {
                               const next = Object.fromEntries(
@@ -491,7 +507,7 @@ function GridEditor({
                               );
                               pasted.forEach((cells, r) =>
                                 cells.forEach((v, index) => {
-                                  next[c.subjects[row + r].id][col + index] =
+                                  next[subjects[row + r].id][col + index] =
                                     String(v);
                                 }),
                               );
@@ -533,7 +549,7 @@ function GridEditor({
             </tr>
             <tr>
               <th colSpan={2}>학년별 합계</th>
-              {c.grades
+              {grades
                 .map((g) => (g - 1) * 2)
                 .map((i) => (
                   <td colSpan={2} key={i}>
@@ -554,8 +570,8 @@ function GridEditor({
           {invalid ? `${invalid}개 셀 확인 필요` : "정수·범위 검사 정상"}
         </strong>
         <span>
-          교과군 {new Set(c.subjects.map((s) => s.group_id)).size}개 · 과목{" "}
-          {c.subjects.length}개 · 법정 기준 판정 제외
+          교과군 {new Set(subjects.map((s) => s.group_id)).size}개 · 과목{" "}
+          {subjects.length}개 · 법정 기준 판정 제외
         </span>
       </div>
     </>

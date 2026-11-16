@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, type ReactNode } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -182,8 +182,19 @@ export function Empty({
     </div>
   );
 }
+export function SaveStatus({
+  state,
+  children,
+}: {
+  state: "draft" | "dirty" | "saving" | "saved" | "error" | "conflict";
+  children: ReactNode;
+}) {
+  return <span role="status" className="save-status" data-state={state}>{children}</span>;
+}
+
 export function useMutation() {
   const [pending, startTransition] = useTransition();
+  const inFlight = useRef(false);
   const [notice, setNotice] = useState({ message: "", error: false });
   const router = useRouter();
   function execute<T>(
@@ -191,7 +202,8 @@ export function useMutation() {
     onSuccess?: (data: T) => void,
     message = "저장되었습니다.",
   ) {
-    if (pending) return;
+    if (pending || inFlight.current) return;
+    inFlight.current = true;
     setNotice({ message: "", error: false });
     startTransition(async () => {
       try {
@@ -209,10 +221,12 @@ export function useMutation() {
             "서버에 연결하지 못했습니다. 입력 내용은 유지됩니다. 다시 시도해 주세요.",
           error: true,
         });
+      } finally {
+        inFlight.current = false;
       }
     });
   }
-  return { pending, execute, notice, setNotice };
+  return { pending, isInFlight: () => inFlight.current, refresh: () => router.refresh(), execute, notice, setNotice };
 }
 export function InlineNotice({
   mutation,

@@ -489,23 +489,38 @@ button[data-slot="button"][data-size="icon"] {
 }
 .table-scroll {
   overflow-x: auto;
+  min-width: 0;
   max-width: 100%;
+  overscroll-behavior-x: contain;
 }
 .page-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  margin: 20px 0 28px;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  margin: 20px 0 24px;
+}
+.page-heading > :first-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .page-heading p {
-  color: #8190a5;
+  color: #526580;
   font-size: 13px;
   margin-top: 5px;
 }
 .heading-actions {
   display: flex;
-  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: 8px;
+}
+.page-heading > [data-slot="button"],
+.heading-actions > [data-slot="button"] {
+  max-width: 100%;
+  min-height: 40px;
 }
 .count-chip {
   background: #f1f5fc;
@@ -1438,30 +1453,23 @@ button[data-slot="button"][data-size="icon"] {
   align-items: center;
 }
 .cohort-picker label {
-  font-size: 11px;
-  color: #8c9db4;
-}
-.cohort-picker select {
   font-size: 12px;
-  padding: 8px 12px;
+  font-weight: 600;
+  color: #526580;
+}
+.cohort-picker select,
+.teaching-filters select {
+  min-height: 40px;
+  font-size: 13px;
 }
 .grid-tools {
   padding: 12px 26px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px 14px;
+  flex-wrap: wrap;
   border-top: 1px solid #edf1f7;
   background: #fcfdff;
-}
-.save-status {
-  font-size: 11px;
-  color: #639e87;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.save-status.unsaved {
-  color: #bd934d;
 }
 .grid-help {
   font-size: 10px;
@@ -2305,14 +2313,6 @@ button[data-slot="button"][data-size="icon"] {
   .page-heading p {
     font-size: 12px;
   }
-  .page-heading > .heading-actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-  .page-heading > [data-slot="button"] {
-    font-size: 11px;
-    padding: 0 10px;
-  }
   .dashboard-hero {
     padding: 25px;
     gap: 20px;
@@ -2550,12 +2550,8 @@ button[data-slot="button"][data-size="icon"] {
   .page-heading p {
     font-size: 11px;
   }
-  .heading-actions {
-    align-self: flex-end;
-  }
-  .heading-actions [data-slot="button"] {
-    height: 34px;
-    font-size: 11px;
+  .page-heading > .heading-actions {
+    align-self: flex-start;
   }
   .dashboard-hero {
     padding: 24px;
@@ -2702,12 +2698,8 @@ button[data-slot="button"][data-size="icon"] {
   .grid-tools {
     padding: 12px 16px;
   }
-  .save-status {
-    font-size: 10px;
-  }
   .grid-tools [data-slot="button"] {
-    font-size: 10px;
-    padding: 0 10px;
+    min-height: 40px;
   }
   .grid-summary {
     padding: 16px;
@@ -3053,10 +3045,29 @@ button[data-slot="button"][data-size="icon"] {
   color: #fff;
 }
 .annual-status {
-  color: #637fa5;
-  font-size: 12px;
   margin: 12px 0;
 }
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #526580;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.save-status::before {
+  content: "";
+  flex: 0 0 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.save-status[data-state="saving"] { color: #245bc2; }
+.save-status[data-state="saved"] { color: #176453; }
+.save-status[data-state="dirty"] { color: #895404; }
+.save-status[data-state="error"],
+.save-status[data-state="conflict"] { color: #a42b29; }
 .annual-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -4276,7 +4287,7 @@ button[data-slot="button"][data-size="icon"] {
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #5d718f;
+  color: #526580;
 }
 .teaching-filters input,
 .teaching-filters select {
@@ -4504,14 +4515,12 @@ button[data-slot="button"][data-size="icon"] {
 }
 .plan-savebar > div:first-child {
   display: grid;
+  min-width: 0;
+  overflow-wrap: anywhere;
   gap: 5px;
 }
 .plan-savebar strong {
   font-size: 15px;
-}
-.plan-savebar span {
-  font-size: 12px;
-  color: #386b9e;
 }
 .plan-savebar small {
   font-size: 10px;
@@ -5257,8 +5266,9 @@ button[data-slot="button"][data-size="icon"] {
   top: 1rem;
   z-index: 5;
   box-shadow: 0 8px 30px #152e5f1a;
-  max-height: min(70vh, 33rem);
+  max-height: min(64dvh, 33rem);
   overflow: auto;
+  scroll-padding-block: .75rem;
 }
 .academic-date-heading {
   display: flex;
@@ -5267,6 +5277,7 @@ button[data-slot="button"][data-size="icon"] {
   gap: .75rem;
   margin-bottom: .75rem;
 }
+.academic-date-heading h3 { overflow-wrap: anywhere; }
 .academic-period-conflict { display: block; margin: .35rem 0; }
 .annual-conflict { margin: 1rem 0; }
 .annual-conflict pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 10rem; overflow: auto; }

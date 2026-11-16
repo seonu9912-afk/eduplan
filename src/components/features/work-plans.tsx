@@ -1,14 +1,16 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   PrintButton,
+  SaveStatus,
   InlineNotice,
   Empty,
   Modal,
   useMutation,
 } from "@/components/common";
+import { mergeAnnualPlans } from "@/lib/academic-revisions";
 import { annualSchema, defaultAnnual, type AnnualPlan } from "@/lib/academic";
 import {
   addDays,
@@ -37,6 +39,7 @@ export function WorkPlans({
   const [plan, setPlan] = useState<AnnualPlan>(() =>
     c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(),
   );
+  const [savedPlan, setSavedPlan] = useState(plan);
   const [version, setVersion] = useState(c.annual?.version ?? 0),
     [date, setDate] = useState(clamp(today)),
     [view, setView] = useState<"week" | "month">("week"),
@@ -45,6 +48,19 @@ export function WorkPlans({
   const [editing, setEditing] = useState<Partial<Business> | null>(null),
     [error, setError] = useState("");
   const m = useMutation();
+  const revision = useRef(0);
+  const latestVersion = c.annual?.version ?? 0;
+  const latestPlan = useMemo(() => c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(), [c.annual]);
+  const needsSync = latestVersion > version;
+  const reconciled = useMemo(() => needsSync && dirty
+    ? mergeAnnualPlans(savedPlan, plan, latestPlan) : null,
+    [needsSync, dirty, savedPlan, plan, latestPlan]);
+  const versionConflict = !!reconciled?.conflicts.length;
+  if (!dirty && !editing && !m.pending && needsSync) {
+    setPlan(latestPlan);
+    setSavedPlan(latestPlan);
+    setVersion(latestVersion);
+  }
   if (!c.year)
     return (
       <Empty
@@ -69,6 +85,7 @@ export function WorkPlans({
             7,
         );
   const change = (next: AnnualPlan) => {
+    revision.current++;
     setPlan(next);
     setDirty(true);
     onDirtyChange(true);
@@ -228,31 +245,51 @@ export function WorkPlans({
           <PrintButton />
           {editable && (
             <Button
-              disabled={!dirty || m.pending}
-              onClick={() =>
+              disabled={!dirty || !!editing || m.pending || versionConflict}
+              onClick={() => {
+                const submittedRevision = revision.current;
+                const submittedPlan = reconciled?.plan ?? plan;
+                const expectedVersion = reconciled ? latestVersion : version;
+                if (reconciled) {
+                  setPlan(submittedPlan);
+                  setSavedPlan(latestPlan);
+                  setVersion(latestVersion);
+                }
                 m.execute(
                   () =>
                     saveAnnual({
                       workPlans: true,
                       workspaceId: c.workspace.id,
                       yearId: c.year!.id,
-                      version,
-                      document: plan,
+                      version: expectedVersion,
+                      document: submittedPlan,
                     }),
                   (v) => {
                     setVersion(v);
-                    setDirty(false);
-                    onDirtyChange(false);
+                    setSavedPlan(submittedPlan);
+                    if (revision.current === submittedRevision) {
+                      setDirty(false);
+                      onDirtyChange(false);
+                    }
                   },
-                )
-              }
+                );
+              }}
             >
               업무계획 저장
             </Button>
           )}
         </div>
       </div>
+      {editable && <div className="annual-status no-print">
+        <SaveStatus state={m.pending ? "saving" : versionConflict ? "conflict" : m.notice.error ? "error" : dirty ? "dirty" : version ? "saved" : "draft"}>
+          {m.pending ? "저장 중…" : versionConflict ? "충돌 · 입력을 복사한 뒤 최신 저장본을 확인해 주세요." :
+            m.notice.error ? "저장 실패 · 입력 내용 유지" : dirty ? "저장하지 않은 변경사항이 있습니다." :
+            version ? `저장 완료 · v${version}` : "초안"}
+        </SaveStatus>
+      </div>}
       <InlineNotice mutation={m} />
+      {editable && dirty && m.notice.error && !versionConflict &&
+        <Button variant="outline" className="no-print" onClick={m.refresh}>최신 저장본 확인</Button>}
       <div className="work-toolbar no-print">
         <div className="work-view-tabs">
           {(["week", "month"] as const).map((v) => (

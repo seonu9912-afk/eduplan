@@ -1,6 +1,6 @@
 "use client";
 import { SemesterSettings } from "./semester-settings";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { AcademicEventPeriods } from "./academic-event-periods";
 import { Calendar } from "./calendar";
 import { AcademicWorkbookPanel } from "./academic-workbook-panel";
@@ -12,6 +12,7 @@ import {
   Empty,
   InlineNotice,
   PrintButton,
+  SaveStatus,
   useMutation,
   Notice,
 } from "@/components/common";
@@ -138,6 +139,9 @@ export function AnnualAcademic({
     setDateFormEpoch(dateFormEpoch + 1);
   }
   const dayTrigger = useRef<HTMLButtonElement>(null);
+  const focusDateHeading = useCallback((heading: HTMLHeadingElement | null) => {
+    heading?.focus();
+  }, []);
   const editRevision = useRef(0);
   const recurringForm = useRef<HTMLFormElement>(null);
   const allocationForm = useRef<HTMLFormElement>(null);
@@ -168,14 +172,21 @@ export function AnnualAcademic({
   function mayLeaveDateEditor() {
     return !dateDraft || window.confirm("날짜 편집창에 저장하지 않은 변경이 있습니다. 이동할까요?");
   }
-  function openDateEditor(date: string, period: boolean) {
+  function openDateEditor(date: string, period: boolean, trigger: HTMLButtonElement) {
     if (!mayLeaveDateEditor()) return;
+    dayTrigger.current = trigger;
     setSelected(date);
+    setDateFormEpoch((epoch) => epoch + 1);
     setDateDraft(false);
     setPeriodMode(period);
     setPeriodPreview(null);
     setDayOpen(true);
     onDirtyChange(dirty);
+  }
+  function dismissDateEditor() {
+    if (!mayLeaveDateEditor()) return;
+    closeDateEditor();
+    dayTrigger.current?.focus();
   }
   function showTab(next: string) {
     if (!mayLeaveDateEditor()) return;
@@ -293,11 +304,13 @@ export function AnnualAcademic({
         </div>
       </div>
       <div className="annual-status no-print">
-        {dirty
-          ? "저장하지 않은 변경사항이 있습니다."
-          : version
-            ? `${status} · 저장본 v${version}`
-            : "초안 · 수업·창체에서 요일별 운영 교시를 설정해 주세요."}
+        <SaveStatus state={m.pending ? "saving" : needsSync ? "conflict" : m.notice.error ? "error" : dirty || dateDraft ? "dirty" : version ? "saved" : "draft"}>
+          {m.pending ? "저장 중…" : needsSync ? "충돌 · 최신 저장본 확인 필요" :
+            m.notice.error ? "저장 실패 · 입력 내용 유지" :
+            dirty || dateDraft ? "저장하지 않은 변경사항이 있습니다." :
+            version ? `${status} · 저장본 v${version}` :
+            "초안 · 수업·창체에서 요일별 운영 교시를 설정해 주세요."}
+        </SaveStatus>
       </div>
       <InlineNotice mutation={m} />
       <InlineNotice mutation={holidayMutation} />
@@ -450,17 +463,20 @@ export function AnnualAcademic({
             onMessage={setMessage}
           />
           <div className="heading-actions no-print">
-            {editable && <Button variant="outline" onClick={() => openDateEditor(selected, true)}>기간 설정</Button>}
+            {editable && <Button variant="outline" onClick={(event) => openDateEditor(selected, true, event.currentTarget)}>기간 설정</Button>}
             <Button variant="outline" onClick={() => showTab("행사 일정")}>선택 날짜의 행사 편성</Button>
           </div>
           {dayOpen && editable && (
             <section className="panel annual-section academic-date-editor no-print"
-              aria-label={periodMode ? "기간 설정" : selected + " 날짜 설정"}>
+              aria-labelledby="academic-date-editor-title"
+              onKeyDown={(event) => {
+                if (event.key !== "Escape" || event.defaultPrevented) return;
+                event.preventDefault();
+                dismissDateEditor();
+              }}>
               <div className="academic-date-heading">
-                <h3>{periodMode ? "기간 설정" : selected + " 날짜 설정"}</h3>
-                <Button type="button" variant="outline" onClick={() => {
-                  if (mayLeaveDateEditor()) { closeDateEditor(); dayTrigger.current?.focus(); }
-                }}>닫기</Button>
+                <h3 id="academic-date-editor-title" tabIndex={-1} ref={focusDateHeading} key={dateFormEpoch}>{periodMode ? "기간 설정" : selected + " 날짜 설정"}</h3>
+                <Button type="button" variant="outline" onClick={dismissDateEditor}>닫기</Button>
               </div>
               <form key={`${selected}-${periodMode}-${dateFormEpoch}`} className="annual-editor"
                 onChange={() => { editRevision.current++; setDateDraft(true); setPeriodPreview(null); onDirtyChange(true); }}
@@ -531,8 +547,7 @@ export function AnnualAcademic({
           )}
           <AnnualCalendar days={result.days} plan={plan} selected={selected}
             onSelect={(date, button) => {
-              dayTrigger.current = button;
-              if (editable) openDateEditor(date, false);
+              if (editable) openDateEditor(date, false, button);
               else setSelected(date);
             }} />
         </>

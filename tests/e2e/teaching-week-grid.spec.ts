@@ -21,7 +21,7 @@ test("2027 중학교 국어 2학년 주차 연동과 Supabase 재조회", async 
 
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
   await page.getByRole("button", { name: "연간 계획 저장", exact: true }).click();
-  await expect(page.getByText("저장본 v1", { exact: true })).toBeVisible();
+  await expect(page.locator(".annual-status")).toContainText("저장본 v1");
   await page.getByRole("link", { name: "수업·평가", exact: true }).click();
   await page.getByRole("button", { name: "새 수업 설정", exact: true }).click();
   await dialog.getByLabel("수업 학년", { exact: true }).selectOption("2");
@@ -39,11 +39,31 @@ test("2027 중학교 국어 2학년 주차 연동과 Supabase 재조회", async 
   await expect(firstWeek.getByRole("textbox", { name: "3월 1주 단원명" })).toHaveValue("단원 하나\n단원 둘");
 
   await page.getByRole("link", { name: "학사운영", exact: true }).click();
-  await page.getByRole("button", { name: "2027-03-02 수업일", exact: true }).click();
-  await page.getByRole("checkbox", { name: "사용", exact: true }).uncheck();
-  await page.getByRole("button", { name: "선택 기간 적용", exact: true }).click();
+  const date = page.getByRole("button", { name: "2027-03-02 수업일", exact: true });
+  const editor = page.getByRole("region", { name: "2027-03-02 날짜 설정" });
+  await date.click();
+  await expect(editor.getByRole("heading")).toBeFocused();
+  const name = editor.getByLabel("명칭", { exact: true });
+  const initialName = await name.inputValue();
+  await name.fill("임시 명칭");
+  page.once("dialog", (dialog) => dialog.accept());
+  await date.click();
+  await expect(name).toHaveValue(initialName);
+  await name.fill("이동 취소 확인");
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "2027-03-03 수업일", exact: true }).click();
+  await expect(name).toHaveValue("이동 취소 확인");
+  page.once("dialog", (dialog) => dialog.accept());
+  await name.press("Escape");
+  await expect(editor).toHaveCount(0);
+  await expect(date).toBeFocused();
+
+  await date.click();
+  await editor.getByText("고급 설정", { exact: true }).click();
+  await editor.getByRole("checkbox", { name: "사용", exact: true }).uncheck();
+  await editor.getByRole("button", { name: "날짜 설정 적용", exact: true }).click();
   await page.getByRole("button", { name: "연간 계획 저장", exact: true }).click();
-  await expect(page.getByText("저장본 v2", { exact: true })).toBeVisible();
+  await expect(page.locator(".annual-status")).toContainText("저장본 v2");
   await page.getByRole("link", { name: "수업·평가", exact: true }).click();
   await expect(firstWeek).toContainText("휴업일(3.2.)");
   await expect(firstWeek.getByRole("textbox", { name: "3월 1주 직접 작성 비고" })).toHaveValue("교사 직접 비고");

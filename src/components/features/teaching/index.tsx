@@ -20,7 +20,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Empty, InlineNotice, Modal, useMutation } from "@/components/common";
+import { Empty, InlineNotice, Modal, SaveStatus, useMutation } from "@/components/common";
 import {
   saveTeachingPlan,
   archiveTeachingCourse,
@@ -513,7 +513,7 @@ function CourseEditor({
     !!previousDocument?.evaluations.some(v => v.status === "확정");
   const automaticSave = useEffectEvent(async () => {
     const submittedRevision = revision.current;
-    if (autoInFlight.current || attempted.current === submittedRevision || !dirty || !weeklyDraft) return;
+    if (autoInFlight.current || m.isInFlight() || attempted.current === submittedRevision || !dirty || !weeklyDraft) return;
     autoInFlight.current = true;
     attempted.current = submittedRevision;
     setAutoActive(true);
@@ -578,15 +578,19 @@ function CourseEditor({
       )
     )
       return;
+    const submittedRevision = revision.current;
     m.execute(
       () => saveTeachingPlan(course.id, course.version, doc, confirm),
       version => {
         setCourse(value => ({ ...value, version }));
-        saved();
+        if (revision.current === submittedRevision) saved();
       },
       "계획을 저장했습니다.",
     );
   };
+  const versionConflict = dirty && serverCourse.version > course.version && !autoActive && !m.pending;
+  const saveState = autoActive || m.pending ? "saving" : versionConflict ? "conflict" :
+    m.notice.error || autoError ? "error" : dirty ? "dirty" : "saved";
   const print = (mode: "lesson" | "assessment") => {
     flushSync(() => setPrintMode(mode));
     window.print();
@@ -613,19 +617,21 @@ function CourseEditor({
               {course.grade}학년 {course.subject_name} ·{" "}
               {period(course.semester)}
             </strong>
-            <span aria-live="polite">
+            <SaveStatus state={saveState}>
               {autoActive
                 ? "자동 저장 중…"
                 : m.pending
                 ? "저장 중…"
-                : m.notice.error || autoError
+                : versionConflict
+                  ? "충돌 · 최신 저장본 확인 필요"
+                  : m.notice.error || autoError
                   ? "저장 실패 · 입력 내용 유지"
                   : dirty
                     ? "저장하지 않은 변경사항"
                     : `저장 완료 · v${course.version}`}
-            </span>
+            </SaveStatus>
             <small>
-              {new Date(course.updated_at).toLocaleString("ko-KR", {
+              {new Date(serverCourse.version === course.version ? serverCourse.updated_at : course.updated_at).toLocaleString("ko-KR", {
                 timeZone: "Asia/Seoul",
               })}
             </small>
@@ -644,7 +650,7 @@ function CourseEditor({
                   disabled={dirty || busy} onClick={() => setCollaborating(true)}>
                   <Users /> 공동작성 담당자
                 </Button>}
-                <Button disabled={!dirty || busy || autoActive} onClick={save}>
+                <Button disabled={!dirty || busy || autoActive || versionConflict} onClick={save}>
                   <Save />
                   {m.pending ? "저장 중…" : "계획 저장"}
                 </Button>
@@ -659,7 +665,9 @@ function CourseEditor({
         </div>
         <InlineNotice mutation={m} />
         {autoError && <p role="alert" className="notice notice-error">{autoError}</p>}
-        {dirty && serverCourse.version > course.version && !autoActive && (
+        {dirty && (autoError || m.notice.error) && !versionConflict && !busy && !autoActive &&
+          <Button variant="outline" onClick={m.refresh}>최신 저장본 확인</Button>}
+        {versionConflict && (
           <p role="alert" className="notice notice-error">
             다른 곳에서 이 계획이 변경되었습니다. 현재 입력은 유지했습니다.
             필요한 내용을 복사해 둔 뒤 새로고침하여 최신 계획과 비교하세요.
