@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { InlineNotice, useMutation } from "@/components/common";
 import { downloadBlob } from "@/lib/academic-files";
-import { buildAcademicWorkbook, type ExportData } from "@/lib/academic-workbook";
+import { buildAcademicWorkbook, serializeAcademicWorkbook, type ExportData } from "@/lib/academic-workbook";
 import type { AnnualPlan } from "@/lib/academic";
 import type { AcademicConfirmation } from "@/lib/academic-confirmation";
 
@@ -33,7 +33,7 @@ export function AcademicWorkbookPanel({ year, plan, context, currentStatus, conf
         </label>
         <label className="annual-field">인쇄 용지
           <select value={paper} onChange={(e) => setPaper(e.target.value === "A4" ? "A4" : "A3")}>
-            <option>A3</option><option>A4</option>
+            <option value="A3">A3 가로 1페이지</option><option value="A4">A4 가로 2페이지</option>
           </select>
         </label>
         <label className="annual-field">행사 및 시수 학기
@@ -56,7 +56,7 @@ export function AcademicWorkbookPanel({ year, plan, context, currentStatus, conf
           const workbook = await buildAcademicWorkbook(year, snapshot?.document ?? plan, source,
             { paper, grade: source.grades.includes(grade) ? grade : 0, semester },
             snapshot ? "확정 " + snapshot.at.slice(0, 10) : currentStatus);
-          const buffer = await workbook.xlsx.writeBuffer();
+          const buffer = await serializeAcademicWorkbook(workbook,paper);
           downloadBlob(new Uint8Array(buffer), `${year}_통합학사일정.xlsx`,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
           return { ok: true, data: undefined };

@@ -14,6 +14,13 @@ export type Database = {
   };
   public: {
     Tables: {
+      calendar_item_history: {
+        Row: { id: number; workspace_id: string; academic_year_id: string; item_key: string;
+          before_value: Json | null; after_value: Json | null; actor_id: string; created_at: string; operation: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       academic_years: {
         Row: {
           id: string;
@@ -330,6 +337,7 @@ export type Database = {
       };
       events: {
         Row: {
+          target_class_ids?: string[];
           academic_year_id: string;
           activity_area: string;
           created_by: string;
@@ -347,6 +355,7 @@ export type Database = {
           workspace_id: string;
         };
         Insert: {
+          target_class_ids?: string[];
           academic_year_id: string;
           activity_area?: string;
           created_by?: string;
@@ -364,6 +373,7 @@ export type Database = {
           workspace_id: string;
         };
         Update: {
+          target_class_ids?: string[];
           academic_year_id?: string;
           activity_area?: string;
           created_by?: string;
@@ -945,6 +955,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      save_calendar_changes: {
+        Args: { target: string; year_id: string; changes: Json; initial_document: Json; operation?: string };
+        Returns: Json;
+      };
       accept_invitation: { Args: { token: string }; Returns: string };
       archive_teaching_course: {
         Args: {

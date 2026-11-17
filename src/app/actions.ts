@@ -463,6 +463,41 @@ export async function confirmAcademicCalendar(input: unknown) {
   });
 }
 
+export async function loadCalendarState(workspaceId: string, yearId: string) {
+  return run(async () => {
+    uuid.parse(yearId);
+    const { db } = await authorized(workspaceId, ["admin", "editor", "viewer"]);
+    const results = await Promise.all([
+      db.from("annual_academic_plans").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).maybeSingle(),
+      db.from("events").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).order("start_date"),
+      db.from("calendar_item_history").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).order("id", { ascending: false }).limit(200),
+    ]);
+    for (const result of results) if (result.error) throw result.error;
+    return { annual: results[0].data, events: results[1].data ?? [], history: results[2].data ?? [] };
+  });
+}
+
+export async function saveCalendarChanges(input: unknown) {
+  return run(async () => {
+    const { calendarChangeSchema } = await import("@/lib/academic-calendar");
+    const { defaultAnnual } = await import("@/lib/academic");
+    const v = z.object({ workspaceId: uuid, yearId: uuid,
+      changes: z.array(calendarChangeSchema).min(1).max(366), operation: z.string().max(40).default("수정") }).parse(input);
+    const { db } = await authorized(v.workspaceId, ["admin"]);
+    const { data, error } = await db.rpc("save_calendar_changes", {
+      target: v.workspaceId, year_id: v.yearId, changes: v.changes,
+      initial_document: defaultAnnual(), operation: v.operation,
+    });
+    if (error) throw error;
+    const result = data as unknown as import("@/lib/academic-calendar").CalendarSaveResult;
+    const state = await loadCalendarState(v.workspaceId, v.yearId);
+    if (state.ok) result.state = state.data;
+    // A successful commit stays successful even if the refresh connection fails.
+    if (result.ok) refresh();
+    return result;
+  });
+}
+
 export async function previewHolidays(workspaceId: string, year: number) {
   return run(async () => {
     await authorized(workspaceId);

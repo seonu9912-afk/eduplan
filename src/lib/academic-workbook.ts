@@ -1,6 +1,6 @@
 import { type AcademicClass, type AnnualPlan, calculateAcademic, dayTypes, isTeachingDay } from "./academic";
 import { academicEventInTerm, curriculumTargets, hoursRange } from "./academic-rebuild";
-import type { PaperSize } from "exceljs";
+import type { PaperSize, Workbook } from "exceljs";
 import type { Context, Row } from "./models";
 
 type ExportOptions = { paper: "A3" | "A4"; grade: number; semester: number };
@@ -53,6 +53,12 @@ export async function buildAcademicWorkbook(year: number, plan: AnnualPlan,
   calendar.addRow(["수업일", ...months.map((month) => report.days.filter(
     (day) => day.date.startsWith(month) && isTeachingDay(day)).length)]);
   calendar.pageSetup.printArea = "A1:M34";
+  calendar.pageSetup.printTitlesColumn = "A:A";
+  calendar.pageSetup.fitToHeight = 1;
+  if (options.paper === "A4") {
+    calendar.pageSetup.fitToPage = false;
+    calendar.pageSetup.scale = 90;
+  }
 
   events.addRow(["시작일", "종료일", "행사명", "학년", "부서", "날짜·교시별 편성", "비고"]);
   const matchesGrade = (grades: number[]) => !options.grade || !grades.length || grades.includes(options.grade);
@@ -127,4 +133,18 @@ export async function buildAcademicWorkbook(year: number, plan: AnnualPlan,
     sheet.pageSetup.printTitlesRow = "1:2";
   }
   return book;
+}
+
+// ExcelJS does not write column page breaks. Add the standard OOXML break to
+// the serialized workbook while retaining the single 12-month worksheet.
+export async function serializeAcademicWorkbook(book: Workbook, paper: "A3" | "A4") {
+  const buffer = await book.xlsx.writeBuffer();
+  if (paper === "A3") return new Uint8Array(buffer);
+  const { default: JSZip } = await import("jszip");
+  const zip = await JSZip.loadAsync(buffer);
+  const path = "xl/worksheets/sheet1.xml";
+  const xml = await zip.file(path)!.async("string");
+  const pageBreak = '<colBreaks count="1" manualBreakCount="1"><brk id="7" min="0" max="1048575" man="1"/></colBreaks>';
+  zip.file(path,xml.replace(/(<drawing\b|<picture\b|<tableParts\b|<extLst\b|<\/worksheet>)/,pageBreak+"$1"));
+  return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }

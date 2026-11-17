@@ -301,7 +301,7 @@ export function calculateAcademic(
         (a) =>
           (!a.classId || a.classId === schoolClass?.id) &&
           a.areas[String(grade)] &&
-          a.areas[String(grade)] !== "없음",
+          a.areas[String(grade)] !== "없음" && a.areas[String(grade)] !== "교과",
       ))
         if (!active || a.start < start || a.end > end)
           warnings.push(

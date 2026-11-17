@@ -1,6 +1,6 @@
 "use client";
 import { TeachingModule } from "@/components/features/teaching";
-import { AnnualAcademic } from "@/components/features/annual-academic";
+import { AcademicCalendar } from "@/components/features/academic-calendar";
 import { WorkPlans } from "@/components/features/work-plans";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -274,7 +274,7 @@ export function WorkspaceApp({
         <Notice message={error} error />
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
         {section === "calendar" ? (
-          <AnnualAcademic
+          <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
             onDirtyChange={setDirty}
