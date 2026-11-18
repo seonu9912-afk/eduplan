@@ -73,7 +73,7 @@ describe("official calendar adapter", () => {
     expect(result.warnings.filter((w)=>w.includes(event.title))).toEqual([]);
     expect(new Set(plan.allocations.map((a)=>a.id)).size).toBe(plan.allocations.length);
   });
-  it("uses full class exceptions once, without multiplying grade hours by class count", () => {
+  it("lets class-specific event hours override only matching common periods", () => {
     const {plan,event}=fixture();
     const classes=[{id:"d466716f-4101-466e-b375-338ad633c146",grade:2,class_number:1},{id:"ad66c64d-aec4-44b0-b16d-67181593ca04",grade:2,class_number:2}];
     const draft=eventDraft(event,plan);
@@ -81,7 +81,7 @@ describe("official calendar adapter", () => {
     let id=0;plan.allocations=eventAllocations(draft,{...context,classes:classes as typeof context.classes},()=>`s${++id}`);
     const result=calculateAcademic(2027,plan,[2],context.semesters,classes);
     const terms=result.classTotals.filter((t)=>t.semester===1);
-    expect(terms.map((t)=>t.counts["진로"])).toEqual([0,2]);
+    expect(terms.map((t)=>t.counts["진로"])).toEqual([1,2]);
     expect(terms.map((t)=>t.conflicts)).toEqual([0,0]);
     expect(terms[0].hours).toBe(result.totals[0].hours);
   });

@@ -28,7 +28,7 @@ export type Area = AnnualPlan["allocations"][number]["areas"][string];
 export type CalendarEvent = Row<"events"> & { target_class_ids?: string[] };
 export type EventDraft = {
   event: CalendarEvent;
-  // Scope -> date -> period. A class exception replaces that date's full common plan.
+  // Scope -> date -> period. Class allocations override the corresponding grade hours.
   slots: Record<string, Record<string, Record<number, Area>>>;
 };
 export const calendarChangeSchema = z.discriminatedUnion("kind", [
