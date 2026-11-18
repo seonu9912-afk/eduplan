@@ -286,7 +286,7 @@ function CurriculumSimpleReview({context:c,plan,cohort,onBack,onDirtyChange}:{
     void loadCurriculumDesign({planId:plan.id}).then(result=>{
       if(!active)return;
       if(!result.ok){setError(result.error);setLoading(false);return;}
-      setData({document:result.data.document,snapshots:result.snapshots});
+      setData({document:result.data.document,snapshots:result.data.snapshots});
       setLoading(false);
     });
     return()=>{active=false;};
