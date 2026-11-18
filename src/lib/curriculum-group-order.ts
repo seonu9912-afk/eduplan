@@ -58,6 +58,6 @@ export function orderedCurriculumSubjects<T extends {id:string;group_id:string;c
   return [...subjects].sort((a,b) =>
     (groupPositions.get(a.group_id)??fallback)-(groupPositions.get(b.group_id)??fallback)
     || (a.curriculum_position??(inputOrder.get(a.id)??0)+10000)-
-       (b.curriculum_position??(inputOrder.get(b.id)??0)+10000))
+       (b.curriculum_position??(inputOrder.get(b.id)??0)+10000)
     || (inputOrder.get(a.id)??0)-(inputOrder.get(b.id)??0));
 }
