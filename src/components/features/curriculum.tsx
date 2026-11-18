@@ -2,6 +2,7 @@
 import { CurriculumDraft } from "./curriculum-draft";
 import { CurriculumEnhanced } from "./curriculum-enhanced";
 import { CurriculumExcelImport } from "./curriculum-excel-import";
+import { AnnualCurriculum2026 } from "./annual-curriculum-2026";
 import "./curriculum-enhanced.css";
 import { useState } from "react";
 import {
@@ -46,8 +47,8 @@ export function Curriculum({
   initialCohort?: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const [tab, setTab] = useState<"cohort" | "operating" | "subjects" | "draft" | "legacy">(
-    "cohort",
+  const [tab, setTab] = useState<"annual2026" | "cohort" | "operating" | "subjects" | "draft" | "legacy">(
+    "annual2026",
   );
   const [cohort, setCohort] = useState(
     Number(initialCohort) || c.year?.year || c.plans[0]?.cohort_year || 2026,
@@ -96,7 +97,7 @@ export function Curriculum({
         </div>
         <div className="heading-actions">
           <PrintButton />
-          {editable ? (
+          {editable && tab !== "annual2026" ? (
             <Button
               variant="outline"
               onClick={() => {
@@ -122,6 +123,7 @@ export function Curriculum({
         >
           {(
             [
+              { id: "annual2026", label: "2026학년도 당해연도 교육과정", icon: Table2 },
               {
                 id: "cohort",
                 label: `입학년도별 ${c.grades.length}개년 편성표`,
@@ -146,12 +148,14 @@ export function Curriculum({
           ))}
         </div>
         <InlineNotice mutation={m} />
-        <CurriculumExcelImport context={c} disabled={dirty} onImported={(year)=>{
+        {tab !== "annual2026" && <CurriculumExcelImport context={c} disabled={dirty} onImported={(year)=>{
           setChanged(false);
           setCohort(year);
           setTab("cohort");
-        }}/>
-        {tab === "draft" ? (
+        }}/>}
+        {tab === "annual2026" ? (
+          <AnnualCurriculum2026 key={c.workspace.id} context={c} onDirtyChange={setChanged}/>
+        ) : tab === "draft" ? (
           <CurriculumDraft
             context={c}
             onCreated={(y) => {

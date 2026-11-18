@@ -240,6 +240,19 @@ export type Database = {
           source_rows:Json;imported_by:string;imported_at:string};
         Insert:never;Update:never;Relationships:[];
       };
+      curriculum_annual_excel_sheets: {
+        Row: {
+          workspace_id:string;
+          academic_year:number;
+          edits:Json;
+          version:number;
+          updated_at:string;
+          updated_by:string|null;
+        };
+        Insert:never;
+        Update:never;
+        Relationships:[];
+      };
       curriculum_design_documents: {
         Row: { plan_id:string;workspace_id:string;document:Json;version:number;updated_at:string;updated_by:string|null };
         Insert: never;Update:never;Relationships:[];
@@ -997,6 +1010,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      save_curriculum_annual_excel_sheet: {
+        Args:{target:string;target_year:number;expected_version:number;next_edits:Json};
+        Returns:Json;
+      };
       curriculum_excel_apply: {
         Args: {target:string;source_year:number;source_kind:string;entries:Json};Returns:Json;
       };
