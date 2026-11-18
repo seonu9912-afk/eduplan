@@ -8,6 +8,7 @@ import type { Context, Row } from "@/lib/models";
 import { orderedCurriculumGroups, orderedCurriculumSubjects } from "@/lib/curriculum-group-order";
 import { addSubject } from "@/app/actions";
 import { CurriculumInsights, CurriculumScenario } from "./curriculum-workbench";
+import { operatingWeekReview } from "@/lib/curriculum-workbench";
 import {
   type CurriculumDocument, type WeekRule, initializeDesign,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
@@ -301,6 +302,16 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   }
   const firstPlan=view==="cohort"?plans[0]:undefined;
   const firstDoc=firstPlan?states[firstPlan.id]?.doc:null;
+  const operatingWeek=view==="operating"
+    ?operatingWeekReview(c,currentYear,Object.fromEntries(plans.flatMap(plan=>
+        states[plan.id]?[ [plan.id,states[plan.id].doc] ]:[]))):null;
+  const canChangeOperatingWeeks=plans.length===c.grades.length&&
+    plans.every(plan=>!!states[plan.id]?.locked&&!states[plan.id].saving);
+  function applyOperatingWeeks(patch:Partial<WeekRule>){
+    if(!operatingWeek||!canChangeOperatingWeeks)return;
+    const next={...operatingWeek.rule,...patch};
+    for(const plan of plans)mutate(plan.id,doc=>withWeeks(doc,currentYear,next));
+  }
   return <div className="cv2">
     <div className="cv2-toolbar no-print">
       <div><strong>{view==="cohort"?cohort+"학년도 입학생 · 3개년":currentYear+"학년도 · 1~3학년"} 직접 편성</strong>
@@ -342,20 +353,41 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
         documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
       <div className="cv2-weeks no-print">
         <strong>편성 기준 주수</strong>
-        {plans.map((plan)=>{
+        {view==="operating"&&operatingWeek?<>
+          <label>
+            <span>{currentYear}학년도 · 운영 1~{c.grades.length}학년 공통</span>
+            <select aria-label="운영 학년도 공통 수업 주수"
+              value={operatingWeek.rule.count} disabled={!canChangeOperatingWeeks}
+              onChange={e=>applyOperatingWeeks({count:Number(e.target.value) as 16|17})}>
+              <option value="16">16주</option><option value="17">17주</option>
+            </select>
+            <select aria-label="운영 학년도 주수 확정 상태"
+              value={operatingWeek.rule.status} disabled={!canChangeOperatingWeeks}
+              onChange={e=>applyOperatingWeeks({status:e.target.value as WeekRule["status"]})}>
+              <option value="confirmed">확정</option><option value="provisional">잠정</option>
+            </select>
+          </label>
+          <span className="cw3-weeks-help">
+            {operatingWeek.conflict
+              ?"학년별 주수가 서로 다릅니다. 위 값을 변경하면 연결된 입학년도 문서에 공통 적용됩니다."
+              :"운영 학년도 1~3학년에 같은 주수가 적용되어 있습니다."}
+            {!canChangeOperatingWeeks&&" · 모든 학년 편성 문서 및 편집권이 필요합니다."}
+          </span>
+        </>:plans.map(plan=>{
           const state=states[plan.id];
-          return c.grades.map((grade)=>{
-            if(view==="operating"&&plan.cohort_year!==currentYear-grade+1)return null;
+          return c.grades.map(grade=>{
             const year=plan.cohort_year+grade-1;
             const rule:WeekRule=state.doc.weeks[String(year)]??{count:16,status:"provisional"};
             return <label key={plan.id+"-"+year}>
               <span>{year}학년도 ({grade}학년)</span>
               <select value={rule.count} disabled={!state.locked}
-                onChange={(e)=>mutate(plan.id,(doc)=>withWeeks(doc,year,{...rule,count:Number(e.target.value) as 16|17}))}>
+                onChange={e=>mutate(plan.id,doc=>withWeeks(doc,year,
+                  {...rule,count:Number(e.target.value) as 16|17}))}>
                 <option value="16">16주</option><option value="17">17주</option>
               </select>
               <select value={rule.status} disabled={!state.locked}
-                onChange={(e)=>mutate(plan.id,(doc)=>withWeeks(doc,year,{...rule,status:e.target.value as WeekRule["status"]}))}>
+                onChange={e=>mutate(plan.id,doc=>withWeeks(doc,year,
+                  {...rule,status:e.target.value as WeekRule["status"]}))}>
                 <option value="confirmed">확정</option><option value="provisional">잠정</option>
               </select>
             </label>;

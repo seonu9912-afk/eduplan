@@ -5,7 +5,7 @@ import {
 } from "../../src/lib/curriculum-design";
 import {
   basisForCohort,EDUPLAN_CURRICULUM_VERSION,reviewCohort,
-  reviewOperatingYear,simulateWeeklyAllocation,
+  reviewOperatingYear,simulateWeeklyAllocation,operatingWeekReview,alignOperatingWeekRules,
 } from "../../src/lib/curriculum-workbench";
 
 describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
@@ -72,5 +72,21 @@ describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
     const review=reviewCohort(c,edited);
     expect(review.exceptions.length).toBeGreaterThan(0);
     expect(review.warnings.some(x=>x.includes("선택 묶음"))).toBe(true);
+  });
+  it("applies one operating-year week rule consistently across all three cohorts",()=>{
+    const docs=Object.fromEntries(context.plans.map(plan=>
+      [plan.id,initializeDesign(context,plan)]));
+    const year=2027;
+    expect(operatingWeekReview(context,year,docs).conflict).toBe(false);
+    const first=context.plans[0];
+    docs[first.id]={...docs[first.id],weeks:{
+      ...docs[first.id].weeks,[String(year)]:{count:17,status:"confirmed" as const},
+    }};
+    expect(operatingWeekReview(context,year,docs).conflict).toBe(true);
+    const next=alignOperatingWeekRules(context,year,docs,{count:16,status:"confirmed"});
+    expect(Object.keys(next)).toHaveLength(3);
+    expect(operatingWeekReview(context,year,next).conflict).toBe(false);
+    expect(operatingWeekReview(context,year,next).rule.status).toBe("confirmed");
+    expect(docs[first.id].weeks[String(year)].count).toBe(17);
   });
 });

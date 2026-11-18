@@ -1,7 +1,8 @@
 import type { Context } from "./models";
 import {
   type CurriculumDocument, type DesignCell, evaluateCell, getCell, matchGroup,
-  MIDDLE_2022_GROUPS, MIDDLE_2022_MINIMUM, withWeeklyHours, curriculumVersion,
+  MIDDLE_2022_GROUPS, MIDDLE_2022_MINIMUM, withWeeklyHours, withWeeks,
+  curriculumVersion, type WeekRule,
 } from "./curriculum-design";
 
 /**
@@ -145,6 +146,33 @@ export function reviewOperatingYear(
   ];
   return {year,grades:byGrade,semesterTotals,total:safeRound(semesterTotals[0]+semesterTotals[1]),
     missingCohorts,warnings};
+}
+export type OperatingWeekReview={
+  year:number;rule:WeekRule;conflict:boolean;sourceCount:number;
+};
+export function operatingWeekReview(
+  context:Context,year:number,
+  documents:Readonly<Record<string,CurriculumDocument|undefined|null>>,
+):OperatingWeekReview{
+  const rules=context.grades.map(grade=>
+    context.plans.find(plan=>plan.cohort_year===year-grade+1)).map(plan=>
+      plan?documents[plan.id]?.weeks[String(year)]:undefined).filter((item):item is WeekRule=>!!item);
+  const rule=rules[0]??{count:16,status:"provisional"};
+  return {year,rule,sourceCount:rules.length,conflict:rules.some(item=>
+    item.count!==rule.count||item.status!==rule.status)};
+}
+export function alignOperatingWeekRules(
+  context:Context,year:number,
+  documents:Readonly<Record<string,CurriculumDocument|undefined|null>>,
+  rule:WeekRule,
+):Record<string,CurriculumDocument>{
+  if(![16,17].includes(rule.count)||!["confirmed","provisional"].includes(rule.status))
+    throw Error("기준 주수 설정을 확인해 주세요.");
+  return Object.fromEntries(context.grades.flatMap(grade=>{
+    const plan=context.plans.find(row=>row.cohort_year===year-grade+1);
+    const document=plan?documents[plan.id]:undefined;
+    return plan&&document?[[plan.id,withWeeks(document,year,rule)]]:[];
+  }));
 }
 export function simulateWeeklyAllocation(
   context:Context,doc:CurriculumDocument,
