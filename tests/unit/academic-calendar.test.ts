@@ -58,7 +58,7 @@ describe("official calendar adapter", () => {
     expect(calendarDates(2026,"2027-02-29","2027-02-29")).toEqual([]);
     expect(calendarDates(2027,"2027-04-02","2027-04-01")).toEqual([]);
   });
-  it("defaults unspecified event periods to subject and overrides recurring creative time without changing its source", () => {
+  it("keeps the original timetable on unassigned periods while overriding only explicit event hours", () => {
     const { plan,event } = fixture();
     plan.recurring=[{id:"weekly",name:"진로",area:"진로",grade:2,semester:1,weekday:4,exclude:[],start:1,end:1}];
     const draft=eventDraft(event,plan);
@@ -67,8 +67,8 @@ describe("official calendar adapter", () => {
     plan.allocations=eventAllocations(draft,context,()=>`test-${++id}`);
     const result=calculateAcademic(2027,plan,[2],context.semesters);
     const day=result.details.find((d)=>d.date==="2027-03-04")!;
-    expect(day.counts).toMatchObject({"교과":5,"자율·자치":1});
-    expect(day.counts["진로"]).toBeUndefined();
+    expect(day.counts).toMatchObject({"교과":4,"자율·자치":1,"진로":1});
+    expect(day.counts["진로"]).toBe(1);
     expect(plan.recurring[0].area).toBe("진로");
     expect(result.warnings.filter((w)=>w.includes(event.title))).toEqual([]);
     expect(new Set(plan.allocations.map((a)=>a.id)).size).toBe(plan.allocations.length);

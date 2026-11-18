@@ -238,7 +238,9 @@ export function eventPeriodAllocations(
 ) {
   const applicable = rows.filter((row) => row.start <= period && period <= row.end &&
     row.areas[grade] && row.areas[grade] !== "없음");
-  const classEvents = new Set(applicable.filter((row) => row.classId === classId && row.classId)
+  // A class-specific day replaces that event's grade-wide allocation for the
+  // entire date, including periods not explicitly scheduled for that class.
+  const classEvents = new Set(rows.filter((row) => row.classId === classId && row.classId)
     .map((row) => row.eventId));
   return applicable.filter((row) => row.classId ? row.classId === classId : !classEvents.has(row.eventId));
 }
