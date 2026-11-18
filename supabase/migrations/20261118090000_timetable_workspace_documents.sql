@@ -29,7 +29,7 @@ declare
   current_doc public.timetable_documents%rowtype;
   next_version integer;
 begin
-  if auth.uid() is null or private.workspace_role(target) not in ('admin','editor') then
+  if auth.uid() is null or coalesce(private.workspace_role(target), '') not in ('admin','editor') then
     raise exception '시간표 편집 권한이 없습니다.' using errcode = '42501';
   end if;
   if expected_version < 0 or expected_version is null then

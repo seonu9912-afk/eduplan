@@ -27,7 +27,7 @@ export function Timetable({ context: c, onDirtyChange }: {
   const [version, setVersion] = useState(0);
   const [dirty, setDirty] = useState(false);
   const [matrixDirty, setMatrixDirty] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!c.year);
   const [saving, startTransition] = useTransition();
   const [message, setMessage] = useState<DocumentMessage>({ text: "" });
   const revision = useRef(0);
@@ -42,9 +42,8 @@ export function Timetable({ context: c, onDirtyChange }: {
   }, [canWrite]);
   useEffect(() => { onDirtyChange(dirty || matrixDirty); }, [dirty, matrixDirty, onDirtyChange]);
   useEffect(() => {
-    if (!c.year) { setLoading(false); return; }
+    if (!c.year) return;
     let active = true;
-    setLoading(true);
     void loadTimetableDocument({ workspaceId: c.workspace.id, yearId: c.year.id }).then((result) => {
       if (!active) return;
       if (!result.ok) {
