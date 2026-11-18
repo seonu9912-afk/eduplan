@@ -105,7 +105,10 @@ export function eventAllocations(draft: EventDraft, context: Pick<Context, "year
         const periods = classId ? draft.slots[`c:${classId}`]?.[date] ?? common : common;
         let last: AnnualPlan["allocations"][number] | undefined;
         for (let p = 1; p <= 12; p++) {
-          const area = periods[p] && periods[p] !== "없음" ? periods[p] : "교과";
+          // A new event occupies only the periods explicitly chosen in the grid.
+          // Existing allocations are materialized by eventDraft and round-trip unchanged.
+          const area = periods[p];
+          if (!area || area === "없음") continue;
           if (last?.end === p - 1 && last.areas[grade] === area) last.end = p;
           else {
             last = { id: makeId(), eventId: event.id, ...(classId ? { classId } : {}),
@@ -135,6 +138,25 @@ export function calendarDayRule(date: string, plan: AnnualPlan, context: Context
   const day = academicDays(context.year!.year, plan, context.semesters).find((day) => day.date === date)!;
   return { type: day.type, name: day.name, enabled: day.enabled,
     weekday: day.weekday > 0 && day.weekday < 6 ? day.weekday : 1 };
+}
+
+
+/** Show the configured timetable period span plus any existing assigned periods.
+ * An unconfigured date defaults to 1–6; the user can opt into all 12. */
+export function eventVisiblePeriods(
+  ranges: ReadonlyArray<{ start: number; end: number } | undefined>,
+  assigned: readonly number[],
+  showAll = false,
+): number[] {
+  if (showAll) return Array.from({ length: 12 }, (_, index) => index+1);
+  const valid = (period: number) => Number.isInteger(period) && period >= 1 && period <= 12;
+  const bounds = ranges.flatMap((range) =>
+    range && valid(range.start) && valid(range.end) && range.start <= range.end
+      ? [range.start, range.end] : []);
+  const used = [...bounds, ...assigned.filter(valid)];
+  const first = used.length ? Math.min(...used) : 1;
+  const last = used.length ? Math.max(...used) : 6;
+  return Array.from({ length: last-first+1 }, (_, index) => first+index);
 }
 
 export function availablePeriods(date: string, grade: number, plan: AnnualPlan, context: Context) {

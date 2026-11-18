@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents } from "../../src/lib/academic-calendar";
+import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents, eventVisiblePeriods } from "../../src/lib/academic-calendar";
 import { defaultAnnual, calculateAcademic } from "../../src/lib/academic";
 import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 
@@ -10,6 +10,32 @@ function fixture() {
   return { plan, event };
 }
 describe("official calendar adapter", () => {
+  it("limits the grid to configured periods, with an all-periods override and preserved exceptions", () => {
+    expect(eventVisiblePeriods([{start:1,end:6},{start:1,end:5}], [])).toEqual([1,2,3,4,5,6]);
+    expect(eventVisiblePeriods([{start:3,end:5}], [])).toEqual([3,4,5]);
+    expect(eventVisiblePeriods([{start:1,end:6}], [9])).toEqual([1,2,3,4,5,6,7,8,9]);
+    expect(eventVisiblePeriods([undefined], [])).toEqual([1,2,3,4,5,6]);
+    expect(eventVisiblePeriods([{start:3,end:5}], [], true)).toHaveLength(12);
+  });
+  it("saves only specifically assigned event periods, not the other eleven subject hours", () => {
+    const {plan,event} = fixture();
+    const draft = eventDraft(event,plan);
+    draft.slots = {"g:2":{"2027-03-04":{3:"교과",4:"동아리",6:"자율"}}};
+    let i=0;
+    const allocations = eventAllocations(draft,context,()=>`id-${++i}`);
+    expect(allocations.map(a=>[a.date,a.start,a.end,a.areas["2"]]))
+      .toEqual([["2027-03-04",3,3,"교과"],["2027-03-04",4,4,"동아리"],["2027-03-04",6,6,"자율"]]);
+    const restored = eventDraft(event,{...plan,allocations});
+    expect(restored.slots["g:2"]["2027-03-04"]).toEqual({3:"교과",4:"동아리",6:"자율"});
+  });
+  it("preserves explicit legacy full-day assignments without expanding new sparse events", () => {
+    const {plan,event}=fixture();
+    plan.allocations=[{id:"legacy",eventId:event.id,date:event.start_date,title:event.title,department:"",start:1,end:12,areas:{"2":"교과"}}];
+    const draft=eventDraft(event,plan);
+    const updated=eventAllocations(draft,context,()=>crypto.randomUUID());
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toMatchObject({start:1,end:12,areas:{"2":"교과"}});
+  });
   it("prints the requested Korean dates without duplicating a single-day date", () => {
     expect(formatCalendarEventPeriod("2027-03-02", "2027-03-02")).toBe("3월 2일(화)");
     expect(formatCalendarEventPeriod("2027-03-04", "2027-03-05")).toBe("3월 4일(목)~3월 5일(금)");
