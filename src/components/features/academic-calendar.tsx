@@ -12,6 +12,7 @@ import type { Context } from "@/lib/models";
 import { AnnualAcademic } from "./annual-academic";
 import { AcademicWorkbookPanel } from "./academic-workbook-panel";
 import { DateFields, EventFields } from "./academic-calendar-editors";
+import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
 
 type DayEdit = { kind: "day"; date: string; before: AnnualPlan["days"][string] | null; value: AnnualPlan["days"][string]; initial: AnnualPlan["days"][string] };
@@ -232,6 +233,12 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     {tab === "행사 편성" && <>
       <div className="ar-line"><label>조회 월 <select value={month} onChange={(e) => move(() => { setMonth(e.target.value); setDate(e.target.value+"-01"); setEdit(null); })}>{months.map((m) => <option key={m}>{m}</option>)}</select></label>
         <p className="ar-muted">{editable ? "달력에서 날짜를 선택하면 바로 행사를 등록할 수 있습니다." : "날짜를 선택하면 해당 날짜의 행사를 확인할 수 있습니다."}</p></div>
+      {editable && <EventExcelImport context={c} plan={plan} disabled={pending || dirty}
+        onSave={async (changes) => {
+          const saved = await commit(changes, "엑셀 행사 일괄 등록");
+          if (saved) setEdit(null);
+          return saved;
+        }}/>}
       <div className="ar-duo"><section className="ar-panel"><h3>{month} 월간 달력</h3><div className="ar-month" data-arrow-columns="7" aria-label="월간 달력, 방향키로 이동">{weekdays.map((w) => <strong key={w}>{w}</strong>)}
         {Array.from({ length: new Date(month+"-01T12:00:00Z").getUTCDay() },(_,i) => <span key={`blank${i}`}/>)}
         {report.days.filter((d) => d.date.startsWith(month)).map((d) => <button key={d.date} aria-label={`${d.date} ${editable ? "행사 등록" : "날짜 선택"}`} aria-pressed={date === d.date} onClick={() => editable ? openEvent(undefined, d.date) : move(() => { setDate(d.date); setEdit(null); })}>{Number(d.date.slice(8))}{monthly.some((e) => e.start_date <= d.date && d.date <= e.end_date) && <sup>●</sup>}</button>)}</div></section>
