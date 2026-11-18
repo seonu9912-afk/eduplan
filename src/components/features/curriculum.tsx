@@ -1,6 +1,7 @@
 "use client";
 import { CurriculumDraft } from "./curriculum-draft";
 import { CurriculumEnhanced } from "./curriculum-enhanced";
+import { CurriculumExcelImport } from "./curriculum-excel-import";
 import "./curriculum-enhanced.css";
 import { useState } from "react";
 import {
@@ -144,6 +145,11 @@ export function Curriculum({
           ))}
         </div>
         <InlineNotice mutation={m} />
+        <CurriculumExcelImport context={c} disabled={dirty} onImported={(year)=>{
+          setChanged(false);
+          setCohort(year);
+          setTab("cohort");
+        }}/>
         {tab === "draft" ? (
           <CurriculumDraft
             context={c}

@@ -235,6 +235,11 @@ export type Database = {
           },
         ];
       };
+      curriculum_import_batches: {
+        Row: {id:string;workspace_id:string;source_year:number;source_kind:string;
+          source_rows:Json;imported_by:string;imported_at:string};
+        Insert:never;Update:never;Relationships:[];
+      };
       curriculum_design_documents: {
         Row: { plan_id:string;workspace_id:string;document:Json;version:number;updated_at:string;updated_by:string|null };
         Insert: never;Update:never;Relationships:[];
@@ -992,6 +997,9 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      curriculum_excel_apply: {
+        Args: {target:string;source_year:number;source_kind:string;entries:Json};Returns:Json;
+      };
       curriculum_design_acquire: {
         Args:{target_plan:string;take_over?:boolean};Returns:Json;
       };
