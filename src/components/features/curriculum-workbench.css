@@ -55,3 +55,42 @@
 @media(max-width:550px){.cw3-view-actions{width:100%}.cw3-insights-controls{align-items:flex-start}.cw3-group-header{display:grid}.cw3-inline-add{justify-content:flex-start;margin:0 7px 8px}}
 @media print{.cw3-head,.cw3-simulator,.cw3-insights-controls,.cw3-inline-add{display:none!important}.cw3-insights{break-inside:avoid}.cw3-details{max-height:none;overflow:visible}}
 .cw3-weeks-help{display:inline-block;align-self:center;font-size:11px;line-height:1.5;color:#688198;max-width:390px}
+.cv2-modebar{display:flex;align-items:center;gap:4px;padding:5px;background:#eff5fb;border:1px solid #dbe8f4;border-radius:10px;flex-wrap:wrap}
+.cv2-modebar button{padding:8px 11px;border:0;background:transparent;border-radius:7px;color:#59758f;font-size:11px;white-space:nowrap;font-weight:750;cursor:pointer}
+.cv2-modebar button.active{background:#fff;box-shadow:0 1px 5px #153b6025;color:#265e93}
+.cv2-modebar span{margin-left:auto;font-size:10px;color:#7c91a5;padding:0 5px}
+.cv2-year-sum{display:inline-block;font-size:12px;color:#285c89;font-weight:800}
+.cw3-switch{max-width:100%;flex-wrap:wrap}
+.cw3-switch button{white-space:nowrap}
+@media(max-width:720px){.cv2-modebar span{display:none}.cw3-switch{width:100%}.cw3-switch button{flex:1;padding:7px}}
+
+.cv4-choices{display:grid;gap:10px;border:1px solid #d9e6f3;border-radius:10px;padding:13px;background:#fafeff}
+.cv4-choices-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.cv4-choices-head h3{font-size:13px;color:#285a86;margin:0}
+.cv4-choices-head p{font-size:11px;line-height:1.5;color:#8196a9;margin:5px 0 0}
+.cv4-choices-head button,.cv4-choice-editor button{display:inline-flex;gap:5px;align-items:center;background:#fff;border:1px solid #c2d6e8;padding:7px 10px;border-radius:6px;color:#326994;font-size:11px;font-weight:700;cursor:pointer}
+.cv4-choice-list{display:flex;flex-wrap:wrap;gap:8px}
+.cv4-choice-list article{width:230px;border:1px solid #dce7f3;background:#fff;border-radius:8px;padding:10px;display:grid;gap:5px}
+.cv4-choice-list article strong{font-size:12px;color:#285b8b}
+.cv4-choice-list article span,.cv4-choice-list article small{font-size:11px;color:#6d869c}
+.cv4-choice-list article button{justify-self:end;border:0;background:transparent;color:#a26b62;font-size:11px;cursor:pointer;display:inline-flex;align-items:center}
+.cv4-choice-empty{font-size:11px;color:#8094a7}
+.cv4-choice-warn{font-size:11px;color:#ae7033;display:flex;gap:5px;align-items:center}
+.cv4-choice-editor{display:flex;gap:7px;flex-wrap:wrap;padding:10px;border-radius:7px;background:#f4f9ff}
+.cv4-choice-editor input:not([type=checkbox]),.cv4-choice-editor select{border:1px solid #c2d7ea;border-radius:6px;padding:7px;background:#fff;color:#28567a;max-width:230px}
+.cv4-choice-editor label{font-size:11px;display:flex;align-items:center;color:#587790}
+.cv4-choice-editor label input[type=number]{max-width:60px}
+.cv4-choice-options{display:flex;gap:10px;flex-wrap:wrap;max-height:100px;overflow:auto;width:100%;padding:7px;border:1px solid #dce7f3;border-radius:7px}
+
+.cv4-subject-inline{display:flex;align-items:center;flex-wrap:wrap;gap:3px;max-width:100%}
+.cv4-subject-label{min-width:0;overflow-wrap:anywhere;flex:1}
+.cv4-subject-actions{display:inline-flex;gap:2px;opacity:.15;transition:opacity .13s}
+.cv4-subject-inline:hover .cv4-subject-actions,.cv4-subject-actions:focus-within{opacity:1}
+.cv4-subject-actions button,.cv4-subject-edit button{display:inline-flex;align-items:center;justify-content:center;
+  padding:3px;border:0;border-radius:3px;color:#487ca8;background:transparent;cursor:pointer}
+.cv4-subject-actions button:hover:not(:disabled){background:#e8f3fd}
+.cv4-subject-actions button:disabled{opacity:.3;cursor:not-allowed}
+.cv4-subject-edit{display:flex;align-items:center;gap:2px;width:100%}
+.cv4-subject-edit input{width:110px;max-width:100%;border:1px solid #a9c8e5!important;
+  background:white!important;text-align:left!important;font-size:11px!important;border-radius:5px;padding:6px}
+.cv4-subject-error{color:#aa4639;font-size:10px}

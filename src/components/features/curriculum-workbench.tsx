@@ -102,8 +102,8 @@ export function CurriculumInsights({context,view,cohort,documents}:{
           <strong>{cohortReview.basis.label}</strong></div>
         <div className="cw3-stat"><small>3개년 기준 시수</small>
           <strong>{cohortReview.minimum.toLocaleString()}시간</strong></div>
-        <div className="cw3-stat"><small>학교 편성 시수(단순 합계)</small>
-          <strong>{cohortReview.total.toLocaleString()}시간</strong></div>
+        <div className="cw3-stat"><small>학교 편성 시수(학생 선택경로 반영)</small>
+          <strong>{cohortReview.effectiveTotal===null?"선택경로 검토":cohortReview.effectiveTotal.toLocaleString()+"시간"}</strong></div>
         <div className="cw3-stat"><small>기준 대비 차이</small>
           <strong>{cohortReview.difference>0?"+":""}{cohortReview.difference.toLocaleString()}시간</strong></div>
       </>:operating&&<>

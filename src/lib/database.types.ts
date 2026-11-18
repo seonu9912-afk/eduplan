@@ -254,6 +254,16 @@ export type Database = {
         Update:never;
         Relationships:[];
       };
+      curriculum_operating_sheets: {
+        Row: {workspace_id:string;academic_year:number;document:Json;version:number;
+          status:string;updated_at:string;updated_by:string|null;confirmed_at:string|null};
+        Insert:never;Update:never;Relationships:[];
+      };
+      curriculum_operating_history: {
+        Row: {id:number;workspace_id:string;academic_year:number;version:number;document:Json;
+          status:string;saved_at:string;saved_by:string|null};
+        Insert:never;Update:never;Relationships:[];
+      };
       curriculum_design_documents: {
         Row: { plan_id:string;workspace_id:string;document:Json;version:number;updated_at:string;updated_by:string|null };
         Insert: never;Update:never;Relationships:[];
@@ -624,6 +634,7 @@ export type Database = {
       };
       subjects: {
         Row: {
+          curriculum_position?:number|null;
           group_id: string;
           id: string;
           name: string;
@@ -631,6 +642,7 @@ export type Database = {
           workspace_id: string;
         };
         Insert: {
+          curriculum_position?:number|null;
           group_id: string;
           id?: string;
           name: string;
@@ -638,6 +650,7 @@ export type Database = {
           workspace_id: string;
         };
         Update: {
+          curriculum_position?:number|null;
           group_id?: string;
           id?: string;
           name?: string;
@@ -1011,6 +1024,13 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      reorder_curriculum_subjects_v4:{
+        Args:{p_workspace:string;p_group:string;p_order:string[]};Returns:number;
+      };
+      save_curriculum_operating_v4: {
+        Args:{p_workspace:string;p_year:number;p_expected_version:number;p_document:Json;p_action?:string};
+        Returns:Json;
+      };
       save_curriculum_annual_excel_sheet: {
         Args:{target:string;target_year:number;expected_version:number;next_edits:Json};
         Returns:Json;

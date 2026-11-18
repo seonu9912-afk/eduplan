@@ -6,9 +6,13 @@ export type DesignCell = {
   weekly: number; adjustments: Adjustment[]; manual: number;
 };
 export type WeekRule = { count: 16 | 17; status: "confirmed" | "provisional" };
+export type CohortChoiceSet={
+  id:string;name:string;grade:number;semester:number;subjectIds:string[];requiredCount:number;
+};
 export type CurriculumDocument = {
   format: "eduplan-curriculum-v2"; cohortYear: number;
-  weeks: Record<string, WeekRule>; cells: DesignCell[];
+  weeks: Record<string, WeekRule>; termWeeks?: Record<string,WeekRule>;
+  choiceSets?:CohortChoiceSet[]; cells: DesignCell[];
 };
 export type Calculation = { base: number; adjustments: number; manual: number; total: number; valid: boolean };
 
@@ -48,11 +52,13 @@ export function matchGroup(name: string): string | null {
   if (/선택/.test(plain)) return "선택";
   return null;
 }
-export function weekRule(doc: CurriculumDocument, grade: number): WeekRule {
-  return doc.weeks[String(doc.cohortYear + grade - 1)] ?? { count: 16, status: "provisional" };
+export function weekRule(doc: CurriculumDocument, grade: number, semester?:number): WeekRule {
+  const year=doc.cohortYear+grade-1;
+  return (semester?doc.termWeeks?.[year+":"+semester]:undefined)
+    ??doc.weeks[String(year)]??{ count: 16, status: "provisional" };
 }
 export function evaluateCell(doc: CurriculumDocument, cell: DesignCell): Calculation {
-  const base = cell.weekly * weekRule(doc, cell.grade).count;
+  const base = cell.weekly * weekRule(doc, cell.grade, cell.semester).count;
   const adjustments = cell.adjustments.reduce((s, a) => s + a.hours, 0);
   const manual = cell.manual;
   const total = base + adjustments + manual;
@@ -75,7 +81,7 @@ export function withCell(doc: CurriculumDocument, subjectId: string, grade: numb
 export function withFinalHours(doc: CurriculumDocument, subjectId: string, grade: number,
   semester: number, total: number): CurriculumDocument {
   return withCell(doc, subjectId, grade, semester, (old) => ({
-    ...old, manual: total - old.weekly * weekRule(doc, grade).count -
+    ...old, manual: total - old.weekly * weekRule(doc, grade, semester).count -
       old.adjustments.reduce((s, item) => s + item.hours, 0),
   }));
 }
@@ -85,6 +91,9 @@ export function withWeeklyHours(doc: CurriculumDocument, subjectId: string, grad
 }
 export function withWeeks(doc: CurriculumDocument, year: number, rule: WeekRule): CurriculumDocument {
   return { ...doc, weeks: { ...doc.weeks, [String(year)]: rule } };
+}
+export function withTermWeeks(doc:CurriculumDocument,year:number,semester:1|2,rule:WeekRule):CurriculumDocument {
+  return {...doc,termWeeks:{...doc.termWeeks,[year+":"+semester]:rule}};
 }
 export function initializeDesign(context: Context, plan: Row<"curriculum_plans">,
   existing?: CurriculumDocument | null): CurriculumDocument {
@@ -102,7 +111,7 @@ export function initializeDesign(context: Context, plan: Row<"curriculum_plans">
       const final = context.hours.find((x) =>
         x.plan_id === plan.id && x.subject_id === subject.id && x.grade === grade && x.semester === semester)?.hours ?? 0;
       rows.push({ subjectId: subject.id, grade, semester, weekly: final /
-        (source.weeks[String(plan.cohort_year + grade - 1)]?.count ?? 16), adjustments: [], manual: 0 });
+        weekRule(source,grade,semester).count, adjustments: [], manual: 0 });
     }
   }
   return { ...source, cells: rows };

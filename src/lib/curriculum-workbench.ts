@@ -24,7 +24,7 @@ export type GroupReview = {
 };
 export type CohortReview = {
   basis:CurriculumBasis;
-  total:number;
+  total:number;effectiveTotal:number|null;
   minimum:number;
   difference:number;
   groups:GroupReview[];
@@ -41,7 +41,7 @@ export type OperatingReview = {
   year:number;grades:OperatingGrade[];semesterTotals:[number,number];
   total:number;missingCohorts:number[];warnings:string[];
 };
-export const EDUPLAN_CURRICULUM_VERSION="3.0";
+export const EDUPLAN_CURRICULUM_VERSION="4.0";
 
 export function basisForCohort(cohort:number):CurriculumBasis {
   const version=cohort>=2025?"2022":"2015";
@@ -80,6 +80,25 @@ export function reviewCohort(context:Context,doc:CurriculumDocument):CohortRevie
     }
     groupHours.set(category,(groupHours.get(category)??0)+total.total);
   }
+  let effectiveTotal=0;
+  const handled=new Set<string>();
+  const choiceWarnings:string[]=[];
+  for(const group of doc.choiceSets??[]){
+    const rows=group.subjectIds.map(id=>doc.cells.find(c=>
+      c.subjectId===id&&c.grade===group.grade&&c.semester===group.semester));
+    const amounts=rows.map(c=>c?evaluateCell(doc,c).total:-1);
+    const categories=group.subjectIds.map(id=>groupKey(context,id));
+    const unique=categories[0]&&categories.every(cat=>cat===categories[0]);
+    if(rows.some(c=>!c)||amounts.some(x=>x!==amounts[0])||!unique||
+       group.requiredCount<1||group.requiredCount>=rows.length){
+      choiceWarnings.push(group.name+" 선택과목군의 시수·교과군·선택 수를 확인해야 합니다.");
+      continue;
+    }
+    const excluded=(rows.length-group.requiredCount)*amounts[0];
+    groupHours.set(categories[0]!, (groupHours.get(categories[0]!)??0)-excluded);
+    effectiveTotal+=excluded;
+    rows.forEach(c=>handled.add(c!.subjectId+":"+c!.grade+":"+c!.semester));
+  }
   const groups=basis.groupRules.map(rule=>{
     const planned=safeRound(groupHours.get(rule.key)??0);
     const diff=safeRound(planned-rule.hours);
@@ -91,10 +110,12 @@ export function reviewCohort(context:Context,doc:CurriculumDocument):CohortRevie
     return {key:rule.key,name:rule.label,standard:rule.hours,planned,diff,rate,status};
   });
   const total=safeRound(sumTerms(doc,()=>true));
+  const studentTotal=choiceWarnings.length?null:safeRound(total-effectiveTotal);
   const activeOptions=new Map<string,string[]>();
   for(const cell of doc.cells){
     const category=groupKey(context,cell.subjectId);
-    if(category!=="선택"||evaluateCell(doc,cell).total<=0)continue;
+    if(category!=="선택"||evaluateCell(doc,cell).total<=0||
+      handled.has(cell.subjectId+":"+cell.grade+":"+cell.semester))continue;
     const name=context.subjects.find(row=>row.id===cell.subjectId)?.name??cell.subjectId;
     const key=cell.grade+":"+cell.semester;
     const list=activeOptions.get(key)??[];
@@ -103,7 +124,8 @@ export function reviewCohort(context:Context,doc:CurriculumDocument):CohortRevie
   }
   const concurrent=[...activeOptions.entries()].filter(([,list])=>list.length>1);
   const warnings=[
-    ...(total<basis.minimum?["3개년 단순 합계가 국가 최소 기준보다 적습니다."]:[]),
+    ...(studentTotal!==null&&studentTotal<basis.minimum?["학생 1인 기준 3개년 이수 시수가 국가 최소 기준보다 적습니다."]:[]),
+    ...choiceWarnings,
     ...(groups.some(r=>r.status!=="정상 범위")?["교과군 증감·체육·예술 기준을 확인해야 합니다. 학교별 승인·특례는 별도 검토합니다."]:[]),
     ...(names.size?["국가 교과군에 매칭되지 않은 학교 특색 과목이 있어 분류를 확인해야 합니다."]:[]),
     ...(concurrent.length?[
@@ -112,7 +134,8 @@ export function reviewCohort(context:Context,doc:CurriculumDocument):CohortRevie
     ...errors,
   ];
   return {
-    basis,total,minimum:basis.minimum,difference:safeRound(total-basis.minimum),
+    basis,total,effectiveTotal:studentTotal,minimum:basis.minimum,
+    difference:safeRound((studentTotal??total)-basis.minimum),
     groups,unclassified:[...names].sort((a,b)=>a.localeCompare(b,"ko")),
     exceptions:concurrent.map(([term,list])=>term+" ("+list.join(" · ")+")"),
     warnings,draft:doc.cells.length===0||total===0,

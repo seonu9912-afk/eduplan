@@ -89,10 +89,10 @@ export function Curriculum({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">CURRICULUM DESIGN · VERSION 3.0</span>
-          <h1>교육과정 편성 3.0</h1>
+          <span className="eyebrow">CURRICULUM DESIGN · VERSION 4.0</span>
+          <h1>교육과정 편성 4.0</h1>
           <p>
-            국가 기준과 학교 자율 편성을 연결하고, 입학년도별·당해연도 편성표를 한 원본으로 관리합니다.
+            주당시수 중심의 3개년 설계와 별도 버전의 학년도 운영편제를 관리합니다.
           </p>
         </div>
         <div className="heading-actions">
@@ -123,7 +123,7 @@ export function Curriculum({
         >
           {(
             [
-              { id: "studio", label: "교육과정 편성기 3.0", icon: BookOpen },
+              { id: "studio", label: "교육과정 편성기 4.0", icon: BookOpen },
               { id: "subjects", label: "교과군·과목 관리", icon: Settings2 },
               { id: "draft", label: "총론 기반 초안", icon: BookOpen },
               { id: "annual2026", label: "2026 원본 편성표 보관", icon: Table2 },

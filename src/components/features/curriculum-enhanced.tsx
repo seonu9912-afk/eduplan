@@ -8,10 +8,13 @@ import type { Context, Row } from "@/lib/models";
 import { orderedCurriculumGroups, orderedCurriculumSubjects } from "@/lib/curriculum-group-order";
 import { addSubject } from "@/app/actions";
 import { CurriculumInsights, CurriculumScenario } from "./curriculum-workbench";
+import { CohortChoiceManager } from "./curriculum-choice-manager-v4";
+import { CurriculumRowSubjectV4 } from "./curriculum-subject-row-v4";
 import { operatingWeekReview } from "@/lib/curriculum-workbench";
 import {
   type CurriculumDocument, type WeekRule, initializeDesign,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
+  withTermWeeks,weekRule,
   validateDocument, curriculumVersion, nationalGroupTotals, sportsHoursByGrade,
   MIDDLE_2022_MINIMUM,
 } from "@/lib/curriculum-design";
@@ -28,7 +31,7 @@ type EditorState = {
   revision: number; status: string; history: CurriculumDocument[]; future: CurriculumDocument[];
   snapshots: {id:string;version:number;confirmed_at:string}[];
 };
-type Column = { grade: number; semester: number; plan: Plan | undefined; field: "weekly" | "total" };
+type Column = { grade: number; semester: number; plan: Plan | undefined; field: "weekly" | "total" | "year" };
 const format = (n:number) => Number.isInteger(n) ? String(n) : String(Number(n.toFixed(5)));
 function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
   value:number;disabled:boolean;ariaLabel:string;cellKey:string;
@@ -120,6 +123,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const [errors,setErrors]=useState<string[]>([]);
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [showNational,setShowNational]=useState(false);
+  const [viewMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">("weekly");
   const [exporting,setExporting]=useState<"classic"|"modern"|null>(null);
   const [adjustFor,setAdjustFor]=useState<{planId:string;subjectId:string;grade:number;semester:number}|null>(null);
   const statesRef=useRef(states);
@@ -247,11 +251,12 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
         future:undo?[...item.future,item.doc]:item.future.slice(0,-1)}};
     });schedule(planId);
   }
-  const columns:Column[]=c.grades.flatMap((grade)=>
-    [1,2].flatMap((semester)=> {
-      const target=plans.find((p)=>p.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
-      return (["weekly","total"] as const).map((field)=>({grade,semester,plan:target,field}));
-    }));
+  const columns:Column[]=c.grades.flatMap((grade)=>{
+    const target=plans.find(p=>p.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
+    if(viewMode==="yearly")return [{grade,semester:0,plan:target,field:"year" as const}];
+    const field=viewMode==="weekly"?"weekly" as const:"total" as const;
+    return [1,2].map(semester=>({grade,semester,plan:target,field}));
+  });
   // Show even empty national-order groups so teachers can add a first subject.
   const groupList=orderedCurriculumGroups(c.groups).map(group=>group.id);
   const visibleSubjects=orderedCurriculumSubjects(c.subjects,c.groups)
@@ -272,10 +277,17 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const totalOf=(subjectId:string,column:Column)=>{
     const doc=column.plan?states[column.plan.id]?.doc:null;
     const cell=getCell(doc,subjectId,column.grade,column.semester);
+    if(column.field==="year"){
+      if(!doc)return null;
+      return [1,2].reduce((sum,semester)=>{
+        const item=getCell(doc,subjectId,column.grade,semester);
+        return sum+(item?evaluateCell(doc,item).total:0);
+      },0);
+    }
     return !cell||!doc?null:column.field==="weekly"?cell.weekly:evaluateCell(doc,cell).total;
   };
   function updateValue(subjectId:string,column:Column,next:number){
-    if(!column.plan)return;
+    if(!column.plan||column.field==="year")return;
     mutate(column.plan.id,(doc)=>column.field==="weekly"
       ?withWeeklyHours(doc,subjectId,column.grade,column.semester,next)
       :withFinalHours(doc,subjectId,column.grade,column.semester,next));
@@ -286,7 +298,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     const updates=new Map<string,{subjectId:string;col:Column;number:number}[]>();
     for(let i=0;i<data.length;i++)for(let j=0;j<data[i].length;j++){
       const n=Number(data[i][j].replace(/,/g,""));
-      const column=columns[col+j];if(!Number.isFinite(n)||n<0||n>2000||!column.plan)return false;
+      const column=columns[col+j];if(!Number.isFinite(n)||n<0||n>2000||!column.plan
+        ||column.field==="year")return false;
       const list=updates.get(column.plan.id)??[];
       list.push({subjectId:visibleSubjects[row+i].id,col:column,number:n});
       updates.set(column.plan.id,list);
@@ -313,6 +326,15 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     for(const plan of plans)mutate(plan.id,doc=>withWeeks(doc,currentYear,next));
   }
   return <div className="cv2">
+    <div className="cv2-modebar no-print" role="group" aria-label="교육과정 편성 보기 방식">
+      {([["weekly","주당시수 편집"],["semester","학기시수 보기·조정"],
+         ["yearly","학년별 합계"],["national","국가 기준 비교"]] as const).map(([key,label])=>
+        <button type="button" key={key} className={viewMode===key?"active":""}
+          onClick={()=>{setViewMode(key);if(key==="national")setShowNational(true);}}>
+          {label}
+        </button>)}
+      <span>기본 입력은 주당시수 · 학기 총시수 직접 수정 시 차액은 조정 시수로 기록</span>
+    </div>
     <div className="cv2-toolbar no-print">
       <div><strong>{view==="cohort"?cohort+"학년도 입학생 · 3개년":currentYear+"학년도 · 1~3학년"} 직접 편성</strong>
         <p>주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다.</p>
@@ -375,23 +397,23 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
           </span>
         </>:plans.map(plan=>{
           const state=states[plan.id];
-          return c.grades.map(grade=>{
+          return c.grades.flatMap(grade=>[1,2].map(semester=>{
             const year=plan.cohort_year+grade-1;
-            const rule:WeekRule=state.doc.weeks[String(year)]??{count:16,status:"provisional"};
-            return <label key={plan.id+"-"+year}>
-              <span>{year}학년도 ({grade}학년)</span>
+            const rule=weekRule(state.doc,grade,semester);
+            return <label key={plan.id+"-"+year+":"+semester}>
+              <span>{year}학년도 {grade}학년 {semester}학기</span>
               <select value={rule.count} disabled={!state.locked}
-                onChange={e=>mutate(plan.id,doc=>withWeeks(doc,year,
+                onChange={e=>mutate(plan.id,doc=>withTermWeeks(doc,year,semester as 1|2,
                   {...rule,count:Number(e.target.value) as 16|17}))}>
                 <option value="16">16주</option><option value="17">17주</option>
               </select>
               <select value={rule.status} disabled={!state.locked}
-                onChange={e=>mutate(plan.id,doc=>withWeeks(doc,year,
+                onChange={e=>mutate(plan.id,doc=>withTermWeeks(doc,year,semester as 1|2,
                   {...rule,status:e.target.value as WeekRule["status"]}))}>
                 <option value="confirmed">확정</option><option value="provisional">잠정</option>
               </select>
             </label>;
-          });
+          }));
         })}
       </div>
       {c.schoolType==="중학교"&&view==="cohort"&&firstPlan&&firstDoc&&
@@ -399,19 +421,19 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
           canApply={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id].saving}
           onApply={(subjectId,grade,semester,weekly)=>mutate(firstPlan.id,
             doc=>withWeeklyHours(doc,subjectId,grade,semester,weekly))}/>}
-      <div className="cv2-table-scroll" tabIndex={0} aria-label="교육과정 엑셀식 편성표">
+      <div id="curriculum-weekly-table" className="cv2-table-scroll" tabIndex={0} aria-label="교육과정 엑셀식 편성표">
         <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
         <table className="cv2-table">
           <thead><tr>
-            <th className="cv2-group-head" rowSpan={3}>교과(군)</th>
-            <th className="cv2-subject-head" rowSpan={3}>교과목·활동</th>
-            {c.grades.map((g)=><th key={g} colSpan={4}>{g}학년 <small>{view==="cohort"?cohort+g-1:currentYear}학년도</small></th>)}
-            <th rowSpan={3} className="cv2-total-head">총시수</th>
+            <th className="cv2-group-head" rowSpan={2}>교과(군)</th>
+            <th className="cv2-subject-head" rowSpan={2}>교과목·활동</th>
+            {c.grades.map(g=><th key={g} colSpan={viewMode==="yearly"?1:2}>
+              {g}학년 <small>{view==="cohort"?cohort+g-1:currentYear}학년도</small>
+            </th>)}
+            <th rowSpan={2} className="cv2-total-head">3개년 합계</th>
           </tr><tr>
-            {c.grades.flatMap((g)=>[1,2].map((sem)=><th colSpan={2} key={g+"-"+sem}>{sem}학기</th>))}
-          </tr><tr>
-            {columns.map((col,i)=><th key={i} className={col.field==="total"?"cv2-derived-head":""}>
-              {col.field==="weekly"?"주당":"최종"}
+            {columns.map((col,i)=><th key={i} className={col.field==="weekly"?"":"cv2-derived-head"}>
+              {col.field==="year"?"연간":col.semester+"학기"}
             </th>)}
           </tr></thead>
           {groupList.map((groupId)=>{
@@ -439,18 +461,23 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
                 const r=visibleSubjects.findIndex((s)=>s.id===subject.id);
                 return <tr key={subject.id}>
                   <td className="cv2-group-cell">{group?.name??"기타"}</td>
-                  <th scope="row" className="cv2-subject-cell">{subject.name}</th>
+                  <th scope="row" className="cv2-subject-cell">
+                    <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
+                      disabled={!editable||pendingEdit} onSaved={()=>router.refresh()}/>
+                  </th>
                   {columns.map((col,k)=>{
                     const cellValue=totalOf(subject.id,col);
                     const state=col.plan?states[col.plan.id]:null;
                     const eligible=editable&&!!state?.locked&&!state.saving&&cellValue!==null;
                     return <td key={k} className={col.field==="total"?"cv2-total-cell":""}>
-                      {cellValue===null?"—":<HourInput key={subject.id+"-"+k}
-                        cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
-                        ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(col.field==="weekly"?"주당 시수":"최종 시수")}
-                        onChange={(value)=>updateValue(subject.id,col,value)}
-                        onPaste={(text)=>pasteCells(text,r,k)}/>}
-                      {col.field==="total"&&eligible&&<button className="cv2-adjust-btn"
+                      {cellValue===null?"—":col.field==="year"
+                        ?<span className="cv2-year-sum">{format(cellValue)}</span>
+                        :<HourInput key={subject.id+"-"+k}
+                          cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
+                          ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(col.field==="weekly"?"주당 시수":"최종 시수")}
+                          onChange={(value)=>updateValue(subject.id,col,value)}
+                          onPaste={(text)=>pasteCells(text,r,k)}/>}
+                      {col.field!=="year"&&eligible&&<button className="cv2-adjust-btn"
                         title="학기별 조정 시수 설정" onClick={()=>setAdjustFor({planId:col.plan!.id,subjectId:subject.id,grade:col.grade,semester:col.semester})}>조정</button>}
                     </td>;
                   })}
@@ -470,6 +497,11 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
         </table>
       </div>
       <p className="cv2-footnote">학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
+      {view==="cohort"&&firstPlan&&firstDoc&&
+        <CohortChoiceManager context={c} doc={firstDoc}
+          editable={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id]?.saving}
+          onEdit={doc=>mutate(firstPlan.id,()=>doc)}/>}
+
       {firstPlan&&firstDoc&&<>
         <div className="cv2-verify-head no-print">
           <Button variant="outline" onClick={()=>setShowNational((v)=>!v)}>

@@ -50,11 +50,14 @@ export function orderedCurriculumGroups<T extends {id:string;name:string}>(group
   });
 }
 /** Sort groups, not subjects: subjects retain their original order within each group. */
-export function orderedCurriculumSubjects<T extends {id:string;group_id:string}>(
+export function orderedCurriculumSubjects<T extends {id:string;group_id:string;curriculum_position?:number|null}>(
   subjects: readonly T[],groups:readonly {id:string;name:string}[]):T[]{
   const groupPositions=new Map(orderedCurriculumGroups(groups).map((group,index)=>[group.id,index]));
   const fallback=groups.length+1;
+  const inputOrder=new Map(subjects.map((subject,index)=>[subject.id,index]));
   return [...subjects].sort((a,b) =>
     (groupPositions.get(a.group_id)??fallback)-(groupPositions.get(b.group_id)??fallback)
-    || a.group_id.localeCompare(b.group_id));
+    || (a.curriculum_position??(inputOrder.get(a.id)??0)+10000)-
+       (b.curriculum_position??(inputOrder.get(b.id)??0)+10000))
+    || (inputOrder.get(a.id)??0)-(inputOrder.get(b.id)??0));
 }

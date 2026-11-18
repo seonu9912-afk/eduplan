@@ -20,6 +20,16 @@ const sourceVersion = z.object({
       count: z.union([z.literal(16),z.literal(17)]),
       status: z.enum(["confirmed","provisional"]),
     })),
+    termWeeks: z.record(z.string(),z.object({
+      count:z.union([z.literal(16),z.literal(17)]),
+      status:z.enum(["confirmed","provisional"]),
+    })).optional(),
+    choiceSets:z.array(z.object({
+      id:uuid,name:z.string().trim().min(1).max(100),
+      grade:z.number().int().min(1).max(3),semester:z.number().int().min(1).max(2),
+      subjectIds:z.array(uuid).min(2).max(50),
+      requiredCount:z.number().int().min(1).max(49),
+    })).max(100).optional(),
     cells: z.array(z.object({
       subjectId: uuid, grade: z.number().int().min(1).max(6),
       semester: z.number().int().min(1).max(2),

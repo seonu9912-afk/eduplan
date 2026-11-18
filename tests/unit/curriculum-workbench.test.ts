@@ -16,7 +16,7 @@ describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
   const doc=initializeDesign(context,plan);
   const subject=context.subjects[0];
   it("uses official baseline values for both 2015 and 2022 without mixing their cohorts",()=>{
-    expect(EDUPLAN_CURRICULUM_VERSION).toBe("3.0");
+    expect(EDUPLAN_CURRICULUM_VERSION).toBe("4.0");
     expect(basisForCohort(2024).version).toBe("2015");
     expect(basisForCohort(2025).version).toBe("2022");
     expect(basisForCohort(2024).groupRules.find(x=>x.key==="국어")?.hours).toBe(442);
