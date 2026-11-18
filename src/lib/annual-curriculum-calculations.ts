@@ -1,5 +1,5 @@
 import {
-  ANNUAL_2026_ROWS,orderedSheetRows,
+  orderedSheetRows,
   type Annual2026CustomRow,type Annual2026Row,
 } from "./annual-curriculum-2026";
 
@@ -13,7 +13,6 @@ const regularPairs:ReadonlyArray<readonly[number,number]>=[
 const freePairs:ReadonlyArray<readonly[number,number,number,number]>=[
   [9,13,14,15],[11,16,17,18],
 ];
-const groupSummaryColumns=[5,6,7,8] as const;
 const semesterColumns=Array.from({length:18},(_,i)=>i+9);
 const subtotalIds={
   subject:"subjectTotal",creative:"creativeTotal",free:"freeTotal",

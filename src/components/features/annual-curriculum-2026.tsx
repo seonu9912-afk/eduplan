@@ -105,8 +105,8 @@ export function AnnualCurriculum2026({context:c,onDirtyChange}:{
     if(!focusNewRow)return;
     const target=document.querySelector<HTMLInputElement>(
       '[data-annual26-subject="'+focusNewRow+'"]');
-    if(target){target.focus();setFocusNewRow(null);}
-  },[focusNewRow,customRows]);
+    if(target)target.focus();
+  },[focusNewRow]);
   function markDirty(){
     setError("");setMessage("");setDirty(true);revision.current++;
   }
