@@ -26,6 +26,7 @@ export const timetableDocumentSchema = z.object({
     }).passthrough()).max(1200),
     unavailable: z.array(z.object({ teacherId: z.string(), weekday: z.number().int(), period: z.number().int() }).passthrough()).max(3000),
     periods: z.record(z.string(), z.number().int().min(0).max(12)),
+    starts: z.record(z.string(), z.number().int().min(1).max(12)).optional(),
   }).passthrough().optional(),
 }).passthrough();
 export type TimetableDocument = z.infer<typeof timetableDocumentSchema>;

@@ -1,6 +1,6 @@
 // School-adjustable scheduling quality criteria. These are operational defaults,
 // NOT statutory teacher working-time limits. Lunch interrupts a teaching streak.
-import {WDAYS,WDAY_NAMES} from './timetable-solver.js';
+import {WDAYS,WDAY_NAMES,dayPeriodRange} from './timetable-solver.js';
 export const DEFAULT_TEACHER_QUALITY=Object.freeze({maxDailyLessons:5,maxConsecutiveLessons:3,targetDailySpread:2});
 export function teacherQuality(config={}){
   const input=config.teacherQuality||{};
@@ -8,20 +8,20 @@ export function teacherQuality(config={}){
   return {maxDailyLessons:read('maxDailyLessons',2,9),maxConsecutiveLessons:read('maxConsecutiveLessons',2,6),targetDailySpread:read('targetDailySpread',0,6)};
 }
 export function teachingSegments(config={},day){
-  const count=Number(config.periods?.[day]||7);
+  const {start,end}=dayPeriodRange(config,day);
   const bell=Array.isArray(config.bell)?config.bell:[];
   const lessons=bell.filter(b=>b.type==='lesson'&&Number.isInteger(Number(b.period))&&b.start&&b.end).sort((a,b)=>a.period-b.period);
   const lunch=bell.filter(b=>b.type==='lunch'&&b.start&&b.end);
   const cuts=new Set();
   for(const row of lunch){
-    const before=lessons.filter(b=>b.end<=row.start&&b.period<count).at(-1);
-    const after=lessons.find(b=>b.start>=row.end&&Number(b.period)>Number(before?.period));
+    const before=lessons.filter(b=>b.end<=row.start&&Number(b.period)>=start&&Number(b.period)<=end).at(-1);
+    const after=lessons.find(b=>b.start>=row.end&&Number(b.period)>Number(before?.period)&&Number(b.period)<=end);
     if(before&&after&&Number(after.period)===Number(before.period)+1)cuts.add(Number(before.period));
   }
   // Standard middle-school default: lunch after fourth period.
-  if(!lessons.length&&count>=5)cuts.add(4);
+  if(!lessons.length&&start<=4&&end>=5)cuts.add(4);
   const segments=[];let current=[];
-  for(let p=1;p<=count;p++){
+  for(let p=start;p<=end;p++){
     current.push(p);
     if(cuts.has(p)){segments.push(current);current=[];}
   }

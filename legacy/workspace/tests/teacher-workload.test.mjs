@@ -42,3 +42,16 @@ test('소규모 시간표도 교사 부담 기준을 반영',()=>{
  assert.equal(result.ok,true,result.errors?.join('\n'));
  assert.equal(teacherWorkloadReport(plan,result.slots,config).hardViolations,0);
 });
+
+test('teacher workload segments skip non-operating early periods',()=>{
+ const shifted={...config,starts:{1:3,2:1,3:1,4:1,5:1}};
+ assert.deepEqual(teachingSegments(shifted,1),[[3,4],[5,6,7]]);
+ const late={...config,starts:{1:5,2:1,3:1,4:1,5:1}};
+ assert.deepEqual(teachingSegments(late,1),[[5,6,7]]);
+});
+test('mathematical solver candidates cannot use early closed periods',()=>{
+ const shifted={...config,starts:{1:3,2:1,3:1,4:1,5:1}};
+ const model=buildMipProblem(basic,shifted);
+ assert.equal(model.errors.length,0);
+ assert.ok(model.candidates.every(candidate=>candidate.weekday!==1||candidate.period>=3));
+});

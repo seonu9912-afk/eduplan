@@ -78,3 +78,15 @@
 .tt-workload-warning {color:#a63e18}
 .tt-workload-ok {color:#19734a}
 @media(max-width:650px){.tt-quality-settings{grid-template-columns:1fr;}}
+/* Weekday operating start/end periods. Old end-only records still begin at 1. */
+.tt-day-ranges{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.tt-day-ranges .tt-day-range{border:1px solid #dfe8f4;border-radius:10px;background:#f9fbff;padding:12px;display:grid;gap:9px;min-width:0}
+.tt-day-ranges .tt-day-range>strong{font-size:12px;color:#355679}
+.tt-day-ranges .tt-day-range>small{font-size:11px;color:#6d86a2}
+.tt-day-ranges .tt-range-inputs{display:flex;align-items:end;gap:5px;min-width:0}
+.tt-day-ranges .tt-range-inputs>label{min-width:0;flex:1;display:grid;gap:5px}
+.tt-day-ranges .tt-range-inputs select{width:100%;min-width:0;padding:7px 5px;font-size:12px}
+.tt-day-ranges .tt-range-dash{align-self:end;padding-bottom:9px;color:#7f94ae}
+@media(max-width:1100px){.tt-day-ranges{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.tt-day-ranges{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:420px){.tt-day-ranges{grid-template-columns:1fr}}

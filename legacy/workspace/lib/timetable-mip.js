@@ -1,7 +1,7 @@
 // Deterministic mixed-integer assignment model. All timetable rules are encoded
 // as binary decision variables and one-per-task / resource-capacity constraints.
 // Build/parsing are pure; the HiGHS WASM runtime is loaded by the isolated API.
-import {WDAYS,buildTimetableTasks,checkScheduledSlots,demandScopes,timetableConfig,validateTimetableInput} from './timetable-solver.js';
+import {WDAYS,buildTimetableTasks,checkScheduledSlots,demandScopes,timetableConfig,validateTimetableInput,dayPeriodRange} from './timetable-solver.js';
 import {teacherQuality,teachingSegments,teacherHoursPreflight} from './teacher-workload.js';
 const slotKey=(type,id,weekday,period)=>`${type}:${id}:${weekday}:${period}`;
 export function buildMipProblem(plan,config=timetableConfig(plan),variant=0){
@@ -14,7 +14,9 @@ export function buildMipProblem(plan,config=timetableConfig(plan),variant=0){
   const unavailable=new Set((config.unavailable||[]).map(x=>slotKey('t',x.teacherId,Number(x.weekday),Number(x.period))));
   for(let index=0;index<built.tasks.length;index++){
     const task=built.tasks[index], options=[];
-    for(const day of WDAYS)for(let period=1;period+task.length-1<=Number(config.periods[day]);period++){
+    for(const day of WDAYS){
+      const {start,end}=dayPeriodRange(config,day);
+      for(let period=start;period+task.length-1<=end;period++){
       if(task.fixedDay&&task.fixedDay!==day||task.fixedPeriod&&task.fixedPeriod!==period)continue;
       const keys=new Set();let valid=true;
       for(let offset=0;offset<task.length&&valid;offset++)for(const block of task.blocks){
@@ -32,6 +34,7 @@ export function buildMipProblem(plan,config=timetableConfig(plan),variant=0){
         const key=`${teacherId}:${day}`;if(!teacherDays.has(key))teacherDays.set(key,[]);teacherDays.get(key).push({column,variable,period,length:task.length});
       }
       for(const key of keys){if(!resources.has(key))resources.set(key,[]);resources.get(key).push(column);}
+    }
     }
     if(!options.length)errors.push(`${task.id}에 배정 가능한 교시가 없습니다.`);
     byTask.set(index,options);

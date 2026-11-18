@@ -3,6 +3,13 @@ import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 import { newTimetableDocument, mergeTimetableDocument, legacyTimetableEvents, legacyTimetableSpace, timetableDocumentSchema } from "../../src/lib/timetable-bridge";
 
 describe("official timetable legacy integration", () => {
+  it("loads previous end-only configs and preserves new start-period settings", () => {
+    const doc = newTimetableDocument(recoveryPreviewContext());
+    const legacy = {...doc,timetableConfig:{periods:{1:7,2:7,3:7,4:7,5:6},lessons:[],unavailable:[]}};
+    expect(timetableDocumentSchema.safeParse(legacy).success).toBe(true);
+    const updated = {...legacy,timetableConfig:{...legacy.timetableConfig,starts:{1:3,2:1,3:1,4:1,5:1}}};
+    expect(timetableDocumentSchema.parse(updated).timetableConfig?.starts?.["1"]).toBe(3);
+  });
   const c = recoveryPreviewContext();
   it("uses real school class IDs and creates an empty timetable, not demo lessons", () => {
     const doc = newTimetableDocument(c);

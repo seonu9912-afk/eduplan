@@ -2,6 +2,16 @@
 export const WDAYS = [1,2,3,4,5];
 export const WDAY_NAMES = {1:'월',2:'화',3:'수',4:'목',5:'금'};
 export const DEFAULT_DAY_PERIODS = {1:7,2:7,3:7,4:7,5:6};
+export const DEFAULT_DAY_STARTS = {1:1,2:1,3:1,4:1,5:1};
+/** Old saved "periods" values are END periods; "starts" defaults to 1. */
+export const dayPeriodRange = (config,day) => ({
+  start:Number(config.starts?.[day] ?? DEFAULT_DAY_STARTS[day] ?? 1),
+  end:Number(config.periods?.[day] ?? DEFAULT_DAY_PERIODS[day] ?? 7),
+});
+export const isOperatingPeriod = (config,day,period) => {
+  const {start,end}=dayPeriodRange(config,day);
+  return Number(period)>=start&&Number(period)<=end;
+};
 export const DEFAULT_BELL = [
   {id:'arrival',label:'조회',type:'routine',start:'08:40',end:'08:50'},
   {id:'p1',label:'1교시',type:'lesson',period:1,start:'09:00',end:'09:45'},
@@ -13,8 +23,8 @@ export const DEFAULT_BELL = [
   {id:'p6',label:'6교시',type:'lesson',period:6,start:'14:25',end:'15:10'},
   {id:'p7',label:'7교시',type:'lesson',period:7,start:'15:20',end:'16:05'},
 ];
-export const EMPTY_TIMETABLE_CONFIG = () => ({teacherQuality:{maxDailyLessons:5,maxConsecutiveLessons:3,targetDailySpread:2},periods:{...DEFAULT_DAY_PERIODS},bell:DEFAULT_BELL.map(x=>({...x})),unavailable:[],lessons:[],fixed:[],lastApplied:null});
-export const timetableConfig = plan => ({...EMPTY_TIMETABLE_CONFIG(),...(plan.timetableConfig||{}), periods:{...DEFAULT_DAY_PERIODS,...(plan.timetableConfig?.periods||{})}});
+export const EMPTY_TIMETABLE_CONFIG = () => ({teacherQuality:{maxDailyLessons:5,maxConsecutiveLessons:3,targetDailySpread:2},periods:{...DEFAULT_DAY_PERIODS},starts:{...DEFAULT_DAY_STARTS},bell:DEFAULT_BELL.map(x=>({...x})),unavailable:[],lessons:[],fixed:[],lastApplied:null});
+export const timetableConfig = plan => ({...EMPTY_TIMETABLE_CONFIG(),...(plan.timetableConfig||{}), periods:{...DEFAULT_DAY_PERIODS,...(plan.timetableConfig?.periods||{})},starts:{...DEFAULT_DAY_STARTS,...(plan.timetableConfig?.starts||{})}});
 export function extractDemands(plan) {
   const grouped=new Map();
   for(const s of plan.weekly||[]){
@@ -37,7 +47,11 @@ export function validateTimetableInput(plan,config=timetableConfig(plan)) {
   const errors=[]; const warnings=[];
   const lessons=config.lessons||[];
   if(!lessons.length)errors.push('수업 배정표가 비어 있습니다. 수업 배정을 입력하거나 기존 시간표에서 불러오세요.');
-  for(const w of WDAYS)if(!Number.isInteger(Number(config.periods[w]))||Number(config.periods[w])<1||Number(config.periods[w])>12)errors.push(`${WDAY_NAMES[w]}요일 운영 교시는 1~12교시여야 합니다.`);
+  for(const w of WDAYS){
+    const {start,end}=dayPeriodRange(config,w);
+    if(!Number.isInteger(start)||!Number.isInteger(end)||start<1||end>12||end<1||start>12||start>end)
+      errors.push(`${WDAY_NAMES[w]}요일 운영 교시는 시작·종료를 1~12교시 사이에서 시작 ≤ 종료로 설정해 주세요.`);
+  }
   const groups=new Map(); const seen=new Set();
   for(const d of lessons){
     if(seen.has(d.id))errors.push('수업 배정 ID가 중복됩니다.');seen.add(d.id);
@@ -53,6 +67,9 @@ export function validateTimetableInput(plan,config=timetableConfig(plan)) {
     if(d.room&&!(plan.rooms||[]).includes(d.room))warnings.push(`${label}: 특별실 목록에 없는 장소입니다.`);
     if(d.fixedDay||d.fixedPeriod){
       if(!WDAYS.includes(Number(d.fixedDay))||!positiveInt(d.fixedPeriod))errors.push(`${label}: 고정 요일·교시를 모두 지정하세요.`);
+      else if(!isOperatingPeriod(config,Number(d.fixedDay),Number(d.fixedPeriod)) ||
+        Number(d.fixedPeriod)+Math.min(Number(d.hours||0),Number(d.block||1))-1>dayPeriodRange(config,Number(d.fixedDay)).end)
+        errors.push(`${label}: 고정 교시가 요일별 운영 교시 범위를 벗어납니다.`);
     }
     if(d.syncKey?.trim()){
       const name=d.syncKey.trim(); if(!groups.has(name))groups.set(name,[]);groups.get(name).push(d);
@@ -65,13 +82,19 @@ export function validateTimetableInput(plan,config=timetableConfig(plan)) {
   }
   const capacityByClass=new Map((plan.classes||[]).map(c=>[c.id,0]));
   for(const d of lessons)for(const cid of demandScopes(plan,d))capacityByClass.set(cid,(capacityByClass.get(cid)||0)+Number(d.hours||0));
-  const available=WDAYS.reduce((n,w)=>n+Number(config.periods[w]||0),0);
+  const available=WDAYS.reduce((n,w)=>{
+    const {start,end}=dayPeriodRange(config,w);
+    return n+Math.max(0,end-start+1);
+  },0);
   for(const [cid,n] of capacityByClass){if(n>available)errors.push(`${(plan.classes||[]).find(c=>c.id===cid)?.label||cid}: 배정 ${n}시간이 한 주의 수업 가능 칸 ${available}시간을 초과합니다.`);}
   const teacherHours=new Map();const roomHours=new Map();
   for(const d of lessons){if(d.teacherId)teacherHours.set(d.teacherId,(teacherHours.get(d.teacherId)||0)+Number(d.hours||0));if(d.room)roomHours.set(d.room,(roomHours.get(d.room)||0)+Number(d.hours||0));}
   const unavailable=new Set((config.unavailable||[]).map(x=>keyOf(x.teacherId,x.weekday,x.period)));
   for(const [id,hours] of teacherHours){
-    let possible=0;for(const wd of WDAYS)for(let p=1;p<=Number(config.periods[wd]||0);p++)if(!unavailable.has(keyOf(id,wd,p)))possible++;
+    let possible=0;for(const wd of WDAYS){
+      const {start,end}=dayPeriodRange(config,wd);
+      for(let p=start;p<=end;p++)if(!unavailable.has(keyOf(id,wd,p)))possible++;
+    }
     if(hours>possible)errors.push(`${(plan.teachers||[]).find(t=>t.id===id)?.label||id}: 담당 ${hours}시간이 수업 가능 ${possible}시간을 초과합니다.`);
   }
   for(const [id,hours] of roomHours)if(hours>available)errors.push(`특별실 '${id}': 필요 ${hours}시간이 수업 가능 ${available}시간을 초과합니다.`);
@@ -95,7 +118,8 @@ export function validateTimetableInput(plan,config=timetableConfig(plan)) {
       const required=demands.filter(d=>Number(d.block||1)===length).reduce((n,d)=>n+Math.floor(Number(d.hours||0)/length),0);
       let maximum=0;
       for(const day of WDAYS){let run=0;
-        for(let period=1;period<=Number(config.periods[day]||0);period++){
+        const {start,end}=dayPeriodRange(config,day);
+        for(let period=start;period<=end;period++){
           const everyClassBusy=members.length>0&&members.every(cid=>fixedByClass.get(cid)?.has(keyOf(day,period,'')));
           if(everyClassBusy){maximum+=Math.floor(run/length);run=0;}else run++;
         }
@@ -137,7 +161,7 @@ export function checkScheduledSlots(plan,slots,config=timetableConfig(plan)) {
   for(const s of slots){
     const day=Number(s.weekday),period=Number(s.period);
     if(!WDAYS.includes(day)||!Number.isInteger(period)||period<1||period>12){errors.push(`유효하지 않은 시간표 슬롯: 요일 ${s.weekday}, 교시 ${s.period}`);continue;}
-    if(period>Number(config.periods[day]||0))errors.push(`운영 교시 초과: ${WDAY_NAMES[day]} ${period}교시`);
+    if(!isOperatingPeriod(config,day,period))errors.push(`운영 교시 범위 밖: ${WDAY_NAMES[day]} ${period}교시`);
     if(s.scope!=='class'&&s.scope!=='group'){errors.push(`잘못된 시간표 대상: ${s.scope}`);continue;}
     if(!demandScopes(plan,s).length){errors.push(`존재하지 않는 학급·수업 집단: ${s.scopeId}`);continue;}
     if(!(plan.subjects||[]).some(x=>x.id===s.subjectId))errors.push(`등록되지 않은 과목: ${s.subjectId}`);
@@ -157,7 +181,10 @@ export function solveTimetable(plan,options={}){
   const built=buildTimetableTasks(plan,config);
   if(built.errors.length)return {ok:false,errors:built.errors,warnings:validation.warnings,slots:[],stats:{nodes:0}};
   const tasks=built.tasks;
-  const timetableCapacity=WDAYS.flatMap(day=>Array.from({length:Number(config.periods[day])},(_,i)=>({day,period:i+1})));
+  const timetableCapacity=WDAYS.flatMap(day=>{
+    const {start,end}=dayPeriodRange(config,day);
+    return Array.from({length:Math.max(0,end-start+1)},(_,i)=>({day,period:start+i}));
+  });
   const unavailable=new Set((config.unavailable||[]).map(x=>keyOf(x.teacherId,x.weekday,x.period)));
   const occClass=new Set(),occTeacher=new Set(),occRoom=new Set();
   const classDay=new Map(), teacherDay=new Map(),subjectDay=new Map(),placed=[];
@@ -170,7 +197,8 @@ export function solveTimetable(plan,options={}){
   function valid(task,day,startPeriod){
     if(task.fixedDay&&task.fixedDay!==day)return false;
     if(task.fixedPeriod&&task.fixedPeriod!==startPeriod)return false;
-    if(startPeriod+task.length-1>Number(config.periods[day]))return false;
+    const range=dayPeriodRange(config,day);
+    if(startPeriod<range.start||startPeriod+task.length-1>range.end)return false;
     for(let off=0;off<task.length;off++){
       const period=startPeriod+off;const usedClass=new Set(),usedTeacher=new Set(),usedRoom=new Set();
       for(const b of task.blocks){
@@ -186,7 +214,7 @@ export function solveTimetable(plan,options={}){
     for(const id of affected){
       if((teacherDay.get(keyOf(id,day,''))||0)+task.length>quality.maxDailyLessons)return false;
       let run=0;
-      for(let p=1;p<=Number(config.periods[day]);p++){
+      for(let p=range.start;p<=range.end;p++){
         if(p===lunchAfter+1)run=0;
         const occupied=occTeacher.has(keyOf(id,day,p))||(p>=startPeriod&&p<startPeriod+task.length);
         run=occupied?run+1:0;
@@ -223,7 +251,10 @@ export function solveTimetable(plan,options={}){
   }
   function choices(task){
     const results=[];
-    for(const d of WDAYS)for(let p=1;p<=Number(config.periods[d]);p++)if(valid(task,d,p))results.push({day:d,period:p,score:score(task,d,p)});
+    for(const d of WDAYS){
+      const {start,end}=dayPeriodRange(config,d);
+      for(let p=start;p<=end;p++)if(valid(task,d,p))results.push({day:d,period:p,score:score(task,d,p)});
+    }
     results.sort((a,b)=>a.score-b.score||a.day-b.day||a.period-b.period);
     return results;
   }

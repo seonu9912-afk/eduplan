@@ -64,3 +64,40 @@ test('academic date-based planner uses applied weekly results and date overrides
  p.dayRules=[{date,kind:'vacation',label:'방학',weekdayOverride:0}];
  assert.ok(!planForDate(p,date,[]).some(s=>s.scopeId===p.classes[0].id));
 });
+
+test('weekday starts at 3rd period and never schedules Monday 1st or 2nd',()=>{
+ const p=base(),cfg=timetableConfig(p);
+ cfg.periods={1:7,2:7,3:7,4:7,5:7};
+ cfg.starts={1:3,2:1,3:1,4:1,5:1};
+ cfg.lessons=[
+   lesson('fixed',p.classes[0].id,'korean','t1',1,{fixedDay:1,fixedPeriod:3}),
+   lesson('other',p.classes[0].id,'math','t2',8)
+ ];
+ const result=solveTimetable(p,{config:cfg,maxNodes:30000,limitMs:4000});
+ assert.equal(result.ok,true,JSON.stringify(result.errors));
+ assert.equal(checkScheduledSlots(p,result.slots,cfg).length,0);
+ assert.ok(result.slots.some(row=>row.weekday===1&&row.period===3));
+ assert.ok(result.slots.every(row=>row.weekday!==1||row.period>=3&&row.period<=7));
+ assert.match(checkScheduledSlots(p,[{...result.slots[0],weekday:1,period:2}],cfg).join(' '),/운영 교시 범위 밖/);
+ const old=timetableConfig({timetableConfig:{periods:{1:7,2:7,3:7,4:7,5:7}}});
+ assert.equal(old.starts[1],1);
+});
+test('weekly capacity counts inclusive start~end ranges',()=>{
+ const p=base(),cfg=timetableConfig(p);
+ cfg.starts={1:3,2:3,3:3,4:3,5:3};
+ cfg.periods={1:7,2:7,3:7,4:7,5:7};
+ cfg.lessons=[lesson('capacity',p.classes[0].id,'korean','t1',26)];
+ const check=validateTimetableInput(p,cfg);
+ assert.equal(check.available,25);
+ assert.match(check.errors.join(' '),/초과/);
+});
+test('invalid operating ranges and fixed lessons outside them fail validation',()=>{
+ const p=base(),cfg=timetableConfig(p);
+ cfg.periods={1:7,2:7,3:7,4:7,5:7};
+ cfg.starts={1:3,2:1,3:1,4:1,5:1};
+ cfg.lessons=[lesson('fixed',p.classes[0].id,'korean','t1',1,{fixedDay:1,fixedPeriod:2})];
+ assert.match(validateTimetableInput(p,cfg).errors.join(' '),/고정 교시.*범위/);
+ cfg.lessons=[lesson('fixed',p.classes[0].id,'korean','t1',1)];
+ cfg.starts[1]=8;
+ assert.match(validateTimetableInput(p,cfg).errors.join(' '),/시작.*종료/);
+});
