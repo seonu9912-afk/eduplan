@@ -1,23 +1,39 @@
 'use client';
 import {useMemo,useState} from 'react';
 import {DEFAULT_BELL,dayPeriodRange,WDAYS,WDAY_NAMES} from '../lib/timetable-solver.js';
-import {clockMinutes,compareBellDay,generateBellSchedule,inferBellSettings,selectOperatingBellRows,timeDifferenceLabel} from '../lib/bell-schedule.js';
+import {clockMinutes,clockParts,changeClockPart,compareBellDay,generateBellSchedule,inferBellSettings,selectOperatingBellRows,timeDifferenceLabel} from '../lib/bell-schedule.js';
 
-const inputModel=[
-  {key:'firstLessonStart',label:'첫 수업 시작',type:'time'},
-  {key:'lessonMinutes',label:'수업 시간',type:'number',min:1,max:120},
-  {key:'breakMinutes',label:'쉬는 시간',type:'number',min:0,max:60},
-  {key:'lunchMinutes',label:'점심시간',type:'number',min:0,max:180},
+const durationFields=[
+  {key:'lessonMinutes',label:'수업 시간',min:1,max:120},
+  {key:'breakMinutes',label:'쉬는 시간',min:0,max:60},
+  {key:'lunchMinutes',label:'점심시간',min:0,max:180},
 ];
+const hours=Array.from({length:24},(_,i)=>String(i).padStart(2,'0'));
+const minutes=Array.from({length:60},(_,i)=>String(i).padStart(2,'0'));
 function TimeControls({value,onChange,firstLabel='첫 수업 시작'}){
+  const {hour,minute}=clockParts(value.firstLessonStart);
   return <div className="tt-time-controls">
-    {inputModel.map(({key,label,type,min,max})=><label key={key}>
-      <span>{key==='firstLessonStart'?firstLabel:label}</span>
+    <div className="tt-time-start">
+      <span>{firstLabel}</span>
+      <span className="tt-time-pickers">
+        <select aria-label={firstLabel+' 시'} value={hour}
+          onChange={event=>onChange({...value,firstLessonStart:changeClockPart(value.firstLessonStart,'hour',event.target.value)})}>
+          {hours.map(item=><option key={item} value={item}>{item}시</option>)}
+        </select>
+        <span className="tt-time-colon" aria-hidden="true">:</span>
+        <select aria-label={firstLabel+' 분'} value={minute}
+          onChange={event=>onChange({...value,firstLessonStart:changeClockPart(value.firstLessonStart,'minute',event.target.value)})}>
+          {minutes.map(item=><option key={item} value={item}>{item}분</option>)}
+        </select>
+      </span>
+    </div>
+    {durationFields.map(({key,label,min,max})=><label key={key}>
+      <span>{label}</span>
       <span className="tt-time-control-wrap">
-        <input type={type} value={value[key]??''} min={min} max={max} step={1}
-          aria-label={key==='firstLessonStart'?firstLabel:label}
-          onChange={event=>onChange({...value,[key]:type==='number'?(event.target.value===''?'':Number(event.target.value)):event.target.value})}/>
-        {type==='number'&&<small>분</small>}
+        <input type="number" value={value[key]??''} min={min} max={max} step={1}
+          aria-label={label}
+          onChange={event=>onChange({...value,[key]:event.target.value===''?'':Number(event.target.value)})}/>
+        <small>분</small>
       </span>
     </label>)}
   </div>;

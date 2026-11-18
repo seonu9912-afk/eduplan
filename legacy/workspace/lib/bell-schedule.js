@@ -3,14 +3,31 @@
  * A lesson's period number is authoritative; gaps before lunch are represented by
  * the duration between rows, not by extra "break" objects.
  */
-const CLOCK_RE=/^([01]\d|2[0-3]):([0-5]\d)$/;
+// Minute-only times and native browser values containing :00 seconds are supported.
+const CLOCK_RE=/^([01]?\d|2[0-3]):([0-5]\d)(?::00)?$/;
 export function clockMinutes(value){
-  const match=String(value??'').match(CLOCK_RE);
+  const match=String(value??'').trim().match(CLOCK_RE);
   return match?Number(match[1])*60+Number(match[2]):null;
 }
 export function minutesClock(minutes){
   if(!Number.isInteger(minutes)||minutes<0||minutes>=1440)return null;
   return String(Math.floor(minutes/60)).padStart(2,'0')+':'+String(minutes%60).padStart(2,'0');
+}
+/** Browser-independent picker: hour and minute edits always produce a valid time. */
+export function clockParts(value){
+  const total=clockMinutes(value)??540;
+  return {
+    hour:String(Math.floor(total/60)).padStart(2,'0'),
+    minute:String(total%60).padStart(2,'0'),
+  };
+}
+export function changeClockPart(value,part,next){
+  const {hour,minute}=clockParts(value);
+  if(!/^\d{1,2}$/.test(String(next)))return hour+':'+minute;
+  const number=Number(next);
+  if(part==='hour' && number>=0 && number<=23)return String(number).padStart(2,'0')+':'+minute;
+  if(part==='minute' && number>=0 && number<=59)return hour+':'+String(number).padStart(2,'0');
+  return hour+':'+minute;
 }
 export function timeDifferenceLabel(delta){
   if(!Number.isFinite(delta))return '계산 불가';
@@ -31,7 +48,7 @@ export function inferBellSettings(rows=[]){
     }
   }
   return {
-    firstLessonStart:first?.start??'09:00',
+    firstLessonStart:minutesClock(clockMinutes(first?.start))??'09:00',
     lessonMinutes:lesson||45,
     breakMinutes:gaps[0]??10,
     lunchMinutes:lunch?minutesOf(lunch):60,

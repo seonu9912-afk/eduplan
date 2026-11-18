@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DEFAULT_BELL,DEFAULT_DAY_PERIODS,dayPeriodRange} from '../lib/timetable-solver.js';
-import {clockMinutes,minutesClock,inferBellSettings,generateBellSchedule,selectOperatingBellRows,compareBellDay,timeDifferenceLabel} from '../lib/bell-schedule.js';
+import {clockMinutes,minutesClock,clockParts,changeClockPart,inferBellSettings,generateBellSchedule,selectOperatingBellRows,compareBellDay,timeDifferenceLabel} from '../lib/bell-schedule.js';
 
 const clone=()=>structuredClone(DEFAULT_BELL);
 test('original 45 minute lessons and 60 minute lunch roundtrip unchanged',()=>{
@@ -56,4 +56,26 @@ test('legacy weekday config remains valid and returns useful error for missing b
   assert.deepEqual(dayPeriodRange(cfg,3),{start:1,end:7});
   assert.equal(selectOperatingBellRows(clone(),8,10).ok,false);
   assert.equal(compareBellDay(clone(),8,10,{firstLessonStart:'09:00',lessonMinutes:40,breakMinutes:10,lunchMinutes:60}).ok,false);
+});
+test('hour/minute picker always produces a valid minute-precision time',()=>{
+  assert.deepEqual(clockParts('09:00'),{hour:'09',minute:'00'});
+  assert.equal(changeClockPart('09:00','hour','13'),'13:00');
+  assert.equal(changeClockPart('13:00','minute','35'),'13:35');
+  assert.equal(changeClockPart('13:35','minute','00'),'13:00');
+  assert.equal(clockMinutes(changeClockPart('09:00','hour','07')),420);
+  assert.equal(clockMinutes('09:00:00'),540,'legacy seconds-based native value is supported');
+  assert.equal(clockMinutes('9:05'),545,'single-digit hours are supported');
+  assert.equal(changeClockPart('invalid','hour','08'),'08:00');
+  assert.equal(changeClockPart('08:25','minute','99'),'08:25');
+});
+test('auto generation accepts a time reconstructed by both hour/minute dropdowns',()=>{
+  const rows=clone();
+  const start=changeClockPart(changeClockPart('09:00','hour','09'),'minute','30');
+  const generated=generateBellSchedule(rows,{
+    firstLessonStart:start,lessonMinutes:40,breakMinutes:5,lunchMinutes:50,
+  });
+  assert.equal(generated.ok,true,generated.errors?.join(' / '));
+  assert.equal(generated.rows.find(row=>row.id==='p1').start,'09:30');
+  assert.equal(generated.rows.find(row=>row.id==='p2').start,'10:15');
+  assert.equal(rows.find(row=>row.id==='p1').start,'09:00');
 });
