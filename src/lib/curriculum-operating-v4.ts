@@ -71,7 +71,6 @@ export function composeOperating(year:number,sources:readonly SourceCohort[]):Op
   return {format:OPERATING_FORMAT,year,sourceVersions,cells,choiceSets,offerings:[]};
 }
 export function operatingDiffs(original:OperatingDocument,projection:OperatingDocument):OperatingDiff[]{
-  const projected=new Map(projection.cells.map(c=>[opKey(c.subjectId,c.grade,c.semester),opHours(c)]));
   const all=new Map(original.cells.map(c=>[opKey(c.subjectId,c.grade,c.semester),c]));
   for(const c of projection.cells)if(!all.has(opKey(c.subjectId,c.grade,c.semester)))
     all.set(opKey(c.subjectId,c.grade,c.semester),c);

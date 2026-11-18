@@ -1,10 +1,11 @@
 "use client";
+/* eslint-disable react-hooks/refs -- JSX map callbacks only call ref-using handlers on user events, never during rendering. */
 import {useEffect,useMemo,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 import {BookOpen,Check,ChevronDown,ChevronRight,Columns3,Download,History,Plus,Save,ShieldCheck,TriangleAlert} from "lucide-react";
 import type {Context} from "@/lib/models";
 import {orderedCurriculumGroups,orderedCurriculumSubjects} from "@/lib/curriculum-group-order";
-import type {OperatingDocument,OpCell,OpChoice,OpOffering} from "@/lib/curriculum-operating-v4";
+import type {OperatingDocument,OpChoice,OpOffering} from "@/lib/curriculum-operating-v4";
 import {applyOperatingWeeks,operatingDiffs,operatingTotals,opHours,opKey,updateOperatingCell,
   validateOperating} from "@/lib/curriculum-operating-v4";
 import {loadOperatingV4,saveOperatingV4,type OperatingLoad} from "@/app/curriculum-operating-actions";
@@ -107,7 +108,6 @@ export function CurriculumOperatingV4({context:c,year,onDirtyChange,onNavigate,f
   }):false;
   useEffect(()=>{
     let alive=true;
-    setLoaded(null);setDoc(null);setDirty(false);setError("");setMessage("");
     void loadOperatingV4({workspaceId:c.workspace.id,year}).then(result=>{
       if(!alive)return;
       if(!result.ok){setError(result.error);return;}

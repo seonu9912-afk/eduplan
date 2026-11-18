@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-import {CheckCircle2,Download,TriangleAlert} from "lucide-react";
+import {CheckCircle2,TriangleAlert} from "lucide-react";
 import type {Context} from "@/lib/models";
 import type {OperatingDocument} from "@/lib/curriculum-operating-v4";
 import {loadOperatingV4} from "@/app/curriculum-operating-actions";
@@ -32,7 +32,7 @@ export function CurriculumTimetableBridgeV4({context:c,year}:{
       if(r.ok){setTimetable(r.data?.document as TimetableDocument??null);setTimeStatus(r.data?"불러옴":"미생성");}
       else setTimeStatus(r.error);
     });
-    else setTimeStatus("선택한 운영 학년도의 시간표 자료가 열려 있지 않습니다.");
+    // When no matching academic year exists, render a derived disconnected status.
     return()=>{active=false;};
   },[c.workspace.id,c.year?.id,c.year?.year,year]);
   const stats=useMemo(()=>{
@@ -52,7 +52,7 @@ export function CurriculumTimetableBridgeV4({context:c,year}:{
   return <section className="op4-root">
     <header className="op4-head"><div><h2>{year}학년도 시간표 연계 검증</h2>
       <p>확정된 운영편제의 주당시수와 실제 시간표 배정 수를 학급별로 비교합니다.</p></div>
-      <div className="op4-save-state">운영편제 {opStatus} · 시간표 {timeStatus}</div>
+      <div className="op4-save-state">운영편제 {opStatus} · 시간표 {c.year?.year===year?timeStatus:"선택 운영 학년도 시간표 미연결"}</div>
     </header>
     <p className="op4-hint">이 화면은 안전한 <b>읽기 전용 검증</b>입니다. 시간표 데이터를 자동 덮어쓰지 않습니다.
       과목개설 시 여러 교사와 이동수업을 설정했다면 수업 집단별 배정도 함께 검토해야 합니다.</p>
