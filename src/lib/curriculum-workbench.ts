@@ -1,4 +1,4 @@
-import type { Context, Row } from "./models";
+import type { Context } from "./models";
 import {
   type CurriculumDocument, type DesignCell, evaluateCell, getCell, matchGroup,
   MIDDLE_2022_GROUPS, MIDDLE_2022_MINIMUM, withWeeklyHours, curriculumVersion,

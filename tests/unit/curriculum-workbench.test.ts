@@ -37,7 +37,7 @@ describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
     const preview=simulateWeeklyAllocation(context,doc,subject.id,1,1,3);
     expect(preview.after-preview.before).toBeCloseTo(preview.delta);
     expect(preview.afterTerm-preview.beforeTerm).toBeCloseTo(preview.delta);
-    expect(preview.afterGroup?.planned! - preview.beforeGroup?.planned!).toBeCloseTo(preview.delta);
+    expect((preview.afterGroup?.planned??0) - (preview.beforeGroup?.planned??0)).toBeCloseTo(preview.delta);
     expect(simulateWeeklyAllocation(context,doc,subject.id,1,1,3).after).toBe(preview.after);
     expect(()=>simulateWeeklyAllocation(context,doc,subject.id,1,1,-1)).toThrow();
   });
