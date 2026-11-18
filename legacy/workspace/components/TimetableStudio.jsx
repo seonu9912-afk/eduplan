@@ -111,7 +111,7 @@ export default function TimetableStudio({plan,space,editPlan,notify,onOpenManual
           subjects:(plan.subjects||[]).map(({id,kind})=>({id,kind})),
           teachers:(plan.teachers||[]).map(({id})=>({id})),groups:plan.groups||[],rooms:plan.rooms||[]};
         const response=await fetch('/api/timetable-solve',{method:'POST',headers:{'content-type':'application/json'},
-          body:JSON.stringify({plan:minimal,config:cfg,variant,limitSeconds:65})});
+          body:JSON.stringify({workspaceId:space.workspaceId,yearId:space.academicYearId,plan:minimal,config:cfg,variant,limitSeconds:65})});
         result=await response.json();
         if(!response.ok&&!result?.errors)throw Error(`서버 자동편성 요청 실패 (${response.status})`);
       }else{

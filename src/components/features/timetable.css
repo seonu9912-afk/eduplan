@@ -1,0 +1,20 @@
+.timetable-module{display:grid;gap:14px;min-width:0}
+.timetable-module .page-heading{margin-bottom:0}
+.timetable-module .tt-primary-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.timetable-module .tt-status-row{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;min-height:25px}
+.timetable-module .tt-status-row span{font-size:12px}
+.timetable-module .tt-version{font-weight:700;color:#36557d}
+.timetable-module .tt-readonly{padding:4px 7px;border-radius:6px;background:#f5f6f8;color:#607088}
+.timetable-module .tt-unsaved{padding:4px 7px;border-radius:6px;background:#fff3d6;color:#99621e}
+.timetable-module .tt-server-notice,.timetable-module .tt-server-error{margin:0;padding:9px 12px;border-radius:9px;font-size:13px}
+.timetable-module .tt-server-notice{background:#edf8f4;color:#276754}
+.timetable-module .tt-server-error{background:#fff0ed;color:#9c3832}
+.timetable-module .tt-save-locked{pointer-events:none;opacity:.72}
+.timetable-module .academic-wrap{min-width:0}
+.timetable-module .academic-hero-compact{padding-top:8px;padding-bottom:8px}
+.timetable-module .academic-help{margin-top:0}
+@media(max-width:760px){
+ .timetable-module .tt-primary-actions{justify-content:flex-start}
+ .timetable-module .tt-primary-actions button{min-height:35px}
+ .timetable-module .academic-wrap{width:100%;overflow-x:auto}
+}

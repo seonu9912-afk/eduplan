@@ -179,7 +179,7 @@ export default function AcademicPlanner({schoolName,space,updateSpace,notify,onO
 
   return <div className="academic-wrap">
     <div className="academic-hero academic-hero-compact">
-      <div className="academic-hero-actions"><select aria-label="학년도 선택" value={year} onChange={e=>chooseYear(Number(e.target.value))}><option value={2027}>2027학년도{!planYears.includes(2027)?' (기본 시연)':''}</option>{planYears.filter(y=>y!==2027).map(y=><option value={y} key={y}>{y}학년도</option>)}</select><span className={`academic-status ${plan.status==='confirmed'?'confirmed':''}`}>{plan.status==='confirmed'?'확정 표시됨':'편성 초안'}</span></div>
+      <div className="academic-hero-actions"><select aria-label="학년도 선택" value={year} onChange={e=>chooseYear(Number(e.target.value))}><option value={year}>{year}학년도</option>{planYears.filter(y=>y!==year).map(y=><option value={y} key={y}>{y}학년도</option>)}</select><span className={`academic-status ${plan.status==='confirmed'?'confirmed':''}`}>{plan.status==='confirmed'?'확정 표시됨':'편성 초안'}</span></div>
     </div>
     <details className="academic-help"><summary><Info size={16}/> 시간표 데이터 및 계산 안내</summary><p>공휴일·학사일은 학사일정에서 관리합니다. 교시와 영역을 지정한 행사는 날짜별 시간표에 반영됩니다. 법정 수업시수 자동 검증은 제공하지 않으므로 실제 적용 전 확인해 주세요.</p></details>
     <SegTabs value={tab} onChange={setTab} mode={mode}/>

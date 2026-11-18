@@ -16,6 +16,7 @@ export default async function WorkspacePage({
       "home",
       "calendar",
       "curriculum",
+      "timetable",
       "plans",
       "settings",
       "people",

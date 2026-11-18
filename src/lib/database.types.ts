@@ -894,6 +894,27 @@ export type Database = {
           },
         ];
       };
+      timetable_documents: {
+        Row: {
+          academic_year_id: string;
+          workspace_id: string;
+          document: Json;
+          version: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [
+          {
+            foreignKeyName: "timetable_documents_year_workspace_fk";
+            columns: ["workspace_id", "academic_year_id"];
+            isOneToOne: true;
+            referencedRelation: "academic_years";
+            referencedColumns: ["workspace_id", "id"];
+          }
+        ];
+      };
       workspace_members: {
         Row: {
           joined_at: string;
@@ -955,6 +976,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      save_timetable_document: {
+        Args: { target: string; year_id: string; expected_version: number; next_document: Json };
+        Returns: Json;
+      };
       save_calendar_changes: {
         Args: { target: string; year_id: string; changes: Json; initial_document: Json; operation?: string };
         Returns: Json;

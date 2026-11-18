@@ -114,7 +114,8 @@ function eventsForDate(plan,date,events){
     if(event.affectsTimetable!==true||event.date>date||date>(event.endDate||event.date))continue;
     const first=Number(event.periodStart),last=Number(event.periodEnd);
     if(!Number.isInteger(first)||!Number.isInteger(last)||first<1||last>12||first>last)continue;
-    const eligible=activeClasses.filter(c=>!event.grades?.length||event.grades.map(Number).includes(Number(c.grade)));
+    const eligible=activeClasses.filter(c=>(!event.grades?.length||event.grades.map(Number).includes(Number(c.grade))) &&
+      (!event.classIds?.length||event.classIds.includes(c.id)));
     if(!event.gradeAreas){
       const subjectId=eventSubjectForArea(plan,event);
       if(subjectId)result.push({event,subjectId,first,last,chosen:eligible});
@@ -123,7 +124,7 @@ function eventsForDate(plan,date,events){
     // Original academic planner v12 allows distinct curricular areas for each grade.
     // Only areas replacing the ordinary class subject create timetable changes.
     // '교과' retains the originally scheduled subject, '없음' skips that grade.
-    const mapping={자율:'creative_self',동아리:'creative_club',진로:'creative_career',봉사:'creative_self'};
+    const mapping={자율:'creative_self','자율·자치':'creative_self',동아리:'creative_club',진로:'creative_career',봉사:'creative_self',학교자율시간:'autonomous'};
     const groups=new Map();
     for(const c of eligible){
       const area=event.gradeAreas[c.grade]??event.gradeAreas[String(c.grade)];

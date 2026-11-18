@@ -1,6 +1,7 @@
 "use client";
 import { TeachingModule } from "@/components/features/teaching";
 import { AcademicCalendar } from "@/components/features/academic-calendar";
+import { Timetable } from "@/components/features/timetable";
 import { WorkPlans } from "@/components/features/work-plans";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ import {
   Building2,
   UserRound,
   PanelTop,
+  Table2,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -37,6 +39,7 @@ import { buildInfo } from "@/lib/build-info";
 const sections: Record<string, string> = {
   home: "홈",
   calendar: "학사운영",
+  timetable: "시간표",
   plans: "학교업무",
   teaching: "수업·평가",
   curriculum: "교육과정",
@@ -148,6 +151,7 @@ export function WorkspaceApp({
               { id: "home", label: "홈", icon: House },
               { id: "curriculum", label: "교육과정", icon: BookOpen },
               { id: "calendar", label: "학사운영", icon: CalendarDays },
+              { id: "timetable", label: "시간표", icon: Table2 },
               {
                 id: "teachers",
                 label: "교원 관리",
@@ -280,6 +284,10 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
             today={today}
           />
+        ) : null}
+        {section === "timetable" ? (
+          <Timetable key={c.workspace.id + "-" + c.year?.id}
+            context={c} onDirtyChange={setDirty}/>
         ) : null}
         {section === "plans" ? (
           <WorkPlans
