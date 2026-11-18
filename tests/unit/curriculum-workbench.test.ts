@@ -30,7 +30,9 @@ describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
     const nextDoc=withWeeklyHours(doc,subject.id,1,1,3);
     const result=reviewCohort(context,nextDoc);
     expect(result.groups.find(x=>x.key==="국어")?.standard).toBe(442);
-    expect(result.total).toBeGreaterThan(start.total);
+    expect(result.total).not.toBe(start.total);
+    expect(result.total-start.total).toBeCloseTo(
+      simulateWeeklyAllocation(context,doc,subject.id,1,1,3).delta);
     expect(reviewCohort(context,doc).total).toBe(start.total);
   });
   it("scenario previews semester/group/year deltas without applying edits",()=>{
