@@ -2,3 +2,25 @@
 @media(max-width:720px){.ar-duo{grid-template-columns:1fr}.ar-popup{right:2.5vw;bottom:8px}.ar h2{font-size:26px}.ar-entry{justify-content:flex-start}}
 .ar{width:100%;min-width:0}.ar-fieldset{border:0;padding:0;margin:0;min-width:0}.ar-fieldset>label{display:grid;gap:5px;margin:9px 0}.ar .ar-check{display:flex;align-items:center;gap:6px}.ar .ar-muted{font-size:12px;color:#56667b;margin-top:6px}.ar-legend{padding:3px 7px;border-radius:4px}.ar-popup input[type=number]{width:58px}.ar-event-summary{padding:10px;border-bottom:1px solid #e4eaf2}.ar-event-summary p{font-size:12px;margin-top:6px}.ar-event-summary button{text-align:left}.ar-assignment{margin:12px 0}.ar button:focus-visible,.ar input:focus-visible,.ar select:focus-visible,.ar textarea:focus-visible{outline:2px solid #2563eb;outline-offset:2px}.ar input[type=checkbox]{accent-color:#245ec7}.ar-range-rows{max-height:40vh}.ar .ar-day-swap{background:#e4efff;border-bottom:2px solid #6499df}.ar textarea{min-height:80px;width:100%}.ar .ar-panel{min-width:0}.ar-popup .ar-fieldset{max-width:100%}
 @media(max-width:720px){.ar-popup{width:95vw;max-height:78vh}.ar-line{align-items:flex-start}.ar h2{font-size:23px}.ar .ar-tools button{white-space:normal}.ar-tabs button{min-width:88px}}
+
+/* Full-bleed annual academic cells: weekday at top-left and named days below. */
+.ar .ar-annual{min-width:1120px}
+.ar .ar-annual tbody td{height:50px;padding:0;vertical-align:top}
+.ar .ar-annual tbody td>button{
+  display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;
+  gap:1px;width:100%;height:100%;min-height:50px;box-sizing:border-box;
+  padding:5px 6px;text-align:left;border:0;border-radius:0;
+  overflow:hidden;font-weight:500;background:#fff;color:#27374c
+}
+.ar .ar-annual tbody td>button.ar-day-instructional{background:#fff;color:#27374c}
+.ar .ar-annual tbody td>button.ar-day-weekend{background:#edf1f6;color:#59677a}
+.ar .ar-annual tbody td>button.ar-day-holiday{background:#fde8e8;color:#7d3434}
+.ar .ar-annual tbody td>button.ar-day-vacation{background:#efe6fa;color:#534285}
+.ar .ar-annual tbody td>button.ar-day-closed{background:#fff1d6;color:#78470d}
+.ar .ar-annual tbody td>button.ar-day-swap{background:#e4efff;color:#2453a2}
+.ar .ar-annual tbody td>button[aria-pressed=true]{box-shadow:inset 0 0 0 2px #3571d3}
+.ar .ar-annual .ar-cell-top{display:flex;align-items:flex-start;justify-content:space-between;gap:2px;min-width:0}
+.ar .ar-annual .ar-cell-weekday{font-size:11px;font-weight:700;line-height:15px;white-space:nowrap}
+.ar .ar-annual .ar-cell-more{font-size:9px;font-weight:650;line-height:15px;white-space:nowrap;opacity:.8}
+.ar .ar-annual .ar-cell-note{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:13px;font-weight:550}
+.ar .ar-annual tbody td>button:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}

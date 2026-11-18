@@ -50,6 +50,17 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
   const plan = parsed.success ? parsed.data : defaultAnnual();
   const year = c.year?.year ?? 2027;
   const report = useMemo(() => calculateAcademic(year, plan, c.grades, c.semesters, c.classes), [year, plan, c.grades, c.semesters, c.classes]);
+  const eventTitlesByDate = useMemo(() => {
+    const byDate = new Map<string, string[]>();
+    for (const day of report.days) {
+      const titles = c.events
+        .filter((event) => event.start_date <= day.date && event.end_date >= day.date)
+        .map((event) => event.title.trim())
+        .filter(Boolean);
+      if (titles.length) byDate.set(day.date, [...new Set(titles)]);
+    }
+    return byDate;
+  }, [report.days, c.events]);
   const days = new Map(report.days.map((d) => [d.date,d]));
   const months = [...new Set(report.days.map((d) => d.date.slice(0,7)))];
   const counts = summarizeAcademicDays(report.days,plan);
@@ -196,8 +207,25 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
       <div className="ar-scroll"><table className="ar-annual"><caption className="sr-only">{year}학년도 3월부터 다음 해 2월까지 연간 학사력</caption><thead><tr><th>일</th>{months.map((m) => <th key={m}>{Number(m.slice(5))}월</th>)}</tr></thead>
         <tbody>{Array.from({ length: 31 },(_,i) => <tr key={i}><th>{i+1}</th>{months.map((m) => {
           const d = days.get(`${m}-${String(i+1).padStart(2,"0")}`);
-          return <td key={m}>{d && <button aria-label={`${d.date} ${dayTypes[d.type]} ${d.name}`} aria-pressed={date === d.date} className={`ar-day-${d.type === "discretionary" ? "closed" : d.type}`}
-            title={`${d.date} ${dayTypes[d.type]} ${d.name}`} onClick={() => openDate(d.date)}>{weekdays[new Date(d.date+"T12:00:00Z").getUTCDay()]}{d.type === "swap" ? `↔${weekdays[d.weekday]}` : ""}{!d.enabled ? " ×" : ""}</button>}</td>;
+          if (!d) return <td key={m} className="ar-empty-day" />;
+          const notes = [...new Set([
+            ...(d.name.trim() ? [d.name.trim()] : d.type === "swap" ? ["요일 교체"] : []),
+            ...(eventTitlesByDate.get(d.date) ?? []),
+          ])];
+          const weekday = weekdays[new Date(d.date+"T12:00:00Z").getUTCDay()];
+          const fullLabel = `${d.date} ${dayTypes[d.type]}${notes.length ? ` · ${notes.join(" · ")}` : ""}`;
+          return <td key={m}>
+            <button aria-label={fullLabel} aria-pressed={date === d.date} className={`ar-day-${d.type === "discretionary" ? "closed" : d.type}`}
+              title={fullLabel} onClick={() => openDate(d.date)}>
+              <span className="ar-cell-top">
+                <span className="ar-cell-weekday">{weekday}{d.type === "swap" ? `↔${weekdays[d.weekday]}` : ""}{!d.enabled ? " ×" : ""}</span>
+                {notes.length > 2 && <span className="ar-cell-more">+{notes.length - 2}</span>}
+              </span>
+              {notes.slice(0, 2).map((note, index) =>
+                <span className="ar-cell-note" key={`${index}-${note}`}>{note}</span>
+              )}
+            </button>
+          </td>;
         })}</tr>)}</tbody></table></div>
       <details className="ar-panel"><summary>수업일수 확인 · 연간 {counts.total}일</summary><p>1학기 {counts.semesters[0]}일 · 2학기 {summer ? `${counts.semesters[1]}일` : "미확정"}</p></details>
     </>}
