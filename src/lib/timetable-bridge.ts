@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { Context } from "@/lib/models";
-import { annualSchema, calculateAcademic, defaultAnnual, isTeachingDay } from "@/lib/academic";
-import type { Json } from "@/lib/database.types";
+import type { Context } from "./models";
+import { annualSchema, calculateAcademic, defaultAnnual, isTeachingDay } from "./academic";
+import type { Json } from "./database.types";
 
 /** The old timetable editor's real document shape, retained for lossless legacy reuse. */
 export const timetableDocumentSchema = z.object({
