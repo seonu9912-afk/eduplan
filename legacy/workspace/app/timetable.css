@@ -90,3 +90,44 @@
 @media(max-width:1100px){.tt-day-ranges{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:700px){.tt-day-ranges{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:420px){.tt-day-ranges{grid-template-columns:1fr}}
+/* Independently calculated bell schedules and live shortened-day planning. */
+.tt-auto-bell{border:1px solid #dce8f7;border-radius:11px;padding:14px;margin-bottom:17px;background:#fbfdff;min-width:0}
+.tt-auto-bell .tt-panel-head{margin-bottom:10px}
+.tt-auto-bell .tt-bell-outcome{display:flex;flex-wrap:wrap;align-items:center;gap:7px 15px;margin:13px 0}
+.tt-auto-bell .tt-bell-outcome>span{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#61758d}
+.tt-auto-bell .tt-bell-outcome strong{font-size:15px;color:#245b9d}
+.tt-auto-bell .tt-bell-delta{padding:6px 9px;background:#eaf2ff;border-radius:8px;color:#275f9a!important;font-weight:800}
+.tt-time-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;min-width:0}
+.tt-time-controls>label{display:grid;gap:6px;color:#607894;font-size:11px;font-weight:750;min-width:0}
+.tt-time-control-wrap{position:relative;display:flex;align-items:center;gap:6px}
+.tt-time-control-wrap input{width:100%;min-width:0;height:36px;padding:7px 28px 7px 9px;font-size:13px}
+.tt-time-control-wrap small{position:absolute;right:11px;pointer-events:none;color:#6f839d}
+.tt-auto-bell .tt-actions.bottom{align-items:center}
+.tt-auto-bell .tt-actions.bottom .tt-caption{margin-right:auto;max-width:480px}
+.tt-preview-details{border-top:1px solid #e4edf8;margin-top:12px;padding-top:12px}
+.tt-preview-details summary{cursor:pointer;color:#285d98;font-size:12px;font-weight:750}
+.tt-preview-details .tt-table-scroll{margin-top:10px}
+.tt-bell-preview-table .tt-grid{min-width:430px}
+.tt-bell-preview-table .tt-grid th:first-child{width:90px}
+.tt-bell-preview-table .tt-grid td{padding:10px}
+.tt-bell-preview-table .tt-original-time{color:#7f8da0}
+.tt-bell-preview-table .tt-shifted-row>td:not(.tt-original-time){color:#205f9f;font-weight:750;background:#f3f8ff}
+.tt-bell-preview-table .tt-caption{padding:8px;margin:0}
+.tt-variation-tool{display:grid;gap:14px}
+.tt-variation-tool .tt-panel-head{margin-bottom:0}
+.tt-variation-weekday{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px 16px}
+.tt-variation-weekday>label{display:grid;gap:5px;font-size:12px;color:#5b7390;font-weight:750}
+.tt-variation-weekday select{min-width:160px}
+.tt-variation-weekday>span{font-size:12px;color:#6c809a;padding-bottom:8px}
+.tt-variation-presets{justify-content:flex-start}
+.tt-variation-results{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tt-variation-results>div{border:1px solid #e2eaf6;background:#f7faff;padding:15px;border-radius:10px;display:grid;gap:9px}
+.tt-variation-results span{font-size:12px;color:#6f8199}
+.tt-variation-results strong{font-size:22px;color:#2e5789;line-height:1.2;overflow-wrap:anywhere}
+.tt-variation-results .tt-variation-earlier{background:#ebf8f2;border-color:#c4e8d7}
+.tt-variation-results .tt-variation-earlier strong{color:#236c53;font-size:19px}
+.tt-variation-results .tt-variation-later{background:#fff3e9;border-color:#f1d2b1}
+.tt-variation-results .tt-variation-later strong{color:#a36627;font-size:19px}
+@media(max-width:850px){.tt-time-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.tt-variation-results{grid-template-columns:1fr}.tt-variation-results strong{font-size:19px}}
+@media(max-width:390px){.tt-time-controls{grid-template-columns:1fr}}
