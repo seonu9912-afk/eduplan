@@ -25,6 +25,55 @@ export function sortCalendarEvents<T extends Pick<CalendarEvent, "start_date" | 
 }
 
 export type Area = AnnualPlan["allocations"][number]["areas"][string];
+
+/** Compact, factual period label for the event list; empty when no periods are assigned. */
+export function formatEventAssignedPeriods(
+  event: Pick<CalendarEvent, "id" | "start_date" | "end_date">,
+  allocations: Pick<AnnualPlan["allocations"][number], "eventId" | "date" | "start" | "end">[],
+): string {
+  const byDate = new Map<string, Set<number>>();
+  for (const row of allocations) {
+    if (row.eventId !== event.id || row.date < event.start_date || row.date > event.end_date) continue;
+    const group = byDate.get(row.date) ?? new Set<number>();
+    for (let period = row.start; period <= row.end; period++) group.add(period);
+    byDate.set(row.date, group);
+  }
+  if (!byDate.size) return "";
+  const periodText = (periods: Set<number>) => {
+    const sorted = [...periods].sort((a, b) => a-b);
+    if (!sorted.length) return "";
+    const groups: string[] = [];
+    let start = sorted[0], last = sorted[0];
+    for (const period of sorted.slice(1)) {
+      if (period === last+1) { last = period; continue; }
+      groups.push(start === last ? String(start) : `${start}~${last}`);
+      start = last = period;
+    }
+    groups.push(start === last ? String(start) : `${start}~${last}`);
+    return groups.join("·")+"교시";
+  };
+  const labels = new Set([...byDate.values()].map(periodText));
+  return labels.size === 1 ? [...labels][0] : "날짜별 교시 상이";
+}
+
+/** Hide grade labels when all school grades are included, unless class targets narrow the audience. */
+export function formatEventAudience(
+  event: Pick<CalendarEvent, "target_grades" | "target_class_ids">,
+  grades: readonly number[],
+  classes: readonly { id: string; grade: number; class_number: number }[],
+): string {
+  const classIds = event.target_class_ids ?? [];
+  if (classIds.length) {
+    const named = classes.filter((schoolClass) => classIds.includes(schoolClass.id))
+      .sort((a, b) => a.grade-b.grade || a.class_number-b.class_number)
+      .map((schoolClass) => `${schoolClass.grade}학년 ${schoolClass.class_number}반`);
+    return named.length ? named.join(" · ") : "대상 학급 확인 필요";
+  }
+  const selected = [...new Set(event.target_grades)].sort((a,b) => a-b);
+  if (selected.length === grades.length && selected.every((grade) => grades.includes(grade))) return "";
+  return selected.map((grade) => `${grade}학년`).join(" · ");
+}
+
 export type CalendarEvent = Row<"events"> & { target_class_ids?: string[] };
 export type EventDraft = {
   event: CalendarEvent;

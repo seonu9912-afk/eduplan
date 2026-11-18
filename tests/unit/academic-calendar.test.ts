@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents, eventVisiblePeriods, sharedEventArea } from "../../src/lib/academic-calendar";
+import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents, eventVisiblePeriods, sharedEventArea, formatEventAssignedPeriods, formatEventAudience } from "../../src/lib/academic-calendar";
 import { defaultAnnual, calculateAcademic } from "../../src/lib/academic";
 import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 
@@ -10,6 +10,33 @@ function fixture() {
   return { plan, event };
 }
 describe("official calendar adapter", () => {
+  it("formats a single-period event without showing unnecessary grade labels", () => {
+    const event = {id:"event-a",start_date:"2027-03-02",end_date:"2027-03-02"};
+    const rows = [{eventId:"event-a",date:"2027-03-02",start:5,end:5}];
+    expect(formatEventAssignedPeriods(event,rows)).toBe("5교시");
+    expect(formatEventAssignedPeriods({...event,id:"missing"},rows)).toBe("");
+    expect(formatEventAudience({target_grades:[3,1,2],target_class_ids:[]},[1,2,3],[])).toBe("");
+    expect(formatEventAudience({target_grades:[2],target_class_ids:[]},[1,2,3],[])).toBe("2학년");
+  });
+  it("groups continuous event periods, keeps gaps and handles varying multi-day schedules", () => {
+    const event = {id:"event-b",start_date:"2027-03-04",end_date:"2027-03-05"};
+    const rows = [
+      {eventId:"event-b",date:"2027-03-04",start:2,end:3},
+      {eventId:"event-b",date:"2027-03-04",start:5,end:5},
+      {eventId:"event-b",date:"2027-03-05",start:2,end:3},
+      {eventId:"event-b",date:"2027-03-05",start:5,end:5},
+      {eventId:"other",date:"2027-03-05",start:6,end:9}
+    ];
+    expect(formatEventAssignedPeriods(event,rows)).toBe("2~3·5교시");
+    expect(formatEventAssignedPeriods(event,[...rows,{eventId:"event-b",date:"2027-03-05",start:6,end:6}])).toBe("날짜별 교시 상이");
+  });
+  it("shows only targeted class names for class-specific events", () => {
+    const classes = [
+      {id:"a",grade:1,class_number:1},{id:"b",grade:2,class_number:1}
+    ];
+    expect(formatEventAudience({target_grades:[1,2],target_class_ids:["b"]},[1,2],classes))
+      .toBe("2학년 1반");
+  });
   it("uses all target grades as default and distinguishes mixed areas without changing drafts", () => {
     expect(sharedEventArea([null, undefined, null])).toBeNull();
     expect(sharedEventArea(["동아리", "동아리", "동아리"])).toBe("동아리");

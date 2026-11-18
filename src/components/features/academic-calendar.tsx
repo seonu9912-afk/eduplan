@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, Notice } from "@/components/common";
 import { annualSchema, calculateAcademic, defaultAnnual, dayTypes, isTeachingDay, summarizeAcademicDays, type AnnualPlan } from "@/lib/academic";
-import { calendarTabs, calendarDayRule, calendarChangeSchema, eventDraft, eventChange, formatCalendarEventPeriod, sortCalendarEvents, type CalendarChange, type CalendarEvent, type CalendarHistory, type CalendarState, type CalendarConflict, type EventDraft } from "@/lib/academic-calendar";
+import { calendarTabs, calendarDayRule, calendarChangeSchema, eventDraft, eventChange, formatCalendarEventPeriod, sortCalendarEvents, formatEventAssignedPeriods, formatEventAudience, type CalendarChange, type CalendarEvent, type CalendarHistory, type CalendarState, type CalendarConflict, type EventDraft } from "@/lib/academic-calendar";
 import { curriculumTargets, datePeriod, hoursRange } from "@/lib/academic-rebuild";
 import { sameAnnualValue } from "@/lib/academic-revisions";
 import { parseAcademicConfirmation } from "@/lib/academic-confirmation";
@@ -238,9 +238,10 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
         <section className="ar-panel"><h3>월 전체 행사 · {monthly.length}건</h3>{monthly.length ? monthly.map((e) => <div className={`ar-event-summary ${e.start_date <= date && date <= e.end_date ? "ar-focus" : ""}`} key={e.id}>
           <button className="ar-event-line" onClick={() => openEvent(e)}>
             <span className="ar-event-date">{formatCalendarEventPeriod(e.start_date, e.end_date)}</span>
+            {formatEventAssignedPeriods(e, plan.allocations) && <span className="ar-event-hours">{formatEventAssignedPeriods(e, plan.allocations)}</span>}
             <span className="ar-event-title">{e.title}</span>
           </button>
-          <p className="ar-event-targets">{e.target_grades.map((g) => `${g}학년`).join(" · ")}</p>
+          {formatEventAudience(e, c.grades, c.classes) && <p className="ar-event-targets">{formatEventAudience(e, c.grades, c.classes)}</p>}
         </div>) : <p className="ar-muted">등록된 행사가 없습니다. 달력에서 날짜를 선택해 주세요.</p>}</section></div>
     </>}
     {edit?.kind === "event" && tab === "행사 편성" && <section className="ar-panel"><div className="ar-line"><h3>{edit.value.event.version ? "행사 편집" : "행사 등록"}</h3><button onClick={() => move(() => setEdit(null))}>닫기</button></div>

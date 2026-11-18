@@ -107,10 +107,9 @@
 .ar .ar-period-grid .ar-use-common{display:block;font-size:10px;padding:3px 5px;margin-top:4px;white-space:nowrap}
 @media(max-width:720px){.ar .ar-event .ar-grade-option{min-width:82px;padding:7px 9px}.ar .ar-scope-row{align-items:flex-start}.ar .ar-period-area-buttons{gap:5px}}
 /* Default event scope: whole selected grades, with explicit class exceptions. */
-.ar .ar-event-header{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.ar .ar-event-header{grid-template-columns:minmax(210px,1.7fr) minmax(155px,1.2fr) minmax(155px,1fr) minmax(155px,1fr);align-items:start}
 .ar .ar-event-header label{min-width:0}
 .ar .ar-event-header label>input{width:100%;min-width:0}
-.ar .ar-event-header .ar-required{display:inline;margin-left:4px;color:#b54747;font-size:11px;font-weight:700}
 .ar .ar-scope-default{align-items:center;justify-content:space-between;gap:12px}
 .ar .ar-scope-current{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px}
 .ar .ar-scope-current>strong{color:#314b70}
@@ -121,4 +120,10 @@
 .ar .ar-scope-advanced label{display:grid;gap:5px;margin:8px 0;min-width:200px;font-size:12px}
 .ar .ar-scope-advanced select{max-width:320px}
 .ar .ar-area-mixed{background:#f4ebfd;color:#7444a5}
-@media(max-width:560px){.ar .ar-event-header{grid-template-columns:1fr}.ar .ar-scope-default{align-items:flex-start}}
+@media(max-width:860px){.ar .ar-event-header{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.ar .ar-event-header{grid-template-columns:1fr}}
+/* Inline event periods and always-visible scheduling surface. */
+.ar .ar-event-summary .ar-event-hours{font-size:12px;color:#527097;font-weight:650;white-space:nowrap}
+.ar .ar-event-periods{padding:12px;border:1px solid #dce6f2;border-radius:10px;margin:12px 0}
+.ar .ar-event-periods>h3{margin:0 0 8px;font-size:15px;font-weight:700}
+.ar .ar-event-periods .ar-period-toolhead button{white-space:nowrap}
