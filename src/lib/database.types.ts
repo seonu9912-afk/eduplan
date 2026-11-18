@@ -245,6 +245,7 @@ export type Database = {
           workspace_id:string;
           academic_year:number;
           edits:Json;
+          custom_rows:Json;
           version:number;
           updated_at:string;
           updated_by:string|null;
@@ -1012,6 +1013,10 @@ export type Database = {
     Functions: {
       save_curriculum_annual_excel_sheet: {
         Args:{target:string;target_year:number;expected_version:number;next_edits:Json};
+        Returns:Json;
+      };
+      save_curriculum_annual_excel_sheet_v2: {
+        Args:{target:string;target_year:number;expected_version:number;next_edits:Json;next_custom_rows:Json};
         Returns:Json;
       };
       curriculum_excel_apply: {

@@ -96,17 +96,37 @@ export function changeSheetValue(
   else next[key]=normalized;
   return next;
 }
-export function orderedSheetRows():Annual2026Row[]{return [...ANNUAL_2026_ROWS];}
-export function sheetMergeInfo(index:number):{categoryLabel?:string;categorySpan?:number;groupLabel?:string;groupSpan?:number}{
-  const item=ANNUAL_2026_ROWS[index];
+export type Annual2026CustomRow={
+  id:string;afterId:string;section:"subject"|"creative"|"free";group:string;subject:string;
+};
+export function orderedSheetRows(customRows:readonly Annual2026CustomRow[]=[]):Annual2026Row[]{
+  const built:Annual2026Row[]=[];
+  const seen=new Set<string>();
+  function add(item:Annual2026Row){
+    built.push(item);
+    for(const child of customRows){
+      if(child.afterId!==item.id||seen.has(child.id))continue;
+      if(child.section!==item.section||child.group!==item.group)continue;
+      seen.add(child.id);
+      add({id:child.id,section:child.section,group:child.group,
+        subject:child.subject,kind:"subject",cells:{}});
+    }
+  }
+  for(const item of ANNUAL_2026_ROWS)add(item);
+  return built;
+}
+export function sheetMergeInfo(index:number,rows:readonly Annual2026Row[]=ANNUAL_2026_ROWS):{
+  categoryLabel?:string;categorySpan?:number;groupLabel?:string;groupSpan?:number
+}{
+  const item=rows[index];
   if(!item||item.kind!=="subject"&&item.section==="other")return {};
   const categoryLabel=item.section==="subject"?"교과\n(군)":item.section==="creative"?"창의적\n체험\n활동":"자유\n학기\n활동";
-  const previous=ANNUAL_2026_ROWS[index-1],sameSection=previous?.section===item.section;
-  const categorySpan=sameSection?undefined:ANNUAL_2026_ROWS.slice(index).findIndex(row=>row.section!==item.section);
+  const previous=rows[index-1],sameSection=previous?.section===item.section;
+  const categorySpan=sameSection?undefined:rows.slice(index).findIndex(row=>row.section!==item.section);
   const groupStarts=!sameSection||previous?.group!==item.group;
-  const groupSpan=groupStarts?ANNUAL_2026_ROWS.slice(index).findIndex(row=>row.section!==item.section||row.group!==item.group):undefined;
-  const restSection=ANNUAL_2026_ROWS.filter((row,j)=>j>=index&&row.section===item.section).length;
-  const restGroup=ANNUAL_2026_ROWS.filter((row,j)=>j>=index&&row.section===item.section&&row.group===item.group).length;
+  const groupSpan=groupStarts?rows.slice(index).findIndex(row=>row.section!==item.section||row.group!==item.group):undefined;
+  const restSection=rows.filter((row,j)=>j>=index&&row.section===item.section).length;
+  const restGroup=rows.filter((row,j)=>j>=index&&row.section===item.section&&row.group===item.group).length;
   return {
     ...(sameSection?{}:{categoryLabel,categorySpan:categorySpan===-1?restSection:categorySpan}),
     ...(groupStarts?{groupLabel:item.group,groupSpan:groupSpan===-1?restGroup:groupSpan}:{}),

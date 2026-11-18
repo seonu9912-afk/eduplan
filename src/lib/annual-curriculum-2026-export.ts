@@ -1,7 +1,12 @@
-import {ANNUAL_2026_COLUMNS,ANNUAL_2026_ROWS,ANNUAL_2026_YEAR,
-  sheetMergeInfo,sheetValue} from "./annual-curriculum-2026";
+import {ANNUAL_2026_COLUMNS,ANNUAL_2026_YEAR,
+  orderedSheetRows,sheetMergeInfo,type Annual2026CustomRow} from "./annual-curriculum-2026";
+import {calculateAnnual2026Sheet,calculatedAnnualCell} from "./annual-curriculum-calculations";
 
-export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string,string>>):Promise<Uint8Array>{
+export async function createAnnual2026WorkbookBytes(
+  edits:Readonly<Record<string,string>>,customRows:Readonly<Annual2026CustomRow[]>=[],
+):Promise<Uint8Array>{
+  const rows=orderedSheetRows(customRows);
+  const calculated=calculateAnnual2026Sheet({edits,rows:customRows});
   const {Workbook}=await import("exceljs");
   const workbook=new Workbook();
   workbook.creator="EduPlan";
@@ -50,7 +55,7 @@ export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string
       c.fill={type:"pattern",pattern:"solid",fgColor:{argb:col<=8?"FFDFE8F3":col<=18?"FFE7F1FA":"FFF0F4FA"}};
     }
   }
-  ANNUAL_2026_ROWS.forEach((record,index)=>{
+  rows.forEach((record,index)=>{
     const rowNumber=index+4;
     const row=sheet.getRow(rowNumber);
     row.height=record.kind==="grand"?29:record.kind==="subtotal"?26:27;
@@ -69,7 +74,7 @@ export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string
         right:{style:"hair",color:{argb:"FF9DAEBF"}},
       };
       if(col>=4){
-        const raw=sheetValue(record.id,col,edits);
+        const raw=calculatedAnnualCell(calculated,record,col,edits);
         if(raw!==""){
           const numeric=raw.replace(/,/g,"");
           if(/^-?(?:\d+)(?:\.\d+)?$/.test(numeric)){
@@ -83,7 +88,7 @@ export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string
       sheet.mergeCells(rowNumber,1,rowNumber,3);
       row.getCell(1).value=record.label;
     }else{
-      const merged=sheetMergeInfo(index);
+      const merged=sheetMergeInfo(index,rows);
       if(merged.categoryLabel&&merged.categorySpan){
         if(merged.categorySpan>1)sheet.mergeCells(rowNumber,1,rowNumber+merged.categorySpan-1,1);
         row.getCell(1).value=merged.categoryLabel;
@@ -99,9 +104,11 @@ export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string
   const buffer=await workbook.xlsx.writeBuffer();
   return new Uint8Array(buffer);
 }
-export async function downloadAnnual2026Workbook(edits:Readonly<Record<string,string>>):Promise<void>{
+export async function downloadAnnual2026Workbook(
+  edits:Readonly<Record<string,string>>,customRows:Readonly<Annual2026CustomRow[]>=[],
+):Promise<void>{
   const {downloadBlob}=await import("./academic-files");
-  const bytes=await createAnnual2026WorkbookBytes(edits);
+  const bytes=await createAnnual2026WorkbookBytes(edits,customRows);
   downloadBlob(Uint8Array.from(bytes).buffer as ArrayBuffer,
     ANNUAL_2026_YEAR+"학년도_당해연도_교육과정_원본형.xlsx",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
