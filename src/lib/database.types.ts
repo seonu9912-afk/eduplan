@@ -235,6 +235,22 @@ export type Database = {
           },
         ];
       };
+      curriculum_design_documents: {
+        Row: { plan_id:string;workspace_id:string;document:Json;version:number;updated_at:string;updated_by:string|null };
+        Insert: never;Update:never;Relationships:[];
+      };
+      curriculum_design_locks: {
+        Row: { plan_id:string;workspace_id:string;editor_id:string;expires_at:string;updated_at:string };
+        Insert:never;Update:never;Relationships:[];
+      };
+      curriculum_design_snapshots: {
+        Row: { id:string;plan_id:string;workspace_id:string;version:number;document:Json;hours:Json;confirmed_at:string;confirmed_by:string };
+        Insert:never;Update:never;Relationships:[];
+      };
+      curriculum_design_revisions: {
+        Row: { id:number;plan_id:string;workspace_id:string;version:number;document:Json;saved_at:string;saved_by:string };
+        Insert:never;Update:never;Relationships:[];
+      };
       curriculum_hours: {
         Row: {
           grade: number;
@@ -976,6 +992,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      curriculum_design_acquire: {
+        Args:{target_plan:string;take_over?:boolean};Returns:Json;
+      };
+      curriculum_design_release: {
+        Args:{target_plan:string};Returns:void;
+      };
+      curriculum_design_save: {
+        Args:{target_plan:string;expected_plan_version:number;expected_doc_version:number;next_document:Json};Returns:Json;
+      };
+      curriculum_design_confirm: {
+        Args:{target_plan:string};Returns:Json;
+      };
       save_timetable_document: {
         Args: { target: string; year_id: string; expected_version: number; next_document: Json };
         Returns: Json;

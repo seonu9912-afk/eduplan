@@ -1,5 +1,7 @@
 "use client";
 import { CurriculumDraft } from "./curriculum-draft";
+import { CurriculumEnhanced } from "./curriculum-enhanced";
+import "./curriculum-enhanced.css";
 import { useState } from "react";
 import {
   BookOpen,
@@ -42,7 +44,7 @@ export function Curriculum({
   initialCohort?: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const [tab, setTab] = useState<"cohort" | "operating" | "subjects" | "draft">(
+  const [tab, setTab] = useState<"cohort" | "operating" | "subjects" | "draft" | "legacy">(
     "cohort",
   );
   const [cohort, setCohort] = useState(
@@ -126,6 +128,7 @@ export function Curriculum({
               { id: "operating", label: "학년도 운영표", icon: Table2 },
               { id: "draft", label: "총론 기반 초안", icon: BookOpen },
               { id: "subjects", label: "교과군·과목 설정", icon: Settings2 },
+              { id: "legacy", label: "기존 편성표 조회", icon: Clipboard },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
             <button
@@ -152,7 +155,14 @@ export function Curriculum({
         ) : tab === "subjects" ? (
           <SubjectSettings context={c} />
         ) : tab === "operating" ? (
-          <OperatingTable context={c} />
+          <CurriculumEnhanced context={c} view="operating"
+            cohort={c.year?.year ?? cohort} onDirtyChange={setChanged}/>
+        ) : tab === "legacy" ? (
+          <div>
+            <p className="notice">이전 편성표를 읽기 전용으로 확인합니다. 실제 편집은 입학년도별 3개년 편성표 또는 당해연도 편성표에서 진행해 주세요.</p>
+            <OperatingTable context={c}/>
+            {plan && <GridEditor context={{...c,role:"viewer"}} plan={plan} onDirtyChange={()=>{}}/>}
+          </div>
         ) : (
           <>
             <div className="curriculum-toolbar">
@@ -218,10 +228,11 @@ export function Curriculum({
                 }
               />
             ) : (
-              <GridEditor
+              <CurriculumEnhanced
                 key={plan.id}
                 context={c}
-                plan={plan}
+                view="cohort"
+                cohort={cohort}
                 onDirtyChange={setChanged}
               />
             )}
@@ -231,9 +242,8 @@ export function Curriculum({
       <div className="curriculum-note">
         <Info size={18} />
         <p>
-          현재 검증은 숫자 입력과 합계 계산에 대한 기초 검사입니다.
-          법정·교육과정 기준 충족 여부는 판정하지 않으며, 학교에서 최신 고시와
-          지침을 확인해 주세요.
+          표 편성값과 국가 기준을 비교할 수 있지만, 특례 적용 여부와 최신 고시·교육청 지침에 따른 적합성을 자동 확정하지 않습니다.
+          학교 자체 교육과정과 과거 입학년도 자료는 임의로 수정하지 않습니다.
         </p>
       </div>
       <Modal
