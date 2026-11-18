@@ -1,6 +1,7 @@
 "use client";
 import { CurriculumDraft } from "./curriculum-draft";
 import { CurriculumEnhanced } from "./curriculum-enhanced";
+import { CurriculumWorkbench3 } from "./curriculum-workbench3";
 import { CurriculumExcelImport } from "./curriculum-excel-import";
 import { AnnualCurriculum2026 } from "./annual-curriculum-2026";
 import "./curriculum-enhanced.css";
@@ -47,8 +48,8 @@ export function Curriculum({
   initialCohort?: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const [tab, setTab] = useState<"annual2026" | "cohort" | "operating" | "subjects" | "draft" | "legacy">(
-    "annual2026",
+  const [tab, setTab] = useState<"studio" | "annual2026" | "cohort" | "operating" | "subjects" | "draft" | "legacy">(
+    "studio",
   );
   const [cohort, setCohort] = useState(
     Number(initialCohort) || c.year?.year || c.plans[0]?.cohort_year || 2026,
@@ -88,11 +89,10 @@ export function Curriculum({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">CURRICULUM DESIGN</span>
-          <h1>교육과정 편성</h1>
+          <span className="eyebrow">CURRICULUM DESIGN · VERSION 3.0</span>
+          <h1>교육과정 편성 3.0</h1>
           <p>
-            입학부터 졸업까지, {c.grades.length}개년 교육과정을 한눈에
-            설계하세요.
+            국가 기준과 학교 자율 편성을 연결하고, 입학년도별·당해연도 편성표를 한 원본으로 관리합니다.
           </p>
         </div>
         <div className="heading-actions">
@@ -123,16 +123,11 @@ export function Curriculum({
         >
           {(
             [
-              { id: "annual2026", label: "2026학년도 당해연도 교육과정", icon: Table2 },
-              {
-                id: "cohort",
-                label: `입학년도별 ${c.grades.length}개년 편성표`,
-                icon: BookOpen,
-              },
-              { id: "operating", label: "학년도 운영표", icon: Table2 },
+              { id: "studio", label: "교육과정 편성기 3.0", icon: BookOpen },
+              { id: "subjects", label: "교과군·과목 관리", icon: Settings2 },
               { id: "draft", label: "총론 기반 초안", icon: BookOpen },
-              { id: "subjects", label: "교과군·과목 설정", icon: Settings2 },
-              { id: "legacy", label: "기존 편성표 조회", icon: Clipboard },
+              { id: "annual2026", label: "2026 원본 편성표 보관", icon: Table2 },
+              { id: "legacy", label: "이전 편성 방식·자료", icon: Clipboard },
             ] as const
           ).map(({ id, label, icon: Icon }) => (
             <button
@@ -148,19 +143,28 @@ export function Curriculum({
           ))}
         </div>
         <InlineNotice mutation={m} />
-        {tab !== "annual2026" && <CurriculumExcelImport context={c} disabled={dirty} onImported={(year)=>{
+        {tab === "legacy" && <CurriculumExcelImport context={c} disabled={dirty} onImported={(year)=>{
           setChanged(false);
           setCohort(year);
-          setTab("cohort");
+          setTab("studio");
         }}/>}
-        {tab === "annual2026" ? (
-          <AnnualCurriculum2026 key={c.workspace.id} context={c} onDirtyChange={setChanged}/>
+        {tab === "studio" ? (
+          <CurriculumWorkbench3 key={c.workspace.id} context={c} initialCohort={cohort}
+            onDirtyChange={setChanged} onOpenSubjects={()=>changeTab("subjects")}/>
+        ) : tab === "annual2026" ? (
+          <div className="cw3-workbench">
+            <p className="cw3-note">이 화면은 2026학년도 원본의 26열 구조와 작성 당시 값을 확인하는 보관용입니다.
+              새로운 편성·시수 계산은 ‘교육과정 편성기 3.0’에서 진행해 주세요.
+              원본 자료를 별도 저장 영역에 보존합니다.</p>
+            <AnnualCurriculum2026 key={c.workspace.id} context={{...c,role:"viewer"}}
+              onDirtyChange={()=>{}}/>
+          </div>
         ) : tab === "draft" ? (
           <CurriculumDraft
             context={c}
             onCreated={(y) => {
               setCohort(y);
-              setTab("cohort");
+              setTab("studio");
             }}
           />
         ) : tab === "subjects" ? (
@@ -273,7 +277,7 @@ export function Curriculum({
               () => {
                 setChanged(false);
                 setCohort(value);
-                setTab("cohort");
+                setTab("studio");
                 setOpen(false);
               },
               "편성표가 생성되었습니다.",

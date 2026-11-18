@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight, Download } from "lucide-react";
+import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Context, Row } from "@/lib/models";
-import { orderedCurriculumGroups } from "@/lib/curriculum-group-order";
+import { orderedCurriculumGroups, orderedCurriculumSubjects } from "@/lib/curriculum-group-order";
+import { addSubject } from "@/app/actions";
+import { CurriculumInsights, CurriculumScenario } from "./curriculum-workbench";
 import {
   type CurriculumDocument, type WeekRule, initializeDesign,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
@@ -71,6 +73,38 @@ function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
       if(/[\t\n]/.test(text)&&onPaste?.(text))e.preventDefault();
     }}
   />;
+}
+function QuickAddSubject({workspaceId,groupId,disabled,onCreated}:{
+  workspaceId:string;groupId:string;disabled:boolean;onCreated:()=>void;
+}){
+  const [open,setOpen]=useState(false),[name,setName]=useState("");
+  const [busy,setBusy]=useState(false),[error,setError]=useState("");
+  async function create(){
+    const proposed=name.trim();
+    if(!proposed){setError("과목 이름을 입력해 주세요.");return;}
+    setBusy(true);setError("");
+    try{
+      const result=await addSubject({workspace_id:workspaceId,group_id:groupId,name:proposed});
+      if(!result.ok){setError(result.error);return;}
+      setName("");setOpen(false);onCreated();
+    }catch{setError("교과목을 추가하지 못했습니다. 다시 확인해 주세요.");}
+    finally{setBusy(false);}
+  }
+  return <div className="cw3-inline-add no-print">
+    {open&&<>
+      <input aria-label="새 교과목 이름" placeholder="새 과목명" maxLength={60}
+        autoFocus value={name} disabled={busy}
+        onChange={e=>setName(e.target.value)}
+        onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();void create();}
+          if(e.key==="Escape"){setOpen(false);setError("");}}}/>
+      <button type="button" disabled={busy||!name.trim()} onClick={()=>void create()}>{busy?"추가 중…":"등록"}</button>
+      <button type="button" disabled={busy} onClick={()=>{setOpen(false);setError("");}}>취소</button>
+    </>}
+    {!open&&<button type="button" disabled={disabled} onClick={()=>setOpen(true)}>
+      <Plus size={12}/>이 교과군에 과목 추가
+    </button>}
+    {error&&<small role="alert">{error}</small>}
+  </div>;
 }
 export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   context:Context;view:View;cohort:number;onDirtyChange:(dirty:boolean)=>void;
@@ -217,11 +251,11 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
       const target=plans.find((p)=>p.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
       return (["weekly","total"] as const).map((field)=>({grade,semester,plan:target,field}));
     }));
-  // A fixed national-order group list is shared by both the 3-year and operating views.
-  const activeGroupIds=new Set(c.subjects.map((s)=>s.group_id));
-  const groupList=orderedCurriculumGroups(c.groups)
-    .filter((group)=>activeGroupIds.has(group.id)).map((group)=>group.id);
-  const visibleSubjects=c.subjects.filter((s)=>!collapsed.includes(s.group_id));
+  // Show even empty national-order groups so teachers can add a first subject.
+  const groupList=orderedCurriculumGroups(c.groups).map(group=>group.id);
+  const visibleSubjects=orderedCurriculumSubjects(c.subjects,c.groups)
+    .filter(subject=>!collapsed.includes(subject.group_id));
+  const pendingEdit=Object.values(states).some(item=>item.dirty||item.saving);
   const allLoaded=plans.every((p)=>!!states[p.id]);
   async function exportSheet(layout:"classic"|"modern"){
     if(!allLoaded||!plans.length||exporting)return;
@@ -304,6 +338,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     {plans.length===0&&<p className="cv2-empty">연결할 입학년도 편성표가 없습니다. 먼저 ‘편성표 만들기’에서 해당 입학년도를 생성해 주세요.</p>}
     {plans.length>0&&!allLoaded&&<p className="cv2-empty">교육과정 편성 자료와 편집 상태를 불러오는 중입니다.</p>}
     {plans.length>0&&allLoaded&&<>
+      {c.schoolType==="중학교"&&<CurriculumInsights context={c} view={view} cohort={cohort}
+        documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
       <div className="cv2-weeks no-print">
         <strong>편성 기준 주수</strong>
         {plans.map((plan)=>{
@@ -326,6 +362,11 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
           });
         })}
       </div>
+      {c.schoolType==="중학교"&&view==="cohort"&&firstPlan&&firstDoc&&
+        <CurriculumScenario context={c} document={firstDoc}
+          canApply={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id].saving}
+          onApply={(subjectId,grade,semester,weekly)=>mutate(firstPlan.id,
+            doc=>withWeeklyHours(doc,subjectId,grade,semester,weekly))}/>}
       <div className="cv2-table-scroll" tabIndex={0} aria-label="교육과정 엑셀식 편성표">
         <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
         <table className="cv2-table">
@@ -342,15 +383,25 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
             </th>)}
           </tr></thead>
           {groupList.map((groupId)=>{
-            const subjects=c.subjects.filter((row)=>row.group_id===groupId);
+            const subjects=visibleSubjects.filter(row=>row.group_id===groupId);
             const group=c.groups.find((g)=>g.id===groupId);
             const folded=collapsed.includes(groupId);
             return <tbody key={groupId} className="cv2-body-group">
               <tr className="cv2-group-row"><th colSpan={columns.length+3}>
-                <button onClick={()=>setCollapsed((list)=>folded?list.filter((id)=>id!==groupId):[...list,groupId])}>
-                  {folded?<ChevronRight size={14}/>:<ChevronDown size={14}/>}
-                  {group?.name??"기타 교과군"} <small>({subjects.length}과목)</small>
-                </button>
+                <div className="cw3-group-header">
+                  <button type="button" onClick={()=>setCollapsed(list=>folded?list.filter(id=>id!==groupId):[...list,groupId])}>
+                    {folded?<ChevronRight size={14}/>:<ChevronDown size={14}/>}
+                    {group?.name??"기타 교과군"} <small>({subjects.length}과목)</small>
+                  </button>
+                  {subjects.length>0&&<span className="cw3-group-sum">
+                    이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
+                    columns.filter(col=>col.field==="total").reduce((hours,col)=>hours+
+                      (totalOf(subject.id,col)??0),0),0).toLocaleString()}시간</strong>
+                  </span>}
+                  {editable&&<QuickAddSubject workspaceId={c.workspace.id}
+                    groupId={groupId} disabled={pendingEdit||!allLoaded}
+                    onCreated={()=>router.refresh()}/>}
+                </div>
               </th></tr>
               {!folded&&subjects.map((subject)=>{
                 const r=visibleSubjects.findIndex((s)=>s.id===subject.id);
@@ -390,12 +441,12 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
       {firstPlan&&firstDoc&&<>
         <div className="cv2-verify-head no-print">
           <Button variant="outline" onClick={()=>setShowNational((v)=>!v)}>
-            <CheckCircle2 size={15}/>{showNational?"국가 기준 검증 접기":"국가 기준·편성 결과 검토"}
+            <CheckCircle2 size={15}/>{showNational?"추가 기준 검토 접기":"스포츠클럽·상세 검토"}
           </Button>
           <span>{curriculumVersion(cohort).label} · {states[firstPlan.id].snapshots.length}개 확정본 조회</span>
         </div>
         {showNational&&<div className="cv2-check">
-          <p>2022 개정 교육과정의 기준 시수와 편성 시수를 비교합니다. 학교 특례·후속 개정 고시·개설 과목 분류는 별도 확인이 필요하므로 법적 위반 여부를 자동 확정하지 않습니다.</p>
+          <p>이 입학년도에 적용되는 교육과정의 기준 시수와 편성 시수를 비교합니다. 학교 특례·후속 개정 고시·개설 과목 분류는 별도 확인이 필요하므로 법적 위반 여부를 자동 확정하지 않습니다.</p>
           {curriculumVersion(cohort).verified?
             <table><thead><tr><th>교과군</th><th>국가 기준</th><th>현재 편성</th><th>증감</th><th>검토</th></tr></thead>
             <tbody>{nationalGroupTotals(c,firstDoc).map((row)=><tr key={row.key}>
@@ -403,7 +454,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
               <td>{format(row.diff)}</td><td>{row.status}</td>
             </tr>)}</tbody></table>:
             <p>이 입학년도에 적용할 이전 교육과정의 정확한 국가 기준 자료가 아직 등록되지 않았습니다.</p>}
-          <p>3개년 편성 합계: {format(firstDoc.cells.reduce((sum,cell)=>sum+evaluateCell(firstDoc,cell).total,0))}시간 · 2022 개정 기준 최소 총시수 {MIDDLE_2022_MINIMUM}시간</p>
+          <p>3개년 편성 합계: {format(firstDoc.cells.reduce((sum,cell)=>sum+evaluateCell(firstDoc,cell).total,0))}시간 · 중학교 기준 최소 총시수 {MIDDLE_2022_MINIMUM}시간</p>
           <p>학교스포츠클럽: {sportsHoursByGrade(c,firstDoc).map((x)=>x.grade+"학년 "+format(x.hours)+"시간").join(" / ")} · 국가 기준 연간 34시간·학기별 편성 여부 검토</p>
         </div>}
       </>}

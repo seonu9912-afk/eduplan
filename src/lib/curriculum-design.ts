@@ -27,10 +27,12 @@ export const MIDDLE_2022_SOURCE =
   "교육부 고시 제2022-33호 [별책1] 총론 20~22쪽 (후속 개정 고시의 적용 여부 확인 필요)";
 export const MIDDLE_2022_MINIMUM = 3366;
 
+export const MIDDLE_2015_SOURCE =
+  "교육부 고시 제2015-74호 및 2015 개정 교육과정 중학교 총론 해설 · 교과군별 기본 시수 기준";
 export function curriculumVersion(cohortYear: number) {
   return cohortYear >= 2025
     ? { id: "2022", label: "2022 개정 교육과정", verified: true, source: MIDDLE_2022_SOURCE }
-    : { id: "2015-unverified", label: "2015 개정 교육과정 · 국가 기준 자료 확인 필요", verified: false, source: "" };
+    : { id: "2015", label: "2015 개정 교육과정", verified: true, source: MIDDLE_2015_SOURCE };
 }
 export function matchGroup(name: string): string | null {
   const plain = name.replace(/[\s·⋅\\/()（）,]/g, "");

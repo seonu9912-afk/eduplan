@@ -63,8 +63,8 @@ describe("curriculum 3-year/operating shared source calculation",()=>{
     expect(evaluateCell(updated,getCell(updated,id,1,1)!).total).toBe(48);
     expect(getCell(updated,id,1,1)!.adjustments[0].hours).toBe(-16);
   });
-  it("keeps unverified cohort standards separate from 2022 national references",()=>{
-    expect(curriculumVersion(2024).verified).toBe(false);
+  it("uses the 2015 and 2022 national middle-school reference tables for their cohorts",()=>{
+    expect(curriculumVersion(2024).verified).toBe(true);
     expect(curriculumVersion(2025).verified).toBe(true);
     expect(matchGroup("사회/역사/도덕")).toBe("사회");
     expect(matchGroup("동아리 활동")).toBe("창체");
