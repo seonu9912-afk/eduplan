@@ -89,7 +89,13 @@ function onArrowKey(event: KeyboardEvent) {
   const inTable = active.closest("tbody td,tbody th");
   if (inTable) {
     const target = moveInTable(active, key);
-    if (target) { event.preventDefault(); target.focus(); }
+    if (target) {
+      event.preventDefault();
+      target.focus();
+      // Only yearly date buttons opt in to selection on arrow movement.
+      // The regular click handler retains the unsaved-change confirmation.
+      if (target.matches('button[data-arrow-activate="date"]')) target.click();
+    }
     else if (event.altKey) event.preventDefault(); // Avoid browser back/forward at the edge.
     return;
   }

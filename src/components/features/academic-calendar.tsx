@@ -7,7 +7,6 @@ import { calendarTabs, calendarDayRule, calendarChangeSchema, eventDraft, eventC
 import { curriculumTargets, datePeriod, hoursRange } from "@/lib/academic-rebuild";
 import { sameAnnualValue } from "@/lib/academic-revisions";
 import { parseAcademicConfirmation } from "@/lib/academic-confirmation";
-import { addDays } from "@/lib/domain";
 import { loadCalendarState, saveCalendarChanges, confirmAcademicCalendar, previewHolidays } from "@/app/actions";
 import type { Context } from "@/lib/models";
 import { AnnualAcademic } from "./annual-academic";
@@ -215,7 +214,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
           const weekday = weekdays[new Date(d.date+"T12:00:00Z").getUTCDay()];
           const fullLabel = `${d.date} ${dayTypes[d.type]}${notes.length ? ` · ${notes.join(" · ")}` : ""}`;
           return <td key={m}>
-            <button aria-label={fullLabel} aria-pressed={date === d.date} className={`ar-day-${d.type === "discretionary" ? "closed" : d.type}`}
+            <button data-arrow-activate="date" aria-label={fullLabel} aria-pressed={date === d.date} className={`ar-day-${d.type === "discretionary" ? "closed" : d.type}`}
               title={fullLabel} onClick={() => openDate(d.date)}>
               <span className="ar-cell-top">
                 <span className="ar-cell-weekday">{weekday}{d.type === "swap" ? `↔${weekdays[d.weekday]}` : ""}{!d.enabled ? " ×" : ""}</span>
@@ -255,9 +254,8 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     {edit?.kind === "day" && tab === "연간 학사력" && <section className="ar-popup ar-panel" role="dialog" aria-label="날짜 편집" aria-modal={false} onKeyDown={(e) => { if (e.key === "Escape") move(() => setEdit(null)); }}>
       <div className="ar-line"><h3>{edit.date}</h3><button aria-label="날짜 편집 닫기" onClick={() => move(() => setEdit(null))}>닫기</button></div>
       <DateFields value={edit.value} onChange={(value) => setEdit({ ...edit,value })} context={c} disabled={!editable || pending}/>
-      <div className="ar-tools">{editable && <button className="ar-primary" disabled={pending} onClick={() => startTransition(async () => { await saveEdit(); })}>{pending ? "저장 중…" : "날짜 저장"}</button>}
-        <button onClick={() => move(() => { setTab("행사 편성"); setEdit(null); })}>이 날짜의 행사 편성</button>
-        <button disabled={!days.has(addDays(edit.date,-1))} onClick={() => openDate(addDays(edit.date,-1))}>← 전날</button><button disabled={!days.has(addDays(edit.date,1))} onClick={() => openDate(addDays(edit.date,1))}>다음 날 →</button>
+      <div className="ar-date-actions">
+        {editable && <button className="ar-primary" disabled={pending} onClick={() => startTransition(async () => { await saveEdit(); })}>{pending ? "저장 중…" : "저장"}</button>}
       </div>{dirty && <p className="ar-muted">저장하지 않은 변경 내용</p>}
     </section>}
     <Modal open={edit?.kind === "range"} onOpenChange={(open) => { if (!open) move(() => setEdit(null)); }} title="기간 설정 · 변경 미리보기" description="기존 공휴일과 개별 설정은 기본적으로 유지합니다. 변경할 충돌 날짜만 선택하세요." wide>

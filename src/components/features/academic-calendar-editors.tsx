@@ -8,32 +8,46 @@ export function DateFields({ value, onChange, context, disabled }: {
   value: AnnualPlan["days"][string]; onChange: (v: AnnualPlan["days"][string]) => void; context: Context; disabled: boolean;
 }) {
   const patch = (fields: Partial<typeof value>) => onChange({ ...value, ...fields });
-  return <fieldset disabled={disabled} className="ar-fieldset">
+  return <fieldset disabled={disabled} className="ar-fieldset ar-date-fields">
     <label>날짜 유형<select value={value.type} onChange={(e) => patch({ type: e.target.value as typeof value.type })}>
       {Object.entries(dayTypes).map(([key, label]) => <option value={key} key={key}>{label}</option>)}
     </select></label>
+    {value.type === "swap" && <label className="ar-swap-field">적용할 요일
+      <select value={value.weekday} onChange={(e) => patch({ weekday: Number(e.target.value) })}>
+        {[1,2,3,4,5].map((day) => <option key={day} value={day}>{"일월화수목금"[day]}요일</option>)}
+      </select>
+    </label>}
     <label>날짜 설명<input value={value.name} maxLength={100} placeholder="예: 여름방학, 개교기념일" onChange={(e) => patch({ name: e.target.value })}/></label>
     <label className="ar-check"><input type="checkbox" checked={value.enabled} onChange={(e) => patch({ enabled: e.target.checked })}/>이 날짜 설정 사용</label>
-    <details><summary>고급 설정</summary>
-      <p>요일교체는 날짜 유형을 ‘요일 교체’로 선택합니다. 운영 교시는 수업일에만 계산됩니다.</p>
-      <label>적용할 요일<select disabled={value.type !== "swap"} value={value.weekday} onChange={(e) => patch({ weekday: Number(e.target.value) })}>
-        {[1,2,3,4,5].map((day) => <option key={day} value={day}>{"일월화수목금"[day]}요일</option>)}
-      </select></label>
-      {context.grades.map((grade) => <div key={grade} className="ar-tools">
-        <label className="ar-check"><input type="checkbox" checked={!!value.gradePeriods?.[grade]} onChange={(e) => {
-          const next = { ...value.gradePeriods };
-          if (e.target.checked) next[grade] = { start: value.start ?? 1, end: value.end ?? 1 }; else delete next[grade];
-          patch({ gradePeriods: next });
-        }}/>{grade}학년 운영 교시 예외</label>
-        {value.gradePeriods?.[grade] && <>
-          <input aria-label={`${grade}학년 시작 교시`} type="number" min={1} max={12} value={value.gradePeriods[grade].start}
+    {context.grades.length > 0 && <div className="ar-exceptions">
+      <div className="ar-exception-options">
+        <strong>운영교시 예외</strong>
+        {context.grades.map((grade) => <label key={grade} className="ar-check">
+          <input type="checkbox" checked={!!value.gradePeriods?.[grade]} onChange={(e) => {
+            const next = { ...value.gradePeriods };
+            if (e.target.checked) next[grade] = { start: value.start ?? 1, end: value.end ?? 6 };
+            else delete next[grade];
+            patch({ gradePeriods: next });
+          }}/>{grade}학년
+        </label>)}
+      </div>
+      {context.grades.some((grade) => !!value.gradePeriods?.[grade]) && <div className="ar-exception-ranges">
+        {context.grades.filter((grade) => !!value.gradePeriods?.[grade]).map((grade) => <div key={grade} className="ar-exception-range">
+          <span>{grade}학년</span>
+          <input aria-label={`${grade}학년 시작 교시`} type="number" min={1} max={12} value={value.gradePeriods![grade].start}
             onChange={(e) => patch({ gradePeriods: { ...value.gradePeriods, [grade]: { ...value.gradePeriods![grade], start: Number(e.target.value) } } })}/>
-          <span>~</span><input aria-label={`${grade}학년 종료 교시`} type="number" min={1} max={12} value={value.gradePeriods[grade].end}
+          <span>~</span>
+          <input aria-label={`${grade}학년 종료 교시`} type="number" min={1} max={12} value={value.gradePeriods![grade].end}
             onChange={(e) => patch({ gradePeriods: { ...value.gradePeriods, [grade]: { ...value.gradePeriods![grade], end: Number(e.target.value) } } })}/>
-        </>}
-      </div>)}
-      {value.start != null && <p>기존 공통 예외: {value.start}~{value.end}교시 <button type="button" onClick={() => { const next = { ...value }; delete next.start; delete next.end; onChange(next); }}>기본 운영 교시 사용</button></p>}
-    </details>
+          <span>교시</span>
+        </div>)}
+      </div>}
+      {value.start != null && <div className="ar-legacy-period"><span>기존 공통 예외 {value.start}~{value.end}교시</span>
+        <button type="button" onClick={() => {
+          const next = { ...value }; delete next.start; delete next.end; onChange(next);
+        }}>기본 운영 교시 사용</button>
+      </div>}
+    </div>}
   </fieldset>;
 }
 

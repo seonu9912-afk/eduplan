@@ -24,3 +24,23 @@
 .ar .ar-annual .ar-cell-more{font-size:9px;font-weight:650;line-height:15px;white-space:nowrap;opacity:.8}
 .ar .ar-annual .ar-cell-note{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:13px;font-weight:550}
 .ar .ar-annual tbody td>button:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+
+
+/* Compact, contextual date editing controls. */
+.ar .ar-date-fields{display:grid;gap:10px}
+.ar .ar-date-fields>label{margin:0;display:grid;gap:5px}
+.ar .ar-date-fields>label.ar-check{display:flex;align-items:center;gap:7px}
+.ar .ar-date-fields .ar-swap-field{margin-top:0}
+.ar .ar-exceptions{display:grid;gap:8px;margin-top:2px;padding:9px 0;border-top:1px solid #e7edf6}
+.ar .ar-exception-options{display:flex;align-items:center;gap:7px 10px;flex-wrap:wrap}
+.ar .ar-exception-options>strong{font-size:12px;font-weight:700;white-space:nowrap;margin-right:2px}
+.ar .ar-exception-options .ar-check{font-size:12px;white-space:nowrap}
+.ar .ar-exception-options .ar-check input{margin:0}
+.ar .ar-exception-ranges{display:grid;gap:6px}
+.ar .ar-exception-range{display:flex;align-items:center;gap:6px;font-size:12px}
+.ar .ar-exception-range>span:first-child{min-width:40px;font-weight:650}
+.ar .ar-exception-range input[type=number]{width:56px;padding:5px 3px;text-align:center}
+.ar .ar-legacy-period{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;font-size:12px}
+.ar .ar-legacy-period button{padding:5px 7px;font-size:11px}
+.ar .ar-date-actions{display:flex;justify-content:flex-end;margin-top:14px}
+.ar .ar-date-actions .ar-primary{min-width:80px}
