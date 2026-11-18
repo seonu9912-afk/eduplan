@@ -155,7 +155,7 @@ export function Curriculum({
         ) : tab === "subjects" ? (
           <SubjectSettings context={c} />
         ) : tab === "operating" ? (
-          <CurriculumEnhanced context={c} view="operating"
+          <CurriculumEnhanced key={c.year?.id ?? "no-year"} context={c} view="operating"
             cohort={c.year?.year ?? cohort} onDirtyChange={setChanged}/>
         ) : tab === "legacy" ? (
           <div>

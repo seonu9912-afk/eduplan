@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Context, Row } from "@/lib/models";
 import {
-  type CurriculumDocument, type DesignCell, type WeekRule, initializeDesign,
+  type CurriculumDocument, type WeekRule, initializeDesign,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
   validateDocument, curriculumVersion, nationalGroupTotals, sportsHoursByGrade,
   MIDDLE_2022_MINIMUM,
 } from "@/lib/curriculum-design";
 import {
-  loadCurriculumDesign, claimCurriculumDesign, releaseCurriculumDesign,
+  loadCurriculumDesign, claimCurriculumDesign,
   saveCurriculumDesign, confirmCurriculumDesign,
 } from "@/app/curriculum-design-actions";
 
@@ -79,16 +79,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const statesRef=useRef(states);
   const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
   const active=useRef(true);
-  statesRef.current=states;
   const editable=c.role==="admin"||c.role==="editor";
   const plansRef=useRef(plans);
-  plansRef.current=plans;
+  useEffect(()=>{statesRef.current=states;},[states]);
+  useEffect(()=>{plansRef.current=plans;},[planKey]);
   useEffect(()=>{onDirtyChange(Object.values(states).some((item)=>item.dirty));},[states,onDirtyChange]);
   useEffect(()=>{
     let inScope=true;
     active.current=true;
-    setStates({});
-    setErrors([]);
     void Promise.all(plans.map(async(plan)=>{
       const loaded=await loadCurriculumDesign({planId:plan.id});
       if(!inScope)return;
@@ -376,41 +374,59 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
           <p>학교스포츠클럽: {sportsHoursByGrade(c,firstDoc).map((x)=>x.grade+"학년 "+format(x.hours)+"시간").join(" / ")} · 국가 기준 연간 34시간·학기별 편성 여부 검토</p>
         </div>}
       </>}
-      {adjustFor&&states[adjustFor.planId]&&(()=>{
-        const detail=adjustFor;
-        const doc=states[detail.planId].doc;
-        const cell=getCell(doc,detail.subjectId,detail.grade,detail.semester);
-        if(!cell)return null;
-        return <div className="cv2-modal-backdrop" onClick={()=>setAdjustFor(null)} role="presentation">
-          <section className="cv2-adjust-dialog" role="dialog" aria-modal="true" aria-label="학기 시수 조정"
-            onClick={(event)=>event.stopPropagation()}>
-            <div className="cv2-dialog-head"><h3>학기 시수 조정</h3>
-              <button onClick={()=>setAdjustFor(null)}>닫기</button></div>
-            <p>{c.subjects.find((s)=>s.id===detail.subjectId)?.name} · {detail.grade}학년 {detail.semester}학기</p>
-            <p>기본 {format(evaluateCell(doc,cell).base)}시간 + 유형별 조정 {format(evaluateCell(doc,cell).adjustments)}시간
-              + 직접 조정 {format(cell.manual)}시간 = <strong>{format(evaluateCell(doc,cell).total)}시간</strong></p>
-            <div className="cv2-adjust-list">
-              {cell.adjustments.map((adj)=> <div key={adj.id}>
-                <span>{adj.kind}</span><input type="number" step="1" value={adj.hours}
-                  onChange={(event)=>mutate(detail.planId,(source)=>withCell(source,detail.subjectId,detail.grade,detail.semester,
-                    (old)=>({...old,adjustments:old.adjustments.map((a)=>a.id===adj.id?{...a,hours:Number(event.target.value)}:a)})))}/>
-                <button onClick={()=>mutate(detail.planId,(source)=>withCell(source,detail.subjectId,detail.grade,detail.semester,
-                  (old)=>({...old,adjustments:old.adjustments.filter((a)=>a.id!==adj.id)})))}>삭제</button>
-              </div>)}
-              <select id="cv2-adjust-type" defaultValue="자유학기제 시수 조정">
-                {["자유학기제 시수 조정","학교자율시간 관련 조정","일반 편성 조정","학교 자체 조정"].map((item)=>
-                  <option key={item} value={item}>{item}</option>)}
-              </select>
-              <button onClick={()=>{
-                const kind=(document.getElementById("cv2-adjust-type") as HTMLSelectElement)?.value??"일반 편성 조정";
-                mutate(detail.planId,(source)=>withCell(source,detail.subjectId,detail.grade,detail.semester,
-                  (old)=>({...old,adjustments:[...old.adjustments,{id:crypto.randomUUID(),kind,hours:0}]})));
-              }}>조정 유형 추가</button>
-            </div>
-            <Button onClick={()=>setAdjustFor(null)}>완료</Button>
-          </section>
-        </div>;
-      })()}
+      {adjustFor&&states[adjustFor.planId]&&
+        <AdjustmentEditor
+          detail={adjustFor}
+          doc={states[adjustFor.planId].doc}
+          subjects={c.subjects}
+          onClose={()=>setAdjustFor(null)}
+          onChange={(fn)=>mutate(adjustFor.planId,fn)}
+        />}
+
     </>}
+  </div>;
+}
+
+function AdjustmentEditor({
+  detail,doc,subjects,onClose,onChange,
+}:{
+  detail:{planId:string;subjectId:string;grade:number;semester:number};
+  doc:CurriculumDocument;subjects:Context["subjects"];onClose:()=>void;
+  onChange:(fn:(source:CurriculumDocument)=>CurriculumDocument)=>void;
+}){
+  const [kind,setKind]=useState("자유학기제 시수 조정");
+  const cell=getCell(doc,detail.subjectId,detail.grade,detail.semester);
+  if(!cell)return null;
+  const update=(fn:(current:NonNullable<typeof cell>)=>NonNullable<typeof cell>)=>
+    onChange((source)=>withCell(source,detail.subjectId,detail.grade,detail.semester,fn));
+  return <div className="cv2-modal-backdrop" role="presentation" onClick={onClose}>
+    <section className="cv2-adjust-dialog" role="dialog" aria-modal="true" aria-label="학기 시수 조정"
+      onClick={(event)=>event.stopPropagation()}>
+      <div className="cv2-dialog-head"><h3>학기 시수 조정</h3>
+        <button type="button" onClick={onClose}>닫기</button></div>
+      <p>{subjects.find((s)=>s.id===detail.subjectId)?.name} · {detail.grade}학년 {detail.semester}학기</p>
+      <p>기본 {format(evaluateCell(doc,cell).base)}시간 + 유형별 조정 {format(evaluateCell(doc,cell).adjustments)}시간
+        + 직접 조정 {format(cell.manual)}시간 = <strong>{format(evaluateCell(doc,cell).total)}시간</strong></p>
+      <div className="cv2-adjust-list">
+        {cell.adjustments.map((adj)=><div key={adj.id}>
+          <span>{adj.kind}</span>
+          <input type="number" step="1" value={adj.hours}
+            onChange={(event)=>{
+              const value=Number(event.target.value);
+              if(Number.isFinite(value))update((old)=>({...old,adjustments:old.adjustments.map((a)=>
+                a.id===adj.id?{...a,hours:value}:a)}));
+            }}/>
+          <button type="button" onClick={()=>update((old)=>({...old,
+            adjustments:old.adjustments.filter((a)=>a.id!==adj.id)}))}>삭제</button>
+        </div>)}
+        <select value={kind} onChange={(event)=>setKind(event.target.value)} aria-label="조정 유형">
+          {["자유학기제 시수 조정","학교자율시간 관련 조정","일반 편성 조정","학교 자체 조정"].map((item)=>
+            <option key={item} value={item}>{item}</option>)}
+        </select>
+        <button type="button" onClick={()=>update((old)=>({...old,adjustments:[...old.adjustments,
+          {id:crypto.randomUUID(),kind,hours:0}]}))}>조정 유형 추가</button>
+      </div>
+      <Button onClick={onClose}>완료</Button>
+    </section>
   </div>;
 }
