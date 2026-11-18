@@ -35,6 +35,7 @@ const DEFAULT_ACTIVITIES = [
   { id: "creative-self", label: "자율·자치", kind: "creative_self" },
   { id: "creative-club", label: "동아리", kind: "creative_club" },
   { id: "creative-career", label: "진로활동", kind: "creative_career" },
+  { id: "creative-volunteer", label: "봉사활동", kind: "creative_volunteer" },
   { id: "school-autonomy", label: "학교자율시간", kind: "autonomous" },
   { id: "sports", label: "학교스포츠클럽", kind: "sports" },
 ];

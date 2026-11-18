@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "vitest run && node --test legacy/workspace/tests/timetable-solver.test.mjs legacy/workspace/tests/teacher-hours-grid.test.mjs legacy/workspace/tests/teacher-workload.test.mjs legacy/workspace/tests/timetable-changes.test.mjs",
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm test",
     "typecheck": "next typegen && tsc --noEmit"

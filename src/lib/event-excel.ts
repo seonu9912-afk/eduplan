@@ -1,7 +1,7 @@
 import type { Context } from "./models";
 import type { AnnualPlan } from "./academic";
 import { areas } from "./academic";
-import { calendarDates, eventChange, type CalendarChange, type CalendarEvent, type EventDraft } from "./academic-calendar";
+import { eventChange, type CalendarChange, type CalendarEvent, type EventDraft } from "./academic-calendar";
 import type { Workbook, Worksheet, Cell } from "exceljs";
 
 export const EVENT_SHEET = "행사 목록";

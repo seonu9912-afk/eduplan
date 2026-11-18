@@ -36,7 +36,7 @@ export async function POST(request){
     try{
       const slots=parseMipSchedule(plan,config,model,result);
       return NextResponse.json({ok:true,errors:[],warnings:model.warnings,slots,stats:{...stats,placedHours:slots.length}});
-    }catch(e){
+    }catch{
       return NextResponse.json({ok:false,errors:[result?.Status==='Infeasible'?'필수조건을 만족하는 시간표가 없습니다. 교사의 하루 최대·연속수업 제한과 공통시간·연속수업·특별실 조건을 확인해 주세요. 조건을 유지할 수 없다면 수업 배정부터 조정해야 합니다.':`제한 시간 내에 완전한 시간표를 찾지 못했습니다 (${result?.Status||'미확인'}). 조건 조정이나 재시도가 필요합니다.`],warnings:model.warnings,slots:[],stats});
     }
   }catch(e){return NextResponse.json({ok:false,errors:[`자동편성 계산을 수행하지 못했습니다: ${e?.message||'요청 오류'}`],slots:[]},{status:500});}
