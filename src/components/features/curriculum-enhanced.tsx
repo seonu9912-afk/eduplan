@@ -110,8 +110,9 @@ function QuickAddSubject({workspaceId,groupId,disabled,onCreated}:{
     {error&&<small role="alert">{error}</small>}
   </div>;
 }
-export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
+export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simple=false}:{
   context:Context;view:View;cohort:number;onDirtyChange:(dirty:boolean)=>void;
+  simple?:boolean;
 }){
   const router=useRouter();
   const currentYear=c.year?.year??cohort;
@@ -366,7 +367,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
               <button disabled={!item.dirty||item.saving} onClick={()=>void saveOne(p.id)}><Save size={13}/>저장</button>
               <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>취소</button>
               <button disabled={!item.future.length} onClick={()=>historyMove(p.id,false)}>재실행</button>
-              <button disabled={item.dirty||item.saving} onClick={()=>void confirm(p)}><ShieldCheck size={13}/>확정본</button>
+              {!simple&&<button disabled={item.dirty||item.saving} onClick={()=>void confirm(p)}><ShieldCheck size={13}/>확정본</button>}
             </>}
           </div>;
         })}
