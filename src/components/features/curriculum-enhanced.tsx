@@ -286,6 +286,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     }
     return !cell||!doc?null:column.field==="weekly"?cell.weekly:evaluateCell(doc,cell).total;
   };
+  const subjectSemesterHours=(subjectId:string,grade:number,semester:number)=>{
+    const source=plans.find(plan=>plan.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
+    const doc=source?states[source.id]?.doc:null;
+    const cell=getCell(doc,subjectId,grade,semester);
+    return doc&&cell?evaluateCell(doc,cell).total:0;
+  };
+  const subjectAllHours=(subjectId:string)=>c.grades.reduce((sum,grade)=>sum+
+    [1,2].reduce((hours,semester)=>hours+subjectSemesterHours(subjectId,grade,semester),0),0);
   function updateValue(subjectId:string,column:Column,next:number){
     if(!column.plan||column.field==="year")return;
     mutate(column.plan.id,(doc)=>column.field==="weekly"
@@ -449,8 +457,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
                   </button>
                   {subjects.length>0&&<span className="cw3-group-sum">
                     이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
-                    columns.filter(col=>col.field==="total").reduce((hours,col)=>hours+
-                      (totalOf(subject.id,col)??0),0),0).toLocaleString()}시간</strong>
+                    subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
                   </span>}
                   {editable&&<QuickAddSubject workspaceId={c.workspace.id}
                     groupId={groupId} disabled={pendingEdit||!allLoaded}
@@ -481,18 +488,16 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
                         title="학기별 조정 시수 설정" onClick={()=>setAdjustFor({planId:col.plan!.id,subjectId:subject.id,grade:col.grade,semester:col.semester})}>조정</button>}
                     </td>;
                   })}
-                  <td className="cv2-row-sum">{columns.filter((col)=>col.field==="total")
-                    .reduce((sum,col)=>sum+(totalOf(subject.id,col)??0),0).toLocaleString()}</td>
+                  <td className="cv2-row-sum">{subjectAllHours(subject.id).toLocaleString()}</td>
                 </tr>;
               })}
             </tbody>;
           })}
-          <tfoot><tr><th colSpan={2}>학기·학년별 총시수</th>
+          <tfoot><tr><th colSpan={2}>{viewMode==="weekly"?"학기별 주당시수 합계":"학기·학년별 총시수"}</th>
             {columns.map((col,k)=><td key={k} className={col.field==="total"?"cv2-total-cell":""}>
               {c.subjects.reduce((sum,subject)=>sum+(totalOf(subject.id,col)??0),0).toLocaleString()}
             </td>)}
-            <td>{c.subjects.reduce((sum,subject)=>sum+columns.filter((x)=>x.field==="total")
-              .reduce((s,col)=>s+(totalOf(subject.id,col)??0),0),0).toLocaleString()}</td>
+            <td>{c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}</td>
           </tr></tfoot>
         </table>
       </div>
