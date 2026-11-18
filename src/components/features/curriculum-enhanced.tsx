@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight } from "lucide-react";
+import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Context, Row } from "@/lib/models";
 import {
@@ -44,7 +44,16 @@ function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
     type="text" inputMode="decimal" disabled={disabled} aria-label={ariaLabel}
     onFocus={(e)=>e.target.select()} onChange={(e)=>setDraft(e.target.value)}
     onBlur={accept} onKeyDown={(e)=>{
-      if(e.key==="Enter") {e.preventDefault();ref.current?.blur();return;}
+      if(e.key==="Enter") {
+        e.preventDefault();
+        accept();
+        const match=/^(\d+)-(\d+)$/.exec(cellKey);
+        const next=match?document.querySelector<HTMLInputElement>(
+          '[data-design-cell="'+(Number(match[1])+1)+'-'+Number(match[2])+'"]'):null;
+        if(next&&!next.disabled){next.focus();next.select();}
+        else ref.current?.blur();
+        return;
+      }
       if(e.key==="Escape"){setDraft(format(value));ref.current?.blur();return;}
       const offset:Record<string,[number,number]>={ArrowUp:[-1,0],ArrowDown:[1,0],
         ArrowLeft:[0,-1],ArrowRight:[0,1]};
@@ -75,6 +84,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const [errors,setErrors]=useState<string[]>([]);
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [showNational,setShowNational]=useState(false);
+  const [exporting,setExporting]=useState<"classic"|"modern"|null>(null);
   const [adjustFor,setAdjustFor]=useState<{planId:string;subjectId:string;grade:number;semester:number}|null>(null);
   const statesRef=useRef(states);
   const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
@@ -209,6 +219,17 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const groupList=[...new Set(c.subjects.map((s)=>s.group_id))];
   const visibleSubjects=c.subjects.filter((s)=>!collapsed.includes(s.group_id));
   const allLoaded=plans.every((p)=>!!states[p.id]);
+  async function exportSheet(layout:"classic"|"modern"){
+    if(!allLoaded||!plans.length||exporting)return;
+    setExporting(layout);
+    try{
+      const {downloadCurriculumWorkbook}=await import("@/lib/curriculum-export");
+      await downloadCurriculumWorkbook({context:c,view,cohort,layout,
+        documents:Object.fromEntries(plans.map((plan)=>[plan.id,states[plan.id].doc]))});
+    }catch(error){
+      setErrors((old)=>[...old.slice(-7),error instanceof Error?error.message:"엑셀 파일을 생성하지 못했습니다."]);
+    }finally{setExporting(null);}
+  }
   const totalOf=(subjectId:string,column:Column)=>{
     const doc=column.plan?states[column.plan.id]?.doc:null;
     const cell=getCell(doc,subjectId,column.grade,column.semester);
@@ -248,6 +269,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
         <p>주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다.</p>
       </div>
       <div className="cv2-actions">
+        {allLoaded&&plans.length>0&&<div className="cv2-export-buttons">
+          <button type="button" disabled={!!exporting} onClick={()=>void exportSheet("classic")}>
+            <Download size={13}/>{exporting==="classic"?"생성 중…":"원본형 엑셀"}
+          </button>
+          <button type="button" disabled={!!exporting} onClick={()=>void exportSheet("modern")}>
+            <Download size={13}/>{exporting==="modern"?"생성 중…":"현대화 엑셀"}
+          </button>
+        </div>}
         {plans.map((p)=>{
           const item=states[p.id];
           return <div className="cv2-plan-state" key={p.id}>

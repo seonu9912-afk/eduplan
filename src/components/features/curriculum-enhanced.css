@@ -67,3 +67,8 @@
 .cv2-adjust-list button{font-size:12px;padding:7px}
 @media(max-width:780px){.cv2-table-scroll{max-height:62vh}.cv2-table .cv2-group-head,.cv2-table .cv2-group-cell{min-width:85px;width:85px;max-width:85px}.cv2-table .cv2-subject-head,.cv2-table .cv2-subject-cell{left:85px;width:140px;max-width:140px;min-width:140px}.cv2-toolbar{display:grid}.cv2-actions{justify-content:flex-start}}
 @media print {.cv2-table-scroll{overflow:visible;max-height:none;border:0}.cv2-table{font-size:9px}.cv2-table thead th{position:static}.cv2-table .cv2-group-head,.cv2-table .cv2-group-cell,.cv2-table .cv2-subject-head,.cv2-table .cv2-subject-cell{position:static}.cv2-table input{border:0}.cv2-table .cv2-adjust-btn{display:none}}
+/* Export the active shared source as a school-style workbook or readable modern sheet. */
+.cv2-export-buttons{display:flex;align-items:center;gap:5px;flex-wrap:wrap;border-right:1px solid #d9e5f2;padding-right:10px}
+.cv2-export-buttons button{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;padding:7px 9px;border:1px solid #c3d7eb;background:#eef5fe;color:#275887;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer}
+.cv2-export-buttons button:disabled{opacity:.55;cursor:not-allowed}
+.cv2-export-buttons button:hover:not(:disabled){background:#e0edff}

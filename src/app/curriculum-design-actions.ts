@@ -112,6 +112,7 @@ export async function saveCurriculumDesign(input: unknown): Promise<Result<{
     });
     if(response.error)throw response.error;
     const output=z.object({ok:z.boolean(),planVersion:z.number(),documentVersion:z.number()}).parse(response.data);
+    if(!output.ok)throw Error("다른 교사가 먼저 저장했거나 편집권이 만료되었습니다. 입력 내용은 그대로 유지됩니다. 최신 편성표와 편집권을 확인해 주세요.");
     revalidatePath("/app","layout");
     return {ok:true,data:output};
   }catch(error){return {ok:false,error:issue(error)};}
