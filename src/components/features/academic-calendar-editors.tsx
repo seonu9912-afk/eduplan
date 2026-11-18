@@ -150,7 +150,7 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
           onPointerLeave={() => { drag.current = false; }}>
           <table className="ar-period-grid"><thead><tr><th>날짜</th>{periods.map((period) => <th key={period}>{period}교시</th>)}</tr></thead>
             <tbody>{dates.map((date) => {
-              const ranges = activeGrades.map((g) => availablePeriods(date, g, plan, context));
+              const ranges = selectedGrades.map((g) => availablePeriods(date, g, plan, context));
               return <tr key={date}><th>{date.slice(5)}</th>
                 {periods.map((period) => {
                   const key = `${date}/${period}`;
