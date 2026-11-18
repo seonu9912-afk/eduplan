@@ -53,10 +53,15 @@ function termsForRow(sheet:Worksheet,row:number, warnings:string[]):ImportTerm[]
     if(base===null&&reportedWeekly===null&&free===null&&freeWeekly===null&&adj===0)continue;
     const originalBase=base??(free!==null?free-adj:reportedWeekly!==null?reportedWeekly*16:0);
     const expectedFinal=originalBase+adj;
-    const final=free!==null?free:expectedFinal;
+    // The school's workbook populates the free-semester second-term cells
+    // with zero even when an ordinary second semester has 48 hours.
+    // A zero without a free-semester adjustment is a placeholder, not a
+    // replacement for a nonzero regular-semester hour allocation.
+    const isFreeTerm=free!==null&&(free!==0||adj!==0||base===null);
+    const final=isFreeTerm?free:expectedFinal;
     const derived=originalBase/16;
     const weekly=Number.isFinite(derived)?Number(derived.toFixed(6)):0;
-    if(free!==null&&Math.abs(free-expectedFinal)>0.001){
+    if(isFreeTerm&&Math.abs(free-expectedFinal)>0.001){
       warnings.push(row+"행 "+spec.grade+"학년 "+spec.semester+"학기: 자유학기제 값 "+free+
         "시간과 기본/조정 합계 "+expectedFinal+"시간이 다릅니다.");
     }

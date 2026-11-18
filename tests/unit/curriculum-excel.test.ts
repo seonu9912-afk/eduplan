@@ -19,6 +19,9 @@ async function fixture(kind:"cohort"|"operating"){
  sheet.getCell("O6").value=2;
  sheet.getCell("K6").value=48;
  sheet.getCell("L6").value=3;
+ sheet.getCell("P6").value=0;
+ sheet.getCell("Q6").value=0;
+ sheet.getCell("R6").value=0;
  sheet.getCell("S6").value=48;
  sheet.getCell("T6").value=3;
  sheet.getCell("U6").value=48;
@@ -52,6 +55,9 @@ describe("actual 2026-form curriculum workbook recognition",()=>{
   expect(spring.weekly).toBe(3);
   expect(spring.adjustment).toBe(-16);
   expect(spring.final).toBe(32);
+  const second=language.terms.find((term)=>term.grade===1&&term.semester===2)!;
+  expect(second.final).toBe(48);
+  expect(second.weekly).toBe(3);
   expect(language.terms).toHaveLength(6);
  });
  it("keeps source totals and recognizes creative activity weekly rounded display",async()=>{
