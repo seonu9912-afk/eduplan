@@ -36,6 +36,7 @@ import {
 } from "@/app/actions";
 import { cohortFor, parseGridPaste, parseHours } from "@/lib/domain";
 import type { Context, Row } from "@/lib/models";
+import { orderedCurriculumGroups, orderedCurriculumSubjects } from "@/lib/curriculum-group-order";
 export function Curriculum({
   context: c,
   initialCohort,
@@ -302,10 +303,11 @@ function GridEditor({
   plan: Row<"curriculum_plans">;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const scope = JSON.stringify([c.grades, c.subjects.map((subject) => subject.id)]);
+  const orderedSubjects = orderedCurriculumSubjects(c.subjects,c.groups);
+  const scope = JSON.stringify([c.grades, orderedSubjects.map((subject) => subject.id)]);
   const createGrid = () =>
     Object.fromEntries(
-      c.subjects.map((s) => [
+      orderedSubjects.map((s) => [
         s.id,
         Array.from({ length: c.grades.length * 2 }, (_, i) =>
           String(
@@ -322,7 +324,7 @@ function GridEditor({
     );
   const [grid, setGrid] = useState(createGrid);
   const [source, setSource] = useState(() => ({
-    version: plan.version, scope, grades: c.grades, subjects: c.subjects,
+    version: plan.version, scope, grades: c.grades, subjects: orderedSubjects,
   }));
   const [dirty, setDirty] = useState(false);
   const m = useMutation();
@@ -332,7 +334,7 @@ function GridEditor({
   const versionConflict = dirty && sourceChanged && !m.pending;
   if (!dirty && !m.pending && sourceChanged) {
     setGrid(createGrid());
-    setSource({ version: plan.version, scope, grades: c.grades, subjects: c.subjects });
+    setSource({ version: plan.version, scope, grades: c.grades, subjects: orderedSubjects });
   }
   const { grades, subjects } = source;
   const invalid = Object.values(grid)
@@ -675,7 +677,7 @@ function SubjectSettings({ context: c }: { context: Context }) {
                   <option value="" disabled>
                     교과군 선택
                   </option>
-                  {c.groups.map((g) => (
+                  {orderedCurriculumGroups(c.groups).map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
                     </option>
@@ -709,7 +711,7 @@ function SubjectSettings({ context: c }: { context: Context }) {
             </tr>
           </thead>
           <tbody>
-            {c.groups.map((g) => {
+            {orderedCurriculumGroups(c.groups).map((g) => {
               const subjects = c.subjects.filter((s) => s.group_id === g.id);
               return (
                 <tr key={g.id}>
@@ -858,7 +860,7 @@ function OperatingTable({ context: c }: { context: Context }) {
             </tr>
           </thead>
           <tbody>
-            {c.subjects.map((s) => (
+            {orderedCurriculumSubjects(c.subjects,c.groups).map((s) => (
               <tr key={s.id}>
                 <td>{c.groups.find((g) => g.id === s.group_id)?.name}</td>
                 <th scope="row">{s.name}</th>

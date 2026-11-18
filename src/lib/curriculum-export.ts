@@ -1,4 +1,5 @@
 import type { Context } from "./models";
+import { orderedCurriculumSubjects } from "./curriculum-group-order";
 import { evaluateCell, getCell, matchGroup, MIDDLE_2022_GROUPS,
   curriculumVersion, type CurriculumDocument } from "./curriculum-design";
 import type { Workbook, Worksheet } from "exceljs";
@@ -27,7 +28,7 @@ function cellFor(args:CurriculumExportArgs,subjectId:string,grade:number,semeste
 }
 function allSubjects(args:CurriculumExportArgs){
   const {context}=args;
-  return context.subjects.map((subject)=>({
+  return orderedCurriculumSubjects(context.subjects,context.groups).map((subject)=>({
     subject,group:context.groups.find((g)=>g.id===subject.group_id)?.name??"기타",
   }));
 }

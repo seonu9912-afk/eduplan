@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Context, Row } from "@/lib/models";
+import { orderedCurriculumGroups } from "@/lib/curriculum-group-order";
 import {
   type CurriculumDocument, type WeekRule, initializeDesign,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
@@ -216,7 +217,10 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
       const target=plans.find((p)=>p.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
       return (["weekly","total"] as const).map((field)=>({grade,semester,plan:target,field}));
     }));
-  const groupList=[...new Set(c.subjects.map((s)=>s.group_id))];
+  // A fixed national-order group list is shared by both the 3-year and operating views.
+  const activeGroupIds=new Set(c.subjects.map((s)=>s.group_id));
+  const groupList=orderedCurriculumGroups(c.groups)
+    .filter((group)=>activeGroupIds.has(group.id)).map((group)=>group.id);
   const visibleSubjects=c.subjects.filter((s)=>!collapsed.includes(s.group_id));
   const allLoaded=plans.every((p)=>!!states[p.id]);
   async function exportSheet(layout:"classic"|"modern"){
