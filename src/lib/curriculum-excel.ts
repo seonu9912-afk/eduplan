@@ -117,7 +117,9 @@ export async function parseCurriculumExcel(bytes:Uint8Array,filename:string):Pro
     if(/자유학기활동/.test(a))category="자유학기";
     if(/총계|학기당|3개년시수/.test(a))break;
     if(!b&&!c)continue;
-    if(/합계|총계|학기당|교과시수/.test(b)||/합계|총계/.test(c))continue;
+    // A subject may contain '합계' in its actual name; only skip known
+    // subtotal labels, not arbitrary school-designed subjects.
+    if(/합계|총계|학기당|교과시수/.test(b)||/^(시수합계|총계)$/.test(c.replace(/\s/g,"")))continue;
     if(category==="교과"){
       if(b)group=b;
     }else group=category==="창체"?"창의적 체험활동":"자유학기 활동";
