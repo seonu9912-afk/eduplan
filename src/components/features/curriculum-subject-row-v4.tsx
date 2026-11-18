@@ -16,6 +16,7 @@ export function CurriculumRowSubjectV4({context:c,subjectId,disabled,onSaved}:{
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   if(!subject)return <span>등록되지 않은 과목</span>;
+  const groupId=subject.group_id;
   const group=orderedCurriculumSubjects(c.subjects,c.groups)
     .filter(row=>row.group_id===subject.group_id);
   const index=group.findIndex(row=>row.id===subject.id);
@@ -23,7 +24,7 @@ export function CurriculumRowSubjectV4({context:c,subjectId,disabled,onSaved}:{
     if(busy||!name.trim())return;
     setBusy(true);setError("");
     const result=await renameCurriculumSubjectV4({workspaceId:c.workspace.id,
-      subjectId:subject.id,name:name.trim()});
+      subjectId,name:name.trim()});
     setBusy(false);
     if(result.ok){setEditing(false);onSaved();}
     else setError(result.error);
@@ -34,7 +35,7 @@ export function CurriculumRowSubjectV4({context:c,subjectId,disabled,onSaved}:{
     [ids[index],ids[index+step]]=[ids[index+step],ids[index]];
     setBusy(true);setError("");
     const result=await reorderCurriculumSubjectsV4({workspaceId:c.workspace.id,
-      groupId:subject.group_id,ordered:ids});
+      groupId,ordered:ids});
     setBusy(false);
     if(result.ok)onSaved();else setError(result.error);
   }

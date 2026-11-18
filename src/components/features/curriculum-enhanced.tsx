@@ -251,7 +251,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
         future:undo?[...item.future,item.doc]:item.future.slice(0,-1)}};
     });schedule(planId);
   }
-  const columns:Column[]=c.grades.flatMap((grade)=>{
+  const columns:Column[]=c.grades.flatMap<Column>((grade):Column[]=>{
     const target=plans.find(p=>p.cohort_year===(view==="cohort"?cohort:currentYear-grade+1));
     if(viewMode==="yearly")return [{grade,semester:0,plan:target,field:"year" as const}];
     const field=viewMode==="weekly"?"weekly" as const:"total" as const;
