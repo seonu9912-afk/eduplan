@@ -77,7 +77,8 @@ describe("EduPlan curriculum workbench v3 shared cohort engine",()=>{
     const docs=Object.fromEntries(context.plans.map(plan=>
       [plan.id,initializeDesign(context,plan)]));
     const year=2027;
-    expect(operatingWeekReview(context,year,docs).conflict).toBe(false);
+    // Fixture has 1st-grade confirmed and older future years provisional.
+    expect(operatingWeekReview(context,year,docs).conflict).toBe(true);
     const first=context.plans[0];
     docs[first.id]={...docs[first.id],weeks:{
       ...docs[first.id].weeks,[String(year)]:{count:17,status:"confirmed" as const},
