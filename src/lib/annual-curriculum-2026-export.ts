@@ -95,7 +95,6 @@ export async function createAnnual2026WorkbookBytes(edits:Readonly<Record<string
       row.getCell(3).value=record.subject;
     }
   });
-  sheet.printTitlesRow="1:3";
   sheet.properties.defaultRowHeight=24;
   const buffer=await workbook.xlsx.writeBuffer();
   return new Uint8Array(buffer);
