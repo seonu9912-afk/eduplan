@@ -286,11 +286,12 @@ function CurriculumSimpleReview({context:c,plan,cohort,onBack,onDirtyChange}:{
     void loadCurriculumDesign({planId:plan.id}).then(result=>{
       if(!active)return;
       if(!result.ok){setError(result.error);setLoading(false);return;}
-      setData({document:result.data.document,snapshots:result.data.snapshots});
+      setData({document:result.data.document,snapshots:result.snapshots});
       setLoading(false);
     });
     return()=>{active=false;};
   },[plan.id,reloadKey]);
+  const snapshots=data?.snapshots??[];
   const doc=data?.document?initializeDesign(c,plan,data.document):null;
   const review=doc?reviewCohort(c,doc):null;
   const errors=doc?validateDocument(c,doc):[];
@@ -336,7 +337,7 @@ function CurriculumSimpleReview({context:c,plan,cohort,onBack,onDirtyChange}:{
           <div><small>국가 기준</small><strong>{format(review.minimum)}시간</strong></div>
           <div><small>학교 3개년 편성</small><strong>{review.effectiveTotal===null?"경로 확인 필요":format(review.effectiveTotal)+"시간"}</strong></div>
           <div><small>기준 대비 차이</small><strong>{review.effectiveTotal===null?"검토 필요":(review.difference>0?"+":"")+format(review.difference)+"시간"}</strong></div>
-          <div><small>확정본</small><strong>{data.snapshots.length?data.snapshots.length+"개 보존":"아직 없음"}</strong></div>
+          <div><small>확정본</small><strong>{snapshots.length?snapshots.length+"개 보존":"아직 없음"}</strong></div>
         </div>
         <div className="cs-review-grid">
           <div className="cs-review-table">
@@ -376,8 +377,8 @@ function CurriculumSimpleReview({context:c,plan,cohort,onBack,onDirtyChange}:{
             onClick={()=>void confirm()}><ShieldCheck size={16}/>
             {working?"처리 중…":"편성안 확정"}</button>
         </div>
-        {data.snapshots.length>0&&<p className="cs-snapshots">
-          가장 최근 확정본 v{data.snapshots[0].version} · {new Date(data.snapshots[0].confirmed_at).toLocaleDateString("ko-KR")}
+        {snapshots.length>0&&<p className="cs-snapshots">
+          가장 최근 확정본 v{snapshots[0].version} · {new Date(snapshots[0].confirmed_at).toLocaleDateString("ko-KR")}
         </p>}
       </>}
     {error&&<p className="cs-message error" role="alert">{error}</p>}
