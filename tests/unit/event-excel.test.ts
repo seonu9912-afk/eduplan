@@ -8,7 +8,7 @@ const context = recoveryPreviewContext();
 async function populatedWorkbook(options: { bad?: boolean; duplicate?: boolean; classOnly?: boolean } = {}) {
   const template = await createEventExcelTemplate(2027, [1, 2, 3]);
   const workbook = new Workbook();
-  await workbook.xlsx.load(template as unknown as Buffer);
+  await workbook.xlsx.load(template as unknown as Parameters<Workbook["xlsx"]["load"]>[0]);
   const event = workbook.getWorksheet(EVENT_SHEET)!;
   const periods = workbook.getWorksheet(PERIOD_SHEET)!;
   event.addRow([
@@ -23,7 +23,7 @@ describe("official event Excel bulk import", () => {
   it("generates a two-sheet fill-in template and rejects an empty upload", async () => {
     const bytes = await createEventExcelTemplate(2027, [1, 2, 3]);
     const book = new Workbook();
-    await book.xlsx.load(bytes as unknown as Buffer);
+    await book.xlsx.load(bytes as unknown as Parameters<Workbook["xlsx"]["load"]>[0]);
     expect(book.getWorksheet(EVENT_SHEET)?.getCell("A1").text).toBe("행사번호");
     expect(book.getWorksheet(PERIOD_SHEET)?.getCell("E1").text).toBe("영역");
     const preview = await parseEventExcel(bytes, context, "양식.xlsx", () => "test-id");

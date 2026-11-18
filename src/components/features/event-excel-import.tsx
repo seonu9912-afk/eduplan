@@ -23,7 +23,7 @@ export function EventExcelImport({ context, plan, disabled, onSave }: {
       const { createEventExcelTemplate, XLSX_MIME } = await import("@/lib/event-excel");
       const { downloadBlob } = await import("@/lib/academic-files");
       const buffer = await createEventExcelTemplate(context.year.year, context.grades);
-      downloadBlob(buffer, String(context.year.year) + "학년도_행사등록양식.xlsx", XLSX_MIME);
+      downloadBlob(Uint8Array.from(buffer).buffer as ArrayBuffer, String(context.year.year) + "학년도_행사등록양식.xlsx", XLSX_MIME);
     } catch {
       setStatus("양식을 만들지 못했습니다. 다시 시도해 주세요.");
     } finally { setBusy(false); }

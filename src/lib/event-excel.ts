@@ -134,10 +134,10 @@ export async function createEventExcelTemplate(year: number, grades: readonly nu
   for (const col of [4, 5]) event.getColumn(col).numFmt = "@";
   periods.getColumn(2).numFmt = "@";
   // Dropdowns keep terminology aligned with the existing calendar editor.
-  periods.dataValidations.add("E2:E501", {
+  for (let row = 2; row <= 201; row++) periods.getCell("E" + row).dataValidation = {
     type: "list", allowBlank: true, formulae: ['"' + areas.filter((area) => area !== "없음").join(",") + '"'],
     showErrorMessage: true, errorTitle: "영역 선택", error: "목록의 교육활동 영역을 선택해 주세요.",
-  });
+  };
   const bytes = await book.xlsx.writeBuffer();
   return new Uint8Array(bytes);
 }
@@ -156,7 +156,7 @@ export async function parseEventExcel(
   try {
     const { Workbook } = await import("exceljs");
     workbook = new Workbook();
-    await workbook.xlsx.load(buffer as unknown as Buffer);
+    await workbook.xlsx.load(buffer as unknown as Parameters<Workbook["xlsx"]["load"]>[0]);
   } catch {
     output.errors.push("엑셀 파일을 읽을 수 없습니다. 다운로드한 .xlsx 양식을 사용해 주세요.");
     return output;
