@@ -1,0 +1,114 @@
+.c5-page{display:grid;gap:18px;min-width:0;color:#243e59}
+.c5-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;flex-wrap:wrap;padding:2px 0 7px}
+.c5-kicker{display:block;margin-bottom:7px;color:#6c8db0;font-weight:800;letter-spacing:.13em;font-size:10px}
+.c5-hero h1{margin:0;color:#163e69;font-size:clamp(23px,2.2vw,30px);font-weight:850;letter-spacing:-.035em}
+.c5-hero p{margin:8px 0 0;font-size:13px;color:#718599;line-height:1.55}
+.c5-year-control{display:grid;gap:5px;min-width:206px}
+.c5-year-control>label{font-size:11px;font-weight:750;color:#6d829a}
+.c5-year-row{display:flex;gap:6px}
+.c5-year-row select{flex:1;padding:9px 12px;background:#fff;border:1px solid #cdddea;border-radius:8px;color:#25496c;font-weight:750;font-size:12px;min-width:0}
+.c5-icon-button{display:grid;place-items:center;width:36px;border:1px solid #cdddea;background:#fff;border-radius:8px;color:#346797;cursor:pointer}
+.c5-year-new{display:flex;gap:5px}
+.c5-year-new input{min-width:0;width:120px;padding:7px 10px;border:1px solid #cdddea;border-radius:6px}
+.c5-year-new button{border:0;border-radius:6px;background:#e5f0fb;color:#2e669a;padding:7px 10px;cursor:pointer;font-weight:750}
+.c5-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid #d9e6f2;background:#f9fbfe;border-radius:12px;overflow:hidden}
+.c5-step{display:flex;align-items:center;gap:10px;position:relative;padding:14px 16px;background:transparent;border:0;border-right:1px solid #e5edf4;cursor:pointer;text-align:left;color:#8293a4;min-width:0}
+.c5-step:last-child{border-right:0}
+.c5-step.active{background:#eaf3fd;color:#245d96}
+.c5-step-symbol{display:grid;place-items:center;flex:none;width:31px;height:31px;border:1px solid #d8e6f3;background:#fff;border-radius:8px;color:#6c90af}
+.c5-step.active .c5-step-symbol{background:#286bad;color:#fff;border-color:#286bad}
+.c5-step-copy{display:grid;gap:2px;min-width:0}.c5-step-copy strong{font-size:13px;font-weight:800;white-space:nowrap}
+.c5-step-copy small{font-size:10px;white-space:nowrap;color:#879eb2}
+.c5-step-arrow{margin-left:auto;opacity:.5;flex:none}
+.c5-step:disabled{cursor:wait;opacity:.6}
+.c5-stage{display:grid;gap:15px;min-width:0}
+.c5-stage-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;border-bottom:1px solid #e8eef5;padding-bottom:14px}
+.c5-stage-heading>div{min-width:0}
+.c5-eyebrow{display:block;color:#5481b0;font-weight:850;font-size:10px;letter-spacing:.08em;margin-bottom:6px}
+.c5-stage-heading h2{color:#25486e;font-size:18px;font-weight:850;margin:0}
+.c5-stage-heading p{font-size:12px;margin:8px 0 0;line-height:1.55;color:#8193a6}
+.c5-count{font-size:11px;color:#6a8aaa;background:#f2f7fc;border:1px solid #e2edf7;padding:7px 10px;border-radius:7px;white-space:nowrap}
+.c5-hint{display:flex;align-items:center;gap:8px;font-size:11px;color:#557a9a;background:#f6faff;border:1px solid #e2edf8;border-radius:8px;padding:10px 12px;line-height:1.5}
+.c5-hint svg{flex:none}
+.c5-group-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.c5-group{border:1px solid #dce7f1;border-radius:10px;background:#fff;overflow:hidden;min-width:0}
+.c5-group-header{display:flex;align-items:center;justify-content:space-between;gap:7px;background:#f5f9fd;padding:12px 13px;border-bottom:1px solid #e8eff6}
+.c5-group-header>div{display:flex;align-items:center;gap:7px;min-width:0}
+.c5-group-header strong{color:#315b82;font-size:13px;overflow-wrap:anywhere}
+.c5-group-header span{white-space:nowrap;color:#8a9eaf;font-size:10px}
+.c5-subtle-btn{display:inline-flex;align-items:center;gap:3px;white-space:nowrap;padding:5px 7px;background:#fff;border:1px solid #cfe0f0;border-radius:6px;color:#4876a2;font-size:11px;font-weight:750;cursor:pointer}
+.c5-subtle-btn:hover{background:#edf6ff}
+.c5-subject-list{padding:6px 12px}
+.c5-subject{display:flex;align-items:center;gap:8px;padding:8px 3px;border-bottom:1px solid #eef3f8;font-size:12px}
+.c5-subject:last-child{border-bottom:0}
+.c5-subject-index{width:19px;text-align:center;color:#9caebf;font-size:10px;flex:none}
+.c5-subject .cv4-subject-inline{width:100%;flex:1}
+.c5-subject .cv4-subject-label{color:#49627c;font-weight:600}
+.c5-subject .cv4-subject-actions{opacity:.3}
+.c5-subject:hover .cv4-subject-actions,.c5-subject:focus-within .cv4-subject-actions{opacity:1}
+.c5-group-empty{margin:0;padding:14px 15px;color:#879bae;font-size:11px;line-height:1.5}
+.c5-inline-add{background:#f8fbff;border-top:1px solid #e5eef8;padding:11px 12px;display:grid;gap:7px}
+.c5-inline-add label,.c5-add-group label{font-size:11px;color:#647d96;font-weight:700}
+.c5-inline-add textarea{resize:vertical;width:100%;min-height:62px;box-sizing:border-box;border-radius:6px;border:1px solid #c8daeb;background:#fff;padding:8px 10px;color:#355878;font:inherit;font-size:12px;line-height:1.6}
+.c5-inline-add>div{display:flex;gap:6px;align-items:center}
+.c5-error{font-size:11px;color:#b74c40;margin:0}
+.c5-primary,.c5-secondary,.c5-text-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-weight:750}
+.c5-primary{padding:10px 15px;border:1px solid #2b6da8;background:#2b6da8;color:#fff;border-radius:8px;font-size:12px}
+.c5-primary:hover:not(:disabled){background:#1f568a}
+.c5-primary:disabled{opacity:.42;cursor:not-allowed}
+.c5-secondary{padding:9px 13px;border:1px solid #cedfec;border-radius:8px;background:#fff;color:#376d9b;font-size:12px}
+.c5-text-btn{background:transparent;border:0;color:#718a9e;font-size:11px;padding:7px 9px}
+.c5-small{padding:7px 10px;font-size:11px;border-radius:6px}
+.c5-add-group{display:grid;align-content:center;min-height:118px;border:1px dashed #c8dbee;border-radius:10px;background:#fbfdff;padding:12px}
+.c5-add-group>button{border:0;background:transparent;color:#6185a6;display:grid;justify-items:center;gap:7px;cursor:pointer}
+.c5-add-group>button strong{font-size:12px;color:#4277a4}
+.c5-add-group>button small{font-size:11px;color:#839bad}
+.c5-add-group form{display:grid;gap:8px}
+.c5-add-group form input{padding:9px;border:1px solid #c6d9e9;background:#fff;border-radius:6px;color:#426887}
+.c5-add-group form>div{display:flex;gap:8px;align-items:center}
+.c5-stage-footer{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap;padding:14px 0 1px;border-top:1px solid #e5edf5}
+.c5-stage-footer>span{color:#7b91a6;font-size:11px;display:flex;align-items:center;gap:5px;line-height:1.6}
+.c5-banner{display:flex;align-items:center;gap:8px;border-radius:8px;border:1px solid #cbe5d9;padding:10px 12px;background:#f4fbf7;color:#3e7967;font-size:12px}
+.c5-banner svg{flex:none}
+.c5-banner-error{border-color:#efc7bf;background:#fff6f3;color:#a44739}
+.c5-banner button{margin-left:auto;background:none;border:0;font-size:17px;color:inherit;cursor:pointer}
+.c5-bottom-note{color:#96a6b6;font-size:11px;line-height:1.6;margin:0;border-top:1px solid #eef2f6;padding-top:12px}
+.c5-wait{padding:25px;border:1px dashed #b8d0e8;border-radius:10px;background:#f8fbff;color:#6b849c;display:grid;justify-items:center;gap:9px;text-align:center}
+.c5-wait strong{font-size:14px;color:#38648c}.c5-wait p{font-size:12px;margin:0}
+.c5-editor-holder{min-width:0}
+.cv2.cv2-step-hours{gap:10px}
+.cv2.cv2-step-review{gap:14px}
+.cv2-step-hours .cv2-modebar,.cv2-step-review .cv2-modebar{display:none}
+.cv2-step-hours .cw3-insights,.cv2-step-hours .cw3-simulator,.cv2-step-hours .cv4-choices,
+.cv2-step-hours .cv2-verify-head,.cv2-step-hours .cv2-check{display:none}
+.cv2-step-review .cv2-table-scroll,.cv2-step-review .cv2-weeks-details,
+.cv2-step-review .cv2-footnote,.cv2-step-review .cw3-simulator{display:none}
+.cv2-step-hours .cv2-export-buttons,.cv2-step-hours .cv2-history-control{display:none}
+.cv2-step-hours .cw3-inline-add,.cv2-step-hours .cv4-subject-actions{display:none}
+.cv2-step-hours .cv2-adjust-btn{opacity:0;transition:opacity .15s}
+.cv2-step-hours .cv2-table td:hover .cv2-adjust-btn,.cv2-step-hours .cv2-table td:focus-within .cv2-adjust-btn{opacity:1}
+.cv2-step-hours .cv2-toolbar>div:first-child p{display:none}
+.cv2-step-hours .cv2-toolbar{padding:3px 0 10px}
+.cv2-step-hours .cv2-table-scroll{max-height:66vh;scrollbar-gutter:stable}
+.cv2-step-hours .cv2-table .cv2-group-row .cw3-group-sum{font-weight:600}
+.cv2-step-hours .cv2-table .cv2-group-row .cw3-group-header>button{font-size:12px}
+.cv5-weeks-details{font-size:12px;background:#f8fbff;border:1px solid #e0eaf5;border-radius:8px;padding:9px 11px}
+.cv5-weeks-details summary{cursor:pointer;color:#55799c;font-weight:750;font-size:11px}
+.cv5-weeks-details[open] summary{margin-bottom:9px}
+.cv2-step-review .cv2-toolbar{padding:4px 0 12px}
+@media(max-width:850px){.c5-group-grid{grid-template-columns:1fr}.c5-step-copy small{display:none}.c5-steps{gap:0}}
+@media(max-width:570px){.c5-hero{align-items:flex-start}.c5-year-control{width:100%}.c5-steps{grid-template-columns:repeat(3,minmax(0,1fr))}.c5-step{padding:10px 7px;gap:5px;justify-content:center}.c5-step-copy strong{font-size:10px}.c5-step-symbol{width:27px;height:27px}.c5-step-arrow{display:none}.c5-stage-heading h2{font-size:16px}.c5-stage-footer>span{order:3;width:100%}}
+@media print{.c5-steps,.c5-year-control,.c5-stage-footer,.c5-add-group,.c5-inline-add,.c5-subtle-btn,.c5-bottom-note{display:none!important}.c5-group-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.c5-editor-holder .cv2-toolbar{display:none}}
+
+/* The existing calculation core remains mounted, but only the current step is visible. */
+.cv5-weeks-settings{display:grid;gap:7px}
+.cv5-weeks-toggle{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:1px solid #dbe8f4;border-radius:8px;background:#f8fbff;color:#587ea2;font-size:11px;font-weight:750;text-align:left;cursor:pointer}
+.cv5-weeks-toggle:hover{background:#eff7ff}
+.cv2-step-review .cv5-weeks-settings,.cv2-step-review .cv2-verify-head,.cv2-step-review .cv2-check{display:none}
+.cv2-step-review .cv4-choices{margin-top:0}
+.cv2-step-review .cw3-insights{margin-top:0}
+.cv2-step-review .cv2-plan-state{background:#f6fafc}
+.cv2-step-review .cv2-export-buttons{display:flex}
+.cv2-step-review .cv2-modebar,.cv2-step-hours .cv2-modebar{display:none}
+.cv2-step-hours .cv2-table .cv2-subject-cell .cv4-subject-inline{display:inline}
+@media print{.cv5-weeks-toggle{display:none!important}}

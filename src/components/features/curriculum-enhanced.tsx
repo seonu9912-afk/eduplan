@@ -110,8 +110,9 @@ function QuickAddSubject({workspaceId,groupId,disabled,onCreated}:{
     {error&&<small role="alert">{error}</small>}
   </div>;
 }
-export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
+export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleStep}:{
   context:Context;view:View;cohort:number;onDirtyChange:(dirty:boolean)=>void;
+  simpleStep?:"hours"|"review";
 }){
   const router=useRouter();
   const currentYear=c.year?.year??cohort;
@@ -124,6 +125,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [showNational,setShowNational]=useState(false);
   const [viewMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">("weekly");
+  const [weeksOpen,setWeeksOpen]=useState(false);
   const [exporting,setExporting]=useState<"classic"|"modern"|null>(null);
   const [adjustFor,setAdjustFor]=useState<{planId:string;subjectId:string;grade:number;semester:number}|null>(null);
   const statesRef=useRef(states);
@@ -333,7 +335,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     const next={...operatingWeek.rule,...patch};
     for(const plan of plans)mutate(plan.id,doc=>withWeeks(doc,currentYear,next));
   }
-  return <div className="cv2">
+  return <div className={"cv2"+(simpleStep?" cv2-step-"+simpleStep:"")}>
     <div className="cv2-modebar no-print" role="group" aria-label="교육과정 편성 보기 방식">
       {([["weekly","주당시수 편집"],["semester","학기시수 보기·조정"],
          ["yearly","학년별 합계"],["national","국가 기준 비교"]] as const).map(([key,label])=>
@@ -344,8 +346,12 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
       <span>기본 입력은 주당시수 · 학기 총시수 직접 수정 시 차액은 조정 시수로 기록</span>
     </div>
     <div className="cv2-toolbar no-print">
-      <div><strong>{view==="cohort"?cohort+"학년도 입학생 · 3개년":currentYear+"학년도 · 1~3학년"} 직접 편성</strong>
-        <p>주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다.</p>
+      <div><strong>{simpleStep==="hours"?"주당시수 배당":simpleStep==="review"?"국가 기준 검토 및 확정":
+        view==="cohort"?cohort+"학년도 입학생 · 3개년":currentYear+"학년도 · 1~3학년"} </strong>
+        <p>{simpleStep==="hours"
+          ?"표의 주당시수만 입력하세요. 실제 이수시수는 자동으로 계산됩니다."
+          :simpleStep==="review"?"편성 결과와 선택과목군을 검토한 뒤 확정본을 생성해 주세요."
+          :"주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다."}</p>
       </div>
       <div className="cv2-actions">
         {allLoaded&&plans.length>0&&<div className="cv2-export-buttons">
@@ -364,9 +370,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
             {item&&!item.locked&&c.role==="admin"&&<button onClick={()=>void reacquire(p,true)}>관리자 회수</button>}
             {item?.locked&&editable&&<>
               <button disabled={!item.dirty||item.saving} onClick={()=>void saveOne(p.id)}><Save size={13}/>저장</button>
-              <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>취소</button>
-              <button disabled={!item.future.length} onClick={()=>historyMove(p.id,false)}>재실행</button>
-              <button disabled={item.dirty||item.saving} onClick={()=>void confirm(p)}><ShieldCheck size={13}/>확정본</button>
+              {!simpleStep&&<>
+                <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>취소</button>
+                <button disabled={!item.future.length} onClick={()=>historyMove(p.id,false)}>재실행</button>
+              </>}
+              {simpleStep!=="hours"&&<button disabled={item.dirty||item.saving}
+                onClick={()=>void confirm(p)}><ShieldCheck size={13}/>
+                {simpleStep==="review"?"편성안 확정":"확정본"}
+              </button>}
             </>}
           </div>;
         })}
@@ -381,8 +392,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
     {plans.length>0&&allLoaded&&<>
       {c.schoolType==="중학교"&&<CurriculumInsights context={c} view={view} cohort={cohort}
         documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
-      <div className="cv2-weeks no-print">
-        <strong>편성 기준 주수</strong>
+      <div className="cv5-weeks-settings no-print">
+        {simpleStep==="hours"&&<button type="button" className="cv5-weeks-toggle"
+          aria-expanded={weeksOpen} onClick={()=>setWeeksOpen(v=>!v)}>
+          {weeksOpen?"학기별 수업 주수 접기":"학기별 수업 주수 변경 (필요할 때만)"}
+          <ChevronDown size={14}/>
+        </button>}
+        {(simpleStep!=="hours"||weeksOpen)&&<div className="cv2-weeks">
+          <strong>편성 기준 주수</strong>
         {view==="operating"&&operatingWeek?<>
           <label>
             <span>{currentYear}학년도 · 운영 1~{c.grades.length}학년 공통</span>
@@ -423,6 +440,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange}:{
             </label>;
           }));
         })}
+        </div>}
       </div>
       {c.schoolType==="중학교"&&view==="cohort"&&firstPlan&&firstDoc&&
         <CurriculumScenario context={c} document={firstDoc}
