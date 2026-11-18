@@ -44,3 +44,20 @@
 .ar .ar-legacy-period button{padding:5px 7px;font-size:11px}
 .ar .ar-date-actions{display:flex;justify-content:flex-end;margin-top:14px}
 .ar .ar-date-actions .ar-primary{min-width:80px}
+/* Monthly event list: chronological date and title on the same line. */
+.ar .ar-event-summary .ar-event-line{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:3px 8px;
+  width:100%;padding:3px 4px;border:0;border-radius:6px;
+  background:transparent;text-align:left;color:inherit;
+}
+.ar .ar-event-summary .ar-event-line:hover{background:#edf4ff}
+.ar .ar-event-summary .ar-event-date{
+  color:#245ec7;font-size:12px;font-weight:700;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.ar .ar-event-summary .ar-event-title{
+  font-size:13px;font-weight:650;overflow-wrap:anywhere;
+}
+.ar .ar-event-summary .ar-event-targets{
+  margin:1px 0 0 4px;color:#728299;font-size:11px;
+}

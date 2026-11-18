@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, Notice } from "@/components/common";
 import { annualSchema, calculateAcademic, defaultAnnual, dayTypes, isTeachingDay, summarizeAcademicDays, type AnnualPlan } from "@/lib/academic";
-import { calendarTabs, calendarDayRule, calendarChangeSchema, eventDraft, eventChange, type CalendarChange, type CalendarEvent, type CalendarHistory, type CalendarState, type CalendarConflict, type EventDraft } from "@/lib/academic-calendar";
+import { calendarTabs, calendarDayRule, calendarChangeSchema, eventDraft, eventChange, formatCalendarEventPeriod, sortCalendarEvents, type CalendarChange, type CalendarEvent, type CalendarHistory, type CalendarState, type CalendarConflict, type EventDraft } from "@/lib/academic-calendar";
 import { curriculumTargets, datePeriod, hoursRange } from "@/lib/academic-rebuild";
 import { sameAnnualValue } from "@/lib/academic-revisions";
 import { parseAcademicConfirmation } from "@/lib/academic-confirmation";
@@ -98,13 +98,14 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     const rule = calendarDayRule(value,plan,c);
     setEdit({ kind: "day", date: value, value: rule, initial: structuredClone(rule), before: plan.days[value] ?? null });
   }); }
-  function openEvent(event?: CalendarEvent) { move(() => {
+  function openEvent(event?: CalendarEvent, selectedDate = event?.start_date ?? date) { move(() => {
     try {
       const value = eventDraft(event ?? { id: crypto.randomUUID(), workspace_id: c.workspace.id, school_id: null,
-        academic_year_id: c.year!.id, title: "", start_date: date, end_date: date, event_type: "school", target_grades: [grade],
+        academic_year_id: c.year!.id, title: "", start_date: selectedDate, end_date: selectedDate, event_type: "school", target_grades: [grade],
         department: "", description: "", activity_area: "없음", version: 0, created_by: c.userId,
         updated_at: "", target_class_ids: [] },plan);
       if (!value.event.target_grades.length) value.event.target_grades = [...c.grades];
+      setDate(selectedDate);
       setTab("행사 편성"); setEdit({ kind: "event", value, initial: structuredClone(value), base: structuredClone(plan) });
     } catch (error) { setMessage({ text: (error as Error).message, error: true }); }
   }); }
@@ -178,7 +179,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
   if (!c.year) return <div className="ar"><p className="ar-callout">학교 설정에서 학년도를 생성하면 연간 학사력을 바로 편성할 수 있습니다.</p></div>;
   if (tools) return <div><div className="ar ar-entry"><button onClick={() => move(() => { setTools(false); setToolsDirty(false); })}>← 공식 학사일정으로 돌아가기</button></div><AnnualAcademic context={c} today={today} onDirtyChange={setToolsDirty}/>
     <Modal open={!!next} onOpenChange={() => setNext(null)} title="저장하지 않은 변경 내용" description="기본 운영·자료 관리 화면의 저장 버튼으로 먼저 저장하거나 변경을 취소할 수 있습니다."><button onClick={() => { const action = next; setNext(null); action?.(); }}>변경 취소 후 이동</button></Modal></div>;
-  const monthly = c.events.filter((e) => e.start_date.slice(0,7) <= month && e.end_date.slice(0,7) >= month);
+  const monthly = sortCalendarEvents(c.events.filter((e) => e.start_date.slice(0,7) <= month && e.end_date.slice(0,7) >= month));
   const rangeRows = edit?.kind === "range" ? datePeriod(year,edit.from,edit.to,edit.base) : [];
   const projected = edit?.kind === "range" ? { ...plan, days: { ...plan.days, ...Object.fromEntries(rangeRows.filter((r) => !r.conflict || edit.replace.includes(r.date)).map((r) => [r.date,edit.rule])) } } : plan;
   const projectedReport = edit?.kind === "range" ? calculateAcademic(year,projected,c.grades,c.semesters,c.classes) : report;
@@ -230,12 +231,17 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     </>}
     {tab === "행사 편성" && <>
       <div className="ar-line"><label>조회 월 <select value={month} onChange={(e) => move(() => { setMonth(e.target.value); setDate(e.target.value+"-01"); setEdit(null); })}>{months.map((m) => <option key={m}>{m}</option>)}</select></label>
-        <div className="ar-tools"><button onClick={() => move(() => { setTab("연간 학사력"); setEdit(null); })}>선택 날짜의 학사력</button>{editable && <button className="ar-primary" onClick={() => openEvent()}>행사 등록</button>}</div></div>
+        <p className="ar-muted">{editable ? "달력에서 날짜를 선택하면 바로 행사를 등록할 수 있습니다." : "날짜를 선택하면 해당 날짜의 행사를 확인할 수 있습니다."}</p></div>
       <div className="ar-duo"><section className="ar-panel"><h3>{month} 월간 달력</h3><div className="ar-month" data-arrow-columns="7" aria-label="월간 달력, 방향키로 이동">{weekdays.map((w) => <strong key={w}>{w}</strong>)}
         {Array.from({ length: new Date(month+"-01T12:00:00Z").getUTCDay() },(_,i) => <span key={`blank${i}`}/>)}
-        {report.days.filter((d) => d.date.startsWith(month)).map((d) => <button key={d.date} aria-label={`${d.date} 선택`} aria-pressed={date === d.date} onClick={() => move(() => { setDate(d.date); setEdit(null); })}>{Number(d.date.slice(8))}{monthly.some((e) => e.start_date <= d.date && d.date <= e.end_date) && <sup>●</sup>}</button>)}</div></section>
+        {report.days.filter((d) => d.date.startsWith(month)).map((d) => <button key={d.date} aria-label={`${d.date} ${editable ? "행사 등록" : "날짜 선택"}`} aria-pressed={date === d.date} onClick={() => editable ? openEvent(undefined, d.date) : move(() => { setDate(d.date); setEdit(null); })}>{Number(d.date.slice(8))}{monthly.some((e) => e.start_date <= d.date && d.date <= e.end_date) && <sup>●</sup>}</button>)}</div></section>
         <section className="ar-panel"><h3>월 전체 행사 · {monthly.length}건</h3>{monthly.length ? monthly.map((e) => <div className={`ar-event-summary ${e.start_date <= date && date <= e.end_date ? "ar-focus" : ""}`} key={e.id}>
-          <button onClick={() => openEvent(e)}>{e.title}</button><p>{e.start_date}~{e.end_date} · {e.target_grades.join(", ")}학년</p></div>) : <p>등록된 행사가 없습니다.</p>}</section></div>
+          <button className="ar-event-line" onClick={() => openEvent(e)}>
+            <span className="ar-event-date">{formatCalendarEventPeriod(e.start_date, e.end_date)}</span>
+            <span className="ar-event-title">{e.title}</span>
+          </button>
+          <p className="ar-event-targets">{e.target_grades.map((g) => `${g}학년`).join(" · ")}</p>
+        </div>) : <p className="ar-muted">등록된 행사가 없습니다. 달력에서 날짜를 선택해 주세요.</p>}</section></div>
     </>}
     {edit?.kind === "event" && tab === "행사 편성" && <section className="ar-panel"><div className="ar-line"><h3>{edit.value.event.version ? "행사 편집" : "행사 등록"}</h3><button onClick={() => move(() => setEdit(null))}>닫기</button></div>
       <EventFields key={edit.value.event.id} value={edit.value} onChange={(value) => setEdit({ ...edit,value })} context={c} plan={plan} disabled={!editable || pending}/>

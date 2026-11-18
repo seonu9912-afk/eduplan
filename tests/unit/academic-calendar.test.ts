@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema } from "../../src/lib/academic-calendar";
+import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents } from "../../src/lib/academic-calendar";
 import { defaultAnnual, calculateAcademic } from "../../src/lib/academic";
 import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 
@@ -10,6 +10,22 @@ function fixture() {
   return { plan, event };
 }
 describe("official calendar adapter", () => {
+  it("prints the requested Korean dates without duplicating a single-day date", () => {
+    expect(formatCalendarEventPeriod("2027-03-02", "2027-03-02")).toBe("3월 2일(화)");
+    expect(formatCalendarEventPeriod("2027-03-04", "2027-03-05")).toBe("3월 4일(목)~3월 5일(금)");
+    expect(formatCalendarEventPeriod("2027-12-31", "2028-01-02")).toBe("12월 31일(금)~1월 2일(일)");
+  });
+  it("orders monthly events by date, with deterministic ordering on a shared date", () => {
+    const source = [
+      { id: "4", title: "입학식", start_date: "2027-03-02", end_date: "2027-03-02" },
+      { id: "3", title: "동아리", start_date: "2027-03-04", end_date: "2027-03-05" },
+      { id: "2", title: "안전교육", start_date: "2027-03-02", end_date: "2027-03-02" },
+      { id: "1", title: "시업식", start_date: "2027-03-01", end_date: "2027-03-01" },
+    ];
+    const sorted = sortCalendarEvents(source);
+    expect(sorted.map((e) => e.id)).toEqual(["1", "2", "4", "3"]);
+    expect(source[0].id).toBe("4");
+  });
   it("uses real academic dates and rejects overflow, leap dates and reversed ranges", () => {
     expect(calendarDates(2027,"2028-02-28","2028-02-29")).toHaveLength(2);
     expect(calendarDates(2027,"2027-02-28","2027-03-01")).toEqual([]);

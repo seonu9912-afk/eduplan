@@ -6,6 +6,24 @@ import { addDays, eventSchema, monthRange, isoDate } from "./domain";
 import type { Context, Row } from "./models";
 
 export const calendarTabs = ["연간 학사력", "행사 편성", "시수 확인", "편성 점검", "Excel 출력"] as const;
+/** Displays single-day events once, and multi-day events as explicit ranges. */
+export function formatCalendarEventPeriod(startDate: string, endDate: string): string {
+  const display = (date: string) => {
+    const [, month, day] = date.split("-").map(Number);
+    const weekday = "일월화수목금토"[new Date(`${date}T12:00:00Z`).getUTCDay()];
+    return `${month}월 ${day}일(${weekday})`;
+  };
+  return startDate === endDate ? display(startDate) : `${display(startDate)}~${display(endDate)}`;
+}
+
+/** Copy before sorting; existing events and server-derived arrays must remain unchanged. */
+export function sortCalendarEvents<T extends Pick<CalendarEvent, "start_date" | "end_date" | "title" | "id">>(events: readonly T[]): T[] {
+  return [...events].sort((a, b) => a.start_date.localeCompare(b.start_date)
+    || a.end_date.localeCompare(b.end_date)
+    || a.title.localeCompare(b.title, "ko")
+    || a.id.localeCompare(b.id));
+}
+
 export type Area = AnnualPlan["allocations"][number]["areas"][string];
 export type CalendarEvent = Row<"events"> & { target_class_ids?: string[] };
 export type EventDraft = {
