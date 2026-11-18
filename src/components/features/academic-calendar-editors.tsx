@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { areas, dayTypes, type AnnualPlan } from "@/lib/academic";
-import { availablePeriods, calendarDates, eventVisiblePeriods, type Area, type EventDraft } from "@/lib/academic-calendar";
+import { availablePeriods, calendarDates, eventVisiblePeriods, sharedEventArea, type Area, type EventDraft } from "@/lib/academic-calendar";
 import type { Context } from "@/lib/models";
 
 export function DateFields({ value, onChange, context, disabled }: {
@@ -54,40 +54,54 @@ export function DateFields({ value, onChange, context, disabled }: {
 export function EventFields({ value, onChange, context, plan, disabled }: {
   value: EventDraft; onChange: (v: EventDraft) => void; context: Context; plan: AnnualPlan; disabled: boolean;
 }) {
-  const [scope, setScope] = useState(`g:${value.event.target_grades[0] ?? context.grades[0]}`);
+  const [scope, setScope] = useState("all");
   const [selected, setSelected] = useState<string[]>([]);
-  const [showAllPeriods, setShowAllPeriods] = useState(false);
   const [undo, setUndo] = useState<EventDraft["slots"][]>([]);
   const drag = useRef(false);
   const e = value.event;
   const dates = calendarDates(context.year!.year, e.start_date, e.end_date);
   const patch = (fields: Partial<typeof e>) => onChange({ ...value, event: { ...e, ...fields } });
-  const grade = scope.startsWith("g:") ? Number(scope.slice(2)) : context.classes.find((c) => c.id === scope.slice(2))?.grade ?? 0;
+  const grade = scope.startsWith("g:") ? Number(scope.slice(2)) :
+    scope.startsWith("c:") ? context.classes.find((c) => c.id === scope.slice(2))?.grade ?? 0 : 0;
   const selectedGrades = e.target_grades;
-  const validScope = scope.startsWith("g:") ? selectedGrades.includes(grade) : context.classes.some((c) => `c:${c.id}` === scope && selectedGrades.includes(c.grade));
+  const validScope = scope === "all" ? selectedGrades.length > 0 :
+    scope.startsWith("g:") ? selectedGrades.includes(grade) :
+    context.classes.some((c) => `c:${c.id}` === scope && selectedGrades.includes(c.grade));
   const slots = (date: string) => value.slots[scope]?.[date] ?? value.slots[`g:${grade}`]?.[date] ?? {};
   const periodColors: Record<Area, string> = {
     "교과": "subject", "자율": "autonomy", "자율·자치": "autonomy",
     "동아리": "club", "진로": "career", "봉사": "service",
     "학교자율시간": "school", "없음": "none",
   };
-  const periods = eventVisiblePeriods(
-    dates.map((date) => availablePeriods(date, grade, plan, context)),
-    dates.flatMap((date) => Object.keys(slots(date)).map(Number)),
-    showAllPeriods,
-  );
+  const activeGrades = scope === "all" ? selectedGrades : [grade];
+  const periodRanges = dates.flatMap((date) =>
+    activeGrades.map((g) => availablePeriods(date, g, plan, context)));
+  const assignedPeriods = dates.flatMap((date) => scope === "all" ?
+    selectedGrades.flatMap((g) => Object.keys(value.slots[`g:${g}`]?.[date] ?? {}).map(Number)) :
+    Object.keys(slots(date)).map(Number));
+  const periods = eventVisiblePeriods(periodRanges, assignedPeriods);
+  function displayedArea(date: string, period: number): Area | "mixed" | null {
+    if (scope === "all") {
+      return sharedEventArea(selectedGrades.map((g) => value.slots[`g:${g}`]?.[date]?.[period]));
+    }
+    return slots(date)[period] ?? null;
+  }
   function apply(area: Area) {
-    if (!selected.length || disabled) return;
+    if (!selected.length || disabled || !validScope) return;
     const next = structuredClone(value.slots);
     for (const key of selected) {
       const [date, period] = key.split("/");
-      const previous = next[scope]?.[date] ?? { ...slots(date) };
-      const changed = { ...previous };
-      if (area === "없음") delete changed[Number(period)];
-      else changed[Number(period)] = area;
-      next[scope] ??= {};
-      // Keep the class exception's date until another action explicitly resets it.
-      next[scope][date] = changed;
+      const targets = scope === "all" ? selectedGrades.map((g) => `g:${g}`) : [scope];
+      for (const target of targets) {
+        const currentGrade = target.startsWith("g:") ? Number(target.slice(2)) :
+          context.classes.find((c) => `c:${c.id}` === target)?.grade ?? 0;
+        const previous = next[target]?.[date] ?? { ...value.slots[`g:${currentGrade}`]?.[date] };
+        const changed = { ...previous };
+        if (area === "없음") delete changed[Number(period)];
+        else changed[Number(period)] = area;
+        next[target] ??= {};
+        next[target][date] = changed;
+      }
     }
     setUndo((old) => [...old.slice(-19), structuredClone(value.slots)]);
     onChange({ ...value, slots: next });
@@ -96,8 +110,15 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
   const overlap = context.events.filter((other) => other.id !== e.id && other.start_date <= e.end_date && other.end_date >= e.start_date &&
     other.target_grades.some((g) => selectedGrades.includes(g)) && (!(e.target_class_ids?.length && other.target_class_ids?.length) || e.target_class_ids.some((id) => other.target_class_ids!.includes(id))));
   return <fieldset disabled={disabled} className="ar-fieldset ar-event">
-    <div className="ar-fields">
+    <div className="ar-fields ar-event-header">
       <label>행사명<input value={e.title} maxLength={120} onChange={(event) => patch({ title: event.target.value })}/></label>
+      <label>담당 부서 <span className="ar-required">필수</span>
+        <input required aria-required="true" value={e.department} maxLength={60}
+          list={`ar-department-options-${e.id}`} placeholder="담당 부서를 입력하세요"
+          onChange={(event) => patch({ department: event.target.value })}/>
+        <datalist id={`ar-department-options-${e.id}`}>{plan.departments.map((department) =>
+          <option key={department} value={department}/>)}</datalist>
+      </label>
       <label>시작일<input type="date" value={e.start_date} onChange={(event) => patch({ start_date: event.target.value, end_date: e.end_date < event.target.value ? event.target.value : e.end_date })}/></label>
       <label>종료일<input type="date" value={e.end_date} onChange={(event) => patch({ end_date: event.target.value })}/></label>
     </div>
@@ -106,20 +127,36 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
         <input type="checkbox" checked={selectedGrades.includes(g)} onChange={(event) => {
           const target_grades = event.target.checked ? [...selectedGrades, g].sort((a,b) => a-b) : selectedGrades.filter((x) => x !== g);
           setSelected([]);
-          if (!target_grades.includes(grade)) setScope(`g:${target_grades[0] ?? context.grades[0]}`);
+          setScope("all");
           patch({ target_grades, target_class_ids: (e.target_class_ids ?? []).filter((id) => target_grades.includes(context.classes.find((c) => c.id === id)?.grade ?? 0)) });
         }}/><span>{g}학년</span>
       </label>)}</div>
     </fieldset>
     <details open className="ar-event-periods"><summary>행사 교시 지정 · 날짜별 편성</summary>
       <p className="ar-muted">행사가 진행되는 교시를 선택하고 교과·자율·동아리 등의 버튼을 누르세요. 지정하지 않은 교시는 기존 시간표대로 유지됩니다.</p>
-      <div className="ar-scope-row">
-        <label>편성 대상<select value={scope} onChange={(event) => { setScope(event.target.value); setSelected([]); }}>
-          {selectedGrades.map((g) => <option key={g} value={`g:${g}`}>{g}학년 공통</option>)}
-          {context.classes.filter((c) => selectedGrades.includes(c.grade)).map((c) => <option key={c.id} value={`c:${c.id}`}>{c.grade}학년 {c.class_number}반 예외</option>)}
-        </select></label>
-        <label className="ar-check ar-show-all-periods"><input type="checkbox" checked={showAllPeriods}
-          onChange={(event) => setShowAllPeriods(event.target.checked)}/>전체 1~12교시 표시</label>
+      <div className="ar-scope-row ar-scope-default">
+        <div className="ar-scope-current">
+          <strong>편성 대상</strong>
+          <span>{scope === "all" ? "선택한 학년 전체" :
+            scope.startsWith("g:") ? `${grade}학년 별도 편성` :
+            `${grade}학년 ${context.classes.find((c) => `c:${c.id}` === scope)?.class_number ?? "-"}반 예외 편성`}</span>
+          {scope !== "all" && <button type="button" onClick={() => { setScope("all"); setSelected([]); }}>
+            전체 학년 공통으로 돌아가기
+          </button>}
+        </div>
+        <details className="ar-scope-advanced">
+          <summary>특정 학급만 다르게 편성</summary>
+          <label>세부 편성 대상<select value={scope} onChange={(event) => { setScope(event.target.value); setSelected([]); }}>
+            <option value="all">선택한 학년 전체 (공통)</option>
+            <optgroup label="특정 학급 예외">
+              {context.classes.filter((c) => selectedGrades.includes(c.grade)).map((c) =>
+                <option key={c.id} value={`c:${c.id}`}>{c.grade}학년 {c.class_number}반</option>)}
+            </optgroup>
+            <optgroup label="학년별 개별 편성">
+              {selectedGrades.map((g) => <option key={g} value={`g:${g}`}>{g}학년 개별</option>)}
+            </optgroup>
+          </select></label>
+        </details>
       </div>
       {!validScope ? <p role="status">편성할 대상 학년을 선택해 주세요.</p> : <>
         <div className="ar-period-toolbar">
@@ -145,7 +182,7 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
           onPointerLeave={() => { drag.current = false; }}>
           <table className="ar-period-grid"><thead><tr><th>날짜</th>{periods.map((period) => <th key={period}>{period}교시</th>)}</tr></thead>
             <tbody>{dates.map((date) => {
-              const range = availablePeriods(date, grade, plan, context);
+              const ranges = activeGrades.map((g) => availablePeriods(date, g, plan, context));
               return <tr key={date}><th>{date.slice(5)}
                 {scope.startsWith("c:") && value.slots[scope]?.[date] && <button type="button"
                   className="ar-use-common" onClick={() => {
@@ -156,12 +193,13 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
                   }}>공통 사용</button>}</th>
                 {periods.map((period) => {
                   const key = `${date}/${period}`;
-                  const area = slots(date)[period] ?? null;
-                  const outside = !range || period < range.start || period > range.end;
+                  const area = displayedArea(date, period);
+                  const outside = ranges.some((range) => !range || period < range.start || period > range.end);
+                  const label = area === "mixed" ? "학년별 상이" : area ?? "미지정";
                   const selectedNow = selected.includes(key);
                   return <td key={period} className={outside ? "ar-period-outside" : undefined}>
                     <button type="button" className="ar-period-button"
-                      aria-label={`${date} ${period}교시 ${area ?? "미지정"}${outside ? " (운영 교시 범위 밖)" : ""}`}
+                      aria-label={`${date} ${period}교시 ${label}${outside ? " (일부 또는 전체 학년 운영 교시 범위 밖)" : ""}`}
                       title={outside ? "운영 교시 범위 밖 · 지정 내용은 보존됩니다" : undefined}
                       aria-pressed={selectedNow}
                       onPointerDown={(event) => {
@@ -176,20 +214,19 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
                         drag.current = false;
                         if (event.detail === 0) setSelected((old) => old.includes(key) ? old.filter((x) => x!==key) : [...old,key]);
                       }}>
-                      <span className={`ar-area-chip ar-area-${area ? periodColors[area] : "unset"}`}>{area ?? "미지정"}</span>
+                      <span className={`ar-area-chip ar-area-${area === "mixed" ? "mixed" : area ? periodColors[area] : "unset"}`}>{label}</span>
                     </button>
                   </td>;
                 })}</tr>;
             })}</tbody></table>
         </div> : <p className="ar-muted">행사 기간을 먼저 선택해 주세요.</p>}
-        <p className="ar-muted">시간표에 설정된 교시만 기본으로 표시합니다. 필요하면 전체 1~12교시를 펼칠 수 있으며, 범위 밖의 기존 배정도 보존합니다.</p>
+        <p className="ar-muted">대상 학년의 운영 교시 범위와 기존 배정 교시만 표시합니다. 노란 칸은 일부 학년의 운영 교시 범위를 벗어난 시간입니다.</p>
       </>}
     </details>
-    <details><summary>대상 학급·부서·비고</summary>
-      <p>대상 학급을 선택하지 않으면 학년 전체에 적용합니다.</p>
+    <details><summary>특정 학급만 행사 대상 지정 · 비고</summary>
+      <p>학급을 선택하지 않으면 체크한 학년의 모든 학급이 행사 대상입니다. 특정 학급만 참여하는 행사일 때만 선택해 주세요.</p>
       <div className="ar-tools">{context.classes.filter((c) => selectedGrades.includes(c.grade)).map((c) => <label key={c.id} className="ar-check">
         <input type="checkbox" checked={e.target_class_ids?.includes(c.id) ?? false} onChange={(event) => patch({ target_class_ids: event.target.checked ? [...(e.target_class_ids ?? []),c.id] : e.target_class_ids?.filter((id) => id !== c.id) })}/>{c.grade}-{c.class_number}</label>)}</div>
-      <label>부서<input value={e.department} maxLength={60} onChange={(event) => patch({ department: event.target.value })}/></label>
       <label>비고<textarea value={e.description} maxLength={2000} onChange={(event) => patch({ description: event.target.value })}/></label>
     </details>
     {!!overlap.length && <div className="ar-callout"><strong>기간·대상이 겹치는 행사 {overlap.length}건</strong><p>운영 교시가 겹치면 시수는 중복 합산하지 않고 확인 필요로 표시합니다. 확인한 뒤 저장할 수 있습니다.</p>

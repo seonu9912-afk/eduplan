@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents, eventVisiblePeriods } from "../../src/lib/academic-calendar";
+import { eventAllocations, eventDraft, eventChange, calendarDates, calendarChangeSchema, formatCalendarEventPeriod, sortCalendarEvents, eventVisiblePeriods, sharedEventArea } from "../../src/lib/academic-calendar";
 import { defaultAnnual, calculateAcademic } from "../../src/lib/academic";
 import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 
@@ -10,12 +10,25 @@ function fixture() {
   return { plan, event };
 }
 describe("official calendar adapter", () => {
+  it("uses all target grades as default and distinguishes mixed areas without changing drafts", () => {
+    expect(sharedEventArea([null, undefined, null])).toBeNull();
+    expect(sharedEventArea(["동아리", "동아리", "동아리"])).toBe("동아리");
+    expect(sharedEventArea(["동아리", "진로", "동아리"])).toBe("mixed");
+    expect(sharedEventArea([undefined, "동아리"])).toBe("mixed");
+  });
+  it("requires the department on event saves but leaves unrelated day edits alone", () => {
+    const { plan, event } = fixture();
+    const emptyDepartment = { ...event, department: "   " };
+    const draft = eventDraft(emptyDepartment, plan);
+    expect(() => eventChange(draft, context, plan)).toThrow("담당 부서를 입력해 주세요.");
+    expect(eventChange(eventDraft(event, plan), context, plan).kind).toBe("event");
+  });
   it("limits the grid to configured periods, with an all-periods override and preserved exceptions", () => {
     expect(eventVisiblePeriods([{start:1,end:6},{start:1,end:5}], [])).toEqual([1,2,3,4,5,6]);
     expect(eventVisiblePeriods([{start:3,end:5}], [])).toEqual([3,4,5]);
     expect(eventVisiblePeriods([{start:1,end:6}], [9])).toEqual([1,2,3,4,5,6,7,8,9]);
     expect(eventVisiblePeriods([undefined], [])).toEqual([1,2,3,4,5,6]);
-    expect(eventVisiblePeriods([{start:3,end:5}], [], true)).toHaveLength(12);
+    expect(eventVisiblePeriods([{start:1,end:6}], [12])).toHaveLength(12);
   });
   it("saves only specifically assigned event periods, not the other eleven subject hours", () => {
     const {plan,event} = fixture();

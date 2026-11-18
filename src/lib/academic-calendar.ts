@@ -37,7 +37,10 @@ export const calendarChangeSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("holidays"), before: annualSchema.shape.holidays, value: annualSchema.shape.holidays }),
   z.object({ kind: z.literal("event"), id: z.uuid(), version: z.number().int().min(0),
     value: z.object(eventSchema.shape).omit({ id: true, version: true, workspace_id: true, academic_year_id: true })
-      .extend({ target_class_ids: z.array(z.uuid()).max(300) })
+      .extend({
+        target_class_ids: z.array(z.uuid()).max(300),
+        department: z.string().trim().min(1, "담당 부서를 입력해 주세요.").max(60),
+      })
       .refine((v) => v.start_date <= v.end_date, "행사 기간을 확인해 주세요.").nullable(),
     beforeAllocations: annualSchema.shape.allocations, allocations: annualSchema.shape.allocations }),
 ]);
@@ -143,12 +146,16 @@ export function calendarDayRule(date: string, plan: AnnualPlan, context: Context
 
 /** Show the configured timetable period span plus any existing assigned periods.
  * An unconfigured date defaults to 1–6; the user can opt into all 12. */
+export function sharedEventArea(areas: readonly (Area | null | undefined)[]): Area | "mixed" | null {
+  if (!areas.length) return null;
+  const first = areas[0] ?? null;
+  return areas.every((area) => (area ?? null) === first) ? first : "mixed";
+}
+
 export function eventVisiblePeriods(
   ranges: ReadonlyArray<{ start: number; end: number } | undefined>,
   assigned: readonly number[],
-  showAll = false,
 ): number[] {
-  if (showAll) return Array.from({ length: 12 }, (_, index) => index+1);
   const valid = (period: number) => Number.isInteger(period) && period >= 1 && period <= 12;
   const bounds = ranges.flatMap((range) =>
     range && valid(range.start) && valid(range.end) && range.start <= range.end

@@ -101,7 +101,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
   function openEvent(event?: CalendarEvent, selectedDate = event?.start_date ?? date) { move(() => {
     try {
       const value = eventDraft(event ?? { id: crypto.randomUUID(), workspace_id: c.workspace.id, school_id: null,
-        academic_year_id: c.year!.id, title: "", start_date: selectedDate, end_date: selectedDate, event_type: "school", target_grades: [grade],
+        academic_year_id: c.year!.id, title: "", start_date: selectedDate, end_date: selectedDate, event_type: "school", target_grades: [...c.grades],
         department: "", description: "", activity_area: "없음", version: 0, created_by: c.userId,
         updated_at: "", target_class_ids: [] },plan);
       if (!value.event.target_grades.length) value.event.target_grades = [...c.grades];
