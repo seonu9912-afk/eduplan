@@ -192,7 +192,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
       </div></header>
     <Notice message={message.text} error={message.error}/>
     {!parsed.success && <p role="alert" className="ar-callout">기존 자료 형식을 확인해야 합니다. 원본을 보존하고 편집을 중지했습니다. 기본 운영·자료 관리에서 백업을 확인하세요.</p>}
-    <nav className="ar-tabs" aria-label="학사일정 메뉴">{calendarTabs.map((t) => <button key={t} aria-current={tab === t ? "page" : undefined} onClick={() => move(() => { setTab(t); setEdit(null); })}>{t}</button>)}</nav>
+    <nav className="ar-tabs" data-arrow-axis="horizontal" aria-label="학사일정 메뉴">{calendarTabs.map((t) => <button key={t} aria-current={tab === t ? "page" : undefined} onClick={() => move(() => { setTab(t); setEdit(null); })}>{t}</button>)}</nav>
     {tab === "연간 학사력" && <>
       <div className="ar-line"><div className="ar-tools"><span className="ar-legend ar-day-weekend">주말</span><span className="ar-legend ar-day-holiday">공휴일</span><span className="ar-legend ar-day-vacation">방학</span><span className="ar-legend ar-day-closed">휴업일</span><span>↔ 요일교체</span></div>
         {editable && <div className="ar-tools"><button disabled={pending} onClick={() => move(() => setEdit({ kind: "range", from: date, to: date, rule: { type: "vacation", name: "여름방학", enabled: true, weekday: 1 }, replace: [], base: structuredClone(plan) }))}>기간 설정</button>
@@ -232,7 +232,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     {tab === "행사 편성" && <>
       <div className="ar-line"><label>조회 월 <select value={month} onChange={(e) => move(() => { setMonth(e.target.value); setDate(e.target.value+"-01"); setEdit(null); })}>{months.map((m) => <option key={m}>{m}</option>)}</select></label>
         <div className="ar-tools"><button onClick={() => move(() => { setTab("연간 학사력"); setEdit(null); })}>선택 날짜의 학사력</button>{editable && <button className="ar-primary" onClick={() => openEvent()}>행사 등록</button>}</div></div>
-      <div className="ar-duo"><section className="ar-panel"><h3>{month} 월간 달력</h3><div className="ar-month">{weekdays.map((w) => <strong key={w}>{w}</strong>)}
+      <div className="ar-duo"><section className="ar-panel"><h3>{month} 월간 달력</h3><div className="ar-month" data-arrow-columns="7" aria-label="월간 달력, 방향키로 이동">{weekdays.map((w) => <strong key={w}>{w}</strong>)}
         {Array.from({ length: new Date(month+"-01T12:00:00Z").getUTCDay() },(_,i) => <span key={`blank${i}`}/>)}
         {report.days.filter((d) => d.date.startsWith(month)).map((d) => <button key={d.date} aria-label={`${d.date} 선택`} aria-pressed={date === d.date} onClick={() => move(() => { setDate(d.date); setEdit(null); })}>{Number(d.date.slice(8))}{monthly.some((e) => e.start_date <= d.date && d.date <= e.end_date) && <sup>●</sup>}</button>)}</div></section>
         <section className="ar-panel"><h3>월 전체 행사 · {monthly.length}건</h3>{monthly.length ? monthly.map((e) => <div className={`ar-event-summary ${e.start_date <= date && date <= e.end_date ? "ar-focus" : ""}`} key={e.id}>

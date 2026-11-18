@@ -246,7 +246,7 @@ export function TeachingModule({
             </select>
           </label>
         </section>
-        <nav className="teaching-tabs" aria-label="수업·평가 보기">
+        <nav className="teaching-tabs" data-arrow-axis="horizontal" aria-label="수업·평가 보기">
           {tabs.map(([id, label]) => (
             <button
               key={id}

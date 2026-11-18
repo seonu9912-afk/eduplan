@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { KeyboardNavigation } from "@/components/keyboard-navigation";
 const pretendard = localFont({
   src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
   variable: "--font-pretendard",
@@ -22,6 +23,7 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           본문으로 바로가기
         </a>
+        <KeyboardNavigation />
         {children}
       </body>
     </html>

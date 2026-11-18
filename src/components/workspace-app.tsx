@@ -143,7 +143,7 @@ export function WorkspaceApp({
           </div>
         </div>
         <nav className="main-nav" aria-label="주요 메뉴">
-          <div className="nav-inner">
+          <div className="nav-inner" data-arrow-axis="horizontal">
             {[
               { id: "home", label: "홈", icon: House },
               { id: "curriculum", label: "교육과정", icon: BookOpen },
