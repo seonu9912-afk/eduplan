@@ -79,7 +79,7 @@ function createClassic(book:Workbook,args:CurriculumExportArgs){
     [13,"자유학기 1학기"],[14,"조정"],[15,"주당"],[16,"자유학기 2학기"],
     [17,"조정"],[18,"주당"],[19,"1학기"],[20,"주당"],[21,"2학기"],[22,"주당"],
     [23,"1학기"],[24,"주당"],[25,"2학기"],[26,"주당"]]){
-    s.getCell(col>=13&&col<=18?5:5,col).value=value;
+    s.getCell(5,Number(col)).value=value;
   }
   for(let row=3;row<=5;row++){
     s.getRow(row).height=27;
