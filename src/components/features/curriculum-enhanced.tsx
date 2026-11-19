@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { Context, Row } from "@/lib/models";
 import { orderedCurriculumGroups, orderedCurriculumSubjects } from "@/lib/curriculum-group-order";
 import { addSubject } from "@/app/actions";
+import { isCreativeGroup } from "@/lib/middle-curriculum";
 import { CurriculumInsights, CurriculumScenario } from "./curriculum-workbench";
 import { CohortChoiceManager } from "./curriculum-choice-manager-v4";
 import { CurriculumRowSubjectV4 } from "./curriculum-subject-row-v4";
@@ -305,6 +306,9 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   function pasteCells(text:string,row:number,col:number){
     const data=text.replace(/\r/g,"").trimEnd().split("\n").map((line)=>line.split("\t"));
     if(!data.length||data.length>visibleSubjects.length-row||data.some((cells)=>cells.length>columns.length-col))return false;
+    const scope=visibleSubjects.slice(row,row+data.length);
+    const creative=scope.length?isCreativeGroup(c.groups.find(g=>g.id===scope[0].group_id)?.name??""):false;
+    if(scope.some(subject=>isCreativeGroup(c.groups.find(g=>g.id===subject.group_id)?.name??"")!==creative))return false;
     const updates=new Map<string,{subjectId:string;col:Column;number:number}[]>();
     for(let i=0;i<data.length;i++)for(let j=0;j<data[i].length;j++){
       const n=Number(data[i][j].replace(/,/g,""));
@@ -335,6 +339,87 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     const next={...operatingWeek.rule,...patch};
     for(const plan of plans)mutate(plan.id,doc=>withWeeks(doc,currentYear,next));
   }
+  const isCreativeSubject=(subject:Context["subjects"][number]) =>
+    isCreativeGroup(c.groups.find(group=>group.id===subject.group_id)?.name??"");
+  const regularSubjects=c.subjects.filter(subject=>!isCreativeSubject(subject));
+  const creativeSubjects=c.subjects.filter(isCreativeSubject);
+  const renderHoursTable=(creative:boolean)=>{
+    const scopedSubjects=creative?creativeSubjects:regularSubjects;
+    return (
+<div id={creative ? "curriculum-creative-hours-table" : "curriculum-weekly-table"} className="cv2-table-scroll" tabIndex={0} aria-label={creative?"창의적 체험활동 별도 시수 편성표":"교과 시수 엑셀식 편성표"}>
+        <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
+        <table className="cv2-table">
+          <thead><tr>
+            <th className="cv2-group-head" rowSpan={2}>교과(군)</th>
+            <th className="cv2-subject-head" rowSpan={2}>교과목·활동</th>
+            {c.grades.map(g=><th key={g} colSpan={viewMode==="yearly"?1:2}>
+              {g}학년 <small>{view==="cohort"?cohort+g-1:currentYear}학년도</small>
+            </th>)}
+            <th rowSpan={2} className="cv2-total-head">3개년 합계</th>
+          </tr><tr>
+            {columns.map((col,i)=><th key={i} className={col.field==="weekly"?"":"cv2-derived-head"}>
+              {col.field==="year"?"연간":col.semester+"학기"}
+            </th>)}
+          </tr></thead>
+          {groupList.filter(groupId=>isCreativeGroup(c.groups.find(group=>group.id===groupId)?.name??"")===creative).map((groupId)=>{
+            const subjects=visibleSubjects.filter(row=>row.group_id===groupId);
+            const group=c.groups.find((g)=>g.id===groupId);
+            const folded=collapsed.includes(groupId);
+            return <tbody key={groupId} className="cv2-body-group">
+              <tr className="cv2-group-row"><th colSpan={columns.length+3}>
+                <div className="cw3-group-header">
+                  <button type="button" onClick={()=>setCollapsed(list=>folded?list.filter(id=>id!==groupId):[...list,groupId])}>
+                    {folded?<ChevronRight size={14}/>:<ChevronDown size={14}/>}
+                    {group?.name??"기타 교과군"} <small>({subjects.length}과목)</small>
+                  </button>
+                  {subjects.length>0&&<span className="cw3-group-sum">
+                    이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
+                    subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
+                  </span>}
+                  {editable&&<QuickAddSubject workspaceId={c.workspace.id}
+                    groupId={groupId} disabled={pendingEdit||!allLoaded}
+                    onCreated={()=>router.refresh()}/>}
+                </div>
+              </th></tr>
+              {!folded&&subjects.map((subject)=>{
+                const r=visibleSubjects.findIndex((s)=>s.id===subject.id);
+                return <tr key={subject.id}>
+                  <td className="cv2-group-cell">{group?.name??"기타"}</td>
+                  <th scope="row" className="cv2-subject-cell">
+                    <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
+                      disabled={!editable||pendingEdit} onSaved={()=>router.refresh()}/>
+                  </th>
+                  {columns.map((col,k)=>{
+                    const cellValue=totalOf(subject.id,col);
+                    const state=col.plan?states[col.plan.id]:null;
+                    const eligible=editable&&!!state?.locked&&!state.saving&&cellValue!==null;
+                    return <td key={k} className={col.field==="total"?"cv2-total-cell":""}>
+                      {cellValue===null?"—":col.field==="year"
+                        ?<span className="cv2-year-sum">{format(cellValue)}</span>
+                        :<HourInput key={subject.id+"-"+k}
+                          cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
+                          ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(col.field==="weekly"?"주당 시수":"최종 시수")}
+                          onChange={(value)=>updateValue(subject.id,col,value)}
+                          onPaste={(text)=>pasteCells(text,r,k)}/>}
+                      {col.field!=="year"&&eligible&&<button className="cv2-adjust-btn"
+                        title="학기별 조정 시수 설정" onClick={()=>setAdjustFor({planId:col.plan!.id,subjectId:subject.id,grade:col.grade,semester:col.semester})}>조정</button>}
+                    </td>;
+                  })}
+                  <td className="cv2-row-sum">{subjectAllHours(subject.id).toLocaleString()}</td>
+                </tr>;
+              })}
+            </tbody>;
+          })}
+          <tfoot><tr><th colSpan={2}>{creative?"창체":"교과"} · {viewMode==="weekly"?"학기별 주당시수 합계":"학기·학년별 총시수"}</th>
+            {columns.map((col,k)=><td key={k} className={col.field==="total"?"cv2-total-cell":""}>
+              {scopedSubjects.reduce((sum,subject)=>sum+(totalOf(subject.id,col)??0),0).toLocaleString()}
+            </td>)}
+            <td>{scopedSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}</td>
+          </tr></tfoot>
+        </table>
+      </div>
+    );
+  };
   return <div className={"cv2"+(simpleStep?" cv2-step-"+simpleStep:"")}>
     <div className="cv2-modebar no-print" role="group" aria-label="교육과정 편성 보기 방식">
       {([["weekly","주당시수 편집"],["semester","학기시수 보기·조정"],
@@ -447,77 +532,25 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
           canApply={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id].saving}
           onApply={(subjectId,grade,semester,weekly)=>mutate(firstPlan.id,
             doc=>withWeeklyHours(doc,subjectId,grade,semester,weekly))}/>}
-      <div id="curriculum-weekly-table" className="cv2-table-scroll" tabIndex={0} aria-label="교육과정 엑셀식 편성표">
-        <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
-        <table className="cv2-table">
-          <thead><tr>
-            <th className="cv2-group-head" rowSpan={2}>교과(군)</th>
-            <th className="cv2-subject-head" rowSpan={2}>교과목·활동</th>
-            {c.grades.map(g=><th key={g} colSpan={viewMode==="yearly"?1:2}>
-              {g}학년 <small>{view==="cohort"?cohort+g-1:currentYear}학년도</small>
-            </th>)}
-            <th rowSpan={2} className="cv2-total-head">3개년 합계</th>
-          </tr><tr>
-            {columns.map((col,i)=><th key={i} className={col.field==="weekly"?"":"cv2-derived-head"}>
-              {col.field==="year"?"연간":col.semester+"학기"}
-            </th>)}
-          </tr></thead>
-          {groupList.map((groupId)=>{
-            const subjects=visibleSubjects.filter(row=>row.group_id===groupId);
-            const group=c.groups.find((g)=>g.id===groupId);
-            const folded=collapsed.includes(groupId);
-            return <tbody key={groupId} className="cv2-body-group">
-              <tr className="cv2-group-row"><th colSpan={columns.length+3}>
-                <div className="cw3-group-header">
-                  <button type="button" onClick={()=>setCollapsed(list=>folded?list.filter(id=>id!==groupId):[...list,groupId])}>
-                    {folded?<ChevronRight size={14}/>:<ChevronDown size={14}/>}
-                    {group?.name??"기타 교과군"} <small>({subjects.length}과목)</small>
-                  </button>
-                  {subjects.length>0&&<span className="cw3-group-sum">
-                    이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
-                    subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
-                  </span>}
-                  {editable&&<QuickAddSubject workspaceId={c.workspace.id}
-                    groupId={groupId} disabled={pendingEdit||!allLoaded}
-                    onCreated={()=>router.refresh()}/>}
-                </div>
-              </th></tr>
-              {!folded&&subjects.map((subject)=>{
-                const r=visibleSubjects.findIndex((s)=>s.id===subject.id);
-                return <tr key={subject.id}>
-                  <td className="cv2-group-cell">{group?.name??"기타"}</td>
-                  <th scope="row" className="cv2-subject-cell">
-                    <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
-                      disabled={!editable||pendingEdit} onSaved={()=>router.refresh()}/>
-                  </th>
-                  {columns.map((col,k)=>{
-                    const cellValue=totalOf(subject.id,col);
-                    const state=col.plan?states[col.plan.id]:null;
-                    const eligible=editable&&!!state?.locked&&!state.saving&&cellValue!==null;
-                    return <td key={k} className={col.field==="total"?"cv2-total-cell":""}>
-                      {cellValue===null?"—":col.field==="year"
-                        ?<span className="cv2-year-sum">{format(cellValue)}</span>
-                        :<HourInput key={subject.id+"-"+k}
-                          cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
-                          ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(col.field==="weekly"?"주당 시수":"최종 시수")}
-                          onChange={(value)=>updateValue(subject.id,col,value)}
-                          onPaste={(text)=>pasteCells(text,r,k)}/>}
-                      {col.field!=="year"&&eligible&&<button className="cv2-adjust-btn"
-                        title="학기별 조정 시수 설정" onClick={()=>setAdjustFor({planId:col.plan!.id,subjectId:subject.id,grade:col.grade,semester:col.semester})}>조정</button>}
-                    </td>;
-                  })}
-                  <td className="cv2-row-sum">{subjectAllHours(subject.id).toLocaleString()}</td>
-                </tr>;
-              })}
-            </tbody>;
-          })}
-          <tfoot><tr><th colSpan={2}>{viewMode==="weekly"?"학기별 주당시수 합계":"학기·학년별 총시수"}</th>
-            {columns.map((col,k)=><td key={k} className={col.field==="total"?"cv2-total-cell":""}>
-              {c.subjects.reduce((sum,subject)=>sum+(totalOf(subject.id,col)??0),0).toLocaleString()}
-            </td>)}
-            <td>{c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}</td>
-          </tr></tfoot>
-        </table>
+      <section className="cv6-hours-area">
+        <div className="cv6-area-heading"><strong>교과 시수 편성</strong>
+          <span>교과(군)별 입력 · 3개년 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        </div>
+        {renderHoursTable(false)}
+      </section>
+      {creativeSubjects.length>0&&<section className="cv6-hours-area cv6-creative-area">
+        <div className="cv6-area-heading"><strong>창의적 체험활동 시수 편성</strong>
+          <span>교과와 별도 입력 · 3개년 {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        </div>
+        <p className="cv6-creative-help">창의적 체험활동은 교과 시수와 구분하여 입력합니다. 입력된 창체 시수는 최종 총시수에 한 번만 더해집니다.</p>
+        {renderHoursTable(true)}
+      </section>}
+      <div className="cv6-combined-total" role="status">
+        <span>교과 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        <span>+</span>
+        <span>창체 {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        <span>=</span>
+        <strong>3개년 총 {c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
       </div>
       <p className="cv2-footnote">학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
       {view==="cohort"&&firstPlan&&firstDoc&&
