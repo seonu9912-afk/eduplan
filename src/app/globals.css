@@ -1600,6 +1600,31 @@ button[data-slot="button"][data-size="icon"] {
   margin-top: 2px;
   color: #9cb2d0;
 }
+.subject-defaults {
+  margin: 0 26px 24px;
+  padding: 18px 20px;
+  border: 1px solid #dce6f5;
+  border-radius: 10px;
+  background: #f7faff;
+}
+.subject-defaults h3 {
+  color: #325b92;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.subject-defaults p {
+  max-width: 940px;
+  margin-bottom: 14px;
+  color: #586f8c;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.subject-defaults .inline-form {
+  justify-content: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+}
 .subject-forms {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
@@ -2710,6 +2735,10 @@ button[data-slot="button"][data-size="icon"] {
     padding: 0 10px;
   }
   .grid-summary {
+    padding: 16px;
+  }
+  .subject-defaults {
+    margin: 0 16px 20px;
     padding: 16px;
   }
   .subject-forms {
