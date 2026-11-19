@@ -12,7 +12,7 @@ export type CohortChoiceSet={
 export type CurriculumDocument = {
   format: "eduplan-curriculum-v2"; cohortYear: number;
   weeks: Record<string, WeekRule>; termWeeks?: Record<string,WeekRule>;
-  choiceSets?:CohortChoiceSet[]; cells: DesignCell[];
+  choiceSets?:CohortChoiceSet[]; excludedSubjectIds?:string[]; cells: DesignCell[];
 };
 export type Calculation = { base: number; adjustments: number; manual: number; total: number; valid: boolean };
 
@@ -126,6 +126,25 @@ export function designEntries(doc: CurriculumDocument) {
     hours: evaluateCell(doc, cell).total,
   }));
 }
+/** An exclusion is scoped to one entering cohort and never deletes subject data.
+ * Only zero-hour, unchosen subjects may be excluded; restoring only changes the
+ * cohort's visible row list. All stored cells and prior snapshots stay intact.
+ */
+export function canExcludeSubject(doc:CurriculumDocument,subjectId:string):boolean{
+  if(doc.choiceSets?.some(set=>set.subjectIds.includes(subjectId)))return false;
+  return doc.cells.filter(cell=>cell.subjectId===subjectId).every(cell=>
+    cell.weekly===0&&cell.manual===0&&cell.adjustments.length===0);
+}
+export function withSubjectExcluded(
+  doc:CurriculumDocument,subjectId:string,excluded:boolean,
+):CurriculumDocument{
+  if(excluded&&!canExcludeSubject(doc,subjectId))
+    throw Error("시수나 선택과목군이 연결된 과목은 운영 제외할 수 없습니다.");
+  const ids=new Set(doc.excludedSubjectIds??[]);
+  if(excluded)ids.add(subjectId);else ids.delete(subjectId);
+  return {...doc,excludedSubjectIds:[...ids]};
+}
+
 export function getCell(doc: CurriculumDocument | null | undefined, subjectId: string,
   grade: number, semester: number): DesignCell | null {
   return doc?.cells.find((cell) =>
@@ -161,6 +180,15 @@ export function sportsHoursByGrade(context: Context, doc: CurriculumDocument) {
 export function validateDocument(context: Context, doc: CurriculumDocument): string[] {
   const errors: string[] = [];
   if (!doc.cells.length || doc.cells.length > 3600) errors.push("편성 과목의 개수를 확인해 주세요.");
+  const excluded=new Set(doc.excludedSubjectIds??[]);
+  if(excluded.size!==(doc.excludedSubjectIds??[]).length)
+    errors.push("운영 제외 과목이 중복 등록되어 있습니다.");
+  for(const id of excluded){
+    if(!context.subjects.some(s=>s.id===id))
+      errors.push("운영 제외 목록에 등록되지 않은 교과목이 있습니다.");
+    if(!canExcludeSubject(doc,id))
+      errors.push("시수 또는 선택과목군이 연결된 교과목은 운영 제외할 수 없습니다.");
+  }
   const keys = new Set<string>();
   for (const cell of doc.cells) {
     const key = [cell.subjectId, cell.grade, cell.semester].join("|");
