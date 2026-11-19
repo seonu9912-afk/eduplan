@@ -17,7 +17,7 @@ import {
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
   withTermWeeks,weekRule,
   validateDocument, curriculumVersion, nationalGroupTotals, sportsHoursByGrade,
-  MIDDLE_2022_MINIMUM,
+  MIDDLE_2022_MINIMUM, canExcludeSubject, withSubjectExcluded,
 } from "@/lib/curriculum-design";
 import {
   loadCurriculumDesign, claimCurriculumDesign,
@@ -262,8 +262,13 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   });
   // Show even empty national-order groups so teachers can add a first subject.
   const groupList=orderedCurriculumGroups(c.groups).map(group=>group.id);
+  // Only this entering cohort may exclude a subject. Operating-year views keep
+  // the shared catalog visible because they combine multiple entering cohorts.
+  const excludedIds=view==="cohort"&&plans[0]
+    ?(states[plans[0].id]?.doc.excludedSubjectIds??[]):[];
+  const excludedSet=new Set(excludedIds);
   const visibleSubjects=orderedCurriculumSubjects(c.subjects,c.groups)
-    .filter(subject=>!collapsed.includes(subject.group_id));
+    .filter(subject=>!collapsed.includes(subject.group_id)&&!excludedSet.has(subject.id));
   const pendingEdit=Object.values(states).some(item=>item.dirty||item.saving);
   const allLoaded=plans.every((p)=>!!states[p.id]);
   async function exportSheet(layout:"classic"|"modern"){
@@ -344,7 +349,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   const regularSubjects=c.subjects.filter(subject=>!isCreativeSubject(subject));
   const creativeSubjects=c.subjects.filter(isCreativeSubject);
   const renderHoursTable=(creative:boolean)=>{
-    const scopedSubjects=creative?creativeSubjects:regularSubjects;
+    const scopedSubjects=(creative?creativeSubjects:regularSubjects)
+      .filter(subject=>!excludedSet.has(subject.id));
     return (
 <div id={creative ? "curriculum-creative-hours-table" : "curriculum-weekly-table"} className="cv2-table-scroll" tabIndex={0} aria-label={creative?"창의적 체험활동 별도 시수 편성표":"교과 시수 엑셀식 편성표"}>
         <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
@@ -388,6 +394,15 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                   <th scope="row" className="cv2-subject-cell">
                     <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
                       disabled={!editable||pendingEdit} onSaved={()=>router.refresh()}/>
+                    {view==="cohort"&&simpleStep==="hours"&&editable&&firstPlan&&firstDoc&&
+                      <button type="button" className="cv6-exclude-subject no-print"
+                        disabled={pendingEdit||!states[firstPlan.id]?.locked||!canExcludeSubject(firstDoc,subject.id)}
+                        title={canExcludeSubject(firstDoc,subject.id)
+                          ?"이 입학년도 편성표에서만 과목을 운영 제외합니다."
+                          :"시수나 선택과목군이 등록된 과목은 먼저 편성을 정리해야 합니다."}
+                        onClick={()=>mutate(firstPlan.id,doc=>withSubjectExcluded(doc,subject.id,true))}>
+                        운영 제외
+                      </button>}
                   </th>
                   {columns.map((col,k)=>{
                     const cellValue=totalOf(subject.id,col);
@@ -545,6 +560,23 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
         <p className="cv6-creative-help">창의적 체험활동은 교과 시수와 구분하여 입력합니다. 입력된 창체 시수는 최종 총시수에 한 번만 더해집니다.</p>
         {renderHoursTable(true)}
       </section>}
+      {view==="cohort"&&excludedIds.length>0&&
+        <section className="cv6-excluded-list" aria-label="해당 입학년도 운영 제외 과목">
+          <div><strong>{cohort}학년도 입학생 운영 제외 과목</strong>
+            <p>이 입학년도 편성표에서만 제외되었으며 다른 입학년도 및 과목 원본은 유지됩니다.</p>
+          </div>
+          <div className="cv6-excluded-tags">
+            {c.subjects.filter(subject=>excludedSet.has(subject.id)).map(subject=>
+              <span key={subject.id}>
+                {subject.name}
+                {simpleStep==="hours"&&editable&&firstPlan&&
+                  <button type="button" disabled={pendingEdit||!states[firstPlan.id]?.locked}
+                    onClick={()=>mutate(firstPlan.id,doc=>withSubjectExcluded(doc,subject.id,false))}>
+                    다시 포함
+                  </button>}
+              </span>)}
+          </div>
+        </section>}
       <div className="cv6-combined-total" role="status">
         <span>교과 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
         <span>+</span>
@@ -552,7 +584,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
         <span>=</span>
         <strong>3개년 총 {c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
       </div>
-      <p className="cv2-footnote">학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
+      <p className="cv2-footnote">‘운영 제외’는 현재 입학년도에서만 적용되며 이미 편성 시수가 있는 과목은 제외할 수 없습니다. 학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
       {view==="cohort"&&firstPlan&&firstDoc&&
         <CohortChoiceManager context={c} doc={firstDoc}
           editable={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id]?.saving}
