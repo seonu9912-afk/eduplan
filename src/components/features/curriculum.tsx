@@ -27,11 +27,13 @@ import {
 import {
   addGroup,
   addSubject,
+  importMiddleCurriculumSubjects,
   deleteSubject,
   createPlan,
   saveCurriculum,
 } from "@/app/actions";
 import { cohortFor, parseGridPaste, parseHours } from "@/lib/domain";
+import { middleRevisionForCohort } from "@/lib/middle-curriculum";
 import type { Context, Row } from "@/lib/models";
 export function Curriculum({
   context: c,
@@ -207,7 +209,7 @@ export function Curriculum({
               <Empty
                 icon={<Settings2 />}
                 title="편성할 과목을 등록해 주세요"
-                description="교과군과 과목을 먼저 등록하면 시수를 입력할 수 있어요."
+                description={c.schoolType === "중학교" ? "2015·2022 개정 교육과정의 기본 교과목을 불러오거나 직접 추가할 수 있어요." : "교과군과 과목을 먼저 등록하면 시수를 입력할 수 있어요."}
                 action={
                   <Button
                     variant="outline"
@@ -223,6 +225,7 @@ export function Curriculum({
                 context={c}
                 plan={plan}
                 onDirtyChange={setChanged}
+                onManageSubjects={() => changeTab("subjects")}
               />
             )}
           </>
@@ -259,6 +262,12 @@ export function Curriculum({
             );
           }}
         >
+          {c.schoolType === "중학교" ? (
+            <p className="muted">
+              중학교는 입학년도에 해당하는 2015·2022 개정 교육과정의
+              기본 교과군과 과목을 자동으로 채웁니다. 기존 과목은 유지됩니다.
+            </p>
+          ) : null}
           <Field label="입학년도" id="new-cohort">
             <input
               id="new-cohort"
@@ -281,10 +290,12 @@ function GridEditor({
   context: c,
   plan,
   onDirtyChange,
+  onManageSubjects,
 }: {
   context: Context;
   plan: Row<"curriculum_plans">;
   onDirtyChange: (dirty: boolean) => void;
+  onManageSubjects: () => void;
 }) {
   const initial = () =>
     Object.fromEntries(
@@ -380,6 +391,11 @@ function GridEditor({
           <Clipboard size={14} />
           엑셀에서 복사한 셀을 붙여넣을 수 있어요.
         </span>
+        {editable ? (
+          <Button variant="outline" disabled={m.pending} onClick={onManageSubjects}>
+            <Settings2 /> 교과목 관리
+          </Button>
+        ) : null}
         {editable ? (
           <Button disabled={m.pending || !dirty} onClick={save}>
             <Save />
@@ -585,6 +601,29 @@ function SubjectSettings({ context: c }: { context: Context }) {
         </div>
       </div>
       <InlineNotice mutation={m} />
+      {editable && c.schoolType === "중학교" ? (
+        <div className="subject-defaults no-print">
+          <h3>중학교 기본 교과목 불러오기</h3>
+          <p>이미 등록된 교과군·과목과 저장된 시수는 보존하고, 빠진 항목만 추가합니다. 두 교육과정의 창의적 체험활동 영역은 다르며, 가져온 과목 목록은 현재 작업공간의 모든 입학년도에서 공통으로 보입니다.</p>
+          <div className="inline-form">
+            {(["2015", "2022"] as const).map((revision) => (
+              <Button
+                type="button"
+                key={revision}
+                variant="outline"
+                disabled={m.pending}
+                onClick={() => m.execute(
+                  () => importMiddleCurriculumSubjects({ workspace_id: c.workspace.id, revision }),
+                  undefined,
+                  revision + " 개정 기본 교과목을 확인했습니다.",
+                )}
+              >
+                <BookOpen /> {revision} 개정 불러오기
+              </Button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {editable ? (
         <div className="subject-forms">
           <form
