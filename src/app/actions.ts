@@ -12,6 +12,7 @@ import {
   uuid,
 } from "@/lib/domain";
 import { curriculumDraft, curriculumSource } from "@/lib/curriculum-draft";
+import { middleRevisionForCohort, middleSubjectCatalog, type MiddleCurriculumRevision } from "@/lib/middle-curriculum";
 import type { Result, Role } from "@/lib/models";
 
 function userError(error: unknown): string {
@@ -265,6 +266,85 @@ export async function addGroup(workspaceId: string, name: string) {
     refresh();
   });
 }
+/**
+ * 기본 목록은 국가 기준 원본을 변경하지 않고 작업공간에 누락된 항목만 추가한다.
+ * 기존 과목·시수·편성표를 덮어쓰거나 삭제하지 않는다.
+ * 중간 실패 시 다시 호출해 남은 항목을 채울 수 있도록 멱등성을 유지한다.
+ */
+async function mergeMiddleCatalog(
+  db: Awaited<ReturnType<typeof createClient>>,
+  workspaceId: string,
+  revision: MiddleCurriculumRevision,
+) {
+  const { data: groups, error: groupError } = await db
+    .from("subject_groups")
+    .select("id, name")
+    .eq("workspace_id", workspaceId);
+  if (groupError) throw groupError;
+  const { data: subjects, error: subjectError } = await db
+    .from("subjects")
+    .select("group_id, name")
+    .eq("workspace_id", workspaceId);
+  if (subjectError) throw subjectError;
+
+  const knownGroups = [...(groups ?? [])];
+  const knownSubjects = [...(subjects ?? [])];
+  let addedGroups = 0;
+  let addedSubjects = 0;
+  for (const template of middleSubjectCatalog(revision)) {
+    let group = knownGroups.find((item) => item.name === template.name);
+    if (!group) {
+      const { data, error } = await db
+        .from("subject_groups")
+        .insert({ workspace_id: workspaceId, name: template.name })
+        .select("id, name")
+        .single();
+      if (error) throw error;
+      group = data;
+      knownGroups.push(group);
+      addedGroups++;
+    }
+    const missing = template.subjects.filter(
+      (name) => !knownSubjects.some(
+        (item) => item.group_id === group.id && item.name === name,
+      ),
+    );
+    if (missing.length) {
+      const rows = missing.map((name) => ({
+        workspace_id: workspaceId,
+        group_id: group.id,
+        name,
+      }));
+      const { error } = await db.from("subjects").insert(rows);
+      if (error) throw error;
+      knownSubjects.push(...rows);
+      addedSubjects += rows.length;
+    }
+  }
+  return { addedGroups, addedSubjects };
+}
+
+export async function importMiddleCurriculumSubjects(input: unknown) {
+  return run(async () => {
+    const v = z.object({
+      workspace_id: uuid,
+      revision: z.enum(["2015", "2022"]),
+    }).parse(input);
+    const { db } = await authorized(v.workspace_id);
+    const { data: workspace, error } = await db
+      .from("workspaces")
+      .select("school_type")
+      .eq("id", v.workspace_id)
+      .single();
+    if (error) throw error;
+    if (workspace.school_type !== "중학교")
+      throw new Error("중학교 작업공간에서만 불러올 수 있습니다.");
+    const result = await mergeMiddleCatalog(db, v.workspace_id, v.revision);
+    refresh();
+    return result;
+  });
+}
+
 export async function deleteSubject(input: unknown) {
   return run(async () => {
     const v = z
@@ -286,6 +366,22 @@ export async function createPlan(workspaceId: string, cohortYear: number) {
   return run(async () => {
     schoolYearSchema.parse(cohortYear);
     const { db } = await authorized(workspaceId);
+    const { data: workspace, error: workspaceError } = await db
+      .from("workspaces")
+      .select("school_type")
+      .eq("id", workspaceId)
+      .single();
+    if (workspaceError) throw workspaceError;
+    const { data: existing, error: existingError } = await db
+      .from("curriculum_plans")
+      .select("id")
+      .eq("workspace_id", workspaceId)
+      .eq("cohort_year", cohortYear)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) throw new Error("해당 입학년도의 편성표가 이미 있습니다.");
+    if (workspace.school_type === "중학교")
+      await mergeMiddleCatalog(db, workspaceId, middleRevisionForCohort(cohortYear));
     const { data, error } = await db
       .from("curriculum_plans")
       .insert({ workspace_id: workspaceId, cohort_year: cohortYear })
