@@ -131,3 +131,13 @@
 .c5-creative-section .c5-group-grid{margin:0}
 @media(max-width:680px){.c5-catalog-import{align-items:stretch}.c5-catalog-import>div:last-child{width:100%}
   .c5-catalog-import button{flex:1}.c5-creative-section{padding:12px}}
+
+/* Delete only unused subjects; confirmation explains workspace-wide scope. */
+.c5-delete-subject{display:inline-flex;align-items:center;justify-content:center;flex:none;
+  width:28px;height:28px;border:1px solid transparent;border-radius:7px;
+  color:#9c6464;background:transparent;cursor:pointer;opacity:.72}
+.c5-delete-subject:hover:not(:disabled),.c5-delete-subject:focus-visible{
+  color:#b84040;border-color:#f1caca;background:#fff1f1;opacity:1}
+.c5-delete-subject:disabled{cursor:wait;opacity:.3}
+.c5-group>.c5-error{margin:9px 12px;padding:8px 10px;border-radius:7px;
+  background:#fff4f1;color:#a34237;font-size:11px;line-height:1.6}
