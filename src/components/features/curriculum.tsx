@@ -33,7 +33,6 @@ import {
   saveCurriculum,
 } from "@/app/actions";
 import { cohortFor, parseGridPaste, parseHours } from "@/lib/domain";
-import { middleRevisionForCohort } from "@/lib/middle-curriculum";
 import type { Context, Row } from "@/lib/models";
 export function Curriculum({
   context: c,
