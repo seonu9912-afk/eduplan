@@ -1,13 +1,14 @@
 "use client";
 
-import {useCallback,useState} from "react";
+import {useCallback,useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 import {
   ArrowLeft,ArrowRight,BookOpen,Check,ChevronRight,
   CircleAlert,ClipboardCheck,Layers3,Plus,Save,TableProperties,
 } from "lucide-react";
 import type {Context} from "@/lib/models";
-import {addGroup,addSubject,createPlan} from "@/app/actions";
+import {addGroup,addSubject,createPlan,importMiddleCurriculumDefaults} from "@/app/actions";
+import {isCreativeGroup,middleRevisionForCohort} from "@/lib/middle-curriculum";
 import {orderedCurriculumGroups,orderedCurriculumSubjects} from "@/lib/curriculum-group-order";
 import {basisForCohort} from "@/lib/curriculum-workbench";
 import {CurriculumEnhanced} from "./curriculum-enhanced";
@@ -94,6 +95,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
 }){
   const router=useRouter();
   const [step,setStep]=useState<Step>(1);
+  const seeded=useRef(false);
   const [cohort,setCohort]=useState(Number(initialCohort)||c.year?.year||
     c.plans[0]?.cohort_year||2026);
   const [createYear,setCreateYear]=useState(false);
@@ -107,10 +109,27 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
   const plan=c.plans.find(p=>p.cohort_year===cohort);
   const groups=orderedCurriculumGroups(c.groups);
   const schoolSubjects=c.subjects.length;
+  const subjectGroups=groups.filter(group=>!isCreativeGroup(group.name));
+  const creativeGroups=groups.filter(group=>isCreativeGroup(group.name));
   const editable=c.role==="admin"||c.role==="editor";
   const cohortYears=Array.from(new Set([cohort,...c.plans.map(p=>p.cohort_year)]))
     .sort((a,b)=>b-a);
   const stableDirty=useCallback((next:boolean)=>{setDirty(next);onDirtyChange(next);},[onDirtyChange]);
+  useEffect(()=>{
+    if(seeded.current||c.schoolType!=="중학교"||!editable||c.subjects.length)return;
+    seeded.current=true;
+    let live=true;
+    void importMiddleCurriculumDefaults({
+      workspaceId:c.workspace.id,revision:middleRevisionForCohort(cohort),
+    }).then(result=>{
+      if(!live)return;
+      if(result.ok){setNotice("중학교 기본 교과목과 창의적 체험활동 영역을 준비했어요.");router.refresh();}
+      else setError("기본 교과목을 자동 등록하지 못했습니다: "+result.error);
+    }).catch(()=>{if(live)setError("기본 교과목을 불러오지 못했습니다. 직접 불러오기를 이용해 주세요.");});
+    return()=>{live=false;};
+    // Initialization runs once for an empty editable workspace.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[c.workspace.id,c.schoolType,c.subjects.length,editable]);
   function refresh(){router.refresh();}
   function canMove(){
     if(!dirty)return true;
@@ -121,6 +140,18 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
     if(!canMove())return;
     if(!Number.isInteger(year)||year<2000||year>2100){setError("입학년도는 2000~2100년 사이로 지정해 주세요.");return;}
     setCohort(year);setError("");setNotice("");setCreateYear(false);setStep(1);
+  }
+  async function importDefaults(revision:"2015"|"2022"){
+    if(!editable||busy||dirty)return;
+    setBusy(true);setError("");setNotice("");
+    try{
+      const result=await importMiddleCurriculumDefaults({workspaceId:c.workspace.id,revision});
+      if(!result.ok){setError(result.error);return;}
+      setNotice(revision+" 개정 기본 항목 확인 완료 · 교과군 "+result.data.addedGroups+
+        "개, 교과목·창체 영역 "+result.data.addedSubjects+"개 추가");
+      refresh();
+    }catch{setError("기본 항목 불러오기에 실패했습니다.");}
+    finally{setBusy(false);}
   }
   async function addNewGroup(){
     if(!editable||!newGroup.trim()||busy)return;
@@ -212,9 +243,18 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       {basis&&<div className="c5-hint">
         <BookOpen size={15}/>{basis.label} 기준으로 편성합니다. 기준 시수는 마지막 단계에서 비교해 드려요.
       </div>}
+      {c.schoolType==="중학교"&&editable&&<div className="c5-catalog-import no-print">
+        <div><strong>국가 교육과정 기본 과목</strong>
+          <p>이미 있는 과목과 시수는 그대로 둡니다. 학교에 필요 없는 과목은 삭제하거나 다른 과목을 추가할 수 있어요.</p>
+        </div>
+        <div>
+          <button type="button" disabled={busy||dirty} onClick={()=>void importDefaults("2015")}>2015 개정 불러오기</button>
+          <button type="button" disabled={busy||dirty} onClick={()=>void importDefaults("2022")}>2022 개정 불러오기</button>
+        </div>
+      </div>}
       <div className="c5-group-grid">
-        {groups.map(group=><GroupEditor key={group.id} context={c}
-          groupId={group.id} enabled={editable} onUpdated={refresh}/>)}
+        {subjectGroups.map(group=><GroupEditor key={group.id} context={c}
+          groupId={group.id} enabled={editable} onUpdated={refresh}/> )}
         {editable&&<section className="c5-add-group">
           {!showGroupInput?<button type="button" onClick={()=>setShowGroupInput(true)}>
             <Plus size={18}/><strong>교과군 추가</strong>
@@ -232,6 +272,18 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
           </form>}
         </section>}
       </div>
+      {c.schoolType==="중학교"&&<section className="c5-creative-section" aria-label="창의적 체험활동 영역 관리">
+        <div className="c5-creative-heading">
+          <div><span>별도 편성</span><h3>창의적 체험활동</h3>
+            <p>{middleRevisionForCohort(cohort)} 개정 교육과정의 창체 영역입니다.
+              교과 시수와 별도로 입력하고 최종 합계에서 합산합니다.</p>
+          </div>
+        </div>
+        <div className="c5-group-grid">
+          {creativeGroups.map(group=><GroupEditor key={group.id} context={c}
+            groupId={group.id} enabled={editable} onUpdated={refresh}/>)}
+        </div>
+      </section>}
       <div className="c5-stage-footer no-print">
         <span>과목 구성은 다른 입학년도 편성표에서도 공통으로 사용돼요.</span>
         <button type="button" className="c5-primary" disabled={busy||!schoolSubjects}
