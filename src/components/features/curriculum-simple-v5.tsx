@@ -4,11 +4,10 @@ import {useCallback,useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
 import {
   ArrowLeft,ArrowRight,BookOpen,Check,ChevronRight,
-  CircleAlert,ClipboardCheck,Layers3,Plus,Save,TableProperties,Trash2,
+  CircleAlert,ClipboardCheck,Layers3,Plus,Save,TableProperties,
 } from "lucide-react";
 import type {Context} from "@/lib/models";
-import {addGroup,addSubject,createPlan,importMiddleCurriculumDefaults,removeUnusedCurriculumSubject} from "@/app/actions";
-import {Confirm} from "@/components/common";
+import {addGroup,addSubject,createPlan,importMiddleCurriculumDefaults} from "@/app/actions";
 import {isCreativeGroup,middleRevisionForCohort} from "@/lib/middle-curriculum";
 import {orderedCurriculumGroups,orderedCurriculumSubjects} from "@/lib/curriculum-group-order";
 import {basisForCohort} from "@/lib/curriculum-workbench";
@@ -34,20 +33,6 @@ function GroupEditor({context:c,groupId,enabled,onUpdated}:{
   const [input,setInput]=useState("");
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
-  const [removing,setRemoving]=useState<{id:string;name:string}|null>(null);
-  async function removeSubject(){
-    if(!removing||busy)return;
-    setBusy(true);setError("");
-    try{
-      const result=await removeUnusedCurriculumSubject({
-        workspaceId:c.workspace.id,subjectId:removing.id,
-      });
-      if(!result.ok){setError(result.error);setRemoving(null);return;}
-      setRemoving(null);
-      onUpdated();
-    }catch{setError("과목 삭제를 처리하지 못했습니다. 다시 확인해 주세요.");}
-    finally{setBusy(false);}
-  }
   async function createSubjects(){
     const names=namesFrom(input);
     if(!names.length){setError("추가할 과목명을 입력해 주세요.");return;}
@@ -84,11 +69,7 @@ function GroupEditor({context:c,groupId,enabled,onUpdated}:{
           <span className="c5-subject-index">{i+1}</span>
           <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
             disabled={!enabled||busy} onSaved={onUpdated}/>
-          {enabled&&<button type="button" className="c5-delete-subject no-print"
-            title={subject.name+" 과목 삭제"} aria-label={subject.name+" 과목 삭제"}
-            disabled={busy} onClick={()=>{setError("");setRemoving({id:subject.id,name:subject.name});}}>
-            <Trash2 size={13}/>
-          </button>}
+
         </div>)}
       </div>:
       <p className="c5-group-empty">등록된 과목이 없습니다. 오른쪽의 ‘과목 추가’를 눌러 주세요.</p>}
@@ -107,10 +88,7 @@ function GroupEditor({context:c,groupId,enabled,onUpdated}:{
       </div>
     </div>}
     {error&&<p className="c5-error" role="alert">{error}</p>}
-    <Confirm open={!!removing} onOpenChange={open=>{if(!open&&!busy)setRemoving(null);}}
-      title={(removing?.name??"")+" 과목을 삭제할까요?"}
-      description={"과목을 삭제하면 이 작업공간의 모든 입학년도 목록에서 제외됩니다. 이미 시수를 배당했거나 수업 계획·확정 이력이 있는 과목은 삭제할 수 없습니다. 삭제한 기본 과목은 2015·2022 개정 목록에서 다시 불러올 수 있습니다."}
-      pending={busy} onConfirm={()=>void removeSubject()}/>
+
   </section>;
 }
 
@@ -260,7 +238,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       <div className="c5-stage-heading">
         <div><span className="c5-eyebrow">STEP 01</span>
           <h2>우리 학교에서 운영할 과목을 구성해 주세요</h2>
-          <p>국가 교육과정의 교과군 순서를 유지하면서, 학교 특색 과목을 자유롭게 추가할 수 있어요.</p>
+          <p>국가 교육과정의 교과군 순서를 유지하면서 학교 특색 과목을 추가할 수 있어요. 특정 입학년도에서 운영하지 않을 과목은 2단계 시수표에서 ‘운영 제외’를 선택해 주세요.</p>
         </div>
         <span className="c5-count">{groups.length}개 교과군 · {schoolSubjects}개 과목</span>
       </div>
@@ -269,7 +247,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       </div>}
       {c.schoolType==="중학교"&&editable&&<div className="c5-catalog-import no-print">
         <div><strong>국가 교육과정 기본 과목</strong>
-          <p>이미 있는 과목과 시수는 그대로 둡니다. 학교에 필요 없는 과목은 삭제하거나 다른 과목을 추가할 수 있어요.</p>
+          <p>이미 있는 과목과 시수는 그대로 둡니다. 과목 자체를 삭제하지 않고 입학년도별로 운영 여부를 정할 수 있어요.</p>
         </div>
         <div>
           <button type="button" disabled={busy||dirty} onClick={()=>void importDefaults("2015")}>2015 개정 불러오기</button>
