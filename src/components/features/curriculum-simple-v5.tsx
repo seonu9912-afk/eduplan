@@ -42,7 +42,7 @@ function GroupEditor({context:c,groupId,enabled,onUpdated}:{
       const result=await removeUnusedCurriculumSubject({
         workspaceId:c.workspace.id,subjectId:removing.id,
       });
-      if(!result.ok){setError(result.error);return;}
+      if(!result.ok){setError(result.error);setRemoving(null);return;}
       setRemoving(null);
       onUpdated();
     }catch{setError("과목 삭제를 처리하지 못했습니다. 다시 확인해 주세요.");}
