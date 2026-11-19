@@ -346,6 +346,60 @@ export async function deleteSubject(input: unknown) {
     refresh();
   });
 }
+/**
+ * Only remove a subject when it has no instructional hours or teaching links.
+ * The legacy delete_subject RPC acts on the whole workspace: never expose it
+ * directly for subjects that are actually used in any cohort or saved history.
+ */
+function subjectIsUsedInDesign(document: unknown, subjectId: string): boolean {
+  if (!document || typeof document !== "object" || Array.isArray(document))
+    return true; // Fail closed for an unreadable document.
+  const doc=document as {
+    cells?:{subjectId?:string;weekly?:number;manual?:number;adjustments?:{hours?:number}[]}[];
+    choiceSets?:{subjectIds?:string[]}[];
+  };
+  if (!Array.isArray(doc.cells)) return true;
+  if (doc.choiceSets?.some(choice=>choice.subjectIds?.includes(subjectId)))return true;
+  return doc.cells.some(cell=>cell.subjectId===subjectId &&
+    (cell.weekly!==0 || cell.manual!==0 ||
+      !Array.isArray(cell.adjustments) ||
+      cell.adjustments.length>0));
+}
+
+export async function removeUnusedCurriculumSubject(input:unknown) {
+  return run(async()=>{
+    const v=z.object({workspaceId:uuid,subjectId:uuid}).parse(input);
+    const {db}=await authorized(v.workspaceId);
+    const [subject,hours,courses,documents,snapshots,plans]=await Promise.all([
+      db.from("subjects").select("id,name").eq("workspace_id",v.workspaceId)
+        .eq("id",v.subjectId).maybeSingle(),
+      db.from("curriculum_hours").select("hours").eq("workspace_id",v.workspaceId)
+        .eq("subject_id",v.subjectId).gt("hours",0).limit(1),
+      db.from("teaching_courses").select("id").eq("workspace_id",v.workspaceId)
+        .eq("subject_id",v.subjectId).limit(1),
+      db.from("curriculum_design_documents").select("document")
+        .eq("workspace_id",v.workspaceId),
+      db.from("curriculum_design_snapshots").select("document")
+        .eq("workspace_id",v.workspaceId),
+      db.from("curriculum_plans").select("id,version").eq("workspace_id",v.workspaceId),
+    ]);
+    for(const response of [subject,hours,courses,documents,snapshots,plans])
+      if(response.error)throw response.error;
+    if(!subject.data)throw Error("과목이 이미 삭제되었거나 찾을 수 없습니다.");
+    if(hours.data?.length||courses.data?.length||
+      (documents.data??[]).some(row=>subjectIsUsedInDesign(row.document,v.subjectId))||
+      (snapshots.data??[]).some(row=>subjectIsUsedInDesign(row.document,v.subjectId)))
+      throw Error("이미 시수·선택과목군·수업 계획 또는 확정 이력이 있는 과목입니다. 기존 자료를 보호하기 위해 삭제하지 않았습니다.");
+    const expected=(plans.data??[]).map(row=>({id:row.id,version:row.version}));
+    const {error}=await db.rpc("delete_subject",{
+      target:v.workspaceId,target_subject:v.subjectId,expected_plans:expected,
+    });
+    if(error)throw error;
+    refresh();
+    return {removed:subject.data.name};
+  });
+}
+
 export async function createPlan(workspaceId: string, cohortYear: number) {
   return run(async () => {
     schoolYearSchema.parse(cohortYear);
