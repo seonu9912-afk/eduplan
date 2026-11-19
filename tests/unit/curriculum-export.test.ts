@@ -2,7 +2,7 @@ import {describe,expect,it} from "vitest";
 import {Workbook} from "exceljs";
 import {recoveryPreviewContext} from "../../src/app/recovery-preview/fixture";
 import {exportCurriculumWorkbook} from "../../src/lib/curriculum-export";
-import {initializeDesign,withWeeklyHours,evaluateCell,getCell} from "../../src/lib/curriculum-design";
+import {initializeDesign,withWeeklyHours,withSubjectExcluded,evaluateCell,getCell} from "../../src/lib/curriculum-design";
 import {parseCurriculumExcel} from "../../src/lib/curriculum-excel";
 
 describe("curriculum downloadable workbooks",()=>{
@@ -27,6 +27,20 @@ describe("curriculum downloadable workbooks",()=>{
     const parsed=await parseCurriculumExcel(bytes,"EduPlan_원본형.xlsx");
     expect(parsed.errors).toEqual([]);
     expect(parsed.courses.some((row)=>row.name===c.subjects[0].name)).toBe(true);
+  });
+  it("omits subjects excluded by this cohort while keeping its source data",async()=>{
+    const unused=c.subjects.find(subject=>source.cells.filter(cell=>cell.subjectId===subject.id)
+      .every(cell=>cell.weekly===0&&cell.manual===0&&cell.adjustments.length===0));
+    if(!unused)throw Error("Fixture needs a zero-hour subject");
+    const changed=withSubjectExcluded(doc,unused.id,true);
+    const bytes=await exportCurriculumWorkbook({...args,
+      documents:{[plan.id]:changed},layout:"modern"});
+    const wb=new Workbook();
+    await wb.xlsx.load(bytes as unknown as Parameters<Workbook["xlsx"]["load"]>[0]);
+    const sheet=wb.getWorksheet("학기별 시수")!;
+    const values=(sheet.getColumn(2).values??[]).map(cell=>String(cell??""));
+    expect(values).not.toContain(unused.name);
+    expect(source.cells.some(cell=>cell.subjectId===unused.id)).toBe(true);
   });
   it("exports modern semester detail without changing the underlying source",async()=>{
     const before=JSON.stringify(doc);
