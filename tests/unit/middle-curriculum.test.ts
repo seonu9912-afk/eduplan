@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { middleRevisionForCohort, middleSubjectCatalog } from "@/lib/middle-curriculum";
+import { middleRevisionForCohort, middleSubjectCatalog } from "../../src/lib/middle-curriculum";
 
 describe("middle school curriculum templates", () => {
   it("uses the correct cohort-level revision", () => {
