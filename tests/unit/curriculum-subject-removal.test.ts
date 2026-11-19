@@ -14,7 +14,7 @@ describe("safe curriculum subject removal",()=>{
   it("protects weekly hours, manual adjustments and choice sets",()=>{
     expect(subjectIsUsedInDesign(doc({...blank,weekly:1}),id)).toBe(true);
     expect(subjectIsUsedInDesign(doc({...blank,manual:16}),id)).toBe(true);
-    expect(subjectIsUsedInDesign(doc({...blank,adjustments:[{hours:0}]}),id)).toBe(true);
+    expect(subjectIsUsedInDesign(doc({...blank,adjustments:[{id:"adjust-1",kind:"학교 조정",hours:0}]}),id)).toBe(true);
     expect(subjectIsUsedInDesign({...doc(blank),choiceSets:[{
       subjectIds:[id,"another"],requiredCount:1
     }]},id)).toBe(true);
