@@ -300,19 +300,21 @@ async function mergeMiddleCatalog(
         .select("id, name")
         .single();
       if (error) throw error;
-      group = data;
+      if (!data) throw new Error("교과군 추가 결과를 확인하지 못했습니다.");
+      group = { id: data.id, name: data.name };
       knownGroups.push(group);
       addedGroups++;
     }
+    const groupId = group.id;
     const missing = template.subjects.filter(
       (name) => !knownSubjects.some(
-        (item) => item.group_id === group.id && item.name === name,
+        (item) => item.group_id === groupId && item.name === name,
       ),
     );
     if (missing.length) {
       const rows = missing.map((name) => ({
         workspace_id: workspaceId,
-        group_id: group.id,
+        group_id: groupId,
         name,
       }));
       const { error } = await db.from("subjects").insert(rows);
