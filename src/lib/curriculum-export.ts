@@ -27,10 +27,14 @@ function cellFor(args:CurriculumExportArgs,subjectId:string,grade:number,semeste
   return {weekly:cell.weekly,total:result.total,adjustment:result.adjustments+result.manual};
 }
 function allSubjects(args:CurriculumExportArgs){
-  const {context}=args;
-  return orderedCurriculumSubjects(context.subjects,context.groups).map((subject)=>({
-    subject,group:context.groups.find((g)=>g.id===subject.group_id)?.name??"기타",
-  }));
+  const {context,cohort,view,documents}=args;
+  const plan=view==="cohort"?context.plans.find(row=>row.cohort_year===cohort):undefined;
+  const excluded=new Set(plan?documents[plan.id]?.excludedSubjectIds??[]:[]);
+  return orderedCurriculumSubjects(context.subjects,context.groups)
+    .filter(subject=>!excluded.has(subject.id))
+    .map(subject=>({
+      subject,group:context.groups.find((g)=>g.id===subject.group_id)?.name??"기타",
+    }));
 }
 function nationalForGroup(group:string):number|null{
   const key=matchGroup(group);
