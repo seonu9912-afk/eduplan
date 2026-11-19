@@ -39,11 +39,10 @@ describe("curriculum 3-year/operating shared source calculation",()=>{
   });
   it("excludes an unused subject only in its cohort without deleting the shared source",()=>{
     const source=initializeDesign(context,plan);
-    const empty=context.subjects.find(subject=>
-      source.cells.filter(cell=>cell.subjectId===subject.id)
-        .every(cell=>cell.weekly===0&&cell.manual===0&&cell.adjustments.length===0));
-    if(!empty)throw Error("Fixture needs an unused subject");
-    const changed=withSubjectExcluded(source,empty.id,true);
+    const empty=context.subjects[1];
+    const cleared={...source,cells:source.cells.map(cell=>
+      cell.subjectId===empty.id?{...cell,weekly:0,manual:0,adjustments:[]}:cell)};
+    const changed=withSubjectExcluded(cleared,empty.id,true);
     expect(changed.excludedSubjectIds).toContain(empty.id);
     expect(source.excludedSubjectIds).toBeUndefined();
     expect(changed.cells).toHaveLength(source.cells.length);
