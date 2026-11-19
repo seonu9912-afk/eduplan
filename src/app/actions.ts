@@ -11,6 +11,7 @@ import {
   uuid,
 } from "@/lib/domain";
 import { curriculumDraft, curriculumSource } from "@/lib/curriculum-draft";
+import { middleRevisionForCohort, middleCurriculumCatalog, type MiddleRevision } from "@/lib/middle-curriculum";
 import type { Result, Role } from "@/lib/models";
 
 function userError(error: unknown): string {
@@ -265,6 +266,69 @@ export async function addGroup(workspaceId: string, name: string) {
     refresh();
   });
 }
+/** Merge national subject/creative defaults into one school's editable catalog.
+ * Existing rows and their linked hours are left as-is. No backfilling of hours.
+ * The current schema shares subjects across all cohort years, so we only add rows.
+ */
+async function mergeMiddleCurriculumDefaults(
+  db: Awaited<ReturnType<typeof createClient>>,
+  workspaceId: string,
+  revision: MiddleRevision,
+){
+  const {data:groups,error:groupsError}=await db.from("subject_groups")
+    .select("id,name").eq("workspace_id",workspaceId);
+  if(groupsError)throw groupsError;
+  const {data:subjects,error:subjectsError}=await db.from("subjects")
+    .select("group_id,name").eq("workspace_id",workspaceId);
+  if(subjectsError)throw subjectsError;
+  const knownGroups=[...(groups??[])];
+  const knownSubjects=[...(subjects??[])];
+  let addedGroups=0,addedSubjects=0;
+  const catalog=middleCurriculumCatalog(revision);
+  for(const template of [...catalog.groups,catalog.creative]){
+    let groupId=knownGroups.find(row=>row.name===template.name)?.id;
+    if(!groupId){
+      const {data,error}=await db.from("subject_groups")
+        .insert({workspace_id:workspaceId,name:template.name})
+        .select("id,name").single();
+      if(error)throw error;
+      if(!data)throw Error("교과군 추가 결과를 확인하지 못했습니다.");
+      groupId=data.id;
+      knownGroups.push({id:data.id,name:data.name});
+      addedGroups++;
+    }
+    const id=groupId;
+    const missing=template.subjects.filter(name=>
+      !knownSubjects.some(row=>row.group_id===id&&row.name===name));
+    if(missing.length){
+      const rows=missing.map(name=>({workspace_id:workspaceId,group_id:id,name}));
+      const {error}=await db.from("subjects").insert(rows);
+      if(error)throw error;
+      knownSubjects.push(...rows);
+      addedSubjects+=rows.length;
+    }
+  }
+  return {addedGroups,addedSubjects};
+}
+
+export async function importMiddleCurriculumDefaults(input:unknown){
+  return run(async()=>{
+    const v=z.object({
+      workspaceId:uuid,
+      revision:z.enum(["2015","2022"]),
+    }).parse(input);
+    const {db}=await authorized(v.workspaceId);
+    const {data:workspace,error}=await db.from("workspaces")
+      .select("school_type").eq("id",v.workspaceId).single();
+    if(error)throw error;
+    if(workspace.school_type!=="중학교")
+      throw Error("중학교 작업공간에서만 기본 편제를 불러올 수 있습니다.");
+    const added=await mergeMiddleCurriculumDefaults(db,v.workspaceId,v.revision);
+    refresh();
+    return added;
+  });
+}
+
 export async function deleteSubject(input: unknown) {
   return run(async () => {
     const v = z
@@ -286,6 +350,11 @@ export async function createPlan(workspaceId: string, cohortYear: number) {
   return run(async () => {
     schoolYearSchema.parse(cohortYear);
     const { db } = await authorized(workspaceId);
+    const {data:workspace,error:workspaceError}=await db.from("workspaces")
+      .select("school_type").eq("id",workspaceId).single();
+    if(workspaceError)throw workspaceError;
+    if(workspace.school_type==="중학교")
+      await mergeMiddleCurriculumDefaults(db,workspaceId,middleRevisionForCohort(cohortYear));
     const { data, error } = await db
       .from("curriculum_plans")
       .insert({ workspace_id: workspaceId, cohort_year: cohortYear })
