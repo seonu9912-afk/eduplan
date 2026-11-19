@@ -1,8 +1,9 @@
 import {describe,it,expect} from "vitest";
 import {subjectIsUsedInDesign} from "../../src/lib/curriculum-subject-removal";
+import type {DesignCell} from "../../src/lib/curriculum-design";
 
 const id="d1500000-0000-4000-8000-000000000001";
-const blank={subjectId:id,grade:1,semester:1,weekly:0,manual:0,adjustments:[]};
+const blank:DesignCell={subjectId:id,grade:1,semester:1,weekly:0,manual:0,adjustments:[]};
 const doc=(cell:typeof blank)=>({format:"eduplan-curriculum-v2",cells:[cell],choiceSets:[]});
 
 describe("safe curriculum subject removal",()=>{
