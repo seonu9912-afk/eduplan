@@ -25,6 +25,17 @@ describe("curriculum 3-year/operating shared source calculation",()=>{
       expect(evaluateCell(doc,cell!).total).toBe(item.hours);
     }
   });
+  it("drops stale zero-valued deleted subject cells without mutating the saved source",()=>{
+    const original=initializeDesign(context,plan);
+    const removedId="d1500000-0000-4000-8000-000000009999";
+    const stale={subjectId:removedId,grade:1,semester:1,weekly:0,manual:0,adjustments:[]};
+    const saved={...original,cells:[...original.cells,stale]};
+    const reopened=initializeDesign(context,plan,saved);
+    expect(saved.cells).toHaveLength(original.cells.length+1);
+    expect(reopened.cells).toHaveLength(original.cells.length);
+    expect(reopened.cells.some(cell=>cell.subjectId===removedId)).toBe(false);
+    expect(validateDocument(context,reopened)).toEqual([]);
+  });
   it("recalculates weekly 3 as 48 or 51 when weeks changes from 16 to 17",()=>{
     const id=context.subjects[0].id;
     const doc=withWeeklyHours(initializeDesign(context,plan),id,1,1,3);
