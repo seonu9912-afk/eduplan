@@ -29,10 +29,10 @@ describe("curriculum downloadable workbooks",()=>{
     expect(parsed.courses.some((row)=>row.name===c.subjects[0].name)).toBe(true);
   });
   it("omits subjects excluded by this cohort while keeping its source data",async()=>{
-    const unused=c.subjects.find(subject=>source.cells.filter(cell=>cell.subjectId===subject.id)
-      .every(cell=>cell.weekly===0&&cell.manual===0&&cell.adjustments.length===0));
-    if(!unused)throw Error("Fixture needs a zero-hour subject");
-    const changed=withSubjectExcluded(doc,unused.id,true);
+    const unused=c.subjects[1];
+    const cleared={...doc,cells:doc.cells.map(cell=>
+      cell.subjectId===unused.id?{...cell,weekly:0,manual:0,adjustments:[]}:cell)};
+    const changed=withSubjectExcluded(cleared,unused.id,true);
     const bytes=await exportCurriculumWorkbook({...args,
       documents:{[plan.id]:changed},layout:"modern"});
     const wb=new Workbook();
