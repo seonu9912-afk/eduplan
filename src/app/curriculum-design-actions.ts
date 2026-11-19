@@ -24,6 +24,7 @@ const sourceVersion = z.object({
       count:z.union([z.literal(16),z.literal(17)]),
       status:z.enum(["confirmed","provisional"]),
     })).optional(),
+    excludedSubjectIds:z.array(uuid).max(300).optional(),
     choiceSets:z.array(z.object({
       id:uuid,name:z.string().trim().min(1).max(100),
       grade:z.number().int().min(1).max(3),semester:z.number().int().min(1).max(2),
