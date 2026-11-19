@@ -104,7 +104,11 @@ export function initializeDesign(context: Context, plan: Row<"curriculum_plans">
     existing.cohortYear === plan.cohort_year
     ? { ...existing, weeks: { ...years, ...existing.weeks } }
     : { format: "eduplan-curriculum-v2", cohortYear: plan.cohort_year, weeks: years, cells: [] };
-  const rows = [...source.cells];
+  // A removed, never-used subject may still have zero-valued cells in an
+  // earlier draft. Omit such stale rows from the loaded editing document;
+  // snapshots and revision history remain untouched in storage.
+  const activeSubjectIds=new Set(context.subjects.map(subject=>subject.id));
+  const rows = source.cells.filter(cell=>activeSubjectIds.has(cell.subjectId));
   for (const subject of context.subjects) {
     for (const grade of context.grades) for (const semester of [1, 2]) {
       if (rows.some((x) => x.subjectId === subject.id && x.grade === grade && x.semester === semester)) continue;
