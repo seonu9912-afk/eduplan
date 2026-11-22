@@ -2,37 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { CurriculumEnhanced, type CurriculumDesignActions } from "@/components/features/curriculum-enhanced";
-import { initializeDesign, validateDocument, type CurriculumDocument } from "@/lib/curriculum-design";
-import { recoveryPreviewContext } from "./fixture";
+import { validateDocument, type CurriculumDocument } from "@/lib/curriculum-design";
+import { curriculumPreviewContext, readCurriculumPreview } from "./curriculum-fixture";
 import "@/components/features/curriculum-enhanced.css";
 import "@/components/features/curriculum-workbench.css";
 import "@/components/features/curriculum-simple-v5.css";
-
-type Saved = { document: CurriculumDocument; planVersion: number; documentVersion: number };
 
 /** Synthetic browser-only rehearsal. Never calls authenticated server actions. */
 export function CurriculumPreview() {
   const [school, setSchool] = useState<"초등학교" | "중학교" | "고등학교">("중학교");
   const [dirty, setDirty] = useState(false);
-  const context = useMemo(() => {
-    const c = recoveryPreviewContext();
-    c.role = "editor";
-    c.schoolType = school;
-    c.workspace = { ...c.workspace, school_type: school, name: "교육과정 실습용 가상 " + school };
-    c.grades = school === "초등학교" ? [1, 2, 3, 4, 5, 6] : [1, 2, 3];
-    c.plans = [{ ...c.plans[0], unit: school === "고등학교" ? "credits" : "hours" }];
-    c.groups[0] = { ...c.groups[0], name: "국어" };
-    c.subjects[0] = { ...c.subjects[0], name: "국어" };
-    c.hours = [];
-    return c;
-  }, [school]);
+  const context = useMemo(() => curriculumPreviewContext(school), [school]);
   const actions = useMemo<CurriculumDesignActions>(() => {
     const key = "eduplan-curriculum-rehearsal-v1:" + school;
-    const plan = context.plans[0];
-    const read = (): Saved => {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : { document: initializeDesign(context, plan), planVersion: 1, documentVersion: 0 };
-    };
+    const read = () => readCurriculumPreview(context, localStorage.getItem(key));
     return {
       load: async () => ({ ok: true, data: { ...read(), lock: null, snapshots: [] } }),
       claim: async () => ({ ok: true, data: { acquired: true } }),
@@ -55,7 +38,11 @@ export function CurriculumPreview() {
   return <>
     <div className="page-heading">
       <div><h1>교육과정 편성 실습</h1>
-        <p>가상 학교 자료입니다. 입력값은 이 브라우저에만 저장되며 실제 학교 자료에 반영되지 않습니다.</p></div>
+        <p>가상 학교 자료입니다. 입력값은 이 브라우저에만 저장되며 실제 학교 자료에 반영되지 않습니다.</p>
+        <p>{school === "중학교"
+          ? "학교 편성표의 교과·선택과목·창체와 일반학기 시수를 바탕으로 한 실습 예시입니다. 자유학기 조정과 원본의 별도 총계는 적용하지 않았습니다."
+          : "학교급별 교과군·과목과 학기별 배당을 살펴보는 실습 예시입니다. 학교별 개설 과목과 배당은 달라질 수 있습니다."}
+          {" "}예시 배당은 법정 기준 충족이나 학교의 확정 편성안을 뜻하지 않습니다.</p></div>
       <label>학교급 <select aria-label="실습 학교급" value={school} onChange={e => {
         if (!dirty || window.confirm("저장되지 않은 실습 내용을 버리고 학교급을 바꿀까요?"))
           setSchool(e.target.value as typeof school);
