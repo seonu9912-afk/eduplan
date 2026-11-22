@@ -25,36 +25,46 @@ import {
 } from "@/app/curriculum-design-actions";
 
 type Plan = Row<"curriculum_plans">;
+export const curriculumDesignActions = {
+  load: loadCurriculumDesign, claim: claimCurriculumDesign,
+  save: saveCurriculumDesign, confirm: confirmCurriculumDesign,
+};
+export type CurriculumDesignActions = typeof curriculumDesignActions;
 type View = "cohort" | "operating";
 type EditorState = {
   doc: CurriculumDocument; planVersion: number; docVersion: number;
   locked: boolean; loading: boolean; dirty: boolean; saving: boolean;
   revision: number; status: string; history: CurriculumDocument[]; future: CurriculumDocument[];
+  needsResave: boolean;
   snapshots: {id:string;version:number;confirmed_at:string}[];
 };
 type Column = { grade: number; semester: number; plan: Plan | undefined; field: "weekly" | "total" | "year" };
 const format = (n:number) => Number.isInteger(n) ? String(n) : String(Number(n.toFixed(5)));
-function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
+function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste,onDraftChange}:{
   value:number;disabled:boolean;ariaLabel:string;cellKey:string;
   onChange:(number:number)=>void;
   onPaste?:(text:string)=>boolean;
+  onDraftChange:(dirty:boolean)=>void;
 }){
-  const [draft,setDraft]=useState(format(value));
+  const [edit,setEdit]=useState({source:value,text:format(value)});
+  const draft=edit.source===value?edit.text:format(value);
+  const setDraft=(text:string)=>setEdit({source:value,text});
   const ref=useRef<HTMLInputElement>(null);
-  useEffect(()=>{if(ref.current!==document.activeElement)setDraft(format(value));},[value]);
+  const cancelBlur=useRef(false);
   const accept=()=>{
+    onDraftChange(false);
+    if(cancelBlur.current){cancelBlur.current=false;return;}
     if(!draft.trim()) {setDraft(format(value));return;}
     const next=Number(draft);
-    if(Number.isFinite(next)&&next>=0&&next<=2000) onChange(next);
+    if(Number.isFinite(next)&&next>=0&&next<=2000) {if(next!==value)onChange(next);}
     else setDraft(format(value));
   };
   return <input ref={ref} data-design-cell={cellKey} value={draft}
     type="text" inputMode="decimal" disabled={disabled} aria-label={ariaLabel}
-    onFocus={(e)=>e.target.select()} onChange={(e)=>setDraft(e.target.value)}
+    onFocus={(e)=>e.target.select()} onChange={(e)=>{setDraft(e.target.value);onDraftChange(e.target.value!==format(value));}}
     onBlur={accept} onKeyDown={(e)=>{
       if(e.key==="Enter") {
         e.preventDefault();
-        accept();
         const match=/^(\d+)-(\d+)$/.exec(cellKey);
         const next=match?document.querySelector<HTMLInputElement>(
           '[data-design-cell="'+(Number(match[1])+1)+'-'+Number(match[2])+'"]'):null;
@@ -62,7 +72,7 @@ function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
         else ref.current?.blur();
         return;
       }
-      if(e.key==="Escape"){setDraft(format(value));ref.current?.blur();return;}
+      if(e.key==="Escape"){cancelBlur.current=true;setDraft(format(value));ref.current?.blur();return;}
       const offset:Record<string,[number,number]>={ArrowUp:[-1,0],ArrowDown:[1,0],
         ArrowLeft:[0,-1],ArrowRight:[0,1]};
       const delta=offset[e.key];
@@ -71,7 +81,7 @@ function HourInput({value,disabled,ariaLabel,cellKey,onChange,onPaste}:{
       if(!match)return;
       const found=document.querySelector<HTMLInputElement>(
         '[data-design-cell="'+(Number(match[1])+delta[0])+'-'+(Number(match[2])+delta[1])+'"]');
-      if(found) {e.preventDefault();accept();found.focus();found.select();}
+      if(found&&!found.disabled) {e.preventDefault();found.focus();found.select();}
     }}
     onPaste={(e)=>{
       const text=e.clipboardData.getData("text");
@@ -111,48 +121,67 @@ function QuickAddSubject({workspaceId,groupId,disabled,onCreated}:{
     {error&&<small role="alert">{error}</small>}
   </div>;
 }
-export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleStep}:{
+export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleStep,
+  actions=curriculumDesignActions, catalogEditable=true}:{
   context:Context;view:View;cohort:number;onDirtyChange:(dirty:boolean)=>void;
   simpleStep?:"hours"|"review";
+  actions?:CurriculumDesignActions;
+  catalogEditable?:boolean;
 }){
   const router=useRouter();
   const currentYear=c.year?.year??cohort;
+  const selectedPlan=c.plans.find(p=>p.cohort_year===cohort);
+  const credits=selectedPlan?.unit==="credits";
+  const unit=credits?"학점":"시간";
+  const duration=c.grades.length+"개년";
+  const middle=c.schoolType==="중학교"&&!credits;
   const plans=view==="cohort"
     ? c.plans.filter((p)=>p.cohort_year===cohort)
     : c.grades.map((grade)=>c.plans.find((p)=>p.cohort_year===currentYear-grade+1)).filter((p):p is Plan=>!!p);
   const planKey=plans.map((p)=>p.id).sort().join("|");
   const [states,setStates]=useState<Record<string,EditorState>>({});
+  const [hasDraft,setHasDraft]=useState(false);
+  const draftCells=useRef(new Set<string>());
+  const [reload,setReload]=useState(0);
   const [errors,setErrors]=useState<string[]>([]);
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [showNational,setShowNational]=useState(false);
-  const [viewMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">("weekly");
+  const [viewMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">(credits?"semester":"weekly");
   const [weeksOpen,setWeeksOpen]=useState(false);
   const [exporting,setExporting]=useState<"classic"|"modern"|null>(null);
   const [adjustFor,setAdjustFor]=useState<{planId:string;subjectId:string;grade:number;semester:number}|null>(null);
   const statesRef=useRef(states);
   const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
   const active=useRef(true);
+  const savingIds=useRef(new Set<string>());
   const editable=c.role==="admin"||c.role==="editor";
   const plansRef=useRef(plans);
   useEffect(()=>{statesRef.current=states;},[states]);
-  useEffect(()=>{plansRef.current=plans;},[planKey]);
-  useEffect(()=>{onDirtyChange(Object.values(states).some((item)=>item.dirty));},[states,onDirtyChange]);
+  useEffect(()=>{plansRef.current=plans;},[plans]);
+  useEffect(()=>{onDirtyChange(hasDraft||Object.values(states).some((item)=>item.dirty||item.saving));},[states,hasDraft,onDirtyChange]);
   useEffect(()=>{
     let inScope=true;
     active.current=true;
     void Promise.all(plans.map(async(plan)=>{
-      const loaded=await loadCurriculumDesign({planId:plan.id});
+      const loaded=await actions.load({planId:plan.id}).catch(()=>({ok:false as const,error:"편성 자료를 불러오지 못했습니다. 다시 불러오기를 눌러 주세요."}));
       if(!inScope)return;
       if(!loaded.ok){setErrors((prev)=>[...prev,loaded.error]);return;}
       const doc=initializeDesign(c,plan,loaded.data.document);
-      const lock=editable?await claimCurriculumDesign({planId:plan.id}):null;
+      const problems=validateDocument(c,doc);
+      if(problems.length)setErrors(prev=>[...prev,...problems.slice(0,8)]);
+      const needsResave=!!loaded.data.document&&plan.version===loaded.data.planVersion&&doc.cells.some(cell=>{
+        const saved=c.hours.find(h=>h.plan_id===plan.id&&h.subject_id===cell.subjectId&&
+          h.grade===cell.grade&&h.semester===cell.semester)?.hours??0;
+        return Math.abs(saved-evaluateCell(doc,cell).total)>0.000001;
+      });
+      const lock=editable?await actions.claim({planId:plan.id}).catch(()=>({ok:false as const,error:"편집권을 확인하지 못했습니다."})):null;
       if(!inScope)return;
       if(lock&&!lock.ok)setErrors((prev)=>[...prev,lock.error]);
       setStates((prev)=>({...prev,[plan.id]:{
         doc,planVersion:loaded.data.planVersion,docVersion:loaded.data.documentVersion,
         locked:!editable||!!lock?.ok&&lock.data.acquired,loading:false,
         dirty:false,saving:false,revision:0,status:lock?.ok&&!lock.data.acquired?"다른 교사가 편집 중 · 조회 전용":"",
-        history:[],future:[],snapshots:loaded.data.snapshots,
+        history:[],future:[],snapshots:loaded.data.snapshots,needsResave,
       }}));
     }));
     return()=>{
@@ -163,12 +192,12 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     };
     // Documents are identified by plan ID. Refreshes do not discard in-progress edits.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[planKey]);
+  },[planKey,reload]);
   useEffect(()=>{
     if(!editable)return;
     const interval=setInterval(()=>{
       for(const plan of plansRef.current){
-        if(statesRef.current[plan.id]?.locked)void claimCurriculumDesign({planId:plan.id}).then((result)=>{
+        if(statesRef.current[plan.id]?.locked)void actions.claim({planId:plan.id}).catch(()=>({ok:false as const})).then((result)=>{
           if(!result.ok||!result.data.acquired)setStates((old)=>old[plan.id]?{
             ...old,[plan.id]:{...old[plan.id],locked:false,status:"편집권이 만료되었습니다. 다시 편집권을 요청해 주세요."}
           }:old);
@@ -176,21 +205,40 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
       }
     },60000);
     return()=>clearInterval(interval);
-  },[editable,planKey]);
+  },[editable,planKey,actions]);
 
-  async function saveOne(planId:string){
+  useEffect(()=>{
+    setStates(old=>Object.fromEntries(Object.entries(old).map(([id,state])=>{
+      const plan=plansRef.current.find(p=>p.id===id);
+      return [id,plan?{...state,doc:initializeDesign(c,plan,state.doc)}:state];
+    })));
+    // Catalog refreshes may add rows but must not reload the saved document.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[c.subjects]);
+  useEffect(()=>{
+    const guard=(event:BeforeUnloadEvent)=>{
+      if(draftCells.current.size||Object.values(statesRef.current).some(state=>state.dirty||state.saving)){
+        event.preventDefault();event.returnValue="";
+      }
+    };
+    window.addEventListener("beforeunload",guard);
+    return()=>window.removeEventListener("beforeunload",guard);
+  },[]);
+
+  async function saveOne(planId:string,explicit=false){
     const start=statesRef.current[planId];
-    if(!start||!start.dirty||start.saving||!start.locked)return;
+    if(!start||(!start.dirty&&!explicit)||start.saving||!start.locked||savingIds.current.has(planId))return;
     const problems=validateDocument(c,start.doc);
     if(problems.length){
       setErrors(problems.slice(0,15));
       setStates((old)=>({...old,[planId]:{...old[planId],status:"입력값 확인 필요 · 저장하지 않음"}}));
       return;
     }
-    setStates((old)=>({...old,[planId]:{...old[planId],saving:true,status:"저장 중…"}}));
-    const result=await saveCurriculumDesign({
+    setStates((old)=>({...old,[planId]:{...old[planId],dirty:true,saving:true,status:"저장 중…"}}));
+    savingIds.current.add(planId);
+    const result=await actions.save({
       planId,expectedPlanVersion:start.planVersion,expectedDocVersion:start.docVersion,document:start.doc,
-    });
+    }).catch(()=>({ok:false as const,error:"연결이 끊어져 저장하지 못했습니다. 입력 내용은 유지됩니다. 다시 저장해 주세요."})).finally(()=>savingIds.current.delete(planId));
     if(!active.current)return;
     setStates((old)=>{
       if(!old[planId])return old;
@@ -198,12 +246,13 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
       const same=latest.revision===start.revision;
       return {...old,[planId]:{
         ...latest,saving:false,
-        ...(result.ok?{planVersion:result.data.planVersion,docVersion:result.data.documentVersion}:{}),
+        ...(result.ok?{planVersion:result.data.planVersion,docVersion:result.data.documentVersion,needsResave:false}:{}),
         dirty:!same||!result.ok,
         status:result.ok?(same?"자동 저장 완료":"추가 변경사항 저장 대기"):"저장 실패 · "+result.error,
       }};
     });
     if(result.ok) {
+      setErrors([]);
       if(statesRef.current[planId]?.revision!==start.revision)
         timers.current[planId]=setTimeout(()=>void saveOne(planId),1100);
       else router.refresh();
@@ -215,7 +264,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   }
   function mutate(planId:string,fn:(doc:CurriculumDocument)=>CurriculumDocument){
     const before=statesRef.current[planId];
-    if(!editable||!before?.locked||before.saving)return;
+    if(!editable||!before?.locked)return;
     setStates((old)=>{
       const state=old[planId];if(!state)return old;
       const changed=fn(state.doc);
@@ -226,15 +275,16 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     schedule(planId);
   }
   async function reacquire(plan:Plan,force=false){
-    const result=await claimCurriculumDesign({planId:plan.id,force});
+    const result=await actions.claim({planId:plan.id,force}).catch(()=>({ok:false as const,error:"편집권 요청에 실패했습니다. 다시 시도해 주세요."}));
     if(result.ok&&result.data.acquired){
       setStates((old)=>old[plan.id]?{...old,[plan.id]:{...old[plan.id],locked:true,status:"편집권을 획득했습니다."}}:old);
     }else setErrors((old)=>[...old.slice(-7),result.ok?"다른 교사가 편집 중입니다.":result.error]);
   }
   async function confirm(plan:Plan){
     const state=statesRef.current[plan.id];
-    if(!state||state.dirty||state.saving||!state.locked){setErrors(["저장을 완료한 뒤 확정본을 생성해 주세요."]);return;}
-    const result=await confirmCurriculumDesign({planId:plan.id});
+    if(!state||state.dirty||state.saving||state.needsResave||!state.locked){setErrors(["저장을 완료한 뒤 확정본을 생성해 주세요."]);return;}
+    const result=await actions.confirm({planId:plan.id,expectedPlanVersion:state.planVersion,
+      expectedDocVersion:state.docVersion}).catch(()=>({ok:false as const,error:"확정본 생성에 실패했습니다. 저장 상태를 확인해 주세요."}));
     if(result.ok){
       setStates((prev)=>({...prev,[plan.id]:{...prev[plan.id],
         status:"확정본 생성 완료 · 버전 "+result.data.version,
@@ -269,7 +319,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   const excludedSet=new Set(excludedIds);
   const visibleSubjects=orderedCurriculumSubjects(c.subjects,c.groups)
     .filter(subject=>!collapsed.includes(subject.group_id)&&!excludedSet.has(subject.id));
-  const pendingEdit=Object.values(states).some(item=>item.dirty||item.saving);
+  const pendingEdit=hasDraft||Object.values(states).some(item=>item.dirty||item.saving);
   const allLoaded=plans.every((p)=>!!states[p.id]);
   async function exportSheet(layout:"classic"|"modern"){
     if(!allLoaded||!plans.length||exporting)return;
@@ -309,16 +359,18 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
       :withFinalHours(doc,subjectId,column.grade,column.semester,next));
   }
   function pasteCells(text:string,row:number,col:number){
-    const data=text.replace(/\r/g,"").trimEnd().split("\n").map((line)=>line.split("\t"));
-    if(!data.length||data.length>visibleSubjects.length-row||data.some((cells)=>cells.length>columns.length-col))return false;
+    const reject=()=>{setErrors(["붙여넣기 범위와 숫자를 확인해 주세요. 표 밖·교과/창체 경계를 넘거나 편집할 수 없는 셀이 포함되어 변경하지 않았습니다."]);return true;};
+    const data=text.replace(/\r/g,"").replace(/\n+$/,"").split("\n").map((line)=>line.split("\t"));
+    if(!data.length||data.length>visibleSubjects.length-row||data.some((cells)=>cells.length!==data[0].length||cells.length>columns.length-col))return reject();
     const scope=visibleSubjects.slice(row,row+data.length);
     const creative=scope.length?isCreativeGroup(c.groups.find(g=>g.id===scope[0].group_id)?.name??""):false;
-    if(scope.some(subject=>isCreativeGroup(c.groups.find(g=>g.id===subject.group_id)?.name??"")!==creative))return false;
+    if(scope.some(subject=>isCreativeGroup(c.groups.find(g=>g.id===subject.group_id)?.name??"")!==creative))return reject();
     const updates=new Map<string,{subjectId:string;col:Column;number:number}[]>();
     for(let i=0;i<data.length;i++)for(let j=0;j<data[i].length;j++){
       const n=Number(data[i][j].replace(/,/g,""));
       const column=columns[col+j];if(!Number.isFinite(n)||n<0||n>2000||!column.plan
-        ||column.field==="year")return false;
+        ||column.field==="year"||!statesRef.current[column.plan.id]?.locked||
+        (column.field==="weekly"&&n>100))return reject();
       const list=updates.get(column.plan.id)??[];
       list.push({subjectId:visibleSubjects[row+i].id,col:column,number:n});
       updates.set(column.plan.id,list);
@@ -361,7 +413,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
             {c.grades.map(g=><th key={g} colSpan={viewMode==="yearly"?1:2}>
               {g}학년 <small>{view==="cohort"?cohort+g-1:currentYear}학년도</small>
             </th>)}
-            <th rowSpan={2} className="cv2-total-head">3개년 합계</th>
+            <th rowSpan={2} className="cv2-total-head">{duration} 합계</th>
           </tr><tr>
             {columns.map((col,i)=><th key={i} className={col.field==="weekly"?"":"cv2-derived-head"}>
               {col.field==="year"?"연간":col.semester+"학기"}
@@ -380,9 +432,9 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                   </button>
                   {subjects.length>0&&<span className="cw3-group-sum">
                     이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
-                    subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
+                    subjectAllHours(subject.id),0).toLocaleString()}{unit}</strong>
                   </span>}
-                  {editable&&<QuickAddSubject workspaceId={c.workspace.id}
+                  {editable&&catalogEditable&&<QuickAddSubject workspaceId={c.workspace.id}
                     groupId={groupId} disabled={pendingEdit||!allLoaded}
                     onCreated={()=>router.refresh()}/>}
                 </div>
@@ -393,7 +445,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                   <td className="cv2-group-cell">{group?.name??"기타"}</td>
                   <th scope="row" className="cv2-subject-cell">
                     <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
-                      disabled={!editable||pendingEdit} onSaved={()=>router.refresh()}/>
+                      disabled={!editable||!catalogEditable||pendingEdit} onSaved={()=>router.refresh()}/>
                     {view==="cohort"&&simpleStep==="hours"&&editable&&firstPlan&&firstDoc&&
                       <button type="button" className="cv6-exclude-subject no-print"
                         disabled={pendingEdit||!states[firstPlan.id]?.locked||!canExcludeSubject(firstDoc,subject.id)}
@@ -407,16 +459,21 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                   {columns.map((col,k)=>{
                     const cellValue=totalOf(subject.id,col);
                     const state=col.plan?states[col.plan.id]:null;
-                    const eligible=editable&&!!state?.locked&&!state.saving&&cellValue!==null;
+                    const eligible=editable&&!!state?.locked&&cellValue!==null;
                     return <td key={k} className={col.field==="total"?"cv2-total-cell":""}>
                       {cellValue===null?"—":col.field==="year"
                         ?<span className="cv2-year-sum">{format(cellValue)}</span>
                         :<HourInput key={subject.id+"-"+k}
                           cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
-                          ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(col.field==="weekly"?"주당 시수":"최종 시수")}
+                          ariaLabel={subject.name+" "+col.grade+"학년 "+col.semester+"학기 "+(credits?"학점":col.field==="weekly"?"주당 시수":"최종 시수")}
+                          onDraftChange={dirty=>{
+                            const key=r+"-"+k;
+                            if(dirty)draftCells.current.add(key);else draftCells.current.delete(key);
+                            setHasDraft(draftCells.current.size>0);
+                          }}
                           onChange={(value)=>updateValue(subject.id,col,value)}
                           onPaste={(text)=>pasteCells(text,r,k)}/>}
-                      {col.field!=="year"&&eligible&&<button className="cv2-adjust-btn"
+                      {!credits&&col.field!=="year"&&eligible&&<button className="cv2-adjust-btn"
                         title="학기별 조정 시수 설정" onClick={()=>setAdjustFor({planId:col.plan!.id,subjectId:subject.id,grade:col.grade,semester:col.semester})}>조정</button>}
                     </td>;
                   })}
@@ -425,7 +482,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
               })}
             </tbody>;
           })}
-          <tfoot><tr><th colSpan={2}>{creative?"창체":"교과"} · {viewMode==="weekly"?"학기별 주당시수 합계":"학기·학년별 총시수"}</th>
+          <tfoot><tr><th colSpan={2}>{creative?"창체":"교과"} · {credits?"학기·학년별 학점":viewMode==="weekly"?"학기별 주당시수 합계":"학기·학년별 총시수"}</th>
             {columns.map((col,k)=><td key={k} className={col.field==="total"?"cv2-total-cell":""}>
               {scopedSubjects.reduce((sum,subject)=>sum+(totalOf(subject.id,col)??0),0).toLocaleString()}
             </td>)}
@@ -438,22 +495,26 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   return <div className={"cv2"+(simpleStep?" cv2-step-"+simpleStep:"")}>
     <div className="cv2-modebar no-print" role="group" aria-label="교육과정 편성 보기 방식">
       {([["weekly","주당시수 편집"],["semester","학기시수 보기·조정"],
-         ["yearly","학년별 합계"],["national","국가 기준 비교"]] as const).map(([key,label])=>
+         ["yearly","학년별 합계"],["national","국가 기준 비교"]] as const).filter(([key])=>!(credits&&key==="weekly")&&((middle&&!simpleStep)||key!=="national")).map(([key,label])=>
         <button type="button" key={key} className={viewMode===key?"active":""}
           onClick={()=>{setViewMode(key);if(key==="national")setShowNational(true);}}>
-          {label}
+          {credits&&key==="semester"?"학기별 학점 편집":label}
         </button>)}
-      <span>기본 입력은 주당시수 · 학기 총시수 직접 수정 시 차액은 조정 시수로 기록</span>
+      <span>{credits?"입력 단위: 학점 · 시수로 자동 환산하지 않습니다.":"기본 입력은 주당시수 · 학기 총시수 직접 수정 시 차액은 조정 시수로 기록"}</span>
     </div>
     <div className="cv2-toolbar no-print">
-      <div><strong>{simpleStep==="hours"?"주당시수 배당":simpleStep==="review"?"국가 기준 검토 및 확정":
-        view==="cohort"?cohort+"학년도 입학생 · 3개년":currentYear+"학년도 · 1~3학년"} </strong>
+      <div><strong>{simpleStep==="hours"?(credits?"학점 배당":"주당시수 배당"):simpleStep==="review"?"편성 검토 및 확정":
+        view==="cohort"?cohort+"학년도 입학생 · "+duration:currentYear+"학년도 · 1~"+c.grades.length+"학년"} </strong>
         <p>{simpleStep==="hours"
-          ?"표의 주당시수만 입력하세요. 실제 이수시수는 자동으로 계산됩니다."
+          ?(credits?"학기별 학점을 직접 입력하세요.":"주당시수 × 편성 기준 주수 + 조정값으로 학기 시수를 계산합니다.")
           :simpleStep==="review"?"편성 결과와 선택과목군을 검토한 뒤 확정본을 생성해 주세요."
-          :"주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다."}</p>
+          :credits?"학기별 학점을 직접 수정하면 합계가 자동 계산·저장됩니다.":"주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다."}</p>
       </div>
       <div className="cv2-actions">
+        <button type="button" disabled={Object.values(states).some(s=>s.saving)}
+          onClick={()=>{if(!pendingEdit||window.confirm("저장하지 않은 변경사항을 버리고 최신 저장본을 불러올까요?")){
+            setErrors([]);setReload(n=>n+1);
+          }}}>최신 저장본 다시 불러오기</button>
         {allLoaded&&plans.length>0&&<div className="cv2-export-buttons">
           <button type="button" disabled={!!exporting} onClick={()=>void exportSheet("classic")}>
             <Download size={13}/>{exporting==="classic"?"생성 중…":"원본형 엑셀"}
@@ -465,16 +526,17 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
         {plans.map((p)=>{
           const item=states[p.id];
           return <div className="cv2-plan-state" key={p.id}>
-            <span>{p.cohort_year} 입학: {item?item.saving?"저장 중…":item.dirty?"저장 대기":item.status||"연결됨":"불러오는 중…"}</span>
+            <span>{p.cohort_year} 입학: {item?item.saving?"저장 중…":item.dirty?(item.status||"저장 대기"):item.status||"연결됨":"불러오는 중…"}</span>
+            {item?.needsResave&&<span role="status">저장된 연계 시수와 화면 계산이 다릅니다. 편성값을 검토한 뒤 ‘현재 편성 다시 저장’을 눌러 주세요.</span>}
             {item&&!item.locked&&editable&&<button onClick={()=>void reacquire(p)}>편집권 요청</button>}
             {item&&!item.locked&&c.role==="admin"&&<button onClick={()=>void reacquire(p,true)}>관리자 회수</button>}
             {item?.locked&&editable&&<>
-              <button disabled={!item.dirty||item.saving} onClick={()=>void saveOne(p.id)}><Save size={13}/>저장</button>
-              {!simpleStep&&<>
-                <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>취소</button>
+              <button disabled={item.saving} onClick={()=>void saveOne(p.id,true)}><Save size={13}/>{item.dirty?"저장":"현재 편성 다시 저장"}</button>
+              {simpleStep!=="review"&&<>
+                <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>실행 취소</button>
                 <button disabled={!item.future.length} onClick={()=>historyMove(p.id,false)}>재실행</button>
               </>}
-              {simpleStep!=="hours"&&<button disabled={item.dirty||item.saving}
+              {simpleStep!=="hours"&&<button disabled={item.dirty||item.saving||item.needsResave}
                 onClick={()=>void confirm(p)}><ShieldCheck size={13}/>
                 {simpleStep==="review"?"편성안 확정":"확정본"}
               </button>}
@@ -490,9 +552,9 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     {plans.length===0&&<p className="cv2-empty">연결할 입학년도 편성표가 없습니다. 먼저 ‘편성표 만들기’에서 해당 입학년도를 생성해 주세요.</p>}
     {plans.length>0&&!allLoaded&&<p className="cv2-empty">교육과정 편성 자료와 편집 상태를 불러오는 중입니다.</p>}
     {plans.length>0&&allLoaded&&<>
-      {c.schoolType==="중학교"&&<CurriculumInsights context={c} view={view} cohort={cohort}
+      {middle&&<CurriculumInsights context={c} view={view} cohort={cohort}
         documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
-      <div className="cv5-weeks-settings no-print">
+      {!credits&&<div className="cv5-weeks-settings no-print">
         {simpleStep==="hours"&&<button type="button" className="cv5-weeks-toggle"
           aria-expanded={weeksOpen} onClick={()=>setWeeksOpen(v=>!v)}>
           {weeksOpen?"학기별 수업 주수 접기":"학기별 수업 주수 변경 (필요할 때만)"}
@@ -541,23 +603,23 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
           }));
         })}
         </div>}
-      </div>
-      {c.schoolType==="중학교"&&view==="cohort"&&firstPlan&&firstDoc&&
+      </div>}
+      {middle&&view==="cohort"&&firstPlan&&firstDoc&&
         <CurriculumScenario context={c} document={firstDoc}
           canApply={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id].saving}
           onApply={(subjectId,grade,semester,weekly)=>mutate(firstPlan.id,
             doc=>withWeeklyHours(doc,subjectId,grade,semester,weekly))}/>}
       <section className="cv6-hours-area">
         <div className="cv6-area-heading"><strong>교과 시수 편성</strong>
-          <span>교과(군)별 입력 · 3개년 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+          <span>교과(군)별 입력 · {duration} {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</span>
         </div>
         {renderHoursTable(false)}
       </section>
       {creativeSubjects.length>0&&<section className="cv6-hours-area cv6-creative-area">
         <div className="cv6-area-heading"><strong>창의적 체험활동 시수 편성</strong>
-          <span>교과와 별도 입력 · 3개년 {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+          <span>교과와 별도 입력 · {duration} {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</span>
         </div>
-        <p className="cv6-creative-help">창의적 체험활동은 교과 시수와 구분하여 입력합니다. 입력된 창체 시수는 최종 총시수에 한 번만 더해집니다.</p>
+        <p className="cv6-creative-help">창의적 체험활동은 교과와 구분하여 입력합니다. 입력된 창체 {credits?"학점":"시수"}는 최종 합계에 한 번만 더해집니다.</p>
         {renderHoursTable(true)}
       </section>}
       {view==="cohort"&&excludedIds.length>0&&
@@ -578,19 +640,19 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
           </div>
         </section>}
       <div className="cv6-combined-total" role="status">
-        <span>교과 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        <span>교과 {regularSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</span>
         <span>+</span>
-        <span>창체 {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</span>
+        <span>창체 {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</span>
         <span>=</span>
-        <strong>3개년 총 {c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}시간</strong>
+        <strong>{duration} 총 {c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</strong>
       </div>
-      <p className="cv2-footnote">‘운영 제외’는 현재 입학년도에서만 적용되며 이미 편성 시수가 있는 과목은 제외할 수 없습니다. 학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
+      <p className="cv2-footnote">입력 단위: {unit}. ‘운영 제외’는 현재 입학년도에서만 적용되며 이미 편성 시수가 있는 과목은 제외할 수 없습니다. 학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
       {view==="cohort"&&firstPlan&&firstDoc&&
         <CohortChoiceManager context={c} doc={firstDoc}
           editable={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id]?.saving}
           onEdit={doc=>mutate(firstPlan.id,()=>doc)}/>}
 
-      {firstPlan&&firstDoc&&<>
+      {middle&&firstPlan&&firstDoc&&<>
         <div className="cv2-verify-head no-print">
           <Button variant="outline" onClick={()=>setShowNational((v)=>!v)}>
             <CheckCircle2 size={15}/>{showNational?"추가 기준 검토 접기":"스포츠클럽·상세 검토"}
@@ -607,7 +669,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
             </tr>)}</tbody></table>:
             <p>이 입학년도에 적용할 이전 교육과정의 정확한 국가 기준 자료가 아직 등록되지 않았습니다.</p>}
           <p>3개년 편성 합계: {format(firstDoc.cells.reduce((sum,cell)=>sum+evaluateCell(firstDoc,cell).total,0))}시간 · 중학교 기준 최소 총시수 {MIDDLE_2022_MINIMUM}시간</p>
-          <p>학교스포츠클럽: {sportsHoursByGrade(c,firstDoc).map((x)=>x.grade+"학년 "+format(x.hours)+"시간").join(" / ")} · 국가 기준 연간 34시간·학기별 편성 여부 검토</p>
+          <p>학교스포츠클럽: {sportsHoursByGrade(c,firstDoc).map((x)=>x.grade+"학년 "+format(x.hours)+"시간").join(" / ")} · 적용 고시·교육청 지침의 학년별 및 3개년 배당, 매 학기 편성 여부 확인</p>
         </div>}
       </>}
       {adjustFor&&states[adjustFor.planId]&&

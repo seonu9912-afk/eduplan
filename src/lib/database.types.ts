@@ -1054,6 +1054,9 @@ export type Database = {
       curriculum_design_confirm: {
         Args:{target_plan:string};Returns:Json;
       };
+      curriculum_design_confirm_version: {
+        Args:{target_plan:string;expected_plan_version:number;expected_doc_version:number};Returns:Json;
+      };
       save_timetable_document: {
         Args: { target: string; year_id: string; expected_version: number; next_document: Json };
         Returns: Json;

@@ -1,7 +1,7 @@
 import type { Context } from "./models";
 import { orderedCurriculumSubjects } from "./curriculum-group-order";
 import { evaluateCell, getCell, matchGroup, MIDDLE_2022_GROUPS,
-  curriculumVersion, type CurriculumDocument } from "./curriculum-design";
+  weekRule, type CurriculumDocument } from "./curriculum-design";
 import type { Workbook, Worksheet } from "exceljs";
 
 export type ExportView = "cohort" | "operating";
@@ -11,7 +11,7 @@ export type CurriculumExportArgs = {
   documents: Record<string,CurriculumDocument>; layout: ExportLayout;
 };
 const xlsxMime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-const grades=[1,2,3] as const;
+
 const semesters=[1,2] as const;
 type Cell = { weekly: number; total: number; adjustment: number } | null;
 
@@ -62,7 +62,23 @@ function columnStyle(sheet:Worksheet,row:number,lastColumn:number){
     if(col>=4)cell.numFmt="0.##";
   }
 }
+function exportUnit(args:CurriculumExportArgs) {
+  const year=args.context.year?.year??args.cohort;
+  const units=new Set(args.context.plans.filter(plan=>args.view==="cohort"
+    ?plan.cohort_year===args.cohort
+    :args.context.grades.some(g=>plan.cohort_year===year-g+1)).map(p=>p.unit));
+  if(units.size>1)throw Error("시수와 학점 편성표는 단위를 구분하여 각각 내보내 주세요.");
+  return units.has("credits")?"학점":"시간";
+}
 function createClassic(book:Workbook,args:CurriculumExportArgs){
+  // Preserve the established A:Z middle-school layout. Extend other school
+  // levels with all their terms instead of silently dropping grades 4–6.
+  if(args.context.grades.length!==3 || exportUnit(args)==="학점"){
+    const sheet=createModern(book,args);
+    sheet.name="원본형 편성표";
+    return sheet;
+  }
+  const grades=args.context.grades;
   const {context,view,cohort}=args;
   const year=view==="cohort"?cohort:context.year?.year??cohort;
   const s=book.addWorksheet("원본형 편성표");
@@ -105,7 +121,7 @@ function createClassic(book:Workbook,args:CurriculumExportArgs){
     if(group!==lastGroup){s.getCell(row,2).value=group;lastGroup=group;}
     s.getCell(row,3).value=subject.name;
     if(rows.find((x)=>x.group===group)?.subject.id===subject.id){
-      const national=nationalForGroup(group);
+      const national=context.schoolType==="중학교"?nationalForGroup(group):null;
       if(national!==null)s.getCell(row,4).value=national;
     }
     const terms=[...grades].flatMap((grade)=>[...semesters].map((sem)=>cellFor(args,subject.id,grade,sem)));
@@ -151,17 +167,22 @@ function createClassic(book:Workbook,args:CurriculumExportArgs){
   return s;
 }
 function createModern(book:Workbook,args:CurriculumExportArgs){
+  const grades=args.context.grades;
+  const duration=grades.length+"개년";
+  const unit=exportUnit(args);
+  const credits=unit==="학점";
   const {context,view,cohort}=args;
   const year=view==="cohort"?cohort:context.year?.year??cohort;
-  const title=year+"학년도 "+(view==="cohort"?"신입생 3개년":"당해연도")+" 교육과정 편성표";
+  const title=year+"학년도 "+(view==="cohort"?"신입생 "+duration:"당해연도")+" 교육과정 편성표";
   const guide=book.addWorksheet("내보내기 안내");
   guide.addRows([
     ["EduPlan 교육과정 편성 자료",title],
     ["기준",context.workspace.name],
-    ["표시",view==="cohort"?"입학년도 기준 3개년":"운영 학년도 기준 1~3학년"],
+    ["표시",view==="cohort"?"입학년도 기준 "+duration:"운영 학년도 기준 1~"+grades.length+"학년"],
     ["주의","선택과목 병렬 개설·학교스포츠클럽 포함관계에 따라 단순 과목 합계와 학생 이수 시수가 다를 수 있습니다."],
     ["보존","출력은 확인용이며 기존 학사일정, 시간표, 확정본에 영향을 주지 않습니다."],
-    ["자료","교육과정 편성 DB의 현재 화면 수치를 기준으로 생성했습니다."],
+    ["자료","현재 화면의 편성값을 출력합니다. 저장·확정 여부는 화면에서 확인하세요."],
+    ["단위",unit],
   ]);
   guide.getColumn(1).width=18;guide.getColumn(2).width=104;
   guide.getRow(1).font={bold:true,size:15};
@@ -169,15 +190,16 @@ function createModern(book:Workbook,args:CurriculumExportArgs){
   const columns=["교과군","교과목"];
   for(const grade of grades)for(const sem of semesters){
     const label=grade+"학년 "+sem+"학기";
-    columns.push(label+" 주당",label+" 기준주수",label+" 조정",label+" 최종");
+    if(credits)columns.push(label+" 학점");
+    else columns.push(label+" 주당",label+" 기준주수",label+" 조정",label+" 최종");
   }
-  columns.push("3개년 합계","비고");
+  columns.push((view==="cohort"?duration:"운영 학년도")+" 합계 ("+unit+")","비고");
   sheet.addRow(columns);
   sheet.getRow(1).height=36;
   sheet.views=[{state:"frozen",ySplit:1,xSplit:2}];
   sheet.getColumn(1).width=23;sheet.getColumn(2).width=29;
-  for(let col=3;col<=27;col++)sheet.getColumn(col).width=15;
-  sheet.getColumn(28).width=36;
+  for(let col=3;col<columns.length;col++)sheet.getColumn(col).width=15;
+  sheet.getColumn(columns.length).width=36;
   const headerRow=sheet.getRow(1);
   headerRow.font={bold:true,color:{argb:"FFFFFFFF"},name:"맑은 고딕"};
   headerRow.eachCell((cell)=>{cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF285D99"}};
@@ -188,18 +210,20 @@ function createModern(book:Workbook,args:CurriculumExportArgs){
     let total=0;
     for(const grade of grades)for(const sem of semesters){
       const current=cellFor(args,subject.id,grade,sem);
-      if(!current){values.push("","","","");continue;}
+      if(!current){values.push(...(credits?[""]:["","","",""]));continue;}
       const cohortYear=view==="cohort"?cohort:year-grade+1;
       const plan=context.plans.find((p)=>p.cohort_year===cohortYear);
-      const rule=plan?args.documents[plan.id]?.weeks[String(cohortYear+grade-1)]:undefined;
-      values.push(current.weekly,rule?.count??16,current.adjustment,current.total);
+      const doc=plan?args.documents[plan.id]:undefined;
+      const rule=doc?weekRule(doc,grade,sem):undefined;
+      if(credits)values.push(current.total);
+      else values.push(current.weekly,rule?.count??16,current.adjustment,current.total);
       total+=current.total;
     }
     values.push(total,"");
     sheet.addRow(values);
-    columnStyle(sheet,row,28);row++;
+    columnStyle(sheet,row,columns.length);row++;
   }
-  sheet.autoFilter={from:{row:1,column:1},to:{row:row-1,column:28}};
+  sheet.autoFilter={from:{row:1,column:1},to:{row:row-1,column:columns.length}};
   return sheet;
 }
 export async function exportCurriculumWorkbook(args:CurriculumExportArgs):Promise<Uint8Array>{
@@ -215,7 +239,7 @@ export async function downloadCurriculumWorkbook(args:CurriculumExportArgs):Prom
   const {downloadBlob}=await import("./academic-files");
   const bytes=await exportCurriculumWorkbook(args);
   const year=args.view==="cohort"?args.cohort:args.context.year?.year??args.cohort;
-  const label=args.view==="cohort"?"신입생3개년":"당해연도";
+  const label=args.view==="cohort"?"신입생"+args.context.grades.length+"개년":"당해연도";
   const suffix=args.layout==="classic"?"원본형":"현대화";
   downloadBlob(Uint8Array.from(bytes).buffer as ArrayBuffer,
     year+"학년도_"+label+"_교육과정_"+suffix+".xlsx",xlsxMime);

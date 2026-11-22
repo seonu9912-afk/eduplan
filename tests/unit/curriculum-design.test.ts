@@ -51,6 +51,21 @@ describe("curriculum 3-year/operating shared source calculation",()=>{
     expect(initializeDesign(context,plan,changed).excludedSubjectIds).toContain(empty.id);
     expect(withSubjectExcluded(changed,empty.id,false).excludedSubjectIds).toEqual([]);
   });
+  it("preserves nonempty orphaned rows and refuses to silently save them away",()=>{
+    const source=initializeDesign(context,plan);
+    const orphan={subjectId:"d1500000-0000-4000-8000-000000009999",grade:1,semester:1,
+      weekly:3,manual:0,adjustments:[]};
+    const reopened=initializeDesign(context,plan,{...source,cells:[...source.cells,orphan]});
+    expect(reopened.cells).toContainEqual(orphan);
+    expect(validateDocument(context,reopened)).toContain("등록되지 않은 과목: "+orphan.subjectId);
+  });
+  it("rejects duplicate student choices so a course cannot be deducted twice",()=>{
+    const source=initializeDesign(context,plan);
+    const choice={id:"one",name:"선택",grade:1,semester:1,
+      subjectIds:context.subjects.map(s=>s.id),requiredCount:1};
+    const doc={...source,choiceSets:[choice,{...choice,id:"two"}]};
+    expect(validateDocument(context,doc)).toContain("같은 학기 과목을 여러 선택과목군에 중복 배정할 수 없습니다.");
+  });
   it("refuses to exclude a subject with any instructional hours or linked choices",()=>{
     const subject=context.subjects[0];
     const source=initializeDesign(context,plan);

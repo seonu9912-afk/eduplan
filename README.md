@@ -13,6 +13,7 @@
 - [데이터 구조와 권한](docs/ARCHITECTURE.md)
 - [배포·인증 설정](docs/DEPLOYMENT.md)
 - [테스트 결과와 재현 방법](docs/TESTING.md)
+- [교육과정 편성 계산·저장·출력 개선과 검증 (2026-11-22)](docs/CURRICULUM_RELIABILITY_20261122.md)
 - [수업·평가 모듈과 사용 흐름](docs/TEACHING_MODULE.md)
 - [기존 학사일정 프로그램 검토](docs/LEGACY_ACADEMIC_REVIEW.md)
 

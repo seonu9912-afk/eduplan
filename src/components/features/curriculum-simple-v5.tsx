@@ -109,6 +109,8 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
   const [error,setError]=useState("");
   const [notice,setNotice]=useState("");
   const plan=c.plans.find(p=>p.cohort_year===cohort);
+  const credits=plan?.unit==="credits";
+  const duration=c.grades.length+"개년";
   const groups=orderedCurriculumGroups(c.groups);
   const schoolSubjects=c.subjects.length;
   const subjectGroups=groups.filter(group=>!isCreativeGroup(group.name));
@@ -135,7 +137,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
   function refresh(){router.refresh();}
   function canMove(){
     if(!dirty)return true;
-    setError("편성 시수를 저장하는 중이에요. 상단의 ‘저장 대기’ 표시가 사라지면 이동해 주세요.");
+    setError("저장되지 않은 변경사항이 있습니다. 시수표의 저장 상태와 오류를 확인한 뒤 저장해 주세요.");
     return false;
   }
   function chooseYear(year:number){
@@ -179,7 +181,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       try{
         const result=await createPlan(c.workspace.id,cohort);
         if(!result.ok){setError(result.error);return;}
-        setNotice(cohort+"학년도 3개년 편성표를 준비했어요.");refresh();
+        setNotice(cohort+"학년도 "+duration+" 편성표를 준비했어요.");refresh();
         setStep(target);
       }catch{setError("편성표를 만들지 못했습니다.");}
       finally{setBusy(false);}
@@ -194,7 +196,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       <div className="c5-hero-text">
         <span className="c5-kicker">EDUPLAN · CURRICULUM</span>
         <h1>교육과정 편성</h1>
-        <p>과목을 정하고, 주당시수를 입력하면 나머지는 자동으로 계산됩니다.</p>
+        <p>과목을 정하고, {credits?"학기별 학점":"주당시수"}을 입력하면 합계가 자동으로 계산됩니다.</p>
       </div>
       <div className="c5-year-control no-print">
         <label htmlFor="c5-year-select">입학년도</label>
@@ -223,7 +225,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
           <span className="c5-step-symbol"><Icon size={16}/></span>
           <span className="c5-step-copy">
             <strong>{item.id}. {item.title}</strong>
-            <small>{item.caption}</small>
+            <small>{item.id===2&&credits?"학기별 학점 입력":item.caption}</small>
           </span>
           {index<steps.length-1&&<ChevronRight size={16} className="c5-step-arrow"/>}
         </button>;
@@ -274,10 +276,10 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
           </form>}
         </section>}
       </div>
-      {c.schoolType==="중학교"&&<section className="c5-creative-section" aria-label="창의적 체험활동 영역 관리">
+      {creativeGroups.length>0&&<section className="c5-creative-section" aria-label="창의적 체험활동 영역 관리">
         <div className="c5-creative-heading">
           <div><span>별도 편성</span><h3>창의적 체험활동</h3>
-            <p>{middleRevisionForCohort(cohort)} 개정 교육과정의 창체 영역입니다.
+            <p>창의적 체험활동 영역입니다.
               교과 시수와 별도로 입력하고 최종 합계에서 합산합니다.</p>
           </div>
         </div>
@@ -297,12 +299,12 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
       <div className="c5-stage-heading">
         <div>
           <span className="c5-eyebrow">STEP 0{step}</span>
-          <h2>{step===2?"각 학기의 주당시수를 입력하세요":"편성 결과를 확인하고 확정하세요"}</h2>
+          <h2>{step===2?(credits?"각 학기의 학점을 입력하세요":"각 학기의 주당시수를 입력하세요"):"편성 결과를 확인하고 확정하세요"}</h2>
           <p>{step===2
-            ?"1학년부터 3학년까지 주당 몇 시간 운영할지 입력하면 학기·3개년 합계가 자동 계산됩니다."
-            :"교과군별 국가 기준과 편성 시수를 비교하고, 저장이 끝난 편성안의 확정본을 만들 수 있어요."}</p>
+            ?(credits?"기존 편성표의 학점 단위를 유지하여 학기별로 직접 입력합니다.":"1학년부터 "+c.grades.length+"학년까지 주당시수를 입력하면 학기·"+duration+" 합계가 자동 계산됩니다.")
+            :"편성 합계와 입력값을 검토하고, 저장이 끝난 편성안의 확정본을 만들 수 있어요."}</p>
         </div>
-        <span className="c5-count">{cohort}년 입학생 · {cohort+2}년 졸업 예정</span>
+        <span className="c5-count">{cohort}년 입학생 · {cohort+c.grades.length}년 2월 졸업 예정</span>
       </div>
       {!plan?<div className="c5-wait">
         <BookOpen size={24}/>
@@ -311,13 +313,13 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange}:{
         <button type="button" className="c5-secondary" onClick={refresh}>최신 자료 불러오기</button>
       </div>:<div className="c5-editor-holder">
         <CurriculumEnhanced context={c} view="cohort" cohort={cohort}
-          key={plan.id+":"+c.subjects.map(s=>s.id).sort().join("|")}
+          key={plan.id}
           simpleStep={step===2?"hours":"review"} onDirtyChange={stableDirty}/>
       </div>}
       <div className="c5-stage-footer no-print">
         <button type="button" className="c5-secondary"
           onClick={()=>void advance(step===2?1:2)}><ArrowLeft size={15}/>이전 단계</button>
-        <span>{dirty?<><Save size={14}/>저장 중인 변경사항이 있습니다.</>:
+        <span>{dirty?<><Save size={14}/>아직 저장되지 않은 변경사항이 있습니다.</>:
           "시수는 기존 EduPlan 편성 문서에 저장되며 다른 자료는 초기화되지 않아요."}</span>
         {step===2&&<button type="button" className="c5-primary"
           disabled={busy||dirty} onClick={()=>void advance(3)}>

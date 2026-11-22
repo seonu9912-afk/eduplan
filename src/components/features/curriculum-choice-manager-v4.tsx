@@ -15,10 +15,18 @@ export function CohortChoiceManager({context:c,doc,editable,onEdit}:{
   const [semester,setSemester]=useState(1);
   const [selected,setSelected]=useState<string[]>([]);
   const [requiredCount,setRequiredCount]=useState(1);
+  const [error,setError]=useState("");
   const groups=doc.choiceSets??[];
   const byId=new Map(c.subjects.map(subject=>[subject.id,subject]));
   function add(){
-    if(name.trim().length<1||selected.length<2||requiredCount<1||requiredCount>=selected.length)return;
+    setError("");
+    if(name.trim().length<1||selected.length<2||!Number.isInteger(requiredCount)||requiredCount<1||requiredCount>=selected.length){
+      setError("과목군 이름과 선택 과목 수를 확인해 주세요.");return;
+    }
+    if(selected.some(id=>(doc.excludedSubjectIds??[]).includes(id)||groups.some(g=>
+      g.grade===grade&&g.semester===semester&&g.subjectIds.includes(id)))){
+      setError("운영 제외 과목이나 같은 학기의 다른 선택과목군에 속한 과목은 중복 배정할 수 없습니다.");return;
+    }
     const choice:CohortChoiceSet={id:crypto.randomUUID(),name:name.trim(),grade,semester,
       subjectIds:[...selected],requiredCount};
     onEdit({...doc,choiceSets:[...groups,choice]});setOpen(false);setName("");setSelected([]);
@@ -51,6 +59,7 @@ export function CohortChoiceManager({context:c,doc,editable,onEdit}:{
       }):<p className="cv4-choice-empty">선택과목군이 아직 없습니다. 여러 과목 중 학생이 일부만 선택해 수강하는 경우 등록해 주세요.</p>}
     </div>
     {open&&editable&&<div className="cv4-choice-editor no-print">
+      {error&&<p role="alert">{error}</p>}
       <input type="text" maxLength={100} placeholder="선택과목군 이름" value={name} onChange={e=>setName(e.target.value)}/>
       <select value={grade} onChange={e=>setGrade(Number(e.target.value))}>
         {c.grades.map(g=><option key={g} value={g}>{g}학년</option>)}</select>
@@ -58,7 +67,7 @@ export function CohortChoiceManager({context:c,doc,editable,onEdit}:{
         {[1,2].map(s=><option key={s} value={s}>{s}학기</option>)}</select>
       <label>선택 수 <input type="number" min={1} max={10} value={requiredCount}
         onChange={e=>setRequiredCount(Number(e.target.value))}/></label>
-      <div className="cv4-choice-options">{c.subjects.map(s=><label key={s.id}>
+      <div className="cv4-choice-options">{c.subjects.filter(s=>!(doc.excludedSubjectIds??[]).includes(s.id)).map(s=><label key={s.id}>
         <input type="checkbox" checked={selected.includes(s.id)}
           onChange={e=>setSelected(list=>e.target.checked?[...list,s.id]:list.filter(id=>id!==s.id))}/>
         {s.name}</label>)}</div>

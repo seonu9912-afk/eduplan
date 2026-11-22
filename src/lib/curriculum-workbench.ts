@@ -89,7 +89,9 @@ export function reviewCohort(context:Context,doc:CurriculumDocument):CohortRevie
     const amounts=rows.map(c=>c?evaluateCell(doc,c).total:-1);
     const categories=group.subjectIds.map(id=>groupKey(context,id));
     const unique=categories[0]&&categories.every(cat=>cat===categories[0]);
-    if(rows.some(c=>!c)||amounts.some(x=>x!==amounts[0])||!unique||
+    const keys=group.subjectIds.map(id=>id+":"+group.grade+":"+group.semester);
+    if(new Set(keys).size!==keys.length||keys.some(key=>handled.has(key))||
+       rows.some(c=>!c)||amounts.some(x=>x!==amounts[0])||!unique||
        group.requiredCount<1||group.requiredCount>=rows.length){
       choiceWarnings.push(group.name+" 선택과목군의 시수·교과군·선택 수를 확인해야 합니다.");
       continue;

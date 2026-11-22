@@ -15,7 +15,7 @@ export default async function RecoveryPreviewPage({ params }: {
   if (buildInfo.deployment !== "preview" && process.env.EDUPLAN_LOCAL_PREVIEW !== "1") notFound();
   const { section: path = [] } = await params;
   const section = path[0] ?? "calendar";
-  if (path.length > 1 || !["calendar", "teaching"].includes(section)) notFound();
+  if (path.length > 1 || !["calendar", "teaching", "curriculum"].includes(section)) notFound();
   return (
     <div className="workspace-content">
       <header className="page-heading no-print">
@@ -29,6 +29,9 @@ export default async function RecoveryPreviewPage({ params }: {
           </Button>
           <Button asChild variant={section === "teaching" ? "default" : "outline"}>
             <Link href="/recovery-preview/teaching">수업·평가</Link>
+          </Button>
+          <Button asChild variant={section === "curriculum" ? "default" : "outline"}>
+            <Link href="/recovery-preview/curriculum">교육과정 실습</Link>
           </Button>
         </nav>
       </header>

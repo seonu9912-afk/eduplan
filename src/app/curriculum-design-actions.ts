@@ -27,7 +27,7 @@ const sourceVersion = z.object({
     excludedSubjectIds:z.array(uuid).max(300).optional(),
     choiceSets:z.array(z.object({
       id:uuid,name:z.string().trim().min(1).max(100),
-      grade:z.number().int().min(1).max(3),semester:z.number().int().min(1).max(2),
+      grade:z.number().int().min(1).max(6),semester:z.number().int().min(1).max(2),
       subjectIds:z.array(uuid).min(2).max(50),
       requiredCount:z.number().int().min(1).max(49),
     })).max(100).optional(),
@@ -45,7 +45,9 @@ const sourceVersion = z.object({
 });
 function issue(error: unknown) {
   if(error instanceof z.ZodError) return error.issues[0]?.message ?? "입력한 값을 확인해 주세요.";
-  if(error instanceof Error) return error.message.replace(/(?:postgres|database|SQLSTATE)[^.]*/ig,"저장 서버");
+  // Supabase/PostgREST returns plain objects, not Error instances.
+  if(error && typeof error === "object" && "message" in error && typeof error.message === "string")
+    return error.message.replace(/(?:postgres|database|SQLSTATE)[^.]*/ig,"저장 서버");
   return "교육과정 서버 요청에 실패했습니다.";
 }
 async function checkWorkspace(planId: string, canEdit: boolean) {
@@ -130,9 +132,13 @@ export async function saveCurriculumDesign(input: unknown): Promise<Result<{
 }
 export async function confirmCurriculumDesign(input: unknown): Promise<Result<{id:string;version:number}>> {
   try{
-    const {planId}=idOnly.parse(input);
+    const {planId,expectedPlanVersion,expectedDocVersion}=z.object({
+      planId:uuid,expectedPlanVersion:z.number().int().positive(),expectedDocVersion:z.number().int().positive(),
+    }).parse(input);
     const {db}=await checkWorkspace(planId,true);
-    const response=await db.rpc("curriculum_design_confirm",{target_plan:planId});
+    const response=await db.rpc("curriculum_design_confirm_version",{
+      target_plan:planId,expected_plan_version:expectedPlanVersion,expected_doc_version:expectedDocVersion,
+    });
     if(response.error)throw response.error;
     const output=z.object({ok:z.boolean(),id:uuid,version:z.number()}).parse(response.data);
     revalidatePath("/app","layout");

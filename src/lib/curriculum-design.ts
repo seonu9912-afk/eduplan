@@ -108,14 +108,20 @@ export function initializeDesign(context: Context, plan: Row<"curriculum_plans">
   // earlier draft. Omit such stale rows from the loaded editing document;
   // snapshots and revision history remain untouched in storage.
   const activeSubjectIds=new Set(context.subjects.map(subject=>subject.id));
-  const rows = source.cells.filter(cell=>activeSubjectIds.has(cell.subjectId));
+  const rows = source.cells.filter(cell=>activeSubjectIds.has(cell.subjectId) ||
+    cell.weekly!==0 || cell.manual!==0 || cell.adjustments.length>0);
   for (const subject of context.subjects) {
     for (const grade of context.grades) for (const semester of [1, 2]) {
       if (rows.some((x) => x.subjectId === subject.id && x.grade === grade && x.semester === semester)) continue;
       const final = context.hours.find((x) =>
         x.plan_id === plan.id && x.subject_id === subject.id && x.grade === grade && x.semester === semester)?.hours ?? 0;
-      rows.push({ subjectId: subject.id, grade, semester, weekly: final /
-        weekRule(source,grade,semester).count, adjustments: [], manual: 0 });
+      // Imported integer totals must survive JSON/SQL round trips. A quotient
+      // such as 50 / 17 cannot be represented exactly as a decimal.
+      const quotient = final / weekRule(source,grade,semester).count;
+      const weekly = plan.unit === "credits" ? 0 :
+        Number.isInteger(quotient * 1_000_000) ? quotient : Math.floor(quotient);
+      rows.push({ subjectId: subject.id, grade, semester, weekly,
+        adjustments: [], manual: final - weekly * weekRule(source,grade,semester).count });
     }
   }
   return { ...source, cells: rows };
@@ -179,6 +185,27 @@ export function sportsHoursByGrade(context: Context, doc: CurriculumDocument) {
 }
 export function validateDocument(context: Context, doc: CurriculumDocument): string[] {
   const errors: string[] = [];
+  for (const rule of [...Object.values(doc.weeks), ...Object.values(doc.termWeeks ?? {})]) {
+    if (![16, 17].includes(rule.count) || !["confirmed", "provisional"].includes(rule.status))
+      errors.push("편성 기준 주수와 확정 상태를 확인해 주세요.");
+  }
+  const choiceIds = new Set<string>();
+  const chosenCells = new Set<string>();
+  for (const choice of doc.choiceSets ?? []) {
+    if (choiceIds.has(choice.id)) errors.push("선택과목군이 중복 등록되어 있습니다.");
+    choiceIds.add(choice.id);
+    if (!context.grades.includes(choice.grade) || ![1, 2].includes(choice.semester) ||
+        !Number.isInteger(choice.requiredCount) || choice.requiredCount < 1 ||
+        choice.requiredCount >= choice.subjectIds.length || choice.subjectIds.length < 2)
+      errors.push("선택과목군의 학년·학기·선택 수를 확인해 주세요.");
+    for (const id of choice.subjectIds) {
+      const key = [id, choice.grade, choice.semester].join("|");
+      if (chosenCells.has(key)) errors.push("같은 학기 과목을 여러 선택과목군에 중복 배정할 수 없습니다.");
+      chosenCells.add(key);
+      if (!context.subjects.some(s => s.id === id) || !getCell(doc, id, choice.grade, choice.semester))
+        errors.push("선택과목군에 편성되지 않은 과목이 있습니다.");
+    }
+  }
   if (!doc.cells.length || doc.cells.length > 3600) errors.push("편성 과목의 개수를 확인해 주세요.");
   const excluded=new Set(doc.excludedSubjectIds??[]);
   if(excluded.size!==(doc.excludedSubjectIds??[]).length)
@@ -197,7 +224,10 @@ export function validateDocument(context: Context, doc: CurriculumDocument): str
     if (!context.subjects.some((s) => s.id === cell.subjectId)) errors.push("등록되지 않은 과목: " + cell.subjectId);
     if (!context.grades.includes(cell.grade) || ![1, 2].includes(cell.semester)) errors.push("학년/학기 범위 오류: " + key);
     if (!Number.isFinite(cell.weekly) || cell.weekly < 0 || cell.weekly > 100) errors.push("주당 시수 범위 오류: " + key);
-    if (!evaluateCell(doc, cell).valid) errors.push("총시수가 정수가 아닌 과목: " + key);
+    if (!Number.isFinite(cell.manual) || Math.abs(cell.manual) > 2000 ||
+        cell.adjustments.length > 20 || cell.adjustments.some(a => !Number.isFinite(a.hours) || Math.abs(a.hours) > 2000))
+      errors.push("조정값 범위 오류: " + key);
+    if (!evaluateCell(doc, cell).valid) errors.push("학기 합계는 0~2000 사이 정수여야 합니다: " + key);
   }
   return errors;
 }

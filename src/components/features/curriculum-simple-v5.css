@@ -78,7 +78,7 @@
 .c5-editor-holder{min-width:0}
 .cv2.cv2-step-hours{gap:10px}
 .cv2.cv2-step-review{gap:14px}
-.cv2-step-hours .cv2-modebar,.cv2-step-review .cv2-modebar{display:none}
+.cv2-step-review .cv2-modebar{display:none}
 .cv2-step-hours .cw3-insights,.cv2-step-hours .cw3-simulator,.cv2-step-hours .cv4-choices,
 .cv2-step-hours .cv2-verify-head,.cv2-step-hours .cv2-check{display:none}
 .cv2-step-review .cv2-table-scroll,.cv2-step-review .cv2-weeks-details,
@@ -109,7 +109,7 @@
 .cv2-step-review .cw3-insights{margin-top:0}
 .cv2-step-review .cv2-plan-state{background:#f6fafc}
 .cv2-step-review .cv2-export-buttons{display:flex}
-.cv2-step-review .cv2-modebar,.cv2-step-hours .cv2-modebar{display:none}
+.cv2-step-review .cv2-modebar{display:none}
 .cv2-step-hours .cv2-table .cv2-subject-cell .cv4-subject-inline{display:inline}
 @media print{.cv5-weeks-toggle{display:none!important}}
 

@@ -2,7 +2,7 @@ import {describe,expect,it} from "vitest";
 import {Workbook} from "exceljs";
 import {recoveryPreviewContext} from "../../src/app/recovery-preview/fixture";
 import {exportCurriculumWorkbook} from "../../src/lib/curriculum-export";
-import {initializeDesign,withWeeklyHours,withSubjectExcluded,evaluateCell,getCell} from "../../src/lib/curriculum-design";
+import {initializeDesign,withWeeklyHours,withSubjectExcluded,evaluateCell,getCell,withTermWeeks,withFinalHours} from "../../src/lib/curriculum-design";
 import {parseCurriculumExcel} from "../../src/lib/curriculum-excel";
 
 describe("curriculum downloadable workbooks",()=>{
@@ -57,4 +57,38 @@ describe("curriculum downloadable workbooks",()=>{
     );
     expect(JSON.stringify(doc)).toBe(before);
   });
+  it("exports the actual term-specific weeks with the matching total",async()=>{
+    const changed=withTermWeeks(doc,plan.cohort_year,1,{count:17,status:"confirmed"});
+    const wb=new Workbook();
+    await wb.xlsx.load(await exportCurriculumWorkbook({...args,documents:{[plan.id]:changed},layout:"modern"}) as never);
+    const sheet=wb.getWorksheet("학기별 시수")!;
+    expect(sheet.getCell("D2").value).toBe(17);
+    expect(sheet.getCell("F2").value).toBe(51);
+    expect(sheet.getCell("H2").value).toBe(16);
+  });
+  for(const layout of ["classic","modern"] as const){
+    it(`exports all twelve elementary semesters in ${layout} layout`,async()=>{
+      const context={...c,schoolType:"초등학교" as const,grades:[1,2,3,4,5,6]};
+      const elementary=withFinalHours(initializeDesign(context,plan),c.subjects[0].id,6,2,77);
+      const wb=new Workbook();
+      await wb.xlsx.load(await exportCurriculumWorkbook({...args,context,documents:{[plan.id]:elementary},layout}) as never);
+      const sheet=wb.getWorksheet(layout==="classic"?"원본형 편성표":"학기별 시수")!;
+      expect(sheet.getCell(1,50).value).toBe("6학년 2학기 최종");
+      expect(sheet.getCell(2,50).value).toBe(77);
+      expect(sheet.getCell(2,51).value).toBe(elementary.cells.filter(x=>x.subjectId===c.subjects[0].id)
+        .reduce((sum,x)=>sum+evaluateCell(elementary,x).total,0));
+    });
+    it(`keeps high-school credits separate from weekly hours in ${layout} layout`,async()=>{
+      const creditPlan={...plan,unit:"credits"};
+      const context={...c,schoolType:"고등학교" as const,plans:[creditPlan],hours:[]};
+      const creditDoc=withFinalHours(initializeDesign(context,creditPlan),c.subjects[0].id,1,1,4);
+      const wb=new Workbook();
+      await wb.xlsx.load(await exportCurriculumWorkbook({...args,context,documents:{[plan.id]:creditDoc},layout}) as never);
+      const sheet=wb.getWorksheet(layout==="classic"?"원본형 편성표":"학기별 시수")!;
+      expect(sheet.getCell("C1").value).toBe("1학년 1학기 학점");
+      expect(sheet.getCell("C2").value).toBe(4);
+      expect(sheet.getCell("I2").value).toBe(4);
+      expect(JSON.stringify(sheet.getRow(1).values)).not.toContain("주당");
+    });
+  }
 });
