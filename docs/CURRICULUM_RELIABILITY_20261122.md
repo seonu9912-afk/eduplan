@@ -63,7 +63,8 @@
 - 변경 전: Vitest 169개, 기본 명령의 시간표 관련 Node 테스트 36개 통과.
 - 변경 후: Vitest 182개(격리 PostgreSQL 포함), 시간표 관련 36개 통과. Workspace 전체 174개 통과.
 - TypeScript, ESLint, Next.js 프로덕션 빌드 통과.
-- Playwright 실습 화면 검증: 직접 입력·주수 변경·합계 수정·재조회, 마지막 빈 열 붙여넣기, Escape 취소, 실패 후 재시도, 저장 중 입력, 초등 6학년·고교 학점·390px 모바일, 두 창 버전 충돌과 폐기 확인.
+- Playwright 실습 화면 검증: 로컬 5개 통과(50.3초), 아래 공개 Preview에서도 5개 통과(29.8초). 직접 입력·주수 변경·합계 수정·재조회, 마지막 빈 열 붙여넣기, Escape 취소, 실패 후 재시도, 저장 중 입력, 초등 6학년·고교 학점·390px 모바일, 두 창 버전 충돌과 폐기를 확인했다.
+- 공개 Preview 브라우저에서도 주당 3시간·17주를 입력해 51시간 계산 및 새로고침 후 보존을 확인했다. 원격 Playwright의 첫 시도는 실행 환경의 NSS DB 접근 제한으로 인증서 오류가 났으며, 기존 `docs/TESTING.md` 절차에 따라 해당 DB 디렉터리 쓰기 권한을 부여한 재실행에서 통과했다. 인증서 검증은 끄지 않았다.
 - DB 테스트는 구 SQL로 48시간을 저장해 오류를 먼저 재현하고, 새 마이그레이션 적용 자체는 기존 48을 그대로 두는지 확인한다. 명시적으로 재저장한 뒤 51시간, 문서 재조회 일치, 실패 시 기존 값 보존, 과거 확정본 보존을 검사한다.
 - PGlite는 PostgreSQL 엔진을 사용한다. Auth 서비스 bootstrap만 가상으로 구성하고 실제 foundation/학교급/RLS/편성 migration의 함수·테이블을 실행한다. 초대용 pgcrypto extension 선언은 이 테스트에서 제외한다. 운영 인증이나 다중 프로세스 잠금 경합의 종합 인수검증을 대신하지 않는다.
 
@@ -94,7 +95,13 @@ npm run test:e2e -- tests/e2e/curriculum-reliability.spec.ts
 
 ## 8. Preview와 PR
 
-PR과 Preview URL은 이 보고서를 포함한 최종 제출 메시지에 제공한다. 실습 경로는 `/recovery-preview/curriculum`이다. 운영 사이트 승격·도메인 변경·운영 SQL 실행은 이 작업에 포함하지 않는다.
+- [공개 교육과정 실습 Preview](https://eduplan-workspace-preview-cicqay57k-seonu-lab.vercel.app/recovery-preview/curriculum)
+- [게시한 브랜치와 main의 변경 비교](https://github.com/seonu9912-afk/eduplan/compare/main...codex/curriculum-reliability-20261122)
+- 구현 커밋: `13ae9cf5812d3acd2cf70201dd4bd3001ff5685e`. 위 Preview는 이 구현 커밋을 빌드했다. 이후 커밋은 이 보고서의 검증 결과·주소만 보완한다.
+
+별도 `eduplan-workspace-preview` 프로젝트의 Preview 배포가 READY인 것을 확인했다. 실습 데이터는 브라우저에만 저장한다. 운영 사이트 승격·도메인 변경·운영 SQL 실행은 수행하지 않았다.
+
+Draft PR 생성은 GitHub 연결 도구와 CLI 모두 `Resource not accessible by integration` 오류로 거절되어 완료하지 못했다. 브랜치 게시와 변경 비교 조회는 성공했으며, 위 비교 링크에서 변경 내용을 검토할 수 있다.
 
 ## 분석 근거와 공식 자료
 
