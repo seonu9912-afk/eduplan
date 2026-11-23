@@ -81,7 +81,7 @@
 .cv2-step-review .cv2-modebar{display:none}
 .cv2-step-hours .cw3-insights,.cv2-step-hours .cw3-simulator,.cv2-step-hours .cv4-choices,
 .cv2-step-hours .cv2-verify-head,.cv2-step-hours .cv2-check{display:none}
-.cv2-step-review .cv2-table-scroll,.cv2-step-review .cv2-weeks-details,
+.cv2-step-review .cv2-weeks-details,
 .cv2-step-review .cv2-footnote,.cv2-step-review .cw3-simulator{display:none}
 .cv2-step-hours .cv2-export-buttons,.cv2-step-hours .cv2-history-control{display:none}
 .cv2-step-hours .cw3-inline-add,.cv2-step-hours .cv4-subject-actions{display:none}
@@ -112,6 +112,25 @@
 .cv2-step-review .cv2-modebar{display:none}
 .cv2-step-hours .cv2-table .cv2-subject-cell .cv4-subject-inline{display:inline}
 @media print{.cv5-weeks-toggle{display:none!important}}
+
+/* Select first, enter hours second, then display the calculated table. */
+.cv2-step-subjects .cv2-modebar{display:none}
+.c5-subject input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:#286bad;cursor:pointer}
+.c5-subject input[type=checkbox]:disabled{cursor:default}
+.c5-subject.selected{background:#f8fbff}
+.c5-in-use{white-space:nowrap;color:#6f8499;font-size:10px}
+.c5-selection-help{font-size:12px;line-height:1.7;color:#637f99;margin:0}
+.c5-selection-heading{font-size:15px;color:#315b82;margin:8px 0 12px}
+.c5-catalog-import summary{font-size:12px;color:#4876a2;cursor:pointer}
+.c5-catalog-import[open]>div{margin-top:10px}
+.cv2-step-review .cv2-table-scroll{max-height:none;overflow:auto}
+.cv2-step-review .cv2-table .cv2-year-sum{font-variant-numeric:tabular-nums}
+@media print{
+  .cv2-step-review .cw3-insights,.cv2-step-review .cv4-choices,.c5-banner{display:none!important}
+  .cv2-step-review .cv2-table-scroll{overflow:visible;max-height:none}
+  .cv2-step-review .cv2-table thead{display:table-header-group}
+  .cv2-step-review .cv2-table th,.cv2-step-review .cv2-table td{position:static}
+}
 
 /* National defaults and creative activities, kept distinct from subject groups. */
 .c5-catalog-import{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;

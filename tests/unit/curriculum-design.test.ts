@@ -3,7 +3,7 @@ import { recoveryPreviewContext } from "../../src/app/recovery-preview/fixture";
 import {
   initializeDesign, evaluateCell, withWeeklyHours, withFinalHours, withWeeks,
   getCell, nationalGroupTotals, matchGroup, validateDocument, curriculumVersion,
-  withSubjectExcluded, canExcludeSubject,
+  withSubjectExcluded, canExcludeSubject, initializeCohortSelection,
 } from "../../src/lib/curriculum-design";
 
 describe("curriculum 3-year/operating shared source calculation",()=>{
@@ -25,6 +25,34 @@ describe("curriculum 3-year/operating shared source calculation",()=>{
       expect(cell).not.toBeNull();
       expect(evaluateCell(doc,cell!).total).toBe(item.hours);
     }
+  });
+  it("starts a fresh cohort with an unselected catalog while preserving imported hours",()=>{
+    const fresh=initializeCohortSelection({...context,hours:[]},plan);
+    expect(new Set(fresh.excludedSubjectIds)).toEqual(new Set(context.subjects.map(subject=>subject.id)));
+    const imported=initializeCohortSelection(context,plan);
+    expect(imported.excludedSubjectIds).toEqual([]);
+    expect(imported.cells).toEqual(initializeDesign(context,plan).cells);
+  });
+  it("does not auto-select a newly registered subject in an existing cohort",()=>{
+    const source=initializeDesign(context,plan);
+    const added={...context.subjects[0],id:"d1500000-0000-4000-8000-000000009998",name:"새 학교 과목"};
+    const expanded={...context,subjects:[...context.subjects,added]};
+    const loaded=initializeCohortSelection(expanded,plan,source);
+    expect(loaded.excludedSubjectIds).toEqual([added.id]);
+    for(const cell of source.cells)expect(loaded.cells).toContainEqual(cell);
+    expect(source.excludedSubjectIds).toBeUndefined();
+    expect(validateDocument(expanded,loaded)).toEqual([]);
+  });
+  it("keeps selections local to each cohort and retains nonzero imported new rows",()=>{
+    const c={...context,hours:[]};
+    const one=withSubjectExcluded(initializeCohortSelection(c,plan),c.subjects[0].id,false);
+    const other=initializeCohortSelection(c,{...plan,id:"another",cohort_year:2028});
+    expect(one.excludedSubjectIds).not.toContain(c.subjects[0].id);
+    expect(other.excludedSubjectIds).toContain(c.subjects[0].id);
+    const partial={...initializeDesign(context,plan),cells:[]};
+    const imported=initializeCohortSelection(context,plan,partial);
+    expect(imported.excludedSubjectIds).not.toContain(context.subjects[0].id);
+    expect(evaluateCell(imported,getCell(imported,context.subjects[0].id,1,1)!).total).toBe(520);
   });
   it("drops stale zero-valued deleted subject cells without mutating the saved source",()=>{
     const original=initializeDesign(context,plan);

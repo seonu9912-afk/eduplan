@@ -1,11 +1,28 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { Workbook } from "exceljs";
+import { curriculumPreviewContext, readCurriculumPreview } from "../../src/app/recovery-preview/curriculum-fixture";
+
+async function openHours(page:Page){
+  await page.getByRole("button",{name:/^2\. 시수 배당/}).click();
+  await expect(page.getByRole("textbox",{name:/국어 1학년 1학기/,exact:false})).toBeVisible();
+}
 
 // This route only exists in Preview/local rehearsal mode and uses synthetic
 // browser storage. Never authenticate against or write to a school backend.
-test.beforeEach(async({page})=>{
+test.beforeEach(async({page,context})=>{
+  const saved=Object.fromEntries((["초등학교","중학교","고등학교"] as const).map(school=>{
+    const c=curriculumPreviewContext(school);
+    return [school,{...readCurriculumPreview(c,null),planVersion:3,documentVersion:2}];
+  }));
+  await context.addInitScript(seeds=>{
+    for(const [school,document] of Object.entries(seeds)){
+      const key="eduplan-curriculum-rehearsal-v1:"+school;
+      if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(document));
+    }
+  },saved);
   await page.goto("/recovery-preview/curriculum");
   await expect(page.getByRole("heading",{name:"교육과정 편성 실습"})).toBeVisible();
+  await openHours(page);
 });
 test("term weeks, direct totals, clipboard and reload keep the same values",async({page})=>{
   const errors:string[]=[];
@@ -13,6 +30,7 @@ test("term weeks, direct totals, clipboard and reload keep the same values",asyn
   const first=page.getByRole("textbox",{name:"국어 1학년 1학기 주당 시수",exact:true});
   await first.fill("4");await first.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
+  await page.getByRole("button",{name:"학기별 수업 주수 변경 (필요할 때만)",exact:true}).click();
   await page.locator(".cv2-weeks label").first().locator("select").first().selectOption("17");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
   await page.getByRole("button",{name:"학기시수 보기·조정",exact:true}).click();
@@ -20,7 +38,7 @@ test("term weeks, direct totals, clipboard and reload keep the same values",asyn
   await expect(total).toHaveValue("68");
   await total.fill("55");await total.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
-  await page.reload();
+  await page.reload();await openHours(page);
   await expect(first).toHaveValue("4");
   await page.getByRole("button",{name:"학기시수 보기·조정",exact:true}).click();
   await expect(total).toHaveValue("55");
@@ -35,7 +53,7 @@ test("term weeks, direct totals, clipboard and reload keep the same values",asyn
   await expect(page.getByRole("textbox",{name:"국어 1학년 2학기 최종 시수",exact:true})).toHaveValue("0");
   await total.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
-  await page.reload();
+  await page.reload();await openHours(page);
   await page.getByRole("button",{name:"학기시수 보기·조정",exact:true}).click();
   await expect(total).toHaveValue("60");
   expect(errors).toEqual([]);
@@ -57,7 +75,7 @@ test("failed saves retain edits and allow retry",async({page})=>{
   await expect(input).toHaveValue("5");
   await page.getByRole("button",{name:"저장",exact:true}).click();
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
-  await page.reload();await expect(input).toHaveValue("5");
+  await page.reload();await openHours(page);await expect(input).toHaveValue("5");
 });
 test("edits made while saving are saved in the next revision",async({page})=>{
   const one=page.getByRole("textbox",{name:"국어 1학년 1학기 주당 시수",exact:true});
@@ -69,17 +87,17 @@ test("edits made while saving are saved in the next revision",async({page})=>{
     const doc=JSON.parse(localStorage.getItem("eduplan-curriculum-rehearsal-v1:중학교")||"{}").document;
     return doc?.cells.filter((c:{subjectId:string;grade:number})=>c.grade===1&&c.subjectId==="d1500000-0000-4000-8000-000000000033").map((c:{weekly:number})=>c.weekly);
   })).toEqual([4,5]);
-  await page.reload();await expect(one).toHaveValue("4");await expect(two).toHaveValue("5");
+  await page.reload();await openHours(page);await expect(one).toHaveValue("4");await expect(two).toHaveValue("5");
 });
 test("elementary grade six and high-school credits remain editable without middle-school checks",async({page})=>{
-  await page.getByLabel("실습 학교급").selectOption("초등학교");
+  await page.getByLabel("실습 학교급").selectOption("초등학교");await openHours(page);
   const sixth=page.getByRole("textbox",{name:"국어 6학년 2학기 주당 시수",exact:true});
   await sixth.fill("2");await sixth.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
   await expect(page.getByRole("button",{name:"국가 기준 비교",exact:true})).toHaveCount(0);
   await expect(sixth).toHaveValue("2");
   await expect(page.getByRole("textbox",{name:"실과 6학년 2학기 주당 시수",exact:true})).toBeVisible();
-  await page.getByLabel("실습 학교급").selectOption("고등학교");
+  await page.getByLabel("실습 학교급").selectOption("고등학교");await openHours(page);
   const credits=page.getByRole("textbox",{name:"국어 1학년 1학기 학점",exact:true});
   await credits.fill("5");await credits.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
@@ -95,7 +113,7 @@ test("elementary grade six and high-school credits remain editable without middl
 
 test("a stale tab retains its edits and requires consent before discarding them",async({page,context})=>{
   const second=await context.newPage();
-  await second.goto("/recovery-preview/curriculum");
+  await second.goto("/recovery-preview/curriculum");await openHours(second);
   const name="국어 1학년 1학기 주당 시수";
   await expect(second.getByRole("textbox",{name,exact:true})).toHaveValue("3");
   await page.getByRole("textbox",{name,exact:true}).fill("4");
@@ -122,7 +140,8 @@ test("the full school curriculum remains editable and appears in the Excel downl
   const science=page.getByRole("textbox",{name:"과학 2학년 1학기 주당 시수",exact:true});
   await science.fill("5");await science.press("Tab");
   await expect(page.getByText("자동 저장 완료",{exact:false})).toBeVisible();
-  await page.reload();await expect(science).toHaveValue("5");
+  await page.reload();await openHours(page);await expect(science).toHaveValue("5");
+  await page.getByRole("button",{name:"교육과정표 보기",exact:true}).click();
   const downloaded=page.waitForEvent("download");
   await page.getByRole("button",{name:"현대화 엑셀",exact:true}).click();
   const path=await (await downloaded).path();

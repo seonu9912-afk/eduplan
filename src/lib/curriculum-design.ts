@@ -132,6 +132,19 @@ export function designEntries(doc: CurriculumDocument) {
     hours: evaluateCell(doc, cell).total,
   }));
 }
+/** Selection is local to a cohort; newly registered school subjects must not
+ * silently become selected in all existing cohorts. Imported hours stay active. */
+export function initializeCohortSelection(context:Context,plan:Row<"curriculum_plans">,
+  existing?:CurriculumDocument|null):CurriculumDocument{
+  const doc=initializeDesign(context,plan,existing);
+  const known=new Set(existing?.cells.map(cell=>cell.subjectId));
+  const fresh=!existing&&!context.hours.some(row=>row.plan_id===plan.id);
+  const excluded=new Set(doc.excludedSubjectIds??[]);
+  for(const subject of context.subjects){
+    if((fresh||existing&&!known.has(subject.id))&&canExcludeSubject(doc,subject.id))excluded.add(subject.id);
+  }
+  return {...doc,excludedSubjectIds:[...excluded]};
+}
 /** An exclusion is scoped to one entering cohort and never deletes subject data.
  * Only zero-hour, unchosen subjects may be excluded; restoring only changes the
  * cohort's visible row list. All stored cells and prior snapshots stay intact.

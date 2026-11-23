@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Save, ShieldCheck, ChevronDown, ChevronRight, Download, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { CohortChoiceManager } from "./curriculum-choice-manager-v4";
 import { CurriculumRowSubjectV4 } from "./curriculum-subject-row-v4";
 import { operatingWeekReview } from "@/lib/curriculum-workbench";
 import {
-  type CurriculumDocument, type WeekRule, initializeDesign,
+  type CurriculumDocument, type WeekRule, initializeDesign, initializeCohortSelection,
   getCell, evaluateCell, withCell, withFinalHours, withWeeklyHours, withWeeks,
   withTermWeeks,weekRule,
   validateDocument, curriculumVersion, nationalGroupTotals, sportsHoursByGrade,
@@ -30,6 +30,11 @@ export const curriculumDesignActions = {
   save: saveCurriculumDesign, confirm: confirmCurriculumDesign,
 };
 export type CurriculumDesignActions = typeof curriculumDesignActions;
+export type CurriculumSelectionControls = {
+  document: CurriculumDocument;
+  editable: boolean;
+  select: (subjectId: string, selected: boolean) => void;
+};
 type View = "cohort" | "operating";
 type EditorState = {
   doc: CurriculumDocument; planVersion: number; docVersion: number;
@@ -122,11 +127,13 @@ function QuickAddSubject({workspaceId,groupId,disabled,onCreated}:{
   </div>;
 }
 export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleStep,
-  actions=curriculumDesignActions, catalogEditable=true}:{
+  actions=curriculumDesignActions, catalogEditable=true, renderSubjects, onSelectionCount}:{
   context:Context;view:View;cohort:number;onDirtyChange:(dirty:boolean)=>void;
-  simpleStep?:"hours"|"review";
+  simpleStep?:"subjects"|"hours"|"review";
   actions?:CurriculumDesignActions;
   catalogEditable?:boolean;
+  renderSubjects?:(controls:CurriculumSelectionControls)=>ReactNode;
+  onSelectionCount?:(count:number)=>void;
 }){
   const router=useRouter();
   const currentYear=c.year?.year??cohort;
@@ -146,17 +153,20 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   const [errors,setErrors]=useState<string[]>([]);
   const [collapsed,setCollapsed]=useState<string[]>([]);
   const [showNational,setShowNational]=useState(false);
-  const [viewMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">(credits?"semester":"weekly");
+  const [inputMode,setViewMode]=useState<"weekly"|"semester"|"yearly"|"national">(credits?"semester":"weekly");
+  const viewMode=simpleStep==="review"?"semester":inputMode;
   const [weeksOpen,setWeeksOpen]=useState(false);
   const [exporting,setExporting]=useState<"classic"|"modern"|null>(null);
   const [adjustFor,setAdjustFor]=useState<{planId:string;subjectId:string;grade:number;semester:number}|null>(null);
   const statesRef=useRef(states);
+  const contextRef=useRef(c);
   const timers=useRef<Record<string,ReturnType<typeof setTimeout>>>({});
   const active=useRef(true);
   const savingIds=useRef(new Set<string>());
   const editable=c.role==="admin"||c.role==="editor";
   const plansRef=useRef(plans);
   useEffect(()=>{statesRef.current=states;},[states]);
+  useEffect(()=>{contextRef.current=c;},[c]);
   useEffect(()=>{plansRef.current=plans;},[plans]);
   useEffect(()=>{onDirtyChange(hasDraft||Object.values(states).some((item)=>item.dirty||item.saving));},[states,hasDraft,onDirtyChange]);
   useEffect(()=>{
@@ -166,7 +176,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
       const loaded=await actions.load({planId:plan.id}).catch(()=>({ok:false as const,error:"편성 자료를 불러오지 못했습니다. 다시 불러오기를 눌러 주세요."}));
       if(!inScope)return;
       if(!loaded.ok){setErrors((prev)=>[...prev,loaded.error]);return;}
-      const doc=initializeDesign(c,plan,loaded.data.document);
+      const doc=(simpleStep?initializeCohortSelection:initializeDesign)(c,plan,loaded.data.document);
       const problems=validateDocument(c,doc);
       if(problems.length)setErrors(prev=>[...prev,...problems.slice(0,8)]);
       const needsResave=!!loaded.data.document&&plan.version===loaded.data.planVersion&&doc.cells.some(cell=>{
@@ -210,7 +220,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   useEffect(()=>{
     setStates(old=>Object.fromEntries(Object.entries(old).map(([id,state])=>{
       const plan=plansRef.current.find(p=>p.id===id);
-      return [id,plan?{...state,doc:initializeDesign(c,plan,state.doc)}:state];
+      return [id,plan?{...state,doc:(simpleStep?initializeCohortSelection:initializeDesign)(c,plan,state.doc)}:state];
     })));
     // Catalog refreshes may add rows but must not reload the saved document.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,7 +238,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
   async function saveOne(planId:string,explicit=false){
     const start=statesRef.current[planId];
     if(!start||(!start.dirty&&!explicit)||start.saving||!start.locked||savingIds.current.has(planId))return;
-    const problems=validateDocument(c,start.doc);
+    const problems=validateDocument(contextRef.current,start.doc);
     if(problems.length){
       setErrors(problems.slice(0,15));
       setStates((old)=>({...old,[planId]:{...old[planId],status:"입력값 확인 필요 · 저장하지 않음"}}));
@@ -321,6 +331,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     .filter(subject=>!collapsed.includes(subject.group_id)&&!excludedSet.has(subject.id));
   const pendingEdit=hasDraft||Object.values(states).some(item=>item.dirty||item.saving);
   const allLoaded=plans.every((p)=>!!states[p.id]);
+  const selectedCount=allLoaded&&plans.length?c.subjects.filter(subject=>!excludedSet.has(subject.id)).length:0;
+  useEffect(()=>{onSelectionCount?.(selectedCount);},[onSelectionCount,selectedCount]);
   async function exportSheet(layout:"classic"|"modern"){
     if(!allLoaded||!plans.length||exporting)return;
     setExporting(layout);
@@ -404,7 +416,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     const scopedSubjects=(creative?creativeSubjects:regularSubjects)
       .filter(subject=>!excludedSet.has(subject.id));
     return (
-<div id={creative ? "curriculum-creative-hours-table" : "curriculum-weekly-table"} className="cv2-table-scroll" tabIndex={0} aria-label={creative?"창의적 체험활동 별도 시수 편성표":"교과 시수 엑셀식 편성표"}>
+<div id={creative ? "curriculum-creative-hours-table" : "curriculum-weekly-table"} className="cv2-table-scroll" role="region" tabIndex={0} aria-label={creative?"창의적 체험활동 별도 시수 편성표":"교과 시수 엑셀식 편성표"}>
         <p className="sr-only">교과군별 표는 각각 독립된 본문 그룹이며, 모든 주당·최종 시수 셀을 직접 편집할 수 있습니다.</p>
         <table className="cv2-table">
           <thead><tr>
@@ -419,7 +431,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
               {col.field==="year"?"연간":col.semester+"학기"}
             </th>)}
           </tr></thead>
-          {groupList.filter(groupId=>isCreativeGroup(c.groups.find(group=>group.id===groupId)?.name??"")===creative).map((groupId)=>{
+          {groupList.filter(groupId=>isCreativeGroup(c.groups.find(group=>group.id===groupId)?.name??"")===creative &&
+            (!simpleStep||scopedSubjects.some(subject=>subject.group_id===groupId))).map((groupId)=>{
             const subjects=visibleSubjects.filter(row=>row.group_id===groupId);
             const group=c.groups.find((g)=>g.id===groupId);
             const folded=collapsed.includes(groupId);
@@ -434,7 +447,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                     이 표 편성 <strong>{subjects.reduce((sum,subject)=>sum+
                     subjectAllHours(subject.id),0).toLocaleString()}{unit}</strong>
                   </span>}
-                  {editable&&catalogEditable&&<QuickAddSubject workspaceId={c.workspace.id}
+                  {editable&&catalogEditable&&!simpleStep&&<QuickAddSubject workspaceId={c.workspace.id}
                     groupId={groupId} disabled={pendingEdit||!allLoaded}
                     onCreated={()=>router.refresh()}/>}
                 </div>
@@ -445,23 +458,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                   <td className="cv2-group-cell">{group?.name??"기타"}</td>
                   <th scope="row" className="cv2-subject-cell">
                     <CurriculumRowSubjectV4 context={c} subjectId={subject.id}
-                      disabled={!editable||!catalogEditable||pendingEdit} onSaved={()=>router.refresh()}/>
-                    {view==="cohort"&&simpleStep==="hours"&&editable&&firstPlan&&firstDoc&&
-                      <button type="button" className="cv6-exclude-subject no-print"
-                        disabled={pendingEdit||!states[firstPlan.id]?.locked||!canExcludeSubject(firstDoc,subject.id)}
-                        title={canExcludeSubject(firstDoc,subject.id)
-                          ?"이 입학년도 편성표에서만 과목을 운영 제외합니다."
-                          :"시수나 선택과목군이 등록된 과목은 먼저 편성을 정리해야 합니다."}
-                        onClick={()=>mutate(firstPlan.id,doc=>withSubjectExcluded(doc,subject.id,true))}>
-                        운영 제외
-                      </button>}
+                      disabled={!editable||!catalogEditable||pendingEdit||!!simpleStep} onSaved={()=>router.refresh()}/>
                   </th>
                   {columns.map((col,k)=>{
                     const cellValue=totalOf(subject.id,col);
                     const state=col.plan?states[col.plan.id]:null;
-                    const eligible=editable&&!!state?.locked&&cellValue!==null;
+                    const eligible=simpleStep!=="review"&&editable&&!!state?.locked&&cellValue!==null;
                     return <td key={k} className={col.field==="total"?"cv2-total-cell":""}>
-                      {cellValue===null?"—":col.field==="year"
+                      {cellValue===null?"—":col.field==="year"||simpleStep==="review"
                         ?<span className="cv2-year-sum">{format(cellValue)}</span>
                         :<HourInput key={subject.id+"-"+k}
                           cellKey={r+"-"+k} value={cellValue} disabled={!eligible}
@@ -503,11 +507,12 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
       <span>{credits?"입력 단위: 학점 · 시수로 자동 환산하지 않습니다.":"기본 입력은 주당시수 · 학기 총시수 직접 수정 시 차액은 조정 시수로 기록"}</span>
     </div>
     <div className="cv2-toolbar no-print">
-      <div><strong>{simpleStep==="hours"?(credits?"학점 배당":"주당시수 배당"):simpleStep==="review"?"편성 검토 및 확정":
+      <div><strong>{simpleStep==="subjects"?"편성 과목 선택":simpleStep==="hours"?(credits?"학점 배당":"주당시수 배당"):simpleStep==="review"?"교육과정표":
         view==="cohort"?cohort+"학년도 입학생 · "+duration:currentYear+"학년도 · 1~"+c.grades.length+"학년"} </strong>
         <p>{simpleStep==="hours"
           ?(credits?"학기별 학점을 직접 입력하세요.":"주당시수 × 편성 기준 주수 + 조정값으로 학기 시수를 계산합니다.")
-          :simpleStep==="review"?"편성 결과와 선택과목군을 검토한 뒤 확정본을 생성해 주세요."
+          :simpleStep==="subjects"?"이번 편성에 사용할 과목을 선택하세요. 선택 내용도 자동 저장됩니다."
+          :simpleStep==="review"?"입력한 시수를 계산한 학기별 교육과정표입니다. 수정은 2단계에서 할 수 있습니다."
           :credits?"학기별 학점을 직접 수정하면 합계가 자동 계산·저장됩니다.":"주당 시수와 학기 총시수를 표에서 직접 수정하면 자동 계산·저장됩니다. 기존 학사일정과 시간표는 변경하지 않습니다."}</p>
       </div>
       <div className="cv2-actions">
@@ -515,13 +520,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
           onClick={()=>{if(!pendingEdit||window.confirm("저장하지 않은 변경사항을 버리고 최신 저장본을 불러올까요?")){
             setErrors([]);setReload(n=>n+1);
           }}}>최신 저장본 다시 불러오기</button>
-        {allLoaded&&plans.length>0&&<div className="cv2-export-buttons">
+        {allLoaded&&plans.length>0&&simpleStep!=="subjects"&&<div className="cv2-export-buttons">
           <button type="button" disabled={!!exporting} onClick={()=>void exportSheet("classic")}>
             <Download size={13}/>{exporting==="classic"?"생성 중…":"원본형 엑셀"}
           </button>
           <button type="button" disabled={!!exporting} onClick={()=>void exportSheet("modern")}>
             <Download size={13}/>{exporting==="modern"?"생성 중…":"현대화 엑셀"}
           </button>
+          {simpleStep==="review"&&<button type="button" onClick={()=>window.print()}>교육과정표 인쇄</button>}
         </div>}
         {plans.map((p)=>{
           const item=states[p.id];
@@ -536,7 +542,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
                 <button disabled={!item.history.length} onClick={()=>historyMove(p.id,true)}>실행 취소</button>
                 <button disabled={!item.future.length} onClick={()=>historyMove(p.id,false)}>재실행</button>
               </>}
-              {simpleStep!=="hours"&&<button disabled={item.dirty||item.saving||item.needsResave}
+              {(!simpleStep||simpleStep==="review")&&<button disabled={item.dirty||item.saving||item.needsResave}
                 onClick={()=>void confirm(p)}><ShieldCheck size={13}/>
                 {simpleStep==="review"?"편성안 확정":"확정본"}
               </button>}
@@ -552,7 +558,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
     {plans.length===0&&<p className="cv2-empty">연결할 입학년도 편성표가 없습니다. 먼저 ‘편성표 만들기’에서 해당 입학년도를 생성해 주세요.</p>}
     {plans.length>0&&!allLoaded&&<p className="cv2-empty">교육과정 편성 자료와 편집 상태를 불러오는 중입니다.</p>}
     {plans.length>0&&allLoaded&&<>
-      {middle&&<CurriculumInsights context={c} view={view} cohort={cohort}
+      {simpleStep==="subjects"&&firstPlan&&firstDoc?renderSubjects?.({
+        document:firstDoc,editable:editable&&states[firstPlan.id].locked&&!states[firstPlan.id].saving,
+        select:(subjectId,selected)=>{
+          if(!selected&&!canExcludeSubject(firstDoc,subjectId))return;
+          mutate(firstPlan.id,doc=>withSubjectExcluded(doc,subjectId,!selected));
+        },
+      }):<>
+      {middle&&simpleStep!=="review"&&<CurriculumInsights context={c} view={view} cohort={cohort}
         documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
       {!credits&&<div className="cv5-weeks-settings no-print">
         {simpleStep==="hours"&&<button type="button" className="cv5-weeks-toggle"
@@ -615,14 +628,14 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
         </div>
         {renderHoursTable(false)}
       </section>
-      {creativeSubjects.length>0&&<section className="cv6-hours-area cv6-creative-area">
+      {creativeSubjects.some(subject=>!excludedSet.has(subject.id))&&<section className="cv6-hours-area cv6-creative-area">
         <div className="cv6-area-heading"><strong>창의적 체험활동 시수 편성</strong>
           <span>교과와 별도 입력 · {duration} {creativeSubjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</span>
         </div>
         <p className="cv6-creative-help">창의적 체험활동은 교과와 구분하여 입력합니다. 입력된 창체 {credits?"학점":"시수"}는 최종 합계에 한 번만 더해집니다.</p>
         {renderHoursTable(true)}
       </section>}
-      {view==="cohort"&&excludedIds.length>0&&
+      {!simpleStep&&view==="cohort"&&excludedIds.length>0&&
         <section className="cv6-excluded-list" aria-label="해당 입학년도 운영 제외 과목">
           <div><strong>{cohort}학년도 입학생 운영 제외 과목</strong>
             <p>이 입학년도 편성표에서만 제외되었으며 다른 입학년도 및 과목 원본은 유지됩니다.</p>
@@ -647,6 +660,8 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
         <strong>{duration} 총 {c.subjects.reduce((sum,subject)=>sum+subjectAllHours(subject.id),0).toLocaleString()}{unit}</strong>
       </div>
       <p className="cv2-footnote">입력 단위: {unit}. ‘운영 제외’는 현재 입학년도에서만 적용되며 이미 편성 시수가 있는 과목은 제외할 수 없습니다. 학기 총시수를 직접 변경하면 차액만 별도 조정값으로 기록돼 기존 주당 시수와 조정 내역을 보존합니다. 숫자를 붙여넣거나 방향키로 셀을 이동할 수 있어요.</p>
+      {middle&&simpleStep==="review"&&<CurriculumInsights context={c} view={view} cohort={cohort}
+        documents={Object.fromEntries(plans.map(plan=>[plan.id,states[plan.id].doc]))}/>}
       {view==="cohort"&&firstPlan&&firstDoc&&
         <CohortChoiceManager context={c} doc={firstDoc}
           editable={editable&&!!states[firstPlan.id]?.locked&&!states[firstPlan.id]?.saving}
@@ -680,7 +695,7 @@ export function CurriculumEnhanced({context:c,view,cohort,onDirtyChange,simpleSt
           onClose={()=>setAdjustFor(null)}
           onChange={(fn)=>mutate(adjustFor.planId,fn)}
         />}
-
+      </>}
     </>}
   </div>;
 }
