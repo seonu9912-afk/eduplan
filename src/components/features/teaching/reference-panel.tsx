@@ -1,4 +1,5 @@
 "use client";
+import { TimetableReference } from "./timetable-reference";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { InlineNotice, useMutation } from "@/components/common";
@@ -126,10 +127,7 @@ export function ReferencePanel({
             학교 수업일 {days.filter(isTeachingDay).length}일 · 학급별 실제 과목
             차시가 아닙니다.
           </p>
-          <p className="muted">
-            시간표·학급별 실제 수업일 연동 전이므로 날짜별 차시를 자동 생성하지
-            않습니다.
-          </p>
+          <TimetableReference context={c} course={course}/>
           <ul className="reference-dates">
             {plan.vacations
               .filter((v) =>

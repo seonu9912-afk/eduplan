@@ -1,3 +1,4 @@
+import { getOperationsData } from "@/lib/operations-data";
 import { getTeachingData } from "@/lib/teaching-data";
 import { notFound } from "next/navigation";
 import { getWorkspaceContext } from "@/lib/data";
@@ -14,6 +15,7 @@ export default async function WorkspacePage({
   if (
     ![
       "home",
+      "teachers",
       "calendar",
       "curriculum",
       "timetable",
@@ -25,6 +27,7 @@ export default async function WorkspacePage({
   )
     notFound();
   const context = await getWorkspaceContext(p.workspaceId, q.year);
+  context.operations = await getOperationsData(context);
   if (p.section === "teaching" && context.year)
     context.teaching = await getTeachingData(p.workspaceId, context.year.id);
   return (

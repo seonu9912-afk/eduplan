@@ -1,4 +1,5 @@
 "use client";
+import { publishTimetable } from "@/app/operations-actions";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -57,7 +58,7 @@ export function Timetable({ context: c, onDirtyChange }: {
       setDirty(false); setMatrixDirty(false);
       revision.current = 0;
       setLoading(false);
-    });
+    }).catch(()=>{if(active){setMessage({text:"시간표를 불러오지 못했습니다. 다시 불러오기를 눌러 주세요.",error:true});setLoading(false);}});
     return () => { active = false; };
     // The active workspace/year identifies the saved document. Refreshing context
     // does not discard a locally edited timetable.
@@ -77,6 +78,7 @@ export function Timetable({ context: c, onDirtyChange }: {
     }
     const savedRevision = revision.current;
     startTransition(async () => {
+      try {
       const result = await saveTimetableDocument({
         workspaceId: c.workspace.id, yearId: c.year!.id,
         expectedVersion: version, document: parsed.data,
@@ -90,12 +92,14 @@ export function Timetable({ context: c, onDirtyChange }: {
       if (revision.current === savedRevision) setDirty(false);
       setMessage({ text: "시간표를 학교 작업공간에 저장했습니다. (버전 " + result.data.version + ")" });
       router.refresh();
+      } catch { setMessage({text:"시간표를 저장하지 못했습니다. 현재 입력은 유지됩니다. 다시 시도해 주세요.",error:true}); }
     });
   }
   async function reload() {
     if (!c.year || loading || saving) return;
     if ((dirty || matrixDirty) && !window.confirm("저장하지 않은 시간표를 버리고 학교의 최신 저장본을 불러올까요?")) return;
     setLoading(true);
+    try {
     const response = await loadTimetableDocument({ workspaceId: c.workspace.id, yearId: c.year.id });
     if (response.ok) {
       setSpace(legacyTimetableSpace(c,
@@ -104,7 +108,8 @@ export function Timetable({ context: c, onDirtyChange }: {
       setDirty(false); setMatrixDirty(false); revision.current = 0;
       setMessage({ text: "학교에 저장된 최신 시간표를 다시 불러왔습니다." });
     } else setMessage({ text: response.error, error: true });
-    setLoading(false);
+    } catch { setMessage({text:"다시 불러오지 못했습니다. 기존 편집 내용을 유지했습니다.",error:true}); }
+    finally { setLoading(false); }
   }
   function downloadBackup() {
     const content = JSON.stringify({ format: "eduplan-timetable-v1", year, plan: document,
@@ -186,6 +191,10 @@ export function Timetable({ context: c, onDirtyChange }: {
         <Button variant="outline" onClick={() => void reload()} disabled={loading || saving}>
           <RefreshCcw size={15}/> 다시 불러오기
         </Button>
+        {canWrite && <Button variant="outline" disabled={loading || saving || dirty || matrixDirty || version===0} onClick={()=>{
+          if(!window.confirm("저장된 시간표를 검토한 뒤 교원에게 배포할까요? 현재 저장본을 확정본으로 보존하고 내부 알림함에 안내합니다."))return;
+          startTransition(async()=>{try{const result=await publishTimetable({workspaceId:c.workspace.id,yearId:c.year!.id,version});setMessage({text:result.ok?"시간표를 확정·배포했습니다. 개인 시간표와 알림함에 반영됩니다.":result.error,error:!result.ok});if(result.ok)router.refresh();}catch{setMessage({text:"배포하지 못했습니다. 저장한 시간표는 유지됩니다.",error:true});}});
+        }}>검토 후 확정·배포</Button>}
         {canWrite && <Button onClick={() => void save()} disabled={loading || saving || !dirty || matrixDirty}>
           <Save size={15}/>{saving ? "저장 중…" : "학교에 저장"}
         </Button>}

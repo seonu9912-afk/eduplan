@@ -8,15 +8,17 @@ import type { Context, Row } from "@/lib/models";
 export function CourseForm({
   context: c,
   course,
+  initial,
   onDone,
 }: {
   context: Context;
   course?: Row<"teaching_courses">;
+  initial?:import("@/lib/teaching-targets").TeachingTarget;
   onDone: (id: string) => void;
 }) {
-  const [grade, setGrade] = useState(course?.grade ?? 1),
-    [semester, setSemester] = useState(course?.semester ?? 1),
-    [subject, setSubject] = useState(course?.subject_id ?? ""),
+  const [grade, setGrade] = useState(course?.grade ?? initial?.grade ?? 1),
+    [semester, setSemester] = useState(course?.semester ?? initial?.semester ?? 1),
+    [subject, setSubject] = useState(course?.subject_id ?? initial?.subjectId ?? ""),
     [copy, setCopy] = useState(""),
     [copyScope, setCopyScope] = useState<"all" | "lesson" | "assessment">("all");
   const m = useMutation(),
@@ -142,7 +144,7 @@ export function CourseForm({
             id="course-teacher"
             name="teacher_name"
             maxLength={80}
-            defaultValue={course?.teacher_name ?? c.profile.display_name}
+            defaultValue={course?.teacher_name ?? (initial?.teacherName || c.profile.display_name)}
             required
           />
         </Field>
@@ -156,7 +158,7 @@ export function CourseForm({
                   type="checkbox"
                   name="class_ids"
                   value={cl.id}
-                  defaultChecked={data.classes.some(
+                  defaultChecked={initial?.classIds.includes(cl.id) || data.classes.some(
                     (a) => a.course_id === course?.id && a.class_id === cl.id,
                   )}
                 />

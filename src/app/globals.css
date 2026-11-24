@@ -3906,7 +3906,7 @@ button[data-slot="button"][data-size="icon"] {
 }
 .work-week-board {
   display: grid;
-  grid-template-columns: repeat(6, minmax(150px, 1fr));
+  grid-template-columns: repeat(7, minmax(140px, 1fr));
   min-width: 900px;
 }
 .work-day {
@@ -4219,7 +4219,7 @@ button[data-slot="button"][data-size="icon"] {
   }
   .work-week-board {
     min-width: 0;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
   .work-month-board {
     min-width: 0;

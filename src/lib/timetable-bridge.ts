@@ -75,7 +75,9 @@ export function newTimetableDocument(c: Context): TimetableDocument {
       label: schoolClass.grade + "학년 " + schoolClass.class_number + "반",
     })),
     subjects: baseSubjects(c),
-    teachers: c.members.map((member) => ({ id: member.user_id, label: member.display_name })),
+    teachers: c.operations?.directory.length
+      ? c.operations.directory.map(t=>({id:t.id,label:t.display_name}))
+      : c.members.map((member) => ({ id: member.user_id, label: member.display_name })),
     groups: [], rooms: [], weekly: [], dayRules: officialTimetableDayRules(c),
     overrides: [], targetDays: 190, targets: [], timetableConfigured: false,
     createdAt: new Date().toISOString(),
@@ -83,12 +85,19 @@ export function newTimetableDocument(c: Context): TimetableDocument {
 }
 /** Keep archived or manually added fields and teachers; merge new official subjects and classes without deleting data. */
 export function mergeTimetableDocument(c: Context, existing: TimetableDocument): TimetableDocument {
+  // An approved account link may replace an old account-based teacher ID.
+  // Normalize every teacher reference together; leave stored historical snapshots untouched.
+  const aliases=new Map((c.operations?.directory??[]).filter(t=>t.user_id).map(t=>[t.user_id!,t.id]));
+  const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value&&typeof value==="object"
+    ?Object.fromEntries(Object.entries(value).map(([key,entry])=>[key,key==="teacherId"&&typeof entry==="string"?aliases.get(entry)??entry:canonical(entry)])):value;
+  existing=canonical(existing) as TimetableDocument;
+  existing={...existing,teachers:existing.teachers.map(t=>({...t,id:aliases.get(t.id)??t.id}))};
   const current = newTimetableDocument(c);
   const classes = [...current.classes];
   for (const old of existing.classes) if (!classes.some((row) => row.id === old.id)) classes.push(old);
   const subjects = [...current.subjects];
   for (const old of existing.subjects) if (!subjects.some((row) => row.id === old.id)) subjects.push(old);
-  const teachers = [...current.teachers];
+  const teachers = current.teachers.map(t=>({...existing.teachers.find(old=>old.id===t.id),...t}));
   for (const old of existing.teachers) if (!teachers.some((row) => row.id === old.id)) teachers.push(old);
   return {
     ...existing, year: current.year, classes, subjects, teachers,
@@ -143,11 +152,11 @@ export function legacyTimetableSpace(c: Context, document: TimetableDocument) {
   }
   return {
     academics: { [String(year)]: document },
-    staffMembers: c.members.map((member) => ({
-      id: member.user_id, name: member.display_name, subject: "", status: "재직",
-    })),
+    staffMembers: c.operations?.directory.length ? c.operations.directory.map(t=>({
+      id:t.id,name:t.display_name,subject:c.subjects.find(s=>s.id===t.primary_subject_id)?.name??"",status:t.active?"재직":"비재직",
+    })) : c.members.map((member) => ({id: member.user_id, name: member.display_name, subject: "", status: "재직"})),
     events: legacyTimetableEvents(c),
-    curricula: { courses, cohorts, standards: {}, staffing: {} },
+    curricula: { courses, cohorts, grades:c.grades, standards: {}, staffing: {} },
     workspaceId: c.workspace.id, academicYearId: c.year?.id ?? "",
   };
 }

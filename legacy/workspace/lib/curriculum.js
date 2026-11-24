@@ -49,7 +49,7 @@ export const sumCohort = (cohort,courses)=>{
   return {terms,total,byArea,byGroup};
 };
 export function operationalPlan(state,year){
-  const data=normalizeCurriculum(state),grades=[1,2,3].map(grade=>{
+  const data=normalizeCurriculum(state),gradeNumbers=Array.isArray(data.grades)&&data.grades.length?data.grades:[1,2,3],grades=gradeNumbers.map(grade=>{
     const cohortYear=Number(year)-grade+1,cohort=data.cohorts[String(cohortYear)],termA=`${grade}-1`,termB=`${grade}-2`;
     const ready=!!cohort?.completeGrades?.includes(grade);
     return {grade,cohortYear,cohort,ready,semesters:[1,2].map(term=>({term,key:`${grade}-${term}`,target:cohort?.targets?.[`${grade}-${term}`]??null,totals:sumTerm(cohort,`${grade}-${term}`,data.courses)}))};

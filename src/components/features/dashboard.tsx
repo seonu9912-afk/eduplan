@@ -1,3 +1,4 @@
+import { PersonalDay } from "./personal-day";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -54,6 +55,8 @@ export function Dashboard({
           </Link>
         </Button>
       </div>
+      <PersonalDay context={c} today={today}/>
+      <details className="no-print"><summary>학교 운영 시작 가이드</summary>
       <section className="dashboard-hero">
         <div>
           <span className="hero-badge subtle">
@@ -95,6 +98,7 @@ export function Dashboard({
           ))}
         </div>
       </section>
+      </details>
       <section className="stats-grid" aria-label="작업공간 현황">
         {[
           {

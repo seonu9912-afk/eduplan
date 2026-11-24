@@ -15,7 +15,7 @@ export default async function RecoveryPreviewPage({ params }: {
   if (buildInfo.deployment !== "preview" && process.env.EDUPLAN_LOCAL_PREVIEW !== "1") notFound();
   const { section: path = [] } = await params;
   const section = path[0] ?? "calendar";
-  if (path.length > 1 || !["calendar", "teaching", "curriculum"].includes(section)) notFound();
+  if (path.length > 1 || !["calendar", "teaching", "curriculum", "operations"].includes(section)) notFound();
   return (
     <div className="workspace-content">
       <header className="page-heading no-print">
@@ -24,6 +24,7 @@ export default async function RecoveryPreviewPage({ params }: {
           <p>통합 미리보기 · 가상 학교의 조회용 자료</p>
         </div>
         <nav aria-label="통합 미리보기 메뉴" className="heading-actions">
+          <Button asChild variant={section === "operations" ? "default" : "outline"}><Link href="/recovery-preview/operations">통합 운영 실습</Link></Button>
           <Button asChild variant={section === "calendar" ? "default" : "outline"}>
             <Link href="/recovery-preview/calendar">학사운영</Link>
           </Button>

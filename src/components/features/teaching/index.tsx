@@ -1,4 +1,5 @@
 "use client";
+import { curriculumTeachingTargets, type TeachingTarget } from "@/lib/teaching-targets";
 import {
   assessmentChoices,
   reconcileAssessmentLinks,
@@ -58,6 +59,7 @@ export function TeachingModule({
   context: Context;
   onDirtyChange: (dirty: boolean) => void;
 }) {
+  const [initialTarget,setInitialTarget]=useState<TeachingTarget|undefined>();
   const router = useRouter(),
     [tab, setTab] = useState<Tab>("lesson"),
     [selected, setSelected] = useState<string | null>(null),
@@ -142,6 +144,7 @@ export function TeachingModule({
                   changed(false);
                   setSelected(null);
                   setTab("overview");
+                  setInitialTarget(undefined);
                   setCreating(true);
                 }
               }}
@@ -150,6 +153,7 @@ export function TeachingModule({
             </Button>
           )}
         </div>
+        <details className="panel"><summary>교육과정에서 계산한 작성 대상</summary><p>현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만 표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통 자료에서 표시합니다.</p><div className="operations-scroll"><table className="operations-table"><thead><tr><th>학년·학기</th><th>과목</th><th>편성 기준</th><th>시간표 담당</th><th>작성 상태</th></tr></thead><tbody>{curriculumTeachingTargets(c).map(target=><tr key={`${target.grade}:${target.semester}:${target.subjectId}`}><td>{target.grade}학년 {target.semester}학기</td><td>{target.subjectName}</td><td>{target.hours}{target.unit==="credits"?"학점":"시간"}</td><td>{target.teacherName||"담당 확인 필요"}</td><td>{target.exists?"기존 계획 있음":c.role!=="viewer"?<Button variant="outline" onClick={()=>{if(canLeave()){setInitialTarget(target);setCreating(true);}}}>이 과목 계획 시작</Button>:"미작성"}</td></tr>)}</tbody></table></div></details>
         <section className="panel teaching-filters" aria-label="수업 선택 조건">
           <label>
             학년도
@@ -409,6 +413,8 @@ export function TeachingModule({
         wide
       >
         <CourseForm
+          key={initialTarget?`${initialTarget.grade}:${initialTarget.semester}:${initialTarget.subjectId}`:"manual"}
+          initial={initialTarget}
           context={c}
           onDone={(id) => {
             setCreating(false);

@@ -14,6 +14,20 @@ export type Database = {
   };
   public: {
     Tables: {
+      staff_appointments: {
+        Row: import("./staffing").StaffAppointment; Insert: never; Update: never; Relationships: [];
+      };
+      staffing_scenarios: {
+        Row: {id:string; workspace_id:string; academic_year_id:string; name:string; document:Json; created_at:string; created_by:string};
+        Insert: {workspace_id:string; academic_year_id:string; name:string; document:Json; created_by:string}; Update: never; Relationships: [];
+      };
+      timetable_publications: {
+        Row: {id:string; workspace_id:string; academic_year_id:string; source_version:number; document:Json; published_at:string; published_by:string};
+        Insert: never; Update: never; Relationships: [];
+      };
+      operation_notifications: {
+        Row: import("./staffing").OperationNotification; Insert: never; Update: {read_at:string}; Relationships: [];
+      };
       calendar_item_history: {
         Row: { id: number; workspace_id: string; academic_year_id: string; item_key: string;
           before_value: Json | null; after_value: Json | null; actor_id: string; created_at: string; operation: string };
@@ -1024,6 +1038,9 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      staff_directory: {Args:{target:string;year_id:string}; Returns:Json};
+      save_staff_appointment: {Args:{target:string;year_id:string;appointment_id:string;expected_version:number;payload:Json}; Returns:Json};
+      publish_timetable: {Args:{target:string;year_id:string;expected_version:number}; Returns:Json};
       reorder_curriculum_subjects_v4:{
         Args:{p_workspace:string;p_group:string;p_order:string[]};Returns:number;
       };

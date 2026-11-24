@@ -1,4 +1,5 @@
 "use client";
+import { CalendarImpact, EventImpact } from "./calendar-impact";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Modal, Notice } from "@/components/common";
@@ -22,9 +23,11 @@ type Edit = DayEdit | EventEdit | RangeEdit;
 const weekdays = ["일","월","화","수","목","금","토"];
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 
-export function AcademicCalendar({ context, today, onDirtyChange, preview = false }: {
-  context: Context; today: string; onDirtyChange?: (value: boolean) => void; preview?: boolean;
+export const calendarActions={loadCalendarState,saveCalendarChanges,confirmAcademicCalendar,previewHolidays};
+export function AcademicCalendar({ context, today, onDirtyChange, preview = false, actions=calendarActions }: {
+  context: Context; today: string; onDirtyChange?: (value: boolean) => void; preview?: boolean; actions?:typeof calendarActions;
 }) {
+  const {loadCalendarState,saveCalendarChanges,confirmAcademicCalendar,previewHolidays}=actions;
   const router = useRouter();
   const [tab, setTab] = useState<(typeof calendarTabs)[number]>("연간 학사력");
   const [local, setLocal] = useState<CalendarState | null>(null);
@@ -88,7 +91,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
       else setMessage({ text: `저장 이력을 불러오지 못했습니다. ${result.error}`, error: true });
     });
     return () => { active = false; };
-  }, [context.workspace.id,context.year,context.annual?.version,revision,preview]);
+  }, [context.workspace.id,context.year,context.annual?.version,revision,preview,loadCalendarState]);
 
   function move(action: () => void) {
     if (saving.current) return;
@@ -188,7 +191,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
   return <div className="ar">
     <header className="ar-line"><div><h2>{year}학년도 학사일정</h2><p className="ar-muted">{c.workspace.name} · {status}{!admin ? " · 조회 전용" : ""}</p></div>
       <div className="ar-tools"><button onClick={() => move(() => { setEdit(null); setHistoryOpen(true); })}>{confirmation ? `확정 후 변경 ${sinceConfirmed.length}건` : "수정 이력"}</button>
-        <button onClick={() => move(() => { setEdit(null); setTools(true); })}>기본 운영·자료 관리</button>
+        <button disabled={actions!==calendarActions} onClick={() => move(() => { setEdit(null); setTools(true); })}>기본 운영·자료 관리</button>
         {admin && <button disabled={!c.annual || pending || dirty} onClick={() => setConfirmOpen(true)}>편성안 확정</button>}
       </div></header>
     <Notice message={message.text} error={message.error}/>
@@ -253,6 +256,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     </>}
     {edit?.kind === "event" && tab === "행사 편성" && <section className="ar-panel"><div className="ar-line"><h3>{edit.value.event.version ? "행사 편집" : "행사 등록"}</h3><button onClick={() => move(() => setEdit(null))}>닫기</button></div>
       <EventFields key={edit.value.event.id} value={edit.value} onChange={(value) => setEdit({ ...edit,value })} context={c} plan={plan} disabled={!editable || pending}/>
+      <EventImpact context={c} before={plan} draft={edit.value}/>
       {editable && <div className="ar-tools"><button className="ar-primary" disabled={pending} onClick={() => startTransition(async () => { await saveEdit(); })}>{pending ? "저장 중…" : "행사·교시 편성 저장"}</button>
         {!!edit.value.event.version && <button onClick={() => setRestore({ id: -1,item_key: "delete",before_value: null,after_value: null,actor_id: "",created_at: "",operation: "행사 삭제" })}>행사 삭제</button>}
       </div>}</section>}
@@ -268,6 +272,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
     {edit?.kind === "day" && tab === "연간 학사력" && <section className="ar-popup ar-panel" role="dialog" aria-label="날짜 편집" aria-modal={false} onKeyDown={(e) => { if (e.key === "Escape") move(() => setEdit(null)); }}>
       <div className="ar-line"><h3>{edit.date}</h3><button aria-label="날짜 편집 닫기" onClick={() => move(() => setEdit(null))}>닫기</button></div>
       <DateFields value={edit.value} onChange={(value) => setEdit({ ...edit,value })} context={c} disabled={!editable || pending}/>
+      <CalendarImpact context={c} before={plan} after={{...plan,days:{...plan.days,[edit.date]:edit.value}}} from={edit.date} to={edit.date}/>
       <div className="ar-date-actions">
         {editable && <button className="ar-primary" disabled={pending} onClick={() => startTransition(async () => { await saveEdit(); })}>{pending ? "저장 중…" : "저장"}</button>}
       </div>{dirty && <p className="ar-muted">저장하지 않은 변경 내용</p>}

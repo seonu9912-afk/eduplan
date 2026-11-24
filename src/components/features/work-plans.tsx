@@ -28,10 +28,12 @@ export function WorkPlans({
   context: c,
   today,
   onDirtyChange,
+  save=saveAnnual,
 }: {
   context: Context;
   today: string;
   onDirtyChange: (v: boolean) => void;
+  save?:typeof saveAnnual;
 }) {
   const start = `${c.year?.year ?? 2026}-03-01`,
     end = monthRange(`${(c.year?.year ?? 2026) + 1}-02`).end;
@@ -44,6 +46,7 @@ export function WorkPlans({
     [date, setDate] = useState(clamp(today)),
     [view, setView] = useState<"week" | "month">("week"),
     [monthList, setMonthList] = useState(false),
+    [departmentFilter, setDepartmentFilter] = useState(""),
     [dirty, setDirty] = useState(false);
   const [editing, setEditing] = useState<Partial<Business> | null>(null),
     [error, setError] = useState("");
@@ -74,11 +77,11 @@ export function WorkPlans({
       plan.business.some((b) => b.kind === "당직");
   const range =
     view === "week"
-      ? { start: weekRange(date).start, end: addDays(weekRange(date).start, 5) }
+      ? { start: weekRange(date).start, end: addDays(weekRange(date).start, 6) }
       : monthRange(date.slice(0, 7));
   const dates =
     view === "week"
-      ? Array.from({ length: 6 }, (_, i) => addDays(range.start, i))
+      ? Array.from({ length: 7 }, (_, i) => addDays(range.start, i))
       : calendarDays(date.slice(0, 7)).slice(
           0,
           Math.ceil((weekday(range.start) + Number(range.end.slice(-2))) / 7) *
@@ -151,7 +154,7 @@ export function WorkPlans({
               </p>
             ))}
           {c.events
-            .filter((e) => e.start_date <= d && e.end_date >= d)
+            .filter((e) => e.start_date <= d && e.end_date >= d && (!departmentFilter || e.department === departmentFilter))
             .map((e) => (
               <article key={e.id} className="work-card academic-work-card">
                 {deptTag(e.department)}
@@ -166,7 +169,7 @@ export function WorkPlans({
             ))}
           {plan.allocations
             .filter(
-              (a) => a.date === d && !c.events.some((e) => e.id === a.eventId),
+              (a) => a.date === d && (!departmentFilter || a.department === departmentFilter) && !c.events.some((e) => e.id === a.eventId),
             )
             .map((a) => (
               <article key={a.id} className="work-card academic-work-card">
@@ -181,7 +184,7 @@ export function WorkPlans({
               </article>
             ))}
           {plan.business
-            .filter((b) => b.date === d && b.kind === "업무")
+            .filter((b) => b.date === d && b.kind === "업무" && (!departmentFilter || b.department === departmentFilter))
             .map(businessCard)}
           {editable && inYear && (
             <button
@@ -199,7 +202,7 @@ export function WorkPlans({
               (k) =>
                 (k !== "당직" || duty) &&
                 (view === "week" ||
-                  plan.business.some((b) => b.date === d && b.kind === k)),
+                  plan.business.some((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter))),
             )
             .map((k) => (
               <section key={k}>
@@ -216,9 +219,9 @@ export function WorkPlans({
                   )}
                 </div>
                 {plan.business
-                  .filter((b) => b.date === d && b.kind === k)
+                  .filter((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter))
                   .map(businessCard)}
-                {!plan.business.some((b) => b.date === d && b.kind === k) && (
+                {!plan.business.some((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter)) && (
                   <small className="muted">없음</small>
                 )}
               </section>
@@ -229,10 +232,11 @@ export function WorkPlans({
   };
   const notices = plan.business.filter(
     (b) =>
-      b.kind === "협의사항" && b.date >= range.start && b.date <= range.end,
+      b.kind === "협의사항" && b.date >= range.start && b.date <= range.end && (!departmentFilter || b.department === departmentFilter),
   );
   return (
     <>
+      <div className="no-print"><label>조회 부서 <select aria-label="학교업무 조회 부서" value={departmentFilter} onChange={e=>setDepartmentFilter(e.target.value)}><option value="">학교 전체</option>{plan.departments.map(d=><option key={d}>{d}</option>)}</select></label><p className="muted-small">월중·주간계획은 같은 학사·업무 일정에서 생성됩니다. 원본 수정 시 함께 갱신됩니다.</p></div>
       <div className="page-heading">
         <div>
           <span className="eyebrow">SCHOOL WORK PLANS</span>
@@ -257,7 +261,7 @@ export function WorkPlans({
                 }
                 m.execute(
                   () =>
-                    saveAnnual({
+                    save({
                       workPlans: true,
                       workspaceId: c.workspace.id,
                       yearId: c.year!.id,

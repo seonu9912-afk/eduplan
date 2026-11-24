@@ -1,4 +1,6 @@
 "use client";
+import { LessonReminder } from "@/components/features/lesson-reminder";
+import { Staffing } from "@/components/features/staffing";
 import { TeachingModule } from "@/components/features/teaching";
 import { AcademicCalendar } from "@/components/features/academic-calendar";
 import { Timetable } from "@/components/features/timetable";
@@ -38,6 +40,7 @@ import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
 const sections: Record<string, string> = {
   home: "홈",
+  teachers: "교원 관리",
   calendar: "학사운영",
   timetable: "시간표",
   plans: "학교업무",
@@ -88,7 +91,7 @@ export function WorkspaceApp({
     return () => window.removeEventListener("beforeunload", handler);
   }, [dirty]);
   useEffect(() => {
-    if ((section !== "calendar" && section !== "teaching") || !activeYearId) return;
+    if (!activeYearId || dirty) return;
     const refresh = () => {
       if (document.visibilityState === "visible") router.refresh();
     };
@@ -98,7 +101,7 @@ export function WorkspaceApp({
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [router, section, activeYearId]);
+  }, [router, section, activeYearId, dirty]);
   return (
     <div className="app-shell">
       <header className="app-header no-print">
@@ -156,7 +159,7 @@ export function WorkspaceApp({
                 id: "teachers",
                 label: "교원 관리",
                 icon: Users,
-                disabled: true,
+                disabled: false,
               },
               {
                 id: "teaching",
@@ -276,6 +279,8 @@ export function WorkspaceApp({
           <span>{sections[section]}</span>
         </div>
         <Notice message={error} error />
+        <LessonReminder context={c}/>
+        {section === "teachers" ? <Staffing context={c} onDirtyChange={setDirty}/> : null}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
         {section === "calendar" ? (
           <AcademicCalendar

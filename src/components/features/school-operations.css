@@ -1,0 +1,155 @@
+.operations-module {
+  display: grid;
+  gap: 20px;
+}
+.operations-tabs,
+.operations-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.operations-controls label {
+  max-width: 180px;
+}
+.operations-controls input,
+.operations-form input:not([type="checkbox"]),
+.operations-form select {
+  width: 100%;
+}
+.operations-form label {
+  display: grid;
+  gap: 7px;
+}
+.operations-checks {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-height: 180px;
+  overflow: auto;
+}
+.operations-checks label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.operations-scroll {
+  overflow: auto;
+  margin: 14px 0;
+}
+.operations-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+.operations-table th,
+.operations-table td {
+  padding: 11px;
+  border-bottom: 1px solid var(--border, #dce3ec);
+  text-align: left;
+  white-space: nowrap;
+}
+.operations-table thead {
+  background: #eef5fa;
+  color: #294b66;
+}
+.operations-table small {
+  display: block;
+  color: #64748b;
+  font-weight: 400;
+}
+.operations-table input {
+  width: 85px;
+  min-height: 36px;
+}
+.operations-warning {
+  color: #a13d15;
+}
+.daily-lesson {
+  display: grid;
+  grid-template-columns: 75px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 14px 0;
+}
+.daily-lesson small {
+  display: block;
+  color: #64748b;
+}
+.daily-lesson.cancelled {
+  opacity: 0.75;
+}
+.daily-lesson.cancelled strong {
+  text-decoration: line-through;
+}
+.daily-clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 24px;
+  font-weight: 700;
+}
+.next-lesson {
+  background: #eaf4fb;
+  border-radius: 12px;
+  padding: 18px;
+  margin: 16px 0;
+}
+.notification-list {
+  list-style: none;
+  padding: 0;
+}
+.notification-list li {
+  padding: 12px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.operations-form fieldset {
+  min-width: 0;
+}
+.operations-module .panel {
+  padding: 22px;
+}
+.operations-controls input,
+.operations-controls select {
+  display: block;
+  margin-top: 6px;
+}
+.operations-compact-list {
+  padding-left: 20px;
+}
+.operations-compact-list li {
+  margin: 6px 0;
+}
+@media (max-width: 650px) {
+  .daily-lesson {
+    grid-template-columns: 60px 1fr;
+  }
+  .daily-lesson > span:last-child {
+    grid-column: 2;
+  }
+  .operations-module .panel {
+    padding: 15px;
+  }
+  .operations-controls label {
+    max-width: 140px;
+  }
+}
+@media print {
+  .operations-tabs,
+  .operations-controls,
+  .operations-module button {
+    display: none !important;
+  }
+  .operations-scroll {
+    overflow: visible;
+  }
+  .operations-table {
+    font-size: 10px;
+  }
+  .operations-table th,
+  .operations-table td {
+    white-space: normal;
+    padding: 5px;
+  }
+  .operations-module .panel {
+    break-inside: avoid;
+  }
+}

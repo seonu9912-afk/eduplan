@@ -26,6 +26,7 @@ export type TeachingData = {
   >[];
 };
 export type Context = {
+  operations?: import("./staffing").OperationsData;
   teaching?: TeachingData;
   userId: string;
   email: string;
