@@ -1,4 +1,4 @@
-# 교육과정 편성 자율 개선 결과 — 2026-11-22
+# 교육과정 편성 자율 개선 결과 — 2026-11-22 (최종 검증: 2026-11-24)
 
 작업 브랜치: `codex/curriculum-reliability-20261122`  
 기준: `main`의 `19d8508` (기본 브랜치인 recovery보다 최신 교육과정 기능 포함)
@@ -53,9 +53,11 @@
 | `src/app/curriculum-design-actions.ts`, `src/lib/database.types.ts` | 초등 6학년 선택과목 허용, DB 오류 전달, 버전 확인 확정 RPC |
 | `supabase/migrations/20261122023852_curriculum_consistent_term_hours.sql` | 계산·검증 수정과 확정 잠금/버전 확인. 기존 데이터 일괄 변경 없음 |
 | `src/app/recovery-preview/curriculum-preview.tsx`, `preview.tsx`, `[[...section]]/page.tsx` | 인증·학교 DB와 분리한 초·중·고 실습 화면. 가상 입력만 브라우저 저장 |
+| `src/app/recovery-preview/curriculum-fixture.ts`, `curriculum-store.ts` | 학교급별 전체 과목 목록과 입학년도별 과목 선택·추가·저장의 브라우저 실습 저장소 |
 | `tests/unit/curriculum-persistence.test.ts` | 실제 PostgreSQL 엔진에서 원래 버그 재현, 수정·보존·버전·권한·직접 RPC 검증 |
 | `tests/unit/curriculum-design.test.ts`, `curriculum-export.test.ts` | 과거 문서·선택 중복·12학기·학점·학기 주수 회귀 검사 |
 | `tests/e2e/curriculum-reliability.spec.ts` | 입력·재조회·붙여넣기·Escape·실패 재시도·저장 중 편집·학교급·충돌 검사 |
+| `tests/e2e/curriculum-flow.spec.ts` | 과목 선택·추가 → 주당 입력 → 계산표·Excel, 입학년도별 선택 격리 검사 |
 | `package.json`, `package-lock.json` | 격리 PostgreSQL 회귀 테스트용 개발 의존성 PGlite 0.5.17 고정 |
 
 ## 5. 검증 결과와 재현
@@ -63,8 +65,8 @@
 - 변경 전: Vitest 169개, 기본 명령의 시간표 관련 Node 테스트 36개 통과.
 - 변경 후: Vitest 190개(격리 PostgreSQL·실습 과목 구성·입학년도별 선택 포함), 시간표 관련 36개 통과. Workspace 전체 174개 통과.
 - TypeScript, ESLint, Next.js 프로덕션 빌드 통과.
-- Playwright 실습 화면 검증: 과목 구성 보완 후 로컬 6개 통과(약 1.1분), 아래 공개 Preview에서도 6개 통과(35.8초). 직접 입력·주수 변경·합계 수정·재조회, 마지막 빈 열 붙여넣기, Escape 취소, 실패 후 재시도, 저장 중 입력, 초등 6학년·고교 학점·390px 모바일, 두 창 버전 충돌과 폐기, 여러 교과의 실제 Excel 다운로드를 확인했다.
-- 공개 Preview 브라우저에서도 주당 3시간·17주를 입력해 51시간 계산 및 새로고침 후 보존을 확인했다. 원격 Playwright의 첫 시도는 실행 환경의 NSS DB 접근 제한으로 인증서 오류가 났으며, 기존 `docs/TESTING.md` 절차에 따라 해당 DB 디렉터리 쓰기 권한을 부여한 재실행에서 통과했다. 인증서 검증은 끄지 않았다.
+- Playwright 실습 화면 최종 검증: 3단계 흐름 변경 후 로컬 8개 통과(약 2분), 아래 공개 Preview에서도 8개 통과(50.1초). 과목 선택·추가, 선택한 행만 표시, 입학년도별 선택 격리, 직접 입력·주수 변경·합계 수정·재조회, 마지막 빈 열 붙여넣기, Escape 취소, 실패 후 재시도, 저장 중 입력, 초등 6학년·고교 학점·390px 모바일, 두 창 버전 충돌과 폐기, 실제 Excel 다운로드를 확인했다.
+- 공유 브라우저에서 공개 Preview의 빈 편성 → 국어·수학·과학 선택 → 주당 4·3·2 입력 → 학기 합계 64·48·32 및 총 144시간의 교육과정표 표시를 직접 확인했다(기본 16주). 앞선 검증에서는 주당 3시간·17주를 입력해 51시간 계산 및 새로고침 후 보존도 확인했다. 원격 Playwright의 최초 실행에서 발생한 NSS DB 접근 제한은 기존 `docs/TESTING.md` 절차에 따라 해당 디렉터리 쓰기 권한을 부여해 해결했다. 인증서 검증은 끄지 않았다.
 - DB 테스트는 구 SQL로 48시간을 저장해 오류를 먼저 재현하고, 새 마이그레이션 적용 자체는 기존 48을 그대로 두는지 확인한다. 명시적으로 재저장한 뒤 51시간, 문서 재조회 일치, 실패 시 기존 값 보존, 과거 확정본 보존을 검사한다.
 - PGlite는 PostgreSQL 엔진을 사용한다. Auth 서비스 bootstrap만 가상으로 구성하고 실제 foundation/학교급/RLS/편성 migration의 함수·테이블을 실행한다. 초대용 pgcrypto extension 선언은 이 테스트에서 제외한다. 운영 인증이나 다중 프로세스 잠금 경합의 종합 인수검증을 대신하지 않는다.
 
@@ -74,7 +76,7 @@ npm run check
 npm --prefix legacy/workspace test
 npm run build
 EDUPLAN_LOCAL_PREVIEW=1 npm run dev -- --hostname 0.0.0.0
-npm run test:e2e -- tests/e2e/curriculum-reliability.spec.ts
+npm run test:e2e -- tests/e2e/curriculum-flow.spec.ts tests/e2e/curriculum-reliability.spec.ts
 ```
 
 ## 6. 남은 문제와 이유
@@ -95,9 +97,10 @@ npm run test:e2e -- tests/e2e/curriculum-reliability.spec.ts
 
 ## 8. Preview와 PR
 
-- [과목 구성을 보완한 교육과정 실습 Preview](https://eduplan-workspace-preview-nfn742vui-seonu-lab.vercel.app/recovery-preview/curriculum)
+- [과목 선택 → 시수 배당 → 교육과정표 실습 Preview](https://eduplan-workspace-preview-git-codex-curriculum-4aa5cf-seonu-lab.vercel.app/recovery-preview/curriculum)
+- [검증한 배포의 고정 주소](https://eduplan-workspace-preview-fhd8rexxx-seonu-lab.vercel.app/recovery-preview/curriculum)
 - [게시한 브랜치와 main의 변경 비교](https://github.com/seonu9912-afk/eduplan/compare/main...codex/curriculum-reliability-20261122)
-- 최초 개선 커밋: `13ae9cf5812d3acd2cf70201dd4bd3001ff5685e`. 위 Preview는 과목 구성까지 보완한 `90673895bbdfb92d39fbe6c01d292616242f68e4`를 빌드했으며 READY 상태와 공개 화면을 확인했다.
+- 최초 개선 커밋: `13ae9cf5812d3acd2cf70201dd4bd3001ff5685e`. 최신 구현 커밋: `15573ff1005d0651a1f7731f7da44a6f4bc12752`. 위 고정 Preview는 최신 구현을 `npm run check && npm run build`로 빌드했으며 READY 상태, 원격 자동 테스트, 공개 화면을 확인했다. 첫 링크는 같은 브랜치의 최신 Preview를 가리킨다.
 
 별도 `eduplan-workspace-preview` 프로젝트의 Preview 배포가 READY인 것을 확인했다. 실습 데이터는 브라우저에만 저장한다. 운영 사이트 승격·도메인 변경·운영 SQL 실행은 수행하지 않았다.
 
@@ -133,4 +136,4 @@ Draft PR 생성은 GitHub 연결 도구와 CLI 모두 `Resource not accessible b
 - 학교 공통 목록에 새로 추가한 과목은 기존 입학년도에 자동 선택되지 않는다. 해당 편성에서 명시적으로 선택해야 한다. 이 동작은 기존 `excludedSubjectIds`와 편성 셀을 사용하며 DB 스키마 변경이 없다.
 - Preview도 별도 화면이 아닌 실제 `CurriculumSimpleV5`를 사용한다. `curriculum-store.ts`가 과목 추가·새 입학년도 생성·편성 저장을 브라우저 실습 데이터로 처리한다. 이전 실습 문서 키는 유지하며 운영 서버 액션을 호출하지 않는다.
 - `curriculum-flow.spec.ts`에서 빈 편성 시작, 과목 선택/추가, 선택한 행만 표시, 주당 입력에서 학기 합계 계산, Excel 포함/제외 행, 재조회, 다른 입학년도와 선택 격리를 검증한다. 기존 저장 실패·붙여넣기·버전 충돌 테스트도 실제 3단계 흐름에서 실행한다.
-- 흐름 변경 후 `npm run check` 통과(TypeScript·ESLint·Vitest 190개·시간표 36개), 로컬 Playwright 8개 통과(약 2분).
+- 흐름 변경 후 `npm run check` 통과(TypeScript·ESLint·Vitest 190개·시간표 36개), 로컬 Playwright 8개 통과(약 2분), 공개 Preview Playwright 8개 통과(50.1초). 실제 Supabase 인증 기반 E2E의 미검증 범위는 위 6절과 같다.
