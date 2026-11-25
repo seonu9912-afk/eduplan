@@ -141,6 +141,8 @@ export const courseSchema = z.object({
   subject_id: uuid.nullable(),
   subject_name: z.string().trim().min(1).max(120),
   teacher_name: z.string().trim().min(1).max(80),
+  teacher_id: uuid.nullable().optional(),
+  link_reason: z.string().trim().max(500).optional(),
   class_ids: z.array(uuid).max(30),
   visibility: z.enum(["private", "workspace"]),
   manual_hours: z.number().min(0).max(10000).nullable(),

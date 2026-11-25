@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 
 import {useCallback,useEffect,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
@@ -128,7 +129,7 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange,
   const credits=plan?.unit==="credits";
   const duration=c.grades.length+"개년";
   const groups=orderedCurriculumGroups(c.groups);
-  const editable=c.role==="admin"||c.role==="editor";
+  const editable=canPlan(c,"curriculum");
   const pending=dirty||busy||!!newGroup.trim()||Object.values(catalogDrafts).some(Boolean);
   const cohortYears=Array.from(new Set([cohort,...c.plans.map(p=>p.cohort_year)])).sort((a,b)=>b-a);
   const markCatalogDraft=useCallback((id:string,value:boolean)=>setCatalogDrafts(old=>

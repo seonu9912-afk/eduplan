@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {BookOpen,Info,Plus} from "lucide-react";
@@ -25,7 +26,7 @@ export function CurriculumWorkbench3({context:c,initialCohort,onDirtyChange,onOp
   const subjectKey=c.subjects.map(row=>row.id).sort().join("|");
   const relevant=view==="cohort"&&plan?[plan]:[];
   const missing=view==="cohort"&&!plan?[cohort]:[];
-  const editable=c.role==="admin"||c.role==="editor";
+  const editable=canPlan(c,"curriculum");
   const handleDirty=(next:boolean)=>{setDirty(next);onDirtyChange(next);};
   function switchView(next:"cohort"|"operating"|"courses"|"timetable"){
     if(next===view)return;

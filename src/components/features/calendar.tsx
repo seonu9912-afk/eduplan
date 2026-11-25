@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -71,7 +72,7 @@ export function Calendar({
   const [open, setOpen] = useState(false);
   const [newDate, setNewDate] = useState(`${initialMonth}-01`);
   const [message, setMessage] = useState("");
-  const editable = c.role === "admin";
+  const editable = canPlan(c,"calendar");
   const embedded = focusDate !== undefined;
   const showMonthGrid = view === "calendar" || (embedded && view === "month");
   const start = c.year ? `${c.year.year}-03-01` : "";
@@ -487,7 +488,7 @@ function EventForm({
 }) {
   const m = useMutation();
   const [confirm, setConfirm] = useState(false);
-  const editable = c.role === "admin";
+  const editable = canPlan(c,"calendar");
   return (
     <>
       <form

@@ -565,7 +565,7 @@ export async function saveAnnual(input: unknown) {
 export async function confirmAcademicCalendar(input: unknown) {
   return run(async () => {
     const v = z.object({ workspaceId: uuid, yearId: uuid, version: z.number().int().positive() }).parse(input);
-    const { db } = await authorized(v.workspaceId, ["admin"]);
+    const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
     const { data, error } = await db.rpc("confirm_academic_calendar", {
       target: v.workspaceId, year_id: v.yearId, expected_version: v.version,
     });
@@ -595,7 +595,7 @@ export async function saveCalendarChanges(input: unknown) {
     const { defaultAnnual } = await import("@/lib/academic");
     const v = z.object({ workspaceId: uuid, yearId: uuid,
       changes: z.array(calendarChangeSchema).min(1).max(366), operation: z.string().max(40).default("수정") }).parse(input);
-    const { db } = await authorized(v.workspaceId, ["admin"]);
+    const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
     const { data, error } = await db.rpc("save_calendar_changes", {
       target: v.workspaceId, year_id: v.yearId, changes: v.changes,
       initial_document: defaultAnnual(), operation: v.operation,

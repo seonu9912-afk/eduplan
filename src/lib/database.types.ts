@@ -779,6 +779,8 @@ export type Database = {
           subject_id: string | null;
           subject_name: string;
           teacher_name: string;
+          teacher_id?: string | null;
+          link_reason?: string;
           updated_at: string;
           version: number;
           visibility: string;
@@ -797,6 +799,8 @@ export type Database = {
           subject_id?: string | null;
           subject_name: string;
           teacher_name: string;
+          teacher_id?: string | null;
+          link_reason?: string;
           updated_at?: string;
           version?: number;
           visibility?: string;
@@ -1038,6 +1042,20 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      push_public_settings:{Args:Record<string,never>;Returns:Json};
+      lesson_push_status:{Args:{target:string};Returns:Json};
+      save_lesson_push:{Args:{target:string;payload:Json;active:boolean;lead_minutes:number};Returns:string};
+      planning_access:{Args:{target:string};Returns:Json};
+      planning_completion_data:{Args:{target:string;year_id:string};Returns:Json};
+      planning_source_stamp:{Args:{target:string;year_id:string};Returns:string};
+      assessment_calendar:{Args:{target:string;year_id:string};Returns:Json};
+      save_activity_request:{Args:{target:string;year_id:string;request:string|null;expected:number;payload:Json};Returns:string};
+      review_activity_request:{Args:{target:string;request:string;expected:number;decision:string;note:string;source_stamp:string;area:string};Returns:string|null};
+      save_lesson_records:{Args:{target:string;year_id:string;source_stamp:string;entries:Json};Returns:number};
+      lesson_records_data:{Args:{target:string;year_id:string;first_date:string;last_date:string};Returns:Json};
+      save_planning_permission:{Args:{target:string;member:string;area:string;allowed:boolean;expected:number};Returns:undefined};
+      read_curriculum_design:{Args:{target_plan:string};Returns:Json};
+      workspace_curriculum_documents:{Args:{target:string};Returns:Json};
       publish_timetable_from:{Args:{target:string;year_id:string;expected_version:number;effective_date:string};Returns:Json};
       effective_timetables:{Args:{target:string;year_id:string};Returns:Json};
       academic_days_document:{Args:{target:string;year_id:string};Returns:Json};

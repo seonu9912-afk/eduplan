@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { curriculumTeachingTargets, type TeachingTarget } from "@/lib/teaching-targets";
 import {
   assessmentChoices,
@@ -137,7 +138,7 @@ export function TeachingModule({
             <h1>수업·평가</h1>
             <p>수업의 흐름과 평가를 하나의 계획으로 연결하세요.</p>
           </div>
-          {c.role !== "viewer" && (
+          {canPlan(c,"assessment") && (
             <Button
               onClick={() => {
                 if (canLeave()) {
@@ -153,7 +154,7 @@ export function TeachingModule({
             </Button>
           )}
         </div>
-        <details className="panel"><summary>교육과정에서 계산한 작성 대상</summary><p>현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만 표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통 자료에서 표시합니다.</p><div className="operations-scroll"><table className="operations-table"><thead><tr><th>학년·학기</th><th>과목</th><th>편성 기준</th><th>시간표 담당</th><th>작성 상태</th></tr></thead><tbody>{curriculumTeachingTargets(c).map(target=><tr key={`${target.grade}:${target.semester}:${target.subjectId}`}><td>{target.grade}학년 {target.semester}학기</td><td>{target.subjectName}</td><td>{target.hours}{target.unit==="credits"?"학점":"시간"}</td><td>{target.teacherName||"담당 확인 필요"}</td><td>{target.exists?"기존 계획 있음":c.role!=="viewer"?<Button variant="outline" onClick={()=>{if(canLeave()){setInitialTarget(target);setCreating(true);}}}>이 과목 계획 시작</Button>:"미작성"}</td></tr>)}</tbody></table></div></details>
+        <details className="panel"><summary>교육과정에서 계산한 작성 대상</summary><p>현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만 표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통 자료에서 표시합니다.</p><div className="operations-scroll"><table className="operations-table"><thead><tr><th>학년·학기</th><th>과목</th><th>편성 기준</th><th>시간표 담당</th><th>작성 상태</th></tr></thead><tbody>{curriculumTeachingTargets(c).map(target=><tr key={`${target.grade}:${target.semester}:${target.subjectId}`}><td>{target.grade}학년 {target.semester}학기</td><td>{target.subjectName}</td><td>{target.hours}{target.unit==="credits"?"학점":"시간"}</td><td>{target.teacherName||"담당 확인 필요"}</td><td>{target.exists?"기존 계획 있음":canPlan(c,"assessment")?<Button variant="outline" onClick={()=>{if(canLeave()){setInitialTarget(target);setCreating(true);}}}>이 과목 계획 시작</Button>:"미작성"}</td></tr>)}</tbody></table></div></details>
         <section className="panel teaching-filters" aria-label="수업 선택 조건">
           <label>
             학년도
@@ -292,7 +293,7 @@ export function TeachingModule({
                     : "첫 수업을 설정하세요"}
                 </h3>
                 <p>편성 과목을 불러오거나 직접 등록할 수 있습니다.</p>
-                {c.role !== "viewer" && (
+                {canPlan(c,"assessment") && (
                   <Button onClick={() => setCreating(true)}>
                     첫 수업 만들기
                   </Button>
@@ -470,12 +471,12 @@ function CourseEditor({
   const autoInFlight = useRef(false);
   const attempted = useRef(-1);
   const m = useMutation();
-  const managesCourse = c.role !== "viewer" && (course.owner_id === c.userId ||
+  const managesCourse = canPlan(c,"assessment") && (course.owner_id === c.userId ||
     (course.visibility === "workspace" && c.role === "admin"));
   const assigned = c.role === "editor" && course.visibility === "workspace" && c.teaching!.editors.some(
     (editor) => editor.course_id === course.id && editor.user_id === c.userId,
   );
-  const editable = (managesCourse || assigned) && !course.archived;
+  const editable = canPlan(c,"assessment") && (managesCourse || assigned) && !course.archived;
   // Revalidation must never replace unsaved teacher input. Keep the loaded
   // version for CAS until a successful save or an explicit navigation.
   if (serverCourse.version > course.version && !dirty && !m.pending && !autoActive) {

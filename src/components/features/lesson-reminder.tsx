@@ -42,7 +42,7 @@ export function LessonReminder({ context: c }: { context: Context }) {
           return;
         const key = `eduplan-notified:${workspaceId}:${userId}`;
         try {
-          if (localStorage.getItem(key) === result.data.signature) return;
+          if (localStorage.getItem(`eduplan-server-push:${workspaceId}:${userId}`)==="true" || localStorage.getItem(key) === result.data.signature) return;
           shown = new Notification("다음 수업 안내", {
             body: result.data.title,
             tag: `eduplan:${workspaceId}:${userId}`,

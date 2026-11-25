@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { CalendarImpact, EventImpact } from "./calendar-impact";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -68,7 +69,7 @@ export function AcademicCalendar({ context, today, onDirtyChange, preview = fals
   const months = [...new Set(report.days.map((d) => d.date.slice(0,7)))];
   const counts = summarizeAcademicDays(report.days,plan);
   const targets = curriculumTargets(year,c);
-  const admin = c.role === "admin" && !preview;
+  const admin = canPlan(c,"calendar") && !preview;
   const confirmation = parseAcademicConfirmation(c.annual?.calendar_confirmation);
   const sourceChanged = confirmation && (!sameAnnualValue(confirmation.source.events,c.events) ||
     !sameAnnualValue(confirmation.source.classes ?? [],c.classes) || !sameAnnualValue(confirmation.source.semesters,c.semesters) ||

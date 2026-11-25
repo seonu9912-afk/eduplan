@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { PlanningResources } from "./planning-resources";
 import { publishTimetable } from "@/app/operations-actions";
 
@@ -61,7 +62,7 @@ export function Timetable({
   const [message, setMessage] = useState<DocumentMessage>({ text: "" });
   const revision = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
-  const canWrite = c.role === "admin" || c.role === "editor";
+  const canWrite = canPlan(c,"timetable");
   const document = useMemo(
     () => mergeTimetableDocument(c, space.academics[String(year)]),
     [c, space, year],

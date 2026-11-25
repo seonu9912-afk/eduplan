@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "legacy/**",
+    "supabase/functions/lesson-push/engine.mjs",
   ]),
 ]);
 

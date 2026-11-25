@@ -1,4 +1,5 @@
 import { z } from "zod";
+import {canPlan} from "./planning-completion";
 import type { Context } from "./models";
 import type { CurriculumDocument } from "./curriculum-design";
 import type { TimetableRecord } from "./timetable-bridge";
@@ -318,7 +319,7 @@ export function staffingReport(
     issues.push(
       "등록된 학급이 없습니다. 학급 설정 또는 가상 학급 수를 확인하세요.",
     );
-  if (c.role === "viewer")
+  if (!canPlan(c,"staffing"))
     issues.push("교원 수급 분석은 운영 담당자에게 제공됩니다.");
   return { semester, rows, issues: [...new Set(issues)], details };
 }

@@ -12,7 +12,9 @@ export async function getTeachingData(
   const courses = await readAllRows((from, to) =>
     db
       .from("teaching_courses")
-      .select("*, teaching_plans(*), teaching_course_classes(*), teaching_course_editors(*)")
+      .select(
+        "*, teaching_plans(*), teaching_course_classes(*), teaching_course_editors(*)",
+      )
       .eq("workspace_id", workspaceId)
       .eq("academic_year_id", yearId)
       .order("updated_at", { ascending: false })
@@ -21,7 +23,7 @@ export async function getTeachingData(
   );
   if (courses.error)
     throw Error("수업·평가 자료를 불러오지 못했습니다. 다시 시도해 주세요.");
-  const [standards, copies] = await Promise.all([
+  const [standards, copies, directory, subjects] = await Promise.all([
     readAllRows((from, to) =>
       db
         .from("achievement_standards")
@@ -40,8 +42,12 @@ export async function getTeachingData(
         .order("id")
         .range(from, to),
     ),
+    db.rpc("staff_directory", { target: workspaceId, year_id: yearId }),
+    db.from("subjects").select("id,name").eq("workspace_id", workspaceId),
   ]);
   if (
+    directory.error ||
+    subjects.error ||
     standards.error ||
     copies.error ||
     courses.data!.some((c) => c.teaching_plans.length !== 1)
@@ -49,8 +55,30 @@ export async function getTeachingData(
     throw Error("수업 자료가 변경 중입니다. 새로고침 후 다시 확인해 주세요.");
   return {
     courses: courses.data!.map(
-      ({ teaching_plans, teaching_course_classes, teaching_course_editors, ...c }) => {
-        void teaching_plans;
+      ({
+        teaching_plans,
+        teaching_course_classes,
+        teaching_course_editors,
+        ...c
+      }) => {
+        const confirmed = teaching_plans.some((p) => {
+          const d = p.document as {
+            lesson_status?: string;
+            evaluations?: { status?: string }[];
+          };
+          return (
+            d.lesson_status === "확정" ||
+            d.evaluations?.some((e) => e.status === "확정")
+          );
+        });
+        if (!confirmed) {
+          const teacher = (
+            directory.data as unknown as { id: string; display_name: string }[]
+          ).find((t) => t.id === c.teacher_id);
+          if (teacher) c.teacher_name = teacher.display_name;
+          const subject = subjects.data?.find((t) => t.id === c.subject_id);
+          if (subject) c.subject_name = subject.name;
+        }
         void teaching_course_classes;
         void teaching_course_editors;
         return c;

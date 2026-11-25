@@ -1,4 +1,8 @@
 "use client";
+import {ServerPush} from "@/components/features/server-push";
+import {ActivityRequests} from "@/components/features/activity-requests";
+import {LessonLedger} from "@/components/features/lesson-ledger";
+import {PlanningPermissions} from "@/components/features/planning-permissions";
 import { LessonReminder } from "@/components/features/lesson-reminder";
 import { Staffing } from "@/components/features/staffing";
 import { TeachingModule } from "@/components/features/teaching";
@@ -281,7 +285,11 @@ export function WorkspaceApp({
         <Notice message={error} error />
         <LessonReminder context={c}/>
         {section === "teachers" ? <Staffing context={c} onDirtyChange={setDirty}/> : null}
+        {section === "home" && <ServerPush context={c}/>}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
+        {section === "calendar" && <ActivityRequests context={c} today={today}/>}
+        {section === "timetable" && <LessonLedger context={c} today={today}/>}
+        {section === "people" && <PlanningPermissions context={c}/>}
         {section === "calendar" ? (
           <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}

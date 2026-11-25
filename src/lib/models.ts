@@ -26,6 +26,8 @@ export type TeachingData = {
   >[];
 };
 export type Context = {
+  access?: Record<import("./planning-completion").PlanningDomain, boolean>;
+  completion?: import("./planning-completion").CompletionData;
   operations?: import("./staffing").OperationsData;
   teaching?: TeachingData;
   userId: string;

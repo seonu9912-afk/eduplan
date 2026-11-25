@@ -10,7 +10,8 @@
     "test": "vitest run && node --test legacy/workspace/tests/timetable-solver.test.mjs legacy/workspace/tests/teacher-hours-grid.test.mjs legacy/workspace/tests/teacher-workload.test.mjs legacy/workspace/tests/timetable-changes.test.mjs legacy/workspace/tests/bell-schedule.test.mjs",
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm test",
-    "typecheck": "next typegen && tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "build:push": "node scripts/build-push-worker.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -40,6 +41,7 @@
     "@types/node": "24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "esbuild": "0.27.4",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
     "supabase": "3.0.0",

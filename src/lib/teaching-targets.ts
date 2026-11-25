@@ -5,6 +5,7 @@ export type TeachingTarget = {
   subjectId: string;
   subjectName: string;
   teacherName: string;
+  teacherId?: string;
   classIds: string[];
   hours: number;
   unit: string;
@@ -66,6 +67,7 @@ export function curriculumTeachingTargets(c: Context): TeachingTarget[] {
             subjectId: subject.id,
             subjectName: subject.name,
             teacherName: teachers.join(", "),
+            teacherId: new Set(assignments.map(x=>x.teacherId)).size===1?assignments[0].teacherId:undefined,
             classIds: [...new Set(assignments.map((x) => x.scopeId))],
             hours,
             unit: plan.unit,

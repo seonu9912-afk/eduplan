@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { SemesterSettings } from "./semester-settings";
 import { useState, useRef, useMemo, useCallback } from "react";
 import { AcademicEventPeriods } from "./academic-event-periods";
@@ -148,7 +149,7 @@ export function AnnualAcademic({
   const editRevision = useRef(0);
   const recurringForm = useRef<HTMLFormElement>(null);
   const allocationForm = useRef<HTMLFormElement>(null);
-  const editable = c.role === "admin";
+  const editable = canPlan(c,"calendar");
   const year = c.year?.year ?? 2026;
   const start = `${year}-03-01`,
     end = monthRange(`${year + 1}-02`).end;

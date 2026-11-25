@@ -74,16 +74,17 @@ export async function loadCurriculumDesign(input: unknown): Promise<Result<{
     const {planId}=idOnly.parse(input);
     const {db,plan}=await checkWorkspace(planId,false);
     const [doc,lock,snaps]=await Promise.all([
-      db.from("curriculum_design_documents").select("document,version").eq("plan_id",planId).maybeSingle(),
+      db.rpc("read_curriculum_design",{target_plan:planId}),
       db.from("curriculum_design_locks").select("editor_id,expires_at").eq("plan_id",planId).maybeSingle(),
       db.from("curriculum_design_snapshots").select("id,version,confirmed_at")
         .eq("plan_id",planId).order("confirmed_at",{ascending:false}).limit(8),
     ]);
     if(doc.error||lock.error||snaps.error) throw Error("교육과정 상세 자료를 불러오지 못했습니다.");
+    const saved=doc.data as unknown as {document:unknown;version:number;planVersion:number}|null;
     return {ok:true,data:{
-      document: (doc.data?.document as unknown as CurriculumDocument)??null,
-      documentVersion:doc.data?.version??0,
-      planVersion:plan.version,
+      document: (saved?.document as unknown as CurriculumDocument)??null,
+      documentVersion:saved?.version??0,
+      planVersion:saved?.planVersion??plan.version,
       lock:lock.data??null,snapshots:snaps.data??[],
     }};
   } catch(error){return {ok:false,error:issue(error)};}

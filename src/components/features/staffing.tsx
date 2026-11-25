@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ export function Staffing({
     [dirty, edit, onDirtyChange],
   );
   const refresh = () => (onRefresh ? onRefresh() : router.refresh());
-  const manager = c.role !== "viewer",
+  const manager = canPlan(c,"staffing"),
     staff = c.operations?.staff ?? [],
     directory = c.operations?.directory ?? [];
   const baseline = staffingReport(c, term),

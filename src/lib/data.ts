@@ -142,7 +142,11 @@ export async function getWorkspaceContext(
     throw new Error("학사일정이 변경되었거나 연결 자료를 불러오지 못했습니다. 다시 불러와 주세요.");
   const annual=results[10].data;
   if(annual) annual.document={...(annual.document as Record<string, import("./database.types").Json>), days:normalizedDays.data};
+  const [access,completion]=await Promise.all([db.rpc("planning_access",{target:workspaceId}),db.rpc("planning_completion_data",{target:workspaceId,year_id:yearId})]);
+  if(access.error||completion.error) throw Error("업무 권한과 교육활동 요청을 불러오지 못했습니다.");
   return {
+    access:access.data as Context["access"],
+    completion:completion.data as unknown as Context["completion"],
     userId: user.id,
     email: user.email ?? "",
     profile: profileResult.data,

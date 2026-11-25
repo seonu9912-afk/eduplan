@@ -19,6 +19,7 @@ export function CourseForm({
   const [grade, setGrade] = useState(course?.grade ?? initial?.grade ?? 1),
     [semester, setSemester] = useState(course?.semester ?? initial?.semester ?? 1),
     [subject, setSubject] = useState(course?.subject_id ?? initial?.subjectId ?? ""),
+    [teacher,setTeacher]=useState(course?.teacher_id ?? initial?.teacherId ?? ""),
     [copy, setCopy] = useState(""),
     [copyScope, setCopyScope] = useState<"all" | "lesson" | "assessment">("all");
   const m = useMutation(),
@@ -43,7 +44,8 @@ export function CourseForm({
                 subject_name: subject
                   ? c.subjects.find((s) => s.id === subject)?.name
                   : String(f.get("subject_name")),
-                teacher_name: f.get("teacher_name"),
+                teacher_name: teacher?c.operations?.directory.find(t=>t.id===teacher)?.display_name:f.get("teacher_name"),
+                teacher_id:teacher||null,link_reason:String(f.get("link_reason")??""),
                 visibility: f.get("visibility"),
                 class_ids: f.getAll("class_ids"),
                 copy_scope: copy ? copyScope : undefined,
@@ -97,7 +99,7 @@ export function CourseForm({
           <select
             id="course-subject"
             value={subject}
-            disabled={!!course}
+            disabled={!!course?.subject_id}
             onChange={(e) => setSubject(e.target.value)}
           >
             <option value="">직접 등록</option>
@@ -139,7 +141,9 @@ export function CourseForm({
             />
           </Field>
         )}
-        <Field label="담당교사" id="course-teacher">
+        <Field label="공통 교원 명부 연결" id="course-staff"><select id="course-staff" value={teacher} onChange={e=>setTeacher(e.target.value)}><option value="">미연결 · 담당 확인 필요</option>{c.operations?.directory.map(t=><option value={t.id} key={t.id}>{t.display_name}</option>)}</select></Field>
+        {(!teacher||!subject)&&<Field label="미연결 사유 (특색 교육과정·담당 미정 등)" id="course-link-reason"><input id="course-link-reason" name="link_reason" maxLength={500} required={!course} defaultValue={course?.link_reason??""}/></Field>}
+        {!teacher&&<Field label="담당교사 표시명" id="course-teacher">
           <input
             id="course-teacher"
             name="teacher_name"
@@ -147,7 +151,7 @@ export function CourseForm({
             defaultValue={course?.teacher_name ?? (initial?.teacherName || c.profile.display_name)}
             required
           />
-        </Field>
+        </Field>}
         <fieldset className="course-classes">
           <legend>담당 학급 · 여러 학급이 하나의 공통 계획을 사용합니다</legend>
           {c.classes

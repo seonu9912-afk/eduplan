@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -35,7 +36,7 @@ export function PlanningResources({
     [room, setRoom] = useState("");
   const resources = c.operations?.resources ?? emptyResources(),
     missing = unresolvedReferences(c, doc),
-    canWrite = c.role !== "viewer";
+    canWrite = canPlan(c,"timetable");
   const [name, setName] = useState("단축수업"),
     [kind, setKind] = useState("shortened"),
     [schedule, setSchedule] = useState("");

@@ -1,4 +1,5 @@
 "use client";
+import {canPlan} from "@/lib/planning-completion";
 import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,7 @@ export function WorkPlans({
         description="설정에서 학년도를 개설한 뒤 업무계획을 작성합니다."
       />
     );
-  const editable = c.role !== "viewer",
+  const editable = canPlan(c,"plans"),
     duty =
       plan.workSettings?.dutyEnabled ??
       plan.business.some((b) => b.kind === "당직");

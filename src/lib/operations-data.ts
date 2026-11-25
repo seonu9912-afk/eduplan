@@ -1,7 +1,7 @@
 import "server-only";
 import { resourcesSchema } from "./planning-resources";
 import { createClient } from "./supabase/server";
-import { readAllRows } from "./pagination";
+import { canPlan } from "./planning-completion";
 import {
   emptyOperations,
   type OperationsData,
@@ -15,7 +15,7 @@ import type { Context } from "./models";
 export async function getOperationsData(c: Context): Promise<OperationsData> {
   if (!c.year) return emptyOperations();
   const db = await createClient(),
-    manager = c.role !== "viewer",
+    manager = canPlan(c,"staffing"),
     yearId = c.year.id,
     workspaceId = c.workspace.id;
   const [
@@ -36,14 +36,7 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
       .eq("workspace_id", workspaceId)
       .eq("academic_year_id", yearId)
       .order("display_name"),
-    readAllRows((from, to) =>
-      db
-        .from("curriculum_design_documents")
-        .select("plan_id,document")
-        .eq("workspace_id", workspaceId)
-        .order("plan_id")
-        .range(from, to),
-    ),
+    db.rpc("workspace_curriculum_documents",{target:workspaceId}),
     db.rpc("read_timetable_document", { target: workspaceId, year_id: yearId }),
     db
       .from("timetable_publications")
@@ -100,7 +93,7 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
     directory: directory.data as unknown as TeacherDirectory[],
     staff: staff.data ?? [],
     designs: Object.fromEntries(
-      (designs.data ?? []).map((d) => [
+      ((designs.data ?? []) as unknown as {plan_id:string;document:unknown}[]).map((d) => [
         d.plan_id,
         d.document as unknown as CurriculumDocument,
       ]),
