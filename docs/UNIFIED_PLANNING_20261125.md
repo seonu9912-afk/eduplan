@@ -27,3 +27,11 @@
 요청에 따라 별도 인수 테스트나 전체 화면 수동 검증은 수행하지 않았다. 기본 타입·린트·빌드와 저장소 배포 명령에 포함된 기존 자동 검사만 사용하며, 이를 사용자 업무 흐름 검증 완료로 간주하지 않는다.
 
 유출 비밀번호 보호는 [Supabase Pro 이상 기능](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)이다. 요금제 및 인증 정책 변경은 수행하지 않았다. 운영 반영은 별도 승인, 백업/복구 준비, 기존 자료 매핑 검토 후 진행해야 한다.
+
+## 제공 결과
+
+- Preview: https://eduplan-oxzicb9g5-seonu-lab.vercel.app — READY, acceptance DB 연결. 프로젝트의 기존 Vercel 접근 보호가 적용된다.
+- 배포 코드: `338422d9a92bd7b7f992a39a7423da4e458febca`.
+- 기존 필수 검사: 타입·린트, Vitest 211건 및 기존 시간표 검사 36건 통과. 로컬 및 Vercel 빌드 완료. 신규 업무 흐름 인수 검증을 의미하지 않는다.
+- PR 생성은 연결 앱의 `Resource not accessible by integration` (403)으로 완료하지 못했다. 개발 브랜치는 원격 저장소에 올라가 있다.
+- 성능 진단에는 기존 및 신규 외래 키의 일부 보조 인덱스 누락 안내가 남아 있다. 사용 실적이 없는 인덱스는 임의 삭제하지 않았다.
