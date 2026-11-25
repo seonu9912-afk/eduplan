@@ -1,4 +1,4 @@
-# EduPlan Workspace 통합 운영 개선 — 2026-11-24
+# EduPlan Workspace 통합 운영 개선 — 2026-11-24 (최종 검증: 2026-11-25)
 
 작업 브랜치: `codex/workspace-integration-20261124`
 
@@ -152,4 +152,10 @@ npm run test:e2e -- tests/e2e/workspace-integration.spec.ts tests/e2e/curriculum
 
 ## 8. 최종 실행 결과·Preview
 
-최종 빌드·원격 검증 및 게시 정보는 확인 후 추가한다.
+- 구현 커밋: `f9565ca11caefa1e7ca0d60272f3f257cf88bf9d`. 개발 브랜치를 GitHub에 게시했다. 이후 이 보고서의 검증 기록만 별도로 갱신한다.
+- [통합 운영 실습 Preview](https://eduplan-workspace-preview-nrtmu37be-seonu-lab.vercel.app/recovery-preview/operations). 위 구현 커밋의 고정 배포이며 `dpl_6fBnkRdHYhwfdGPizgHLnXEoM4VD`, 별도 `eduplan-workspace-preview` 프로젝트, target은 Preview, 상태 READY다. 빌드 명령은 `npm run check && npm run build`다.
+- [개발 브랜치 변경 비교](https://github.com/seonu9912-afk/eduplan/compare/main...codex/workspace-integration-20261124). `main` 기준 비교에는 앞선 교육과정 개선과 이번 통합 운영 개선이 함께 포함된다.
+- 최종 원격 Playwright **13개 모두 통과(1.2분)**. 과목 선택/추가·시수·Excel·학교급·저장 실패/경합 회귀 8개, 통합 운영 5개를 같은 Preview에서 실행했다. 인증서 검증을 끄지 않고 기존 NSS 저장소 쓰기 권한으로 실행했다.
+- 공유 브라우저에서도 오늘의 수업·다음 수업까지 3분 표시, 여러 교과의 명부와 수급표를 확인했다. 국어 주당 4→5 입력 후 총 수요 48→60, 평균 16→20, 목표 기준 필요 인원 3→4, 실제 배정 48 유지가 화면에 반영되었다. 가상 자료만 변경했다.
+- 2026-11-25 운영 배포를 다시 조회했다. `eduplan-silk.vercel.app`은 여전히 `main`의 `19d85086c6840295fd85f72be2f95de871a769fe`, 배포 `dpl_a8K2P7ftbCNNDHLH711MbxYVRZ1v`로 유지되고 있다. 운영 승격·도메인 변경·운영 SQL 실행은 하지 않았다.
+- Draft PR 생성은 GitHub 연결에서 **403 `Resource not accessible by integration`**으로 거절되었다. PR이 생성되었다고 보고하지 않는다. 브랜치 게시·Preview 제공은 완료했으며 위 비교 링크로 검토할 수 있다.
