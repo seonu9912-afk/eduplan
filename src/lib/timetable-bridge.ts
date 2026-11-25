@@ -32,14 +32,6 @@ export const timetableDocumentSchema = z.object({
 export type TimetableDocument = z.infer<typeof timetableDocumentSchema>;
 export type TimetableRecord = { version: number; document: TimetableDocument; updated_at: string | null };
 
-const DEFAULT_ACTIVITIES = [
-  { id: "creative-self", label: "자율·자치", kind: "creative_self" },
-  { id: "creative-club", label: "동아리", kind: "creative_club" },
-  { id: "creative-career", label: "진로활동", kind: "creative_career" },
-  { id: "creative-volunteer", label: "봉사활동", kind: "creative_volunteer" },
-  { id: "school-autonomy", label: "학교자율시간", kind: "autonomous" },
-  { id: "sports", label: "학교스포츠클럽", kind: "sports" },
-];
 const displayKind = (name: string): string =>
   /자율.?자치/.test(name) ? "creative_self" : /동아리/.test(name) ? "creative_club" :
   /진로/.test(name) ? "creative_career" : /스포츠/.test(name) ? "sports" :
@@ -61,9 +53,6 @@ function baseSubjects(c: Context): TimetableDocument["subjects"] {
   const subjects = c.subjects.map((subject) => ({
     id: subject.id, label: subject.name, kind: displayKind(subject.name),
   }));
-  for (const item of DEFAULT_ACTIVITIES) {
-    if (!subjects.some((subject) => subject.kind === item.kind)) subjects.push(item);
-  }
   return subjects;
 }
 export function newTimetableDocument(c: Context): TimetableDocument {
@@ -75,10 +64,8 @@ export function newTimetableDocument(c: Context): TimetableDocument {
       label: schoolClass.grade + "학년 " + schoolClass.class_number + "반",
     })),
     subjects: baseSubjects(c),
-    teachers: c.operations?.directory.length
-      ? c.operations.directory.map(t=>({id:t.id,label:t.display_name}))
-      : c.members.map((member) => ({ id: member.user_id, label: member.display_name })),
-    groups: [], rooms: [], weekly: [], dayRules: officialTimetableDayRules(c),
+    teachers: (c.operations?.directory??[]).map(t=>({id:t.id,label:t.display_name})),
+    groups: [], rooms: (c.operations?.resources?.rooms??[]).map(r=>r.id), roomLabels:Object.fromEntries((c.operations?.resources?.rooms??[]).map(r=>[r.id,r.name])), weekly: [], dayRules: officialTimetableDayRules(c),
     overrides: [], targetDays: 190, targets: [], timetableConfigured: false,
     createdAt: new Date().toISOString(),
   };
@@ -101,6 +88,7 @@ export function mergeTimetableDocument(c: Context, existing: TimetableDocument):
   for (const old of existing.teachers) if (!teachers.some((row) => row.id === old.id)) teachers.push(old);
   return {
     ...existing, year: current.year, classes, subjects, teachers,
+    rooms:current.rooms,roomLabels:current.roomLabels,
     dayRules: current.dayRules,
   };
 }

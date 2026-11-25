@@ -16,7 +16,8 @@ describe("official timetable legacy integration", () => {
     expect(doc.year).toBe(2027);
     expect(doc.classes.map((row) => row.id)).toEqual(c.classes.map((row) => row.id));
     expect(doc.weekly).toEqual([]);
-    expect(doc.subjects.some((row) => row.kind === "creative_career")).toBe(true);
+    // Timetable catalogs must not invent independent subject IDs.
+    expect(doc.subjects.map((row) => row.id)).toEqual(c.subjects.map((row) => row.id));
     expect(timetableDocumentSchema.safeParse(doc).success).toBe(true);
   });
   it("links official calendar event allocations without mutating the official annual plan", () => {

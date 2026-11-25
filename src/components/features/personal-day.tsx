@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { markOperationRead } from "@/app/operations-actions";
 import { addDays, weekRange } from "@/lib/domain";
 import {
+  dailyOperationNotice,
   createLessonResolver,
   currentAndNext,
   myTeacherIds,
@@ -81,6 +82,11 @@ export function PersonalDay({
               ? ` · 배포 버전 ${c.operations.publication.source_version}`
               : ""}
           </p>
+          {dailyOperationNotice(c, clock.date) && (
+            <p className="info-box" role="status">
+              {dailyOperationNotice(c, clock.date)}
+            </p>
+          )}
           {!doc ? (
             <p>
               학교에서 시간표를 저장한 뒤 ‘검토 후 확정·배포’하면 개인 시간표가

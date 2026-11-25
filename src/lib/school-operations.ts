@@ -34,7 +34,7 @@ export function publishedTimetable(c: Context): TimetableDocument | null {
   const parsed = timetableDocumentSchema.safeParse(
     c.operations?.publication?.document,
   );
-  return parsed.success ? parsed.data : null;
+  return parsed.success ? { ...parsed.data, _published: true } : null;
 }
 const bellSchema = z.array(
   z
@@ -50,7 +50,33 @@ export function createLessonResolver(
   c: Context,
   document: TimetableDocument,
   annual?: AnnualPlan,
-) {
+): (date: string) => DatedLesson[] {
+  if (document._published && c.operations?.effectiveTimetables) {
+    const versions = c.operations.effectiveTimetables
+      .map((v) => ({
+        ...v,
+        parsed: timetableDocumentSchema.safeParse(v.document),
+      }))
+      .sort((a, b) => b.starts_on.localeCompare(a.starts_on));
+    const resolvers = new Map<
+      string,
+      ReturnType<typeof createLessonResolver>
+    >();
+    return (date: string): DatedLesson[] => {
+      const version = versions.find((v) => v.starts_on <= date);
+      if (!version || !version.parsed.success) return [];
+      if (!resolvers.has(version.id))
+        resolvers.set(
+          version.id,
+          createLessonResolver(
+            c,
+            { ...version.parsed.data, _published: false },
+            annual,
+          ),
+        );
+      return resolvers.get(version.id)!(date);
+    };
+  }
   const parsed = annualSchema.safeParse(c.annual?.document),
     plan = annual ?? (parsed.success ? parsed.data : defaultAnnual(c.grades));
   const days = new Map(
@@ -65,6 +91,16 @@ export function createLessonResolver(
   for (const a of plan.allocations)
     byDate.set(a.date, [...(byDate.get(a.date) ?? []), a]);
   return (date: string): DatedLesson[] => {
+    const applications = (c.operations?.resources?.applications ?? []).filter(
+      (a) => a.starts_on <= date && a.ends_on >= date,
+    );
+    const selectedBell =
+      applications.length === 1
+        ? c.operations?.resources?.bells.find(
+            (b) => b.id === applications[0].schedule_id,
+          )
+        : null;
+    const dayBell = selectedBell?.rows ?? bell;
     const day = days.get(date);
     if (!day) return [];
     const base = document.weekly
@@ -100,7 +136,7 @@ export function createLessonResolver(
           cancelled: false,
         });
     }
-    return base
+    const resolved = base
       .map((slot) => {
         const classIds =
           slot.scope === "class"
@@ -108,6 +144,21 @@ export function createLessonResolver(
             : (document.groups.find((g) => g.id === slot.scopeId)?.classIds ??
               []);
         const blocked: string[] = [];
+        if (!annual && !parsed.success)
+          blocked.push("학사일정 자료를 확인할 수 없습니다.");
+        if (applications.length > 1) blocked.push("특별 시정표 적용 충돌");
+        if (applications.length === 1 && !selectedBell)
+          blocked.push("특별 시정표 원본 확인 필요");
+        if (
+          document.overrides.filter(
+            (x) =>
+              x.date === date &&
+              x.scope === slot.scope &&
+              x.scopeId === slot.scopeId &&
+              x.period === slot.period,
+          ).length > 1
+        )
+          blocked.push("같은 수업에 상충하는 변경이 있습니다.");
         if (slot.cancelled) blocked.push("수업 취소·교환 또는 보결 변경");
         if (!isTeachingDay(day)) blocked.push(day.name || "수업일이 아닙니다.");
         if (!classIds.length) blocked.push("연결 학급 확인 필요");
@@ -138,7 +189,8 @@ export function createLessonResolver(
           );
           const activities = allocated.length
             ? allocated.map((a) => ({
-                name: a.title,
+                name:
+                  c.events.find((e) => e.id === a.eventId)?.title ?? a.title,
                 area: a.areas[cls.grade],
               }))
             : recurring.map((r) => ({ name: r.name, area: r.area }));
@@ -161,9 +213,10 @@ export function createLessonResolver(
               blocked.push(a.name);
           if (activities.length > 1) blocked.push("행사·활동 교시 중복");
         }
-        const time = bell.find(
+        const time = dayBell.find(
           (x) => x.type === "lesson" && x.period === slot.period,
         );
+        if (!time) blocked.push("해당 교시의 수업 시각을 확인할 수 없습니다.");
         return {
           id: slot.id,
           date,
@@ -181,7 +234,9 @@ export function createLessonResolver(
                 "미등록 학급",
             )
             .join(", "),
-          room: slot.room,
+          room:
+            c.operations?.resources?.rooms.find((r) => r.id === slot.room)
+              ?.name ?? slot.room,
           start: time?.start ?? null,
           end: time?.end ?? null,
           changed: slot.changed,
@@ -191,6 +246,23 @@ export function createLessonResolver(
       .sort(
         (a, b) => a.period - b.period || a.classes.localeCompare(b.classes),
       );
+    const occupied = new Map<string, DatedLesson>();
+    const active = resolved.filter((l) => !l.blockedBy.length);
+    for (const row of active)
+      for (const resource of [
+        ...row.classIds.map((id) => `class:${id}`),
+        ...(row.teacherId ? [`teacher:${row.teacherId}`] : []),
+        ...(row.room ? [`room:${row.room}`] : []),
+      ]) {
+        const key = `${row.period}:${resource}`,
+          other = occupied.get(key);
+        if (other) {
+          const issue = "같은 교시의 학급·교원·특별실 충돌";
+          if (!row.blockedBy.includes(issue)) row.blockedBy.push(issue);
+          if (!other.blockedBy.includes(issue)) other.blockedBy.push(issue);
+        } else occupied.set(key, row);
+      }
+    return resolved;
   };
 }
 export function myTeacherIds(c: Context): Set<string> {
@@ -487,5 +559,137 @@ export function calendarImpact(
     known: true,
     affected,
     restored,
+  };
+}
+
+export function dailyOperationNotice(c: Context, date: string): string {
+  if (!annualSchema.safeParse(c.annual?.document).success)
+    return "학사일정이 없어 수업 운영 정보를 확정할 수 없습니다.";
+  if (
+    c.operations?.effectiveTimetables &&
+    !c.operations.effectiveTimetables.some((v) => v.starts_on <= date)
+  )
+    return "이 날짜에 적용할 확정 시간표가 없습니다. 시간표에서 적용 시작일을 지정해 주세요.";
+  const plan = annualSchema.parse(c.annual?.document),
+    day = academicDays(c.year!.year, plan, c.semesters).find(
+      (d) => d.date === date,
+    );
+  const app = c.operations?.resources?.applications.find(
+    (a) => a.starts_on <= date && a.ends_on >= date,
+  );
+  const bell = c.operations?.resources?.bells.find(
+    (b) => b.id === app?.schedule_id,
+  );
+  return [
+    day?.type === "swap"
+      ? `${["일", "월", "화", "수", "목", "금", "토"][day.weekday]}요일 시간표 적용`
+      : "",
+    bell ? `특별 시정표: ${bell.name}` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/** Adapter for the preserved timetable editor. Dates and counts use the same engine as home and teaching plans. */
+export function commonTimetableView(c: Context, document: TimetableDocument) {
+  const parsed = annualSchema.safeParse(c.annual?.document);
+  const days = parsed.success
+    ? academicDays(c.year?.year ?? document.year, parsed.data, c.semesters)
+    : [];
+  const resolve = createLessonResolver(c, document);
+  const totals: Record<
+    string,
+    {
+      total: number;
+      bySubject: Record<string, number>;
+      byCategory: Record<string, number>;
+      terms: number[];
+    }
+  > = Object.fromEntries(
+    document.classes.map((c) => [
+      c.id,
+      { total: 0, bySubject: {}, byCategory: {}, terms: [0, 0] },
+    ]),
+  );
+  const byWeekday: Record<number, number> = {
+    0: 0,
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+  };
+  const warnings: { message: string }[] = parsed.success
+    ? []
+    : [
+        {
+          message:
+            "학사일정 미등록 또는 형식 오류: 예상 시수를 계산할 수 없습니다.",
+        },
+      ];
+  const conflicts = timetableIssues(document).map((message) => ({
+    message,
+    count: 1,
+    date: `${document.year}-03-01`,
+  }));
+  for (const day of days) {
+    if (!isTeachingDay(day)) continue;
+    byWeekday[day.weekday]++;
+    for (const lesson of resolve(day.date).filter((l) => !l.blockedBy.length))
+      for (const classId of lesson.classIds) {
+        const row = totals[classId];
+        if (!row) continue;
+        row.total++;
+        if (day.semester) row.terms[day.semester - 1]++;
+        row.bySubject[lesson.subjectId] =
+          (row.bySubject[lesson.subjectId] ?? 0) + 1;
+        const kind =
+            document.subjects.find((s) => s.id === lesson.subjectId)?.kind ??
+            "subject",
+          category = kind === "sports" ? "creative_club" : kind;
+        row.byCategory[category] = (row.byCategory[category] ?? 0) + 1;
+      }
+  }
+  const targets = z
+    .array(
+      z.object({ grade: z.number(), subjectId: z.string(), hours: z.number() }),
+    )
+    .safeParse(document.targets);
+  if (targets.success)
+    for (const cls of document.classes)
+      for (const target of targets.data.filter(
+        (t) => t.grade === cls.grade && t.hours > 0,
+      )) {
+        const actual = totals[cls.id]?.bySubject[target.subjectId] ?? 0;
+        if (actual < target.hours)
+          warnings.push({
+            message: `${cls.label} ${document.subjects.find((s) => s.id === target.subjectId)?.label ?? "과목"}: 학교 목표보다 ${target.hours - actual}시간 부족 예상`,
+          });
+      }
+  const teaching = days.filter(isTeachingDay);
+  return {
+    summary: {
+      daysTotal: teaching.length,
+      firstTerm: teaching.filter((d) => d.semester === 1).length,
+      secondTerm: teaching.filter((d) => d.semester === 2).length,
+      byWeekday,
+      totals,
+      warnings,
+      conflicts,
+    },
+    term2Start: days.find((d) => d.semester === 2)?.date ?? "",
+    resolveDate: (date: string) =>
+      resolve(date)
+        .filter((l) => !l.blockedBy.length)
+        .flatMap((l) =>
+          l.classIds.map((id) => ({
+            ...l,
+            id: `${l.id}:${id}`,
+            scope: "class",
+            scopeId: id,
+            source: l.changed ? "override" : "weekly",
+          })),
+        ),
   };
 }

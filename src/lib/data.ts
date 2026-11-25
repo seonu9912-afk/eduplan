@@ -135,6 +135,13 @@ export async function getWorkspaceContext(
     throw new Error(
       "자료를 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.",
     );
+  // This read is tied to the annual version. Never combine new date rows with an older document.
+  const normalizedDays = await db.rpc("academic_days_document",{target:workspaceId,year_id:yearId});
+  const calendarVersion = await db.from("annual_academic_plans").select("version").eq("workspace_id",workspaceId).eq("academic_year_id",yearId).maybeSingle();
+  if(normalizedDays.error || calendarVersion.error || calendarVersion.data?.version !== results[10].data?.version)
+    throw new Error("학사일정이 변경되었거나 연결 자료를 불러오지 못했습니다. 다시 불러와 주세요.");
+  const annual=results[10].data;
+  if(annual) annual.document={...(annual.document as Record<string, import("./database.types").Json>), days:normalizedDays.data};
   return {
     userId: user.id,
     email: user.email ?? "",

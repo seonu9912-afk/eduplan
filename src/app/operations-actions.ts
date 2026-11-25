@@ -116,26 +116,32 @@ export async function publishTimetable(
 ): Promise<Result<string>> {
   return run(async () => {
     const v = scopeSchema
-        .extend({ version: z.number().int().positive() })
+        .extend({
+          version: z.number().int().positive(),
+          effectiveDate: z.iso.date(),
+        })
         .parse(input),
       { db } = await authorized(v.workspaceId, ["admin", "editor"]);
-    const saved = await db
-      .from("timetable_documents")
-      .select("document,version")
-      .eq("workspace_id", v.workspaceId)
-      .eq("academic_year_id", v.yearId)
-      .single();
+    const saved = await db.rpc("read_timetable_document", {
+      target: v.workspaceId,
+      year_id: v.yearId,
+    });
     if (saved.error) throw saved.error;
-    if (saved.data.version !== v.version)
+    const record = saved.data as unknown as {
+      version: number;
+      document: unknown;
+    } | null;
+    if (!record || record.version !== v.version)
       throw Error("시간표가 변경되었습니다. 다시 불러와 확인해 주세요.");
     const issues = timetableIssues(
-      timetableDocumentSchema.parse(saved.data.document),
+      timetableDocumentSchema.parse(record.document),
     );
     if (issues.length) throw Error(issues[0]);
-    const result = await db.rpc("publish_timetable", {
+    const result = await db.rpc("publish_timetable_from", {
       target: v.workspaceId,
       year_id: v.yearId,
       expected_version: v.version,
+      effective_date: v.effectiveDate,
     });
     if (result.error) throw result.error;
     return String((result.data as { id: string }).id);
@@ -179,3 +185,53 @@ export async function previousStaff(
 }
 // The UI can preview a scenario without persisting it; this import also documents the action contract.
 export type ScenarioInput = StaffingScenario;
+
+/** Re-read official sources immediately before a reminder; editor state is never an alert source. */
+export async function currentLessonNotice(
+  input: unknown,
+): Promise<Result<{ title: string; signature: string } | null>> {
+  try {
+    const v = z
+      .object({
+        workspaceId: uuid,
+        year: z.number().int().min(2000).max(2100),
+        lead: z.number().int().min(0).max(15),
+      })
+      .parse(input);
+    await authorized(v.workspaceId, ["admin", "editor", "viewer"]);
+    const c = await getWorkspaceContext(v.workspaceId, String(v.year));
+    c.operations = await getOperationsData(c);
+    const {
+      publishedTimetable,
+      createLessonResolver,
+      currentAndNext,
+      myTeacherIds,
+      seoulClock,
+    } = await import("@/lib/school-operations");
+    const doc = publishedTimetable(c);
+    if (!doc || !v.lead) return { ok: true, data: null };
+    const clock = seoulClock(new Date()),
+      ids = myTeacherIds(c),
+      { next, remaining } = currentAndNext(
+        createLessonResolver(
+          c,
+          doc,
+        )(clock.date).filter((x) => ids.has(x.teacherId)),
+        clock.minutes,
+      );
+    if (!next || remaining === null || remaining > v.lead)
+      return { ok: true, data: null };
+    return {
+      ok: true,
+      data: {
+        title: `${remaining}분 후 ${next.subject} · ${next.classes} · ${next.period}교시`,
+        signature: `${next.date}:${next.id}:${next.teacherId}:${next.start}:${next.end}`,
+      },
+    };
+  } catch {
+    return {
+      ok: false,
+      error: "최신 수업 운영 정보를 확인하지 못해 수업 알림을 보류했습니다.",
+    };
+  }
+}

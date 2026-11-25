@@ -5,6 +5,7 @@ import type { TimetableRecord } from "./timetable-bridge";
 
 export const staffInputSchema = z
   .object({
+    teacher_id: z.uuid().optional(),
     display_name: z.string().trim().min(1).max(80),
     user_id: z.uuid().nullable(),
     subject_ids: z.array(z.uuid()).max(30),
@@ -127,6 +128,8 @@ export type OperationNotification = {
   read_at: string | null;
 };
 export type OperationsData = {
+  effectiveTimetables?: {id:string;starts_on:string;document:unknown}[];
+  resources?: import("./planning-resources").PlanningResources;
   directory: TeacherDirectory[];
   staff: StaffAppointment[];
   designs: Record<string, CurriculumDocument>;

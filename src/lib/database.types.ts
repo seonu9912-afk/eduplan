@@ -1038,6 +1038,15 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      publish_timetable_from:{Args:{target:string;year_id:string;expected_version:number;effective_date:string};Returns:Json};
+      effective_timetables:{Args:{target:string;year_id:string};Returns:Json};
+      academic_days_document:{Args:{target:string;year_id:string};Returns:Json};
+      planning_resources:{Args:{target:string;year_id:string};Returns:Json};
+      read_timetable_document:{Args:{target:string;year_id:string};Returns:Json};
+      save_school_room:{Args:{target:string;room_id:string|null;room_name:string};Returns:string};
+      save_bell_schedule:{Args:{target:string;label:string;schedule_kind:string;rows:Json};Returns:string};
+      apply_bell_schedule:{Args:{target:string;year_id:string;schedule:string;first_date:string;last_date:string;note:string};Returns:string};
+      remove_bell_application:{Args:{target:string;application:string};Returns:undefined};
       staff_directory: {Args:{target:string;year_id:string}; Returns:Json};
       save_staff_appointment: {Args:{target:string;year_id:string;appointment_id:string;expected_version:number;payload:Json}; Returns:Json};
       publish_timetable: {Args:{target:string;year_id:string;expected_version:number}; Returns:Json};

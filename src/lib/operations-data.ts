@@ -1,4 +1,5 @@
 import "server-only";
+import { resourcesSchema } from "./planning-resources";
 import { createClient } from "./supabase/server";
 import { readAllRows } from "./pagination";
 import {
@@ -25,6 +26,8 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
     publications,
     scenarios,
     notifications,
+    resources,
+    effective,
   ] = await Promise.all([
     db.rpc("staff_directory", { target: workspaceId, year_id: yearId }),
     db
@@ -41,12 +44,7 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
         .order("plan_id")
         .range(from, to),
     ),
-    db
-      .from("timetable_documents")
-      .select("version,document,updated_at")
-      .eq("workspace_id", workspaceId)
-      .eq("academic_year_id", yearId)
-      .maybeSingle(),
+    db.rpc("read_timetable_document", { target: workspaceId, year_id: yearId }),
     db
       .from("timetable_publications")
       .select("*")
@@ -71,6 +69,8 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
       .eq("user_id", c.userId)
       .order("created_at", { ascending: false })
       .limit(30),
+    db.rpc("planning_resources", { target: workspaceId, year_id: yearId }),
+    db.rpc("effective_timetables", { target: workspaceId, year_id: yearId }),
   ]);
   if (
     [
@@ -81,12 +81,22 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
       publications,
       scenarios,
       notifications,
+      resources,
+      effective,
     ].some((r) => r.error)
   )
     throw Error(
       "학교 운영 연결 자료를 불러오지 못했습니다. 데이터베이스 업데이트와 접근 권한을 확인해 주세요.",
     );
+  const saved = timetable.data as unknown as {
+    version: number;
+    updated_at: string | null;
+    document: unknown;
+  } | null;
   return {
+    effectiveTimetables:
+      effective.data as unknown as OperationsData["effectiveTimetables"],
+    resources: resourcesSchema.parse(resources.data),
     directory: directory.data as unknown as TeacherDirectory[],
     staff: staff.data ?? [],
     designs: Object.fromEntries(
@@ -95,10 +105,10 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
         d.document as unknown as CurriculumDocument,
       ]),
     ),
-    timetable: timetable.data
+    timetable: saved
       ? {
-          ...timetable.data,
-          document: timetableDocumentSchema.parse(timetable.data.document),
+          ...saved,
+          document: timetableDocumentSchema.parse(saved.document),
         }
       : null,
     publication: publications.data?.[0] ?? null,

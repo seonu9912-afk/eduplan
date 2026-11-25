@@ -1,75 +1,76 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import {
-  createLessonResolver,
-  currentAndNext,
-  myTeacherIds,
-  publishedTimetable,
-  seoulClock,
-} from "@/lib/school-operations";
+import { useEffect, useState } from "react";
+import { currentLessonNotice } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
-/** Mounted above navigation so reminders continue while editing another module. */
+/** The official sources are re-read even while another module has unsaved edits. */
 export function LessonReminder({ context: c }: { context: Context }) {
   const [message, setMessage] = useState("");
-  const resolver = useMemo(() => {
-    const doc = publishedTimetable(c);
-    return doc ? createLessonResolver(c, doc) : null;
-  }, [c]);
-  const ids = useMemo(() => myTeacherIds(c), [c]);
+  const workspaceId = c.workspace.id,
+    userId = c.userId,
+    year = c.year?.year;
   useEffect(() => {
-    let shown: Notification | null = null;
-    const tick = () => {
-      if (!resolver) {
-        setMessage("");
-        return;
-      }
-      const clock = seoulClock(new Date());
-      let lead = 5;
+    if (!year) return;
+    let disposed = false,
+      busy = false,
+      shown: Notification | null = null;
+    const tick = async () => {
+      if (busy || disposed) return;
+      busy = true;
       try {
-        const saved = Number(
-          localStorage.getItem(
-            `eduplan-reminder:${c.workspace.id}:${c.userId}`,
-          ) ?? 5,
-        );
-        if ([0, 1, 3, 5, 10, 15].includes(saved)) lead = saved;
-      } catch {}
-      const { next, remaining } = currentAndNext(
-        resolver(clock.date).filter((x) => ids.has(x.teacherId)),
-        clock.minutes,
-      );
-      if (!lead || !next || remaining === null || remaining > lead) {
-        setMessage("");
+        let lead = 5;
+        try {
+          const n = Number(
+            localStorage.getItem(`eduplan-reminder:${workspaceId}:${userId}`) ??
+              5,
+          );
+          if ([0, 1, 3, 5, 10, 15].includes(n)) lead = n;
+        } catch {}
+        const result = await currentLessonNotice({ workspaceId, year, lead });
+        if (disposed) return;
         shown?.close();
         shown = null;
-        return;
+        if (!result.ok) {
+          setMessage(result.error);
+          return;
+        }
+        setMessage(result.data?.title ?? "");
+        if (
+          !result.data ||
+          !("Notification" in window) ||
+          Notification.permission !== "granted"
+        )
+          return;
+        const key = `eduplan-notified:${workspaceId}:${userId}`;
+        try {
+          if (localStorage.getItem(key) === result.data.signature) return;
+          shown = new Notification("다음 수업 안내", {
+            body: result.data.title,
+            tag: `eduplan:${workspaceId}:${userId}`,
+          });
+          localStorage.setItem(key, result.data.signature);
+        } catch {}
+      } catch {
+        if (!disposed)
+          setMessage(
+            "최신 수업 운영 정보를 확인하지 못해 수업 알림을 보류했습니다.",
+          );
+      } finally {
+        busy = false;
       }
-      const title = `${remaining}분 후 ${next.subject} · ${next.classes} · ${next.period}교시`;
-      setMessage(title);
-      if (!("Notification" in window) || Notification.permission !== "granted")
-        return;
-      const key = `eduplan-notified:${c.workspace.id}:${c.userId}`,
-        value = `${c.operations?.publication?.id}:${next.date}:${next.id}:${next.start}`;
-      try {
-        if (localStorage.getItem(key) === value) return;
-        localStorage.setItem(key, value);
-        shown = new Notification("다음 수업 안내", {
-          body: title,
-          tag: `eduplan:${c.workspace.id}:${c.userId}`,
-        });
-      } catch {}
     };
-    const initial = window.setTimeout(tick, 0),
-      timer = window.setInterval(tick, 10000);
+    const initial = window.setTimeout(() => void tick(), 0),
+      timer = window.setInterval(() => void tick(), 30000);
     document.addEventListener("visibilitychange", tick);
     window.addEventListener("eduplan-reminder-settings", tick);
     return () => {
+      disposed = true;
       window.clearTimeout(initial);
       window.clearInterval(timer);
+      shown?.close();
       document.removeEventListener("visibilitychange", tick);
       window.removeEventListener("eduplan-reminder-settings", tick);
-      shown?.close();
     };
-  }, [c, resolver, ids]);
+  }, [workspaceId, userId, year]);
   return message ? (
     <aside className="info-box no-print" role="status">
       {message}
