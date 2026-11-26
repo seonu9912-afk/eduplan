@@ -19,7 +19,7 @@ beforeAll(async () => {
     );
   `);
   await db.exec(readFileSync(
-    "supabase/migrations/20261126140642_guard_calendar_fields_by_table.sql",
+    "supabase/migrations/20261126140731_guard_calendar_fields_by_table.sql",
     "utf8",
   ));
   await db.exec(`
