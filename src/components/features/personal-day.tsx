@@ -69,10 +69,13 @@ export function PersonalDay({
     };
   }, [previewNow, prefKey]);
   return (
-    <section className="operations-module" aria-label="나의 학교 생활">
+    <section
+      className="operations-module personal-day"
+      aria-label="나의 학교 생활"
+    >
       <div className="dashboard-columns">
         <section className="panel">
-          <div className="panel-heading">
+          <div className="personal-day-heading">
             <h2>오늘의 나의 수업</h2>
             <time className="daily-clock">{clock.time.slice(0, 5)}</time>
           </div>
@@ -157,7 +160,7 @@ export function PersonalDay({
               </details>
             </>
           )}
-          <div className="operations-controls no-print">
+          <div className="operations-controls personal-reminder-controls no-print">
             <label>
               수업 전 안내
               <select
@@ -243,7 +246,7 @@ export function PersonalDay({
               월중·주간계획
             </Link>
           </Button>
-          <h2>내 알림함</h2>
+          <h2 className="personal-day-notification-title">내 알림함</h2>
           <ul className="notification-list">
             {(c.operations?.notifications ?? []).map((n) => (
               <li key={n.id}>

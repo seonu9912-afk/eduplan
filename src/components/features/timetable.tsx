@@ -414,43 +414,52 @@ export function Timetable({
             하나의 시간표로 관리합니다.
           </p>
         </div>
-        <div className="heading-actions tt-primary-actions">
-          <Button
-            variant="outline"
-            onClick={downloadBackup}
-            disabled={loading || !document}
-          >
-            <Download size={15} /> JSON 백업
-          </Button>
-          {canWrite && (
-            <>
-              <input
-                ref={fileInput}
-                type="file"
-                accept=".json,application/json"
-                className="sr-only"
-                aria-label="기존 시간표 JSON 백업 가져오기"
-                onChange={(event) => void importBackup(event.target.files?.[0])}
-              />
-              <Button
-                variant="outline"
-                onClick={() => fileInput.current?.click()}
-                disabled={saving || loading}
-              >
-                <Upload size={15} /> 이전 시간표 가져오기
-              </Button>
-            </>
-          )}
-          <Button
-            variant="outline"
-            onClick={() => void reload()}
-            disabled={loading || saving}
-          >
-            <RefreshCcw size={15} /> 다시 불러오기
-          </Button>
-          {canWrite && (
-            <label>
-              확정 시간표 적용 시작일{" "}
+      </header>
+      <div className="tt-workspace-actions no-print">
+        <details className="tt-file-actions">
+          <summary>백업·불러오기</summary>
+          <div className="heading-actions">
+            <Button
+              variant="outline"
+              onClick={downloadBackup}
+              disabled={loading || !document}
+            >
+              <Download size={15} /> JSON 백업
+            </Button>
+            {canWrite && (
+              <>
+                <input
+                  ref={fileInput}
+                  type="file"
+                  accept=".json,application/json"
+                  className="sr-only"
+                  aria-label="기존 시간표 JSON 백업 가져오기"
+                  onChange={(event) =>
+                    void importBackup(event.target.files?.[0])
+                  }
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={saving || loading}
+                >
+                  <Upload size={15} /> 이전 시간표 가져오기
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => void reload()}
+              disabled={loading || saving}
+            >
+              <RefreshCcw size={15} /> 다시 불러오기
+            </Button>
+          </div>
+        </details>
+        {canWrite && (
+          <div className="heading-actions tt-primary-actions">
+            <label className="tt-effective-date">
+              <span>확정 시간표 적용 시작일</span>
               <input
                 type="date"
                 min={`${year}-03-01`}
@@ -461,8 +470,6 @@ export function Timetable({
                 onChange={(e) => setEffectiveDate(e.target.value)}
               />
             </label>
-          )}
-          {canWrite && (
             <Button
               variant="outline"
               disabled={
@@ -501,8 +508,6 @@ export function Timetable({
             >
               검토 후 확정·배포
             </Button>
-          )}
-          {canWrite && (
             <Button
               onClick={() => void save()}
               disabled={loading || saving || !dirty || matrixDirty}
@@ -510,9 +515,9 @@ export function Timetable({
               <Save size={15} />
               {saving ? "저장 중…" : "학교에 저장"}
             </Button>
-          )}
-        </div>
-      </header>
+          </div>
+        )}
+      </div>
       <div className="tt-status-row">
         <span className="tt-version">
           {loading

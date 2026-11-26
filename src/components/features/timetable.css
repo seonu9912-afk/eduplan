@@ -13,8 +13,58 @@
 .timetable-module .academic-wrap{min-width:0}
 .timetable-module .academic-hero-compact{padding-top:8px;padding-bottom:8px}
 .timetable-module .academic-help{margin-top:0}
-@media(max-width:760px){
- .timetable-module .tt-primary-actions{justify-content:flex-start}
- .timetable-module .tt-primary-actions button{min-height:35px}
- .timetable-module .academic-wrap{width:100%;overflow-x:auto}
+.tt-workspace-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  background: #fff;
+}
+.tt-file-actions {
+  min-width: 0;
+}
+.tt-file-actions summary {
+  padding: 8px 0;
+  color: #36557d;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.tt-file-actions .heading-actions {
+  margin-top: 8px;
+}
+.tt-effective-date {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: #526580;
+  font-size: 12px;
+}
+.timetable-module .tt-primary-actions {
+  align-items: end;
+}
+@media screen and (max-width: 767px) {
+  .timetable-module .academic-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .tt-workspace-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+  .timetable-module .tt-primary-actions {
+    justify-content: flex-start;
+  }
+  .tt-effective-date {
+    flex-basis: 100%;
+  }
+  .tt-effective-date input {
+    width: 100%;
+    min-width: 0;
+  }
 }

@@ -30,9 +30,6 @@ select {
 }
 .connection-banner,
 .update-banner {
-  position: sticky;
-  top: 0;
-  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,20 +45,21 @@ select {
   background: #eaf2ff;
   color: #244471;
 }
-.mobile-bottom-nav,
-.mobile-menu-trigger {
+.mobile-bottom-nav {
   display: none;
 }
 .mobile-menu-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .mobile-menu-grid a {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  justify-content: space-between;
   min-height: 48px;
-  padding: 12px 16px;
+  padding: 8px 10px;
   border: 1px solid #e1e7ef;
   border-radius: 10px;
   text-decoration: none;
@@ -134,7 +132,7 @@ select {
 }
 .mobile-recovery-diff {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .mobile-recovery-diff pre {
@@ -142,44 +140,54 @@ select {
   overflow: auto;
   white-space: pre-wrap;
 }
-@media (min-width: 1200px) {
-  .app-shell > .app-header .main-nav {
-    position: fixed;
-    left: 0;
-    top: 73px;
-    bottom: 0;
-    width: 188px;
-    overflow-y: auto;
+@media screen and (min-width: 1200px) {
+  .app-shell {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 188px minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr auto;
+  }
+  .app-shell > .app-header {
+    grid-column: 1 / -1;
+  }
+  .app-shell > .main-nav {
+    grid-area: 2 / 1 / 5;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    min-height: calc(100dvh - 75px);
+    max-height: 100dvh;
+    overflow: auto;
     background: #fff;
     border-right: 1px solid var(--border);
-    z-index: 25;
   }
-  .app-shell > .app-header .nav-inner {
-    display: flex;
+  .app-shell > .main-nav .nav-inner {
     flex-direction: column;
-    align-items: stretch;
-    gap: 7px;
-    padding: 18px 10px;
-    width: 100%;
-    min-width: 0;
+    gap: 4px;
+    padding: 16px 10px;
   }
-  .app-shell > .app-header .nav-item {
+  .app-shell > .main-nav .nav-item {
     justify-content: flex-start;
-    width: 100%;
-    padding: 13px 12px;
-    min-height: 48px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+  }
+  .app-shell > .main-nav .nav-item:hover {
+    background: #f5f8fc;
+  }
+  .app-shell > .main-nav .nav-item.active {
+    background: #eff5ff;
+    border-color: #dce9ff;
   }
   .app-shell > .workspace-bar,
   .app-shell > .workspace-content,
   .app-shell > .app-footer {
-    margin-left: 188px;
-    width: calc(100% - 188px);
-    max-width: none;
+    grid-column: 2;
+    width: 100%;
   }
-  .app-shell > .app-header .header-inner {
-    max-width: none;
-  }
-  .workspace-content {
+  .app-shell > .workspace-content,
+  .app-shell > .app-footer {
     padding-inline: 28px;
   }
 }
@@ -212,7 +220,13 @@ select {
     -webkit-overflow-scrolling: touch;
   }
 }
-@media (max-width: 767px) {
+@media screen and (min-width: 768px) and (max-width: 1000px) {
+  .app-shell > .main-nav .nav-inner {
+    gap: 12px;
+    padding-inline: 20px;
+  }
+}
+@media screen and (max-width: 767px) {
   :root {
     --bottom-nav-height: calc(64px + env(safe-area-inset-bottom));
   }
@@ -228,21 +242,23 @@ select {
     gap: 8px;
     min-height: 62px;
   }
-  .app-header .main-nav,
+  .app-shell > .main-nav,
   .header-date,
   .version-chip,
   .profile-trigger > span:not(.avatar),
-  .scope-tag,
+  .workspace-pickers .scope-tag,
   .workspace-actions {
     display: none;
   }
   .header-right {
     gap: 4px;
   }
-  .mobile-menu-trigger {
-    display: inline-flex;
-    align-items: center;
+  .profile-trigger {
     justify-content: center;
+    min-width: 44px;
+  }
+  .auth-card input {
+    font-size: 16px;
   }
   .workspace-bar {
     position: relative;
@@ -257,16 +273,25 @@ select {
     flex-wrap: nowrap;
   }
   .workspace-pickers select {
-    flex: 1;
-    max-width: 52%;
-    font-size: 14px;
+    min-height: 44px;
+    max-width: 100%;
+    font-size: 16px;
+  }
+  .workspace-pickers #workspace-picker {
+    flex: 1 1 0;
+    text-overflow: ellipsis;
+  }
+  .workspace-pickers #year-picker {
+    flex: 0 0 auto;
+    max-width: 46%;
   }
   .workspace-icon,
   .picker-divider {
     display: none;
   }
   .workspace-content {
-    padding: 14px 12px;
+    padding: 14px max(12px, env(safe-area-inset-right)) 14px
+      max(12px, env(safe-area-inset-left));
     min-width: 0;
   }
   .mobile-bottom-nav {
@@ -389,40 +414,31 @@ select {
   .muted {
     font-size: 13px;
   }
-  .edu-dialog,
-  .edu-dialog-wide,
-  [data-slot="alert-dialog-content"] {
-    width: 100% !important;
-    max-width: 100% !important;
-    max-height: var(--visible-height) !important;
-    height: auto;
-    top: 0 !important;
-    left: 0 !important;
-    transform: none !important;
-    translate: none !important;
-    border-radius: 0 !important;
-    padding: calc(20px + env(safe-area-inset-top))
-      max(16px, env(safe-area-inset-right))
-      calc(20px + env(safe-area-inset-bottom))
-      max(16px, env(safe-area-inset-left));
-    overflow: auto;
-    scroll-padding-top: 80px;
-  }
-  .edu-dialog [data-slot="dialog-close"] {
-    position: fixed;
-    right: 12px;
-    top: calc(8px + env(safe-area-inset-top));
-    min-width: 44px;
-    min-height: 44px;
-    background: #fff;
-    border: 1px solid #dbe5ef;
-    border-radius: 50%;
-    z-index: 3;
+  .edu-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: var(--visible-height);
+    inset: 0 0 auto;
+    margin: 0;
+    border-radius: 0 0 16px 16px;
   }
   .edu-dialog [data-slot="dialog-header"] {
-    padding-right: 42px;
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: calc(64px + env(safe-area-inset-right));
   }
-  .edu-dialog input,
+  .edu-dialog [data-slot="dialog-close"] {
+    top: calc(8px + env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .edu-dialog-body {
+    padding: 16px max(16px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+  .edu-dialog input:not([type="checkbox"]):not([type="radio"]),
   .edu-dialog select,
   .edu-dialog textarea {
     font-size: 16px;
@@ -457,19 +473,12 @@ select {
   .c5-year-control {
     min-width: 0 !important;
   }
-  .c5-step-copy strong {
-    font-size: 12px !important;
-    white-space: normal !important;
-  }
   .operations-controls label {
     max-width: 100%;
     min-width: 0;
   }
   .operations-table {
     min-width: 600px;
-  }
-  .tt-primary-actions {
-    gap: 8px;
   }
   .tt-status-row {
     flex-wrap: wrap;
@@ -479,7 +488,6 @@ select {
     overflow: auto;
   }
   .mobile-save-bar,
-  .tt-primary-actions,
   .teaching-save-actions {
     position: sticky;
     bottom: var(--bottom-nav-height);
@@ -503,7 +511,7 @@ select {
     min-width: 0;
   }
 }
-@media (max-width: 767px) and (orientation: landscape) {
+@media screen and (max-width: 767px) and (orientation: landscape) {
   .mobile-bottom-nav a,
   .mobile-bottom-nav button {
     flex-direction: row;
@@ -524,7 +532,6 @@ html[data-keyboard="true"] {
 }
 @media print {
   .mobile-bottom-nav,
-  .mobile-menu-trigger,
   .connection-banner,
   .update-banner,
   .data-freshness,
@@ -540,15 +547,14 @@ html[data-keyboard="true"] {
   .app-shell {
     padding: 0;
   }
-  .mobile-save-bar,
-  .tt-primary-actions {
+  .mobile-save-bar {
     position: static;
   }
   .desktop-only {
     display: block !important;
   }
 }
-@media (max-width: 767px) {
+@media screen and (max-width: 767px) {
   .ar .ar-duo,
   .work-layout,
   .work-layout-month,
@@ -591,11 +597,11 @@ html[data-keyboard="true"] {
   }
   .plan-savebar {
     flex-wrap: wrap;
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: #fff;
     padding: 12px;
+  }
+  .mobile-edit-card :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+    width: 100%;
+    min-width: 0;
   }
   .teaching-actions {
     flex-wrap: wrap;
@@ -622,4 +628,19 @@ html[data-keyboard="true"] {
   .cv2-view-button {
     white-space: normal;
   }
+}
+
+.pwa-install-panel {
+  margin-block: 14px;
+}
+.pwa-install-panel summary {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+}
+.pwa-install-content {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  padding-top: 12px;
 }

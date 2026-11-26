@@ -68,11 +68,17 @@ function moveInCalendarGrid(active: HTMLElement, root: HTMLElement, key: ArrowKe
   return element instanceof HTMLElement && element.matches(focusables) && available(element) ? element : null;
 }
 
-function moveInHorizontalGroup(active: HTMLElement, group: HTMLElement, key: ArrowKey) {
+function moveInLinearGroup(active: HTMLElement, group: HTMLElement, key: ArrowKey) {
   const items = Array.from(group.querySelectorAll<HTMLElement>('button,a[href],[role="tab"]')).filter(available);
   const current = items.indexOf(active);
   if (current < 0) return null;
-  const next = nextHorizontalIndex(current, key, items.length);
+  const vertical =
+    group.dataset.arrowAxis === "layout" &&
+    getComputedStyle(group).flexDirection === "column";
+  let direction = key;
+  if (vertical && key === "ArrowUp") direction = "ArrowLeft";
+  if (vertical && key === "ArrowDown") direction = "ArrowRight";
+  const next = nextHorizontalIndex(current, direction, items.length);
   return next === null ? null : items[next];
 }
 
@@ -106,9 +112,11 @@ function onArrowKey(event: KeyboardEvent) {
     else if (event.altKey) event.preventDefault();
     return;
   }
-  const horizontal = active.closest<HTMLElement>('[data-arrow-axis="horizontal"],[role="tablist"]');
-  if (horizontal) {
-    const target = moveInHorizontalGroup(active, horizontal, key);
+  const group = active.closest<HTMLElement>(
+    '[data-arrow-axis="horizontal"],[data-arrow-axis="layout"],[role="tablist"]',
+  );
+  if (group) {
+    const target = moveInLinearGroup(active, group, key);
     if (target) { event.preventDefault(); target.focus(); }
     else if (event.altKey) event.preventDefault();
     return;

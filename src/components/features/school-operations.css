@@ -153,3 +153,38 @@
     break-inside: avoid;
   }
 }
+
+.personal-day .dashboard-columns {
+  align-items: start;
+}
+.personal-day .panel {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  min-width: 0;
+}
+.personal-day-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
+}
+.personal-day-heading h2,
+.personal-day-notification-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+.personal-day .daily-lesson,
+.personal-day .next-lesson,
+.personal-day .notification-list {
+  width: 100%;
+  margin: 0;
+}
+.personal-day .notification-list:empty {
+  display: none;
+}
+.personal-day .personal-reminder-controls {
+  align-items: end;
+}

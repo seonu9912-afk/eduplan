@@ -294,53 +294,57 @@ export function PwaInstallPanel() {
   const state = useContext(PwaContext),
     [message, setMessage] = useState("");
   return (
-    <section className="panel no-print">
-      <h2>EduPlan 앱 설치</h2>
-      {state.installed ? (
-        <p>설치된 앱으로 실행 중입니다.</p>
-      ) : (
-        <>
-          <p>
-            같은 EduPlan을 홈 화면이나 PC 앱으로 열 수 있습니다. 설치 후에는
-            다시 로그인해야 할 수 있습니다.
-          </p>
-          {state.install ? (
-            <Button
-              onClick={() =>
-                void state
-                  .install?.()
-                  .catch(() =>
-                    setMessage(
-                      "설치 창을 열지 못했습니다. 브라우저 메뉴의 앱 설치를 이용하세요.",
-                    ),
-                  )
-              }
-            >
-              이 기기에 설치
-            </Button>
-          ) : state.ios ? (
+    <details className="panel pwa-install-panel no-print">
+      <summary>EduPlan 앱 설치</summary>
+      <div className="pwa-install-content">
+        {state.installed ? (
+          <p>설치된 앱으로 실행 중입니다.</p>
+        ) : (
+          <>
             <p>
-              Safari에서 <strong>공유 → 홈 화면에 추가</strong>를 선택하세요.
-              iOS/iPadOS 16.4 이상에서 설치한 앱은 푸시 알림을 지원합니다.
+              같은 EduPlan을 홈 화면이나 PC 앱으로 열 수 있습니다. 설치 후에는
+              다시 로그인해야 할 수 있습니다.
             </p>
-          ) : (
-            <p>
-              Chrome·Edge 등 지원 브라우저의 주소 표시줄 설치 아이콘 또는 메뉴의{" "}
-              <strong>앱 설치 / 홈 화면에 추가</strong>를 사용하세요. 설치
-              메뉴가 없으면 웹사이트로 모든 기능을 이용할 수 있습니다.
-            </p>
-          )}
-        </>
-      )}
-      {!state.supported && (
-        <p>이 환경에서는 설치·오프라인 실행 지원이 제한될 수 있습니다.</p>
-      )}
-      {(state.error || message) && <p role="alert">{message || state.error}</p>}
-      <p className="field-hint">
-        학교 자료와 로그인 응답은 오프라인 캐시에 저장하지 않습니다.
-        교수학습계획의 기기 임시 초안은 최대 4시간 보존되며 로그아웃·계정 변경
-        시 정리합니다.
-      </p>
-    </section>
+            {state.install ? (
+              <Button
+                onClick={() =>
+                  void state
+                    .install?.()
+                    .catch(() =>
+                      setMessage(
+                        "설치 창을 열지 못했습니다. 브라우저 메뉴의 앱 설치를 이용하세요.",
+                      ),
+                    )
+                }
+              >
+                이 기기에 설치
+              </Button>
+            ) : state.ios ? (
+              <p>
+                Safari에서 <strong>공유 → 홈 화면에 추가</strong>를 선택하세요.
+                iOS/iPadOS 16.4 이상에서 설치한 앱은 푸시 알림을 지원합니다.
+              </p>
+            ) : (
+              <p>
+                Chrome·Edge 등 지원 브라우저의 주소 표시줄 설치 아이콘 또는
+                메뉴의 <strong>앱 설치 / 홈 화면에 추가</strong>를 사용하세요.
+                설치 메뉴가 없으면 웹사이트로 모든 기능을 이용할 수 있습니다.
+              </p>
+            )}
+          </>
+        )}
+        {!state.supported && (
+          <p>이 환경에서는 설치·오프라인 실행 지원이 제한될 수 있습니다.</p>
+        )}
+        {(state.error || message) && (
+          <p role="alert">{message || state.error}</p>
+        )}
+        <p className="field-hint">
+          학교 자료와 로그인 응답은 오프라인 캐시에 저장하지 않습니다.
+          교수학습계획의 기기 임시 초안은 최대 4시간 보존되며 로그아웃·계정 변경
+          시 정리합니다.
+        </p>
+      </div>
+    </details>
   );
 }

@@ -342,14 +342,36 @@ button[data-slot="button"][data-size="icon"] {
   padding-top: 16px;
 }
 .edu-dialog {
-  padding: 27px !important;
-  max-width: 470px !important;
-  max-height: 90dvh;
-  overflow-y: auto;
-  gap: 25px !important;
+  padding: 0;
+  max-width: min(470px, calc(100% - 32px));
+  max-height: min(90dvh, var(--visible-height));
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  overflow: hidden;
 }
 .edu-dialog-wide {
-  max-width: 600px !important;
+  max-width: min(600px, calc(100% - 32px));
+}
+.edu-dialog [data-slot="dialog-header"] {
+  position: relative;
+  padding: 24px 68px 14px 24px;
+  background: var(--popover);
+  border-bottom: 1px solid #edf1f7;
+}
+.edu-dialog [data-slot="dialog-close"] {
+  position: absolute;
+  inset: 12px 12px auto auto;
+}
+.edu-dialog-body {
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 24px;
+}
+[data-slot="alert-dialog-content"] {
+  max-height: calc(var(--visible-height) - 24px);
+  width: calc(100% - 24px);
+  overflow: auto;
 }
 .edu-dialog [data-slot="dialog-title"] {
   font-size: 21px !important;
@@ -1756,6 +1778,7 @@ button[data-slot="button"][data-size="icon"] {
   align-items: center;
   justify-content: center;
   padding: 50px 30px;
+  min-width: 0;
 }
 .auth-card {
   width: 100%;
@@ -1924,7 +1947,7 @@ button[data-slot="button"][data-size="icon"] {
   max-width: 1280px;
   margin: auto;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 35px;
   padding: 48px 40px 80px;
   align-items: center;
@@ -2392,7 +2415,7 @@ button[data-slot="button"][data-size="icon"] {
     gap: 17px;
   }
   .landing-hero {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     padding: 60px 30px 50px;
     text-align: center;
   }
@@ -2430,7 +2453,7 @@ button[data-slot="button"][data-size="icon"] {
     flex-wrap: wrap;
   }
   .auth-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .auth-story {
     padding: 25px;
@@ -2682,9 +2705,6 @@ button[data-slot="button"][data-size="icon"] {
   }
   .form-two {
     gap: 10px;
-  }
-  .edu-dialog {
-    padding: 22px !important;
   }
   .grade-checkboxes {
     gap: 20px;
@@ -2953,6 +2973,7 @@ button[data-slot="button"][data-size="icon"] {
 /* The public introduction and sign-in share one entry screen. */
 .landing-login {
   width: 100%;
+  min-width: 0;
   max-width: 450px;
   justify-self: end;
   padding: 34px;

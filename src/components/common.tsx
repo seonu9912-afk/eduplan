@@ -9,11 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CheckCircle2, Loader2, Printer } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogClose,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -106,6 +107,7 @@ export function Modal({
       >
         <DialogContent
           className={`edu-dialog ${wide ? "edu-dialog-wide" : ""}`}
+          showCloseButton={false}
           onCloseAutoFocus={onCloseAutoFocus}
           onChangeCapture={() => setFormDirty(true)}
         >
@@ -114,8 +116,18 @@ export function Modal({
             <DialogDescription>
               {description ?? "필요한 정보를 입력하고 저장해 주세요."}
             </DialogDescription>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="닫기"
+              >
+                <X />
+              </Button>
+            </DialogClose>
           </DialogHeader>
-          {children}
+          <div className="edu-dialog-body">{children}</div>
         </DialogContent>
       </Dialog>
     </FormSavedContext.Provider>

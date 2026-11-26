@@ -78,15 +78,15 @@ import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
 const sections: Record<string, string> = {
   home: "홈",
-  teachers: "교원 관리",
+  curriculum: "교육과정",
   calendar: "학사운영",
   timetable: "시간표",
-  plans: "학교업무",
+  teachers: "교원 관리",
   teaching: "수업·평가",
-  curriculum: "교육과정",
+  plans: "월중·주간계획",
+  notifications: "알림",
   settings: "작업공간 설정",
   people: "구성원 관리",
-  notifications: "알림",
 };
 export function WorkspaceApp({
   context: c,
@@ -176,13 +176,6 @@ export function WorkspaceApp({
       <header className="app-header no-print">
         <div className="header-inner">
           <Brand />
-          <button
-            className="icon-button mobile-menu-trigger"
-            aria-label="전체 메뉴 열기"
-            onClick={() => setModal("menu")}
-          >
-            <Menu size={22} />
-          </button>
           <div className="header-right">
             <span className="version-chip">v{buildInfo.version}</span>
             <span className="header-date">
@@ -190,6 +183,7 @@ export function WorkspaceApp({
             </span>
             <button
               className="profile-trigger"
+              aria-label="내 프로필"
               onClick={() => setModal("profile")}
             >
               <span className="avatar">
@@ -240,57 +234,57 @@ export function WorkspaceApp({
             </button>
           </div>
         </div>
-        <nav className="main-nav" aria-label="주요 메뉴">
-          <div className="nav-inner" data-arrow-axis="horizontal">
-            {[
-              { id: "home", label: "홈", icon: House },
-              { id: "curriculum", label: "교육과정", icon: BookOpen },
-              { id: "calendar", label: "학사운영", icon: CalendarDays },
-              { id: "timetable", label: "시간표", icon: Table2 },
-              {
-                id: "teachers",
-                label: "교원 관리",
-                icon: Users,
-                disabled: false,
-              },
-              {
-                id: "teaching",
-                label: "수업·평가",
-                icon: PanelTop,
-              },
-              { id: "plans", label: "월중·주간계획", icon: Building2 },
-              { id: "notifications", label: "알림", icon: Bell },
-            ].map(({ id, label, icon: Icon, disabled }) =>
-              disabled ? (
-                <span
-                  key={id}
-                  className="nav-item nav-disabled"
-                  aria-disabled="true"
-                >
-                  <Icon size={17} />
-                  {label}
-                  <small>예정</small>
-                </span>
-              ) : (
-                <Link
-                  data-guarded-navigation
-                  key={id}
-                  href={`${base}/${id}${suffix}`}
-                  className={`nav-item ${section === id ? "active" : ""}`}
-                  aria-current={section === id ? "page" : undefined}
-                  onClick={(e) => {
-                    if (!allowNavigation()) e.preventDefault();
-                    else setDirty(false);
-                  }}
-                >
-                  <Icon size={17} />
-                  {label}
-                </Link>
-              ),
-            )}
-          </div>
-        </nav>
       </header>
+      <nav className="main-nav no-print" aria-label="주요 메뉴">
+        <div className="nav-inner" data-arrow-axis="layout">
+          {[
+            { id: "home", label: "홈", icon: House },
+            { id: "curriculum", label: "교육과정", icon: BookOpen },
+            { id: "calendar", label: "학사운영", icon: CalendarDays },
+            { id: "timetable", label: "시간표", icon: Table2 },
+            {
+              id: "teachers",
+              label: "교원 관리",
+              icon: Users,
+              disabled: false,
+            },
+            {
+              id: "teaching",
+              label: "수업·평가",
+              icon: PanelTop,
+            },
+            { id: "plans", label: "월중·주간계획", icon: Building2 },
+            { id: "notifications", label: "알림", icon: Bell },
+          ].map(({ id, label, icon: Icon, disabled }) =>
+            disabled ? (
+              <span
+                key={id}
+                className="nav-item nav-disabled"
+                aria-disabled="true"
+              >
+                <Icon size={17} />
+                {label}
+                <small>예정</small>
+              </span>
+            ) : (
+              <Link
+                data-guarded-navigation
+                key={id}
+                href={`${base}/${id}${suffix}`}
+                className={`nav-item ${section === id ? "active" : ""}`}
+                aria-current={section === id ? "page" : undefined}
+                onClick={(e) => {
+                  if (!allowNavigation()) e.preventDefault();
+                  else setDirty(false);
+                }}
+              >
+                <Icon size={17} />
+                {label}
+              </Link>
+            ),
+          )}
+        </div>
+      </nav>
       <div className="workspace-bar no-print">
         <div className="workspace-inner">
           <div className="workspace-pickers">
@@ -432,11 +426,11 @@ export function WorkspaceApp({
         ) : null}
         {section === "settings" ? (
           <>
-            <PwaInstallPanel />
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
               context={c}
             />
+            <PwaInstallPanel />
           </>
         ) : null}
         {section === "teaching" ? (
