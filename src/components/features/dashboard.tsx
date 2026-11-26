@@ -10,7 +10,6 @@ import {
   Users,
   Clock3,
   CheckCircle2,
-  Settings2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Empty } from "@/components/common";
@@ -41,65 +40,16 @@ export function Dashboard({
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">SCHOOL OVERVIEW</span>
-          <h1>
-            안녕하세요, {c.profile.display_name}님{" "}
-            <span className="greeting-dot" />
-          </h1>
-          <p>우리 학교의 계획과 일정을 한눈에 살펴보세요.</p>
+          <h1>학교 현황</h1>
         </div>
         <Button asChild variant="outline">
           <Link href={`${base}/calendar${suffix}`}>
             <CalendarDays />
             학사일정 보기
-            <ArrowUpRight />
           </Link>
         </Button>
       </div>
       <PersonalDay context={c} today={today}/>
-      <Disclosure className="no-print" label="학교 운영 시작 가이드">
-      <section className="dashboard-hero">
-        <div>
-          <span className="hero-badge subtle">
-            {c.workspace.kind === "school"
-              ? "함께 만드는 우리 학교"
-              : "나만의 교육 계획"}
-          </span>
-          <h2>
-            {c.workspace.name}의 내일을
-            <br />
-            차근차근 계획해 볼까요?
-          </h2>
-          <p>교육과정과 학사일정, 하나의 흐름으로 연결하세요.</p>
-          <Button asChild>
-            <Link
-              href={`${base}/${c.year ? "curriculum" : "settings"}${suffix}`}
-            >
-              {c.year ? "교육과정 편성하기" : "학년도 설정 시작하기"}
-              <ArrowRight />
-            </Link>
-          </Button>
-        </div>
-        <div className="hero-steps">
-          {steps.map((s, i) => (
-            <Link key={s.path} href={`${base}/${s.path}${suffix}`}>
-              <span className={`step-number ${s.done ? "done" : ""}`}>
-                {s.done ? (
-                  <CheckCircle2 size={19} />
-                ) : (
-                  String(i + 1).padStart(2, "0")
-                )}
-              </span>
-              <span>
-                <small>{s.done ? "설정 완료" : "시작 가이드"}</small>
-                <strong>{s.label}</strong>
-              </span>
-              <ArrowUpRight size={18} />
-            </Link>
-          ))}
-        </div>
-      </section>
-      </Disclosure>
       <section className="stats-grid" aria-label="작업공간 현황">
         {[
           {
@@ -135,13 +85,13 @@ export function Dashboard({
           },
           {
             icon: Users,
-            label: "함께하는 구성원",
+            label: "구성원",
             value: c.members.length,
             unit: "명",
             detail:
               c.workspace.kind === "personal"
-                ? "나만의 작업공간"
-                : "초대로 함께 만들어 가요",
+                ? "개인 작업공간"
+                : "학교 작업공간",
             color: "amber",
           },
         ].map(({ icon: Icon, ...s }) => (
@@ -250,21 +200,21 @@ export function Dashboard({
           )}
         </section>
       </div>
-      <div className="dashboard-tip">
-        <span className="tile-icon">
-          <Settings2 size={20} />
-        </span>
-        <div>
-          <strong>처음 사용하시나요?</strong>
-          <p>
-            학년도 설정 → 학사일정 등록 → 교육과정 편성 순서로 시작해 보세요.
-          </p>
-        </div>
-        <Link href={`${base}/settings${suffix}`}>
-          기본 설정
-          <ArrowRight size={15} />
-        </Link>
-      </div>
+      <Disclosure className="dashboard-setup no-print" label="학교 운영 시작 가이드">
+        <ul>
+          {steps.map(({ done, label, path }) => (
+            <li key={path}>
+              <Link href={`${base}/${path}${suffix}`}>
+                {label}
+                <span className={done ? "setup-complete" : undefined}>
+                  {done ? <CheckCircle2 size={16} /> : <ArrowRight size={16} />}
+                  {done ? "완료" : "열기"}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Disclosure>
     </>
   );
 }

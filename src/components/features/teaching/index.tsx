@@ -150,9 +150,7 @@ export function TeachingModule({
       <div className="teaching-screen">
         <div className="page-heading">
           <div>
-            <span className="eyebrow">TEACHING & ASSESSMENT</span>
             <h1>수업·평가</h1>
-            <p>수업의 흐름과 평가를 하나의 계획으로 연결하세요.</p>
           </div>
           {canPlan(c, "assessment") && (
             <Button

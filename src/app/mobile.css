@@ -69,14 +69,6 @@ select {
   background: #eaf2ff;
   color: #1d4ed8;
 }
-.data-freshness {
-  font-size: 12px;
-  color: #5e6d81;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-}
 .mobile-only {
   display: none;
 }
@@ -145,17 +137,17 @@ select {
     min-height: 100dvh;
     display: grid;
     grid-template-columns: 188px minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr;
   }
   .app-shell > .app-header {
     grid-column: 1 / -1;
   }
   .app-shell > .main-nav {
-    grid-area: 2 / 1 / 5;
+    grid-area: 2 / 1 / 4;
     position: sticky;
     top: 0;
     align-self: start;
-    min-height: calc(100dvh - 75px);
+    min-height: calc(100dvh - 65px);
     max-height: 100dvh;
     overflow: auto;
     background: #fff;
@@ -181,13 +173,12 @@ select {
     border-color: #dce9ff;
   }
   .app-shell > .workspace-bar,
-  .app-shell > .workspace-content,
-  .app-shell > .app-footer {
+  .app-shell > .workspace-content {
     grid-column: 2;
     width: 100%;
   }
   .app-shell > .workspace-content,
-  .app-shell > .app-footer {
+  .app-shell .workspace-inner {
     padding-inline: 28px;
   }
 }
@@ -223,7 +214,14 @@ select {
 @media screen and (min-width: 768px) and (max-width: 1000px) {
   .app-shell > .main-nav .nav-inner {
     gap: 12px;
-    padding-inline: 20px;
+    padding-inline: 24px;
+  }
+  .app-shell .workspace-inner {
+    flex-wrap: nowrap;
+    padding-inline: 24px;
+  }
+  .app-shell > .workspace-content {
+    padding-inline: 24px;
   }
 }
 @media screen and (max-width: 767px) {
@@ -231,22 +229,19 @@ select {
     --bottom-nav-height: calc(64px + env(safe-area-inset-bottom));
   }
   .app-shell {
-    padding-bottom: calc(var(--bottom-nav-height) + 20px);
+    padding-bottom: var(--bottom-nav-height);
   }
   .app-header {
     position: relative;
   }
   .app-header .header-inner {
-    padding: 10px max(12px, env(safe-area-inset-right)) 10px
-      max(12px, env(safe-area-inset-left));
+    padding: 8px max(16px, env(safe-area-inset-right)) 8px
+      max(16px, env(safe-area-inset-left));
     gap: 8px;
     min-height: 62px;
   }
   .app-shell > .main-nav,
-  .header-date,
-  .version-chip,
   .profile-trigger > span:not(.avatar),
-  .workspace-pickers .scope-tag,
   .workspace-actions {
     display: none;
   }
@@ -264,12 +259,13 @@ select {
     position: relative;
   }
   .workspace-inner {
-    padding: 10px 12px;
+    padding: 8px max(16px, env(safe-area-inset-right)) 8px
+      max(16px, env(safe-area-inset-left));
   }
   .workspace-pickers {
     display: flex;
     width: 100%;
-    gap: 5px;
+    gap: 8px;
     flex-wrap: nowrap;
   }
   .workspace-pickers select {
@@ -282,16 +278,15 @@ select {
     text-overflow: ellipsis;
   }
   .workspace-pickers #year-picker {
-    flex: 0 0 auto;
-    max-width: 46%;
+    max-width: 50%;
+    font-size: 16px;
   }
-  .workspace-icon,
-  .picker-divider {
+  .workspace-icon {
     display: none;
   }
   .workspace-content {
-    padding: 14px max(12px, env(safe-area-inset-right)) 14px
-      max(12px, env(safe-area-inset-left));
+    padding: 18px max(16px, env(safe-area-inset-right)) 22px
+      max(16px, env(safe-area-inset-left));
     min-width: 0;
   }
   .mobile-bottom-nav {
@@ -338,13 +333,13 @@ select {
   }
   .nav-unread {
     position: absolute;
-    top: 0;
-    right: 14%;
+    top: 6px;
+    left: calc(50% + 8px);
+    width: 8px;
+    height: 8px;
     background: #c03642;
-    color: white;
-    border-radius: 12px;
-    padding: 1px 5px;
-    font-size: 10px;
+    border: 1px solid #fff;
+    border-radius: 50%;
   }
   .mobile-only {
     display: block;
@@ -498,9 +493,6 @@ select {
     border-radius: 10px;
     box-shadow: 0 -3px 12px #15334f0a;
   }
-  .app-footer {
-    padding: 18px 12px;
-  }
   .teaching-expanded-cell {
     min-height: 45dvh;
     width: 100%;
@@ -534,7 +526,6 @@ html[data-keyboard="true"] {
   .mobile-bottom-nav,
   .connection-banner,
   .update-banner,
-  .data-freshness,
   .mobile-only,
   .mobile-view-toolbar {
     display: none !important;

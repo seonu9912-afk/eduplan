@@ -36,9 +36,7 @@ export function SchoolSettings({ context: c }: { context: Context }) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">WORKSPACE SETTINGS</span>
           <h1>작업공간 설정</h1>
-          <p>모든 계획의 기준이 되는 학년도와 학급을 설정합니다.</p>
         </div>
         {editable && c.year ? (
           <Button variant="outline" onClick={() => setCreating(!creating)}>
@@ -58,8 +56,7 @@ export function SchoolSettings({ context: c }: { context: Context }) {
               <p>
                 {c.workspace.kind === "school"
                   ? `학교 공동 작업공간 · ${c.schoolType}`
-                  : `개인 작업공간 · ${c.schoolType}`}{" "}
-                · 대한민국 표준시
+                  : `개인 작업공간 · ${c.schoolType}`}
               </p>
             </div>
             <span className="scope-tag">

@@ -94,7 +94,6 @@ export function Staffing({
     <div className="operations-module">
       <header className="page-heading">
         <div>
-          <span className="eyebrow">STAFF & CURRICULUM</span>
           <h1>교원 관리·수급 분석</h1>
           <p>
             {c.year.year}학년도 공통 명부를 시간표와 개인 일정에 연결합니다.

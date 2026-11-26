@@ -1,6 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
-import { PwaInstallPanel, useOnline } from "@/components/pwa/pwa-provider";
+import { PwaInstallPanel } from "@/components/pwa/pwa-provider";
 import {
   useDeviceDirty,
   useEditGuard,
@@ -50,7 +50,6 @@ import {
   LogOut,
   Plus,
   Settings2,
-  ShieldCheck,
   Users,
   Building2,
   UserRound,
@@ -73,9 +72,8 @@ import { SchoolSettings } from "@/components/features/settings";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
 import { logout } from "@/app/actions";
-import { roles, dateLabel } from "@/lib/domain";
+import { roles } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-import { buildInfo } from "@/lib/build-info";
 const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
@@ -106,8 +104,7 @@ export function WorkspaceApp({
   const [error, setError] = useState("");
   const [editorDirty, setDirty] = useState(false);
   useEditGuard("workspace-editor", editorDirty);
-  const dirty = useDeviceDirty(),
-    online = useOnline();
+  const dirty = useDeviceDirty();
   const [signingOut, setSigningOut] = useState(false);
   const base = `/app/${c.workspace.id}`;
   const activeYearId = c.year?.id;
@@ -177,10 +174,6 @@ export function WorkspaceApp({
         <div className="header-inner">
           <Brand />
           <div className="header-right">
-            <span className="version-chip">v{buildInfo.version}</span>
-            <span className="header-date">
-              {today.slice(0, 4)}년 {dateLabel(today)}
-            </span>
             <button
               className="profile-trigger"
               aria-label="내 프로필"
@@ -288,7 +281,7 @@ export function WorkspaceApp({
       <div className="workspace-bar no-print">
         <div className="workspace-inner">
           <div className="workspace-pickers">
-            <span className="workspace-icon">
+            <span className="workspace-icon" aria-hidden="true">
               {c.workspace.kind === "school" ? (
                 <Building2 size={18} />
               ) : (
@@ -310,7 +303,6 @@ export function WorkspaceApp({
                 </option>
               ))}
             </select>
-            <span className="picker-divider" />
             <label className="sr-only" htmlFor="year-picker">
               학년도 선택
             </label>
@@ -331,9 +323,6 @@ export function WorkspaceApp({
                 ))
               )}
             </select>
-            <span className="scope-tag">
-              {c.workspace.kind === "school" ? "학교 공동" : "개인 작업공간"}
-            </span>
           </div>
           <div className="workspace-actions">
             <Button variant="ghost" onClick={() => setModal("school")}>
@@ -343,6 +332,7 @@ export function WorkspaceApp({
             <Button
               variant="ghost"
               className={section === "people" ? "selected" : ""}
+              aria-current={section === "people" ? "page" : undefined}
               onClick={() => navigate(`${base}/people${suffix}`)}
             >
               <Users />
@@ -352,6 +342,7 @@ export function WorkspaceApp({
               variant="ghost"
               aria-label="작업공간 설정"
               className={section === "settings" ? "selected" : ""}
+              aria-current={section === "settings" ? "page" : undefined}
               onClick={() => navigate(`${base}/settings${suffix}`)}
             >
               <Settings2 />
@@ -361,23 +352,8 @@ export function WorkspaceApp({
         </div>
       </div>
       <main id="main-content" className="workspace-content">
-        <div className="breadcrumb no-print">
-          {c.workspace.name}
-          <ChevronRight size={13} />
-          <span>{sections[section]}</span>
-        </div>
         <Notice message={error} error />
-        <p className="data-freshness" role="status">
-          {online
-            ? dirty
-              ? "작성 내용 유지 중 · 원본 변경 확인은 저장 후 자동 재개"
-              : "서버 조회 시각 " +
-                new Date(c.loadedAt ?? "").toLocaleTimeString("ko-KR", {
-                  timeZone: "Asia/Seoul",
-                })
-            : "오프라인 · 최신 데이터 확인 불가"}
-        </p>
-        <LessonReminder context={c} />
+        <LessonReminder context={c} showErrors={section === "notifications"} />
         {section === "teachers" ? (
           <Staffing context={c} onDirtyChange={setDirty} />
         ) : null}
@@ -389,17 +365,13 @@ export function WorkspaceApp({
           </>
         )}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
-        {section === "calendar" && (
-          <ActivityRequests context={c} today={today} />
-        )}
-        {section === "timetable" && <LessonLedger context={c} today={today} />}
-        {section === "people" && <PlanningPermissions context={c} />}
         {section === "calendar" ? (
           <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
             onDirtyChange={setDirty}
             today={today}
+            relatedTools={c.year && <ActivityRequests context={c} today={today} />}
           />
         ) : null}
         {section === "timetable" ? (
@@ -407,6 +379,7 @@ export function WorkspaceApp({
             key={c.workspace.id + "-" + c.year?.id}
             context={c}
             onDirtyChange={setDirty}
+            relatedTools={<LessonLedger context={c} today={today} />}
           />
         ) : null}
         {section === "plans" ? (
@@ -436,7 +409,12 @@ export function WorkspaceApp({
         {section === "teaching" ? (
           <TeachingModule context={c} onDirtyChange={setDirty} />
         ) : null}
-        {section === "people" ? <Members context={c} /> : null}
+        {section === "people" ? (
+          <Members
+            context={c}
+            relatedTools={c.role === "admin" && <PlanningPermissions context={c} />}
+          />
+        ) : null}
       </main>
       <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
         {[
@@ -459,9 +437,7 @@ export function WorkspaceApp({
             <span>{label}</span>
             {id === "notifications" &&
               c.operations?.notifications.some((n) => !n.read_at) && (
-                <span className="nav-unread" aria-label="읽지 않은 알림">
-                  ●
-                </span>
+                <span className="nav-unread" role="img" aria-label="읽지 않은 알림" />
               )}
           </Link>
         ))}
@@ -508,13 +484,6 @@ export function WorkspaceApp({
           </Button>
         </div>
       </Modal>
-      <footer className="app-footer no-print">
-        <span>EduPlan · 교육과정부터 수업까지, 하나의 계획으로.</span>
-        <span>
-          <ShieldCheck size={14} />
-          학교별 데이터 분리 · 대한민국 표준시
-        </span>
-      </footer>
       <Modal
         open={modal === "school"}
         onOpenChange={(v) => !v && setModal(null)}

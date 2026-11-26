@@ -274,32 +274,9 @@ export function WorkPlans({
   );
   return (
     <>
-      <div className="no-print">
-        <label>
-          조회 부서{" "}
-          <select
-            aria-label="학교업무 조회 부서"
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-          >
-            <option value="">학교 전체</option>
-            {plan.departments.map((d) => (
-              <option key={d}>{d}</option>
-            ))}
-          </select>
-        </label>
-        <p className="muted-small">
-          월중·주간계획은 같은 학사·업무 일정에서 생성됩니다. 원본 수정 시 함께
-          갱신됩니다.
-        </p>
-      </div>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">SCHOOL WORK PLANS</span>
           <h1>월중·주간 업무계획</h1>
-          <p>
-            학사일정과 부서별 업무를 한눈에 확인하고 날짜에서 바로 추가하세요.
-          </p>
         </div>
         <div className="heading-actions">
           <PrintButton />
@@ -437,7 +414,19 @@ export function WorkPlans({
             </button>
           </div>
         )}
-        {dirty && <span className="muted">저장하지 않은 변경사항</span>}
+        <label className="work-department-filter">
+          조회 부서
+          <select
+            aria-label="학교업무 조회 부서"
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">학교 전체</option>
+            {plan.departments.map((d) => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
+        </label>
       </div>
       <div
         className={`work-layout ${view === "month" ? "work-layout-month" : ""}`}

@@ -2,7 +2,14 @@
 import { Disclosure } from "@/components/ui/disclosure";
 import { canPlan } from "@/lib/planning-completion";
 import { CalendarImpact, EventImpact } from "./calendar-impact";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import { Modal, Notice } from "@/components/common";
 import {
@@ -50,6 +57,7 @@ import { AcademicWorkbookPanel } from "./academic-workbook-panel";
 import { DateFields, EventFields } from "./academic-calendar-editors";
 import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
+import { Button } from "@/components/ui/button";
 
 type DayEdit = {
   kind: "day";
@@ -88,12 +96,14 @@ export function AcademicCalendar({
   onDirtyChange,
   preview = false,
   actions = calendarActions,
+  relatedTools,
 }: {
   context: Context;
   today: string;
   onDirtyChange?: (value: boolean) => void;
   preview?: boolean;
   actions?: typeof calendarActions;
+  relatedTools?: ReactNode;
 }) {
   const {
     loadCalendarState,
@@ -466,49 +476,49 @@ export function AcademicCalendar({
   if (!c.year)
     return (
       <div className="ar">
+        <h1>학사일정</h1>
         <p className="ar-callout">
           학교 설정에서 학년도를 생성하면 연간 학사력을 바로 편성할 수 있습니다.
         </p>
       </div>
     );
-  if (tools)
-    return (
-      <div>
-        <div className="ar ar-entry">
-          <button
-            onClick={() =>
-              move(() => {
-                setTools(false);
-                setToolsDirty(false);
-              })
-            }
-          >
-            ← 공식 학사일정으로 돌아가기
-          </button>
-        </div>
-        <AnnualAcademic
-          context={c}
-          today={today}
-          onDirtyChange={setToolsDirty}
-        />
-        <Modal
-          open={!!next}
-          onOpenChange={() => setNext(null)}
-          title="저장하지 않은 변경 내용"
-          description="기본 운영·자료 관리 화면의 저장 버튼으로 먼저 저장하거나 변경을 취소할 수 있습니다."
+  const managementView = tools ? (
+    <div>
+      <div className="ar ar-entry">
+        <button
+          onClick={() =>
+            move(() => {
+              setTools(false);
+              setToolsDirty(false);
+            })
+          }
         >
-          <button
-            onClick={() => {
-              const action = next;
-              setNext(null);
-              action?.();
-            }}
-          >
-            변경 취소 후 이동
-          </button>
-        </Modal>
+          ← 공식 학사일정으로 돌아가기
+        </button>
       </div>
-    );
+      <AnnualAcademic
+        context={c}
+        today={today}
+        onDirtyChange={setToolsDirty}
+      />
+      <Modal
+        open={!!next}
+        onOpenChange={() => setNext(null)}
+        title="저장하지 않은 변경 내용"
+        description="기본 운영·자료 관리 화면의 저장 버튼으로 먼저 저장하거나 변경을 취소할 수 있습니다."
+      >
+        <button
+          onClick={() => {
+            const action = next;
+            setNext(null);
+            action?.();
+          }}
+        >
+          변경 취소 후 이동
+        </button>
+      </Modal>
+    </div>
+  ) : null;
   const monthly = sortCalendarEvents(
     c.events.filter(
       (e) =>
@@ -539,50 +549,8 @@ export function AcademicCalendar({
       : report;
   const changedDays =
     projectedReport.days.filter(isTeachingDay).length - counts.total;
-  return (
+  const calendarView = !tools ? (
     <div className="ar">
-      <header className="ar-line">
-        <div>
-          <h2>{year}학년도 학사일정</h2>
-          <p className="ar-muted">
-            {c.workspace.name} · {status}
-            {!admin ? " · 조회 전용" : ""}
-          </p>
-        </div>
-        <div className="ar-tools">
-          <button
-            onClick={() =>
-              move(() => {
-                setEdit(null);
-                setHistoryOpen(true);
-              })
-            }
-          >
-            {confirmation
-              ? `확정 후 변경 ${sinceConfirmed.length}건`
-              : "수정 이력"}
-          </button>
-          <button
-            disabled={actions !== calendarActions}
-            onClick={() =>
-              move(() => {
-                setEdit(null);
-                setTools(true);
-              })
-            }
-          >
-            기본 운영·자료 관리
-          </button>
-          {admin && (
-            <button
-              disabled={!c.annual || pending || dirty}
-              onClick={() => setConfirmOpen(true)}
-            >
-              편성안 확정
-            </button>
-          )}
-        </div>
-      </header>
       <Notice message={message.text} error={message.error} />
       {!parsed.success && (
         <p role="alert" className="ar-callout">
@@ -1426,6 +1394,60 @@ export function AcademicCalendar({
         </div>
       </Modal>
     </div>
+  ) : null;
+  return (
+    <>
+      {!tools && (
+        <header className="page-heading">
+          <div>
+            <h1>{year}학년도 학사일정</h1>
+            <p>
+              {status}
+              {!admin ? " · 조회 전용" : ""}
+            </p>
+          </div>
+          <div className="heading-actions">
+            <Button
+              variant="outline"
+              onClick={() =>
+                move(() => {
+                  setEdit(null);
+                  setHistoryOpen(true);
+                })
+              }
+            >
+              {confirmation
+                ? `확정 후 변경 ${sinceConfirmed.length}건`
+                : "수정 이력"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={actions !== calendarActions}
+              onClick={() =>
+                move(() => {
+                  setEdit(null);
+                  setTools(true);
+                })
+              }
+            >
+              기본 운영·자료 관리
+            </Button>
+            {admin && (
+              <Button
+                disabled={!c.annual || pending || dirty}
+                onClick={() => setConfirmOpen(true)}
+              >
+                편성안 확정
+              </Button>
+            )}
+          </div>
+        </header>
+      )}
+      {relatedTools && (
+        <div className="workspace-related-tools">{relatedTools}</div>
+      )}
+      {tools ? managementView : calendarView}
+    </>
   );
 }
 

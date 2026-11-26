@@ -373,7 +373,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await secondContext.close();
   await page.getByRole("link", { name: "홈", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: /^안녕하세요,/ }),
+    page.getByRole("heading", { name: "학교 현황" }),
   ).toBeVisible();
   await page.screenshot({
     path: ".artifacts/dashboard-desktop.png",

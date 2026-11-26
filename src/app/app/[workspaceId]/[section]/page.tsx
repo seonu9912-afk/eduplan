@@ -29,7 +29,6 @@ export default async function WorkspacePage({
     notFound();
   const context = await getWorkspaceContext(p.workspaceId, q.year, p.section);
   context.operations = await getOperationsData(context, p.section);
-  context.loadedAt = new Date().toISOString();
   if (p.section === "teaching" && context.year)
     context.teaching = await getTeachingData(p.workspaceId, context.year.id);
   return (

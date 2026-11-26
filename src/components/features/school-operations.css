@@ -66,11 +66,11 @@
 }
 .daily-lesson {
   display: grid;
-  grid-template-columns: 75px 1fr auto;
-  gap: 12px;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 8px 14px;
   align-items: center;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
 }
 .daily-lesson small {
   display: block;
@@ -82,16 +82,31 @@
 .daily-lesson.cancelled strong {
   text-decoration: line-through;
 }
-.daily-clock {
+.daily-lesson-time {
   font-variant-numeric: tabular-nums;
-  font-size: 24px;
-  font-weight: 700;
+  white-space: nowrap;
+}
+.daily-clock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #506885;
+  font-size: 13px;
+}
+.daily-clock strong {
+  color: var(--foreground);
+  font-size: 17px;
 }
 .next-lesson {
-  background: #eaf4fb;
-  border-radius: 12px;
-  padding: 18px;
-  margin: 16px 0;
+  display: grid;
+  gap: 3px;
+  background: #eff6ff;
+  border: 1px solid #d9e8fb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #24466d;
 }
 .notification-list {
   list-style: none;
@@ -112,18 +127,9 @@
   display: block;
   margin-top: 6px;
 }
-.operations-compact-list {
-  padding-left: 20px;
-}
-.operations-compact-list li {
-  margin: 6px 0;
-}
 @media (max-width: 650px) {
   .daily-lesson {
-    grid-template-columns: 60px 1fr;
-  }
-  .daily-lesson > span:last-child {
-    grid-column: 2;
+    grid-template-columns: 90px minmax(0, 1fr);
   }
   .operations-module .panel {
     padding: 15px;
@@ -166,7 +172,7 @@
 .personal-day-heading {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 6px 12px;
   width: 100%;
@@ -178,7 +184,9 @@
 }
 .personal-day .daily-lesson,
 .personal-day .next-lesson,
-.personal-day .notification-list {
+.personal-day .notification-list,
+.personal-day .panel > details,
+.personal-schedule-list {
   width: 100%;
   margin: 0;
 }
@@ -187,6 +195,32 @@
 }
 .personal-day .personal-reminder-controls {
   align-items: end;
+}
+.personal-schedule-list {
+  list-style: none;
+  padding: 0;
+}
+.personal-schedule-list > li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 12px;
+  padding-block: 8px;
+}
+.personal-schedule-list > li + li {
+  border-top: 1px solid var(--border);
+}
+.personal-schedule-list time,
+.personal-schedule-list small {
+  color: #506885;
+  font-size: 12px;
+}
+.personal-schedule-list small {
+  display: block;
+}
+.personal-day-notification-title {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  width: 100%;
 }
 
 @media screen and (max-width: 767px) {

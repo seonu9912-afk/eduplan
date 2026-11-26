@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { markOperationRead } from "@/app/operations-actions";
-import { addDays, weekRange } from "@/lib/domain";
+import { addDays, dateLabel, weekRange } from "@/lib/domain";
 import {
   dailyOperationNotice,
   createLessonResolver,
@@ -40,6 +40,8 @@ export function PersonalDay({
   const ids = useMemo(() => myTeacherIds(c), [c]);
   const clock = seoulClock(now),
     lessons = resolver?.(clock.date).filter((x) => ids.has(x.teacherId)) ?? [];
+  const hhmm = clock.time.slice(0, 5);
+  const operationNotice = dailyOperationNotice(c, clock.date);
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
   const teacher = c.operations?.directory.find((x) => x.user_id === c.userId);
   const items = unifiedSchedule(c, clock.date, addDays(clock.date, 6));
@@ -77,46 +79,40 @@ export function PersonalDay({
       <div className="dashboard-columns">
         <section className="panel">
           <div className="personal-day-heading">
-            <h2>오늘의 나의 수업</h2>
-            <time className="daily-clock">{clock.time.slice(0, 5)}</time>
+            <h2>오늘 수업</h2>
+            <time className="daily-clock" dateTime={`${clock.date}T${hhmm}+09:00`}>
+              {dateLabel(clock.date)} <strong>{hhmm}</strong>
+            </time>
           </div>
-          <p>
-            {clock.date} · 대한민국 표준시
-            {c.operations?.publication
-              ? ` · 배포 버전 ${c.operations.publication.source_version}`
-              : ""}
-          </p>
-          {dailyOperationNotice(c, clock.date) && (
+          {operationNotice && (
             <p className="info-box" role="status">
-              {dailyOperationNotice(c, clock.date)}
+              {operationNotice}
             </p>
           )}
           {!doc ? (
             <p>
-              학교에서 시간표를 저장한 뒤 ‘검토 후 확정·배포’하면 개인 시간표가
-              표시됩니다.
+              시간표가 확정되면 담당 수업이 표시됩니다.
             </p>
           ) : (
             <>
               <div className="next-lesson" aria-live="polite">
-                <strong>
-                  {current.length
-                    ? `현재 ${current.map((x) => `${x.period}교시 ${x.subject}`).join(" · ")}`
-                    : "현재 진행 중인 수업 없음"}
-                </strong>
-                <p>
-                  {next
-                    ? `다음 수업 ${next.subject} · ${next.classes} · ${next.start} (${remaining}분 후)`
-                    : "오늘 남은 수업이 없습니다."}
-                </p>
+                {current.length > 0 && (
+                  <p>진행 중 · {current.map((x) => `${x.period}교시 ${x.subject}`).join(" · ")}</p>
+                )}
+                {next ? (
+                  <>
+                    <strong>다음 수업 · {next.period}교시 {next.subject}</strong>
+                    <p>{next.classes} · {next.start} ({remaining}분 후)</p>
+                  </>
+                ) : (
+                  <p>{lessons.length ? "다음 수업이 없습니다." : "오늘 배정된 수업이 없습니다."}</p>
+                )}
               </div>
               {!teacher && (
                 <p className="operations-warning">
-                  공통 교원 명부에 계정이 연결되지 않았습니다. 기존 계정 ID로
-                  배정된 수업은 함께 표시합니다.
+                  교원 명부에 연결되지 않았습니다. 관리자에게 계정 연결을 요청하세요.
                 </p>
               )}
-              {!lessons.length && <p>오늘 배정된 수업이 없습니다.</p>}
               {lessons.map((lesson, index) => (
                 <article
                   key={`${lesson.id}:${index}`}
@@ -124,19 +120,22 @@ export function PersonalDay({
                 >
                   <div>
                     <b>{lesson.period}교시</b>
-                    <small>{lesson.start ?? "시각 미설정"}</small>
+                    <small className="daily-lesson-time">
+                      {lesson.start && lesson.end
+                        ? `${lesson.start}–${lesson.end}`
+                        : "시각 미설정"}
+                    </small>
                   </div>
                   <div>
                     <strong>{lesson.subject}</strong>
                     <small>
-                      {lesson.classes} · {lesson.room || "장소 미지정"}
+                      {[lesson.classes, lesson.room].filter(Boolean).join(" · ")}
                     </small>
                     {lesson.changed && <small>변경·교환·보결 수업</small>}
                     {!!lesson.blockedBy.length && (
                       <small>{lesson.blockedBy.join(" · ")}</small>
                     )}
                   </div>
-                  <span>{lesson.end}</span>
                 </article>
               ))}
               <Disclosure compact label="이번 주 내 시간표">
@@ -208,44 +207,38 @@ export function PersonalDay({
               브라우저 알림 사용
             </Button>
           </div>
-          <p className="muted-small">
-            {permission}. 화면을 열어 둔 동안 안내합니다. 화면을 닫거나 기기가
-            절전 상태이면 알림함에서 변경 내용을 확인하세요.
-          </p>
+          <p className="muted-small">{permission} · 화면을 열어 둔 동안 알림을 받습니다.</p>
         </section>
         <section className="panel">
-          <h2>오늘·이번 주 학교 업무</h2>
+          <div className="personal-day-heading">
+            <h2>앞으로 7일 일정</h2>
+            <Button asChild variant="outline">
+              <Link
+                href={
+                  previewNow
+                    ? "/recovery-preview/operations"
+                    : `/app/${c.workspace.id}/plans?year=${c.year?.year}`
+                }
+              >
+                월중·주간계획
+              </Link>
+            </Button>
+          </div>
           {mine.length ? (
-            <ul className="operations-compact-list">
+            <ul className="personal-schedule-list">
               {mine.map((x) => (
                 <li key={`${x.source}:${x.id}`}>
-                  <b>
-                    {x.date.slice(5)} {x.title}
-                  </b>
-                  <small>
-                    {" "}
-                    {x.department} · {x.kind} {x.time} {x.location}
-                  </small>
+                  <time dateTime={x.date}>{dateLabel(x.date)}</time>
+                  <div>
+                    <strong>{x.title}</strong>
+                    <small>{[x.department, x.kind, x.time, x.location].filter(Boolean).join(" · ")}</small>
+                  </div>
                 </li>
               ))}
             </ul>
           ) : (
             <p>예정된 학교·부서 일정이 없습니다.</p>
           )}
-          <p className="muted-small">
-            학사운영과 학교업무에 등록한 원본 일정을 함께 표시합니다.
-          </p>
-          <Button asChild variant="outline">
-            <Link
-              href={
-                previewNow
-                  ? "/recovery-preview/operations"
-                  : `/app/${c.workspace.id}/plans?year=${c.year?.year}`
-              }
-            >
-              월중·주간계획
-            </Link>
-          </Button>
           <h2 className="personal-day-notification-title">내 알림함</h2>
           <ul className="notification-list">
             {(c.operations?.notifications ?? []).map((n) => (

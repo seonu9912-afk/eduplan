@@ -93,9 +93,7 @@ test("calendar closure previews lesson losses and updates personal lessons witho
   page,
 }) => {
   await page.goto(route);
-  await expect(
-    page.getByText("다음 수업 국어", { exact: false }),
-  ).toContainText("3분 후");
+  await expect(page.locator(".next-lesson")).toContainText("3분 후");
   await page.getByRole("button", { name: "학사일정", exact: true }).click();
   await page
     .getByRole("button", { name: "2027-03-02 수업일", exact: true })
@@ -110,7 +108,7 @@ test("calendar closure previews lesson losses and updates personal lessons witho
   ).toBeVisible();
   await page.getByRole("button", { name: "오늘", exact: true }).click();
   await expect(
-    page.getByText("오늘 남은 수업이 없습니다.", { exact: true }),
+    page.getByText("다음 수업이 없습니다.", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".daily-lesson.cancelled")).toHaveCount(4);
   await page.reload();
@@ -161,9 +159,9 @@ test("mobile personal day and persisted notification preference stay usable", as
     page.getByRole("combobox", { name: "수업 전 안내 시간" }),
   ).toHaveValue("10");
   await expect(
-    page.getByRole("heading", { name: "오늘의 나의 수업" }),
+    page.getByRole("heading", { name: "오늘 수업" }),
   ).toBeVisible();
   await expect(
-    page.getByText("다음 수업 국어", { exact: false }),
+    page.getByText(/다음 수업 · .*국어/),
   ).toBeVisible();
 });

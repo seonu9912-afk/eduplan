@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Users, UserPlus, Copy, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,7 @@ import {
 } from "@/app/actions";
 import { roles } from "@/lib/domain";
 import type { Context, Role } from "@/lib/models";
-export function Members({ context: c }: { context: Context }) {
+export function Members({ context: c, relatedTools }: { context: Context; relatedTools?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [change, setChange] = useState<{
     userId: string;
@@ -32,9 +32,7 @@ export function Members({ context: c }: { context: Context }) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">PEOPLE & PERMISSIONS</span>
           <h1>구성원 관리</h1>
-          <p>함께하는 선생님과 각자의 역할을 관리하세요.</p>
         </div>
         {admin && c.workspace.kind === "school" ? (
           <Button onClick={() => setOpen(true)}>
@@ -43,6 +41,7 @@ export function Members({ context: c }: { context: Context }) {
           </Button>
         ) : null}
       </div>
+      {relatedTools && <div className="workspace-related-tools">{relatedTools}</div>}
       <InlineNotice mutation={m} />
       <section className="panel">
         <div className="panel-heading">

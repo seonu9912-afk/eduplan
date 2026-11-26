@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { currentLessonNotice } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
 /** The official sources are re-read even while another module has unsaved edits. */
-export function LessonReminder({ context: c }: { context: Context }) {
-  const [message, setMessage] = useState("");
+export function LessonReminder({ context: c, showErrors }: { context: Context; showErrors: boolean }) {
+  const [notice, setNotice] = useState({ message: "", error: false });
   const workspaceId = c.workspace.id,
     userId = c.userId,
     year = c.year?.year;
@@ -30,10 +30,10 @@ export function LessonReminder({ context: c }: { context: Context }) {
         shown?.close();
         shown = null;
         if (!result.ok) {
-          setMessage(result.error);
+          setNotice({ message: result.error, error: true });
           return;
         }
-        setMessage(result.data?.title ?? "");
+        setNotice({ message: result.data?.title ?? "", error: false });
         if (
           !result.data ||
           !("Notification" in window) ||
@@ -57,9 +57,10 @@ export function LessonReminder({ context: c }: { context: Context }) {
         } catch {}
       } catch {
         if (!disposed)
-          setMessage(
-            "최신 수업 운영 정보를 확인하지 못해 수업 알림을 보류했습니다.",
-          );
+          setNotice({
+            message: "최신 수업 운영 정보를 확인하지 못해 수업 알림을 보류했습니다.",
+            error: true,
+          });
       } finally {
         busy = false;
       }
@@ -77,9 +78,9 @@ export function LessonReminder({ context: c }: { context: Context }) {
       window.removeEventListener("eduplan-reminder-settings", tick);
     };
   }, [workspaceId, userId, year]);
-  return message ? (
+  return notice.message && (showErrors || !notice.error) ? (
     <aside className="info-box no-print" role="status">
-      {message}
+      {notice.message}
     </aside>
   ) : null;
 }

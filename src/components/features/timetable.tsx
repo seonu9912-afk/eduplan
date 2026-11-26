@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
   useTransition,
+  type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Upload, Download, RefreshCcw } from "lucide-react";
@@ -41,9 +42,11 @@ type DocumentMessage = { text: string; error?: boolean };
 export function Timetable({
   context: c,
   onDirtyChange,
+  relatedTools,
 }: {
   context: Context;
   onDirtyChange: (value: boolean) => void;
+  relatedTools?: ReactNode;
 }) {
   const router = useRouter();
   const year = c.year?.year ?? 2027;
@@ -400,7 +403,7 @@ export function Timetable({
   if (!c.year)
     return (
       <section className="panel">
-        <h2>시간표</h2>
+        <h1>시간표</h1>
         <p>작업공간 설정에서 학년도를 먼저 생성해 주세요.</p>
       </section>
     );
@@ -408,14 +411,10 @@ export function Timetable({
     <div className="timetable-module">
       <header className="page-heading">
         <div>
-          <span className="eyebrow">TIMETABLE PLANNING</span>
           <h1>시간표 편성</h1>
-          <p>
-            {year}학년도 · 수업 배정, 자동편성, 일과표, 수업 교환과 보강을
-            하나의 시간표로 관리합니다.
-          </p>
         </div>
       </header>
+      {relatedTools && <div className="workspace-related-tools">{relatedTools}</div>}
       <div className="tt-workspace-actions no-print">
         <Disclosure className="tt-file-actions" compact label="백업·불러오기">
           <div className="heading-actions">
