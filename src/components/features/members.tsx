@@ -254,7 +254,7 @@ function InviteForm({ context: c }: { context: Context }) {
             createInvitation({
               target: c.workspace.id,
               recipient: f.get("recipient"),
-              member_role: f.get("role"),
+              member_role: "viewer",
             }),
           (data) => {
             setLink(`${window.location.origin}/invite/${data.token}`);
@@ -273,14 +273,8 @@ function InviteForm({ context: c }: { context: Context }) {
           placeholder="teacher@school.kr"
         />
       </Field>
-      <Field label="참여 권한" id="invite-role">
-        <select id="invite-role" name="role">
-          <option value="editor">편집자 · 일정과 교육과정 편집</option>
-          <option value="viewer">조회 전용 · 자료 열람</option>
-        </select>
-      </Field>
       <p className="field-hint">
-        같은 이메일로 다시 발급하면 이전 미사용 초대는 철회됩니다.
+        교사로 참여합니다. 담당 업무는 참여 후 지정할 수 있습니다.
       </p>
       <InlineNotice mutation={m} />
       {link ? (

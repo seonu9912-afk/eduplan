@@ -73,6 +73,7 @@ export async function saveTeachingPlan(
   version: number,
   input: unknown,
   confirm = false,
+  publication?: { startsOn: string; note: string },
 ) {
   return run(async () => {
     uuid.parse(courseId);
@@ -81,12 +82,18 @@ export async function saveTeachingPlan(
     const connectionErrors = authoringIntegrityErrors(payload);
     if (connectionErrors.length) throw new Error(connectionErrors[0]);
     const db = await dbClient();
-    const { data, error } = await db.rpc("save_teaching_plan", {
+    const scope = {
       target_course: courseId,
       expected_version: version,
       payload,
-      confirm_plan: confirm,
-    });
+    };
+    const schedule = publication && z.object({
+      startsOn: z.iso.date(),
+      note: z.string().trim().max(500),
+    }).parse(publication);
+    const { data, error } = schedule
+      ? await db.rpc("publish_teaching_from", { ...scope, effective_date: schedule.startsOn, note: schedule.note })
+      : await db.rpc("save_teaching_plan", { ...scope, confirm_plan: confirm });
     if (error) throw error;
     refresh();
     return data;

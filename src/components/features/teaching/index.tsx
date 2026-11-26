@@ -46,6 +46,8 @@ import {
   type TeachingDocument,
 } from "@/lib/teaching";
 import type { Context, Row } from "@/lib/models";
+import { addDays } from "@/lib/domain";
+import { PublicationFields } from "../publication-fields";
 import { CourseForm } from "./course-form";
 import { WeeklyPlanGrid } from "./weekly-plan-grid";
 import { linkedTeachingCalendar } from "@/lib/teaching-calendar-context";
@@ -546,6 +548,7 @@ function CourseEditor({
     [autoActive, setAutoActive] = useState(false),
     [autoError, setAutoError] = useState(""),
     [editing, setEditing] = useState(false),
+    [publishing, setPublishing] = useState(false),
     [collaborating, setCollaborating] = useState(false),
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
@@ -719,13 +722,17 @@ function CourseEditor({
       message:
         "편성·수동 기준 차시가 없습니다. 차시 합계를 비교할 수 없습니다.",
     });
-  const save = () => {
+  const save = (publication?: { startsOn: string; note: string }) => {
     if (autoInFlight.current) return;
     const confirm =
       doc.lesson_status === "확정" ||
       doc.evaluations.some((v) => v.status === "확정");
+    if (confirm && course.visibility === "workspace" && !publication) {
+      setPublishing(true);
+      return;
+    }
     if (
-      confirm &&
+      confirm && !publication &&
       !window.confirm(
         `확정은 EduPlan 내부 관리 상태이며 학교의 공식 심의·결재를 대체하지 않습니다. 현재 점검 ${issues.length}건을 확인하고 저장할까요?`,
       )
@@ -733,12 +740,13 @@ function CourseEditor({
       return;
     const submittedRevision = revision.current;
     m.execute(
-      () => saveTeachingPlan(course.id, course.version, doc, confirm),
+      () => saveTeachingPlan(course.id, course.version, doc, confirm, publication),
       (version) => {
         setCourse((value) => ({ ...value, version }));
+        setPublishing(false);
         if (revision.current === submittedRevision) saved();
       },
-      "계획을 저장했습니다.",
+      publication ? `${publication.startsOn} 적용 공개본을 저장했습니다.` : "계획을 저장했습니다.",
     );
   };
   const versionConflict =
@@ -825,7 +833,7 @@ function CourseEditor({
                 )}
                 <Button
                   disabled={!dirty || busy || autoActive || versionConflict}
-                  onClick={save}
+                  onClick={() => save()}
                 >
                   <Save />
                   {m.pending ? "저장 중…" : "계획 저장"}
@@ -1111,6 +1119,19 @@ function CourseEditor({
             </Button>
           )}
         </footer>
+        <Modal open={publishing} onOpenChange={setPublishing} title="수업·평가계획 공개"
+          description={`확정 상태인 항목을 선택한 날짜부터 공개합니다. 현재 점검 항목은 ${issues.length}건입니다.`}>
+          <form className="form-stack" onSubmit={(event) => {
+            event.preventDefault();
+            const fields = new FormData(event.currentTarget);
+            save({ startsOn: String(fields.get("startsOn")), note: String(fields.get("note")) });
+          }}>
+            <PublicationFields start={`${c.year!.year}-03-01`}
+              end={addDays(`${c.year!.year + 1}-03-01`, -1)} />
+            <InlineNotice mutation={m} />
+            <Button type="submit" disabled={m.pending || versionConflict}>공개본 저장</Button>
+          </form>
+        </Modal>
         <Modal
           open={editing}
           onOpenChange={setEditing}
@@ -1165,7 +1186,7 @@ function CourseEditors({
       .map((editor) => editor.user_id),
   );
   const candidates = context.members.filter(
-    (item) => item.role === "editor" && item.user_id !== course.owner_id,
+    (item) => item.user_id !== course.owner_id,
   );
   return (
     <form
@@ -1182,7 +1203,7 @@ function CourseEditors({
       <p>이 계획의 교수학습·평가 내용을 함께 작성할 교사를 선택하세요.</p>
       {candidates.length ? (
         <fieldset className="course-classes" disabled={mutation.pending}>
-          <legend>작업공간 편집자</legend>
+          <legend>공동작성할 학교 구성원</legend>
           {candidates.map((member) => (
             <label key={member.user_id}>
               <input
@@ -1196,7 +1217,7 @@ function CourseEditors({
           ))}
         </fieldset>
       ) : (
-        <p className="muted">현재 지정할 수 있는 작업공간 편집자가 없습니다.</p>
+        <p className="muted">현재 지정할 수 있는 학교 구성원이 없습니다.</p>
       )}
       <InlineNotice mutation={mutation} />
       <Button

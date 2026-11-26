@@ -18,12 +18,17 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
   const [date, setDate] = useState(clamp(today));
   const [view, setView] = useState<"month" | "week" | "year">(work ? "week" : "month");
+  const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const month = date.slice(0, 7);
   const range = view === "year" ? { start, end } : view === "week" ? weekRange(date) : monthRange(month);
   const publications = c.schoolPublications ?? [];
-  const calendar = publicationAt(publications, "calendar", date);
-  const workPlan = publicationAt(publications, "plans", date);
-  const official = publishedSchoolContext(c, date);
+  const selected = publications.find((release) => release.id === selectedRelease);
+  const displayed = selected
+    ? [selected, ...publications.filter((release) => release.domain !== selected.domain)]
+    : publications;
+  const calendar = publicationAt(displayed, "calendar", date);
+  const workPlan = publicationAt(displayed, "plans", date);
+  const official = publishedSchoolContext({ ...c, schoolPublications: displayed }, date);
   const plan = annualSchema.safeParse(official.annual?.document);
   const items = unifiedSchedule(official, range.start, range.end)
     .filter((item) => work || item.source !== "business");
@@ -69,6 +74,10 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
       </div>
       <h2>{view === "year" ? `${year}학년도` : view === "week"
         ? `${dateLabel(range.start)} – ${dateLabel(range.end)}` : `${Number(month.slice(5))}월`}</h2>
+      {selected && <div className="school-reader-toolbar">
+        <span className="muted">공개본 · {selected.starts_on} 적용 · 버전 {selected.source_version}</span>
+        <Button className="no-print" variant="outline" onClick={() => setSelectedRelease(null)}>자동 적용본 보기</Button>
+      </div>}
       {!available ? <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
         : view === "year" ? (
           <table className="school-reader-list"><thead><tr><th>기간</th><th>학사일정</th></tr></thead>
@@ -95,6 +104,10 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
           {item.change_note && <p>{item.change_note}</p>}
+          <Button variant="outline" onClick={() => {
+            setSelectedRelease(item.id);
+            setDate(clamp(item.starts_on));
+          }}>이 버전 보기</Button>
         </li>)}</ul>
       </Disclosure>}
     </section>
@@ -103,25 +116,38 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
 
 export function OfficialCurriculum({ context: c }: { context: Context }) {
   const plans = c.curriculumPublications ?? [];
-  const [cohort, setCohort] = useState(c.year?.year ?? plans[0]?.cohort_year ?? 0);
-  const plan = plans.find((p) => p.cohort_year === cohort) ?? plans[0];
+  const year = c.year!.year;
+  const end = addDays(`${year + 1}-03-01`, -1);
+  const byYear = plans.filter((p) => !p.starts_on || p.starts_on <= end);
+  const cohorts = [...new Set(byYear.map((p) => p.cohort_year))];
+  const [selection, setSelection] = useState<{ cohort: number; id?: string } | null>(null);
+  const preferred = selection?.cohort ?? year;
+  const cohort = cohorts.includes(preferred) ? preferred : cohorts.find((value) => value <= year) ?? cohorts[0];
+  const history = byYear.filter((p) => p.cohort_year === cohort);
+  const plan = history.find((p) => p.id === selection?.id) ?? history[0];
   const terms = c.grades.flatMap((grade) => [1, 2].map((semester) => ({ grade, semester })));
   if (!plan) return <p className="panel school-reader-empty">공개된 교육과정 편성표가 없습니다.</p>;
   const ids = [...new Set(plan.hours.map((h) => h.subject_id))];
   const hours = new Map(plan.hours.map((h) => [`${h.subject_id}:${h.grade}:${h.semester}`, h.hours]));
   const rows = ids.map((id) => ({
     id,
-    name: c.subjects.find((s) => s.id === id)?.name ?? "이전 교과목",
+    name: plan.subject_names?.[id] ?? c.subjects.find((s) => s.id === id)?.name ?? "이전 교과목",
     values: terms.map((t) => hours.get(`${id}:${t.grade}:${t.semester}`)),
   }));
   return <section className="school-plan-reader">
     <div className="school-reader-toolbar">
-      <label>입학년도 <select value={plan.cohort_year} onChange={(e) => setCohort(Number(e.target.value))}>
-        {plans.map((p) => <option key={p.id} value={p.cohort_year}>{p.cohort_year}학년도 입학생</option>)}
+      <label>입학년도 <select value={plan.cohort_year} onChange={(e) => setSelection({ cohort: Number(e.target.value) })}>
+        {cohorts.map((value) => <option key={value} value={value}>{value}학년도 입학생</option>)}
       </select></label>
+      {history.length > 1 && <label className="no-print">공개 버전 <select value={plan.id} onChange={(e) => setSelection({ cohort, id: e.target.value })}>
+        {history.map((p, index) => <option key={p.id} value={p.id}>
+          {p.starts_on ? `${p.starts_on} 적용` : `${p.confirmed_at.slice(0, 10)} 공개`} · {history.length - index}차
+        </option>)}
+      </select></label>}
       <Button className="no-print" variant="outline" onClick={() => window.print()}><Printer /> 인쇄</Button>
     </div>
-    <p className="muted">{plan.confirmed_at.slice(0, 10)} 공개</p>
+    <p className="muted">{plan.starts_on && `${plan.starts_on} 적용 · `}{plan.confirmed_at.slice(0, 10)} 공개</p>
+    {plan.change_note && <p>{plan.change_note}</p>}
     <div className="table-scroll">
       <table className="school-reader-list school-curriculum-sheet" aria-label="공개 교육과정 편성표">
         <thead><tr><th rowSpan={2} scope="col">교과목</th>{c.grades.map((g) => <th key={g} colSpan={2} scope="colgroup">{g}학년</th>)}<th rowSpan={2} scope="col">합계</th></tr>
@@ -154,7 +180,8 @@ export function OfficialTeaching({ context: c }: { context: Context }) {
     {!plans.length && <p className="panel school-reader-empty">조건에 맞는 공개 수업·평가 계획이 없습니다.</p>}
     {plans.map((plan) => (
       <Disclosure key={plan.course_id} label={`${plan.grade}학년 · ${plan.subject_name} · ${plan.teacher_name}`}>
-        <p>{plan.semester ? `${plan.semester}학기` : "연간"} · {plan.published_at.slice(0, 10)} 공개</p>
+        <p>{plan.semester ? `${plan.semester}학기` : "연간"} · {plan.starts_on && `${plan.starts_on} 적용 · `}{plan.published_at.slice(0, 10)} 공개</p>
+        {plan.change_note && <p>{plan.change_note}</p>}
         {plan.units.length > 0 && <div className="table-scroll">
           <table className="school-reader-list" aria-label="교수학습 계획">
             <thead><tr><th>기간</th><th>단원</th><th>학습 내용</th></tr></thead>

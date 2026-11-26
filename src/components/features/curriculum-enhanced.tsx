@@ -13,6 +13,9 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/common";
+import { addDays } from "@/lib/domain";
+import { PublicationFields } from "./publication-fields";
 import type { Context, Row } from "@/lib/models";
 import {
   orderedCurriculumGroups,
@@ -334,6 +337,9 @@ export function CurriculumEnhanced({
   const draftCells = useRef(new Set<string>());
   const [reload, setReload] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
+  const [publicationPlan, setPublicationPlan] = useState<Plan | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [publicationError, setPublicationError] = useState("");
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [showNational, setShowNational] = useState(false);
   const [inputMode, setViewMode] = useState<
@@ -656,7 +662,7 @@ export function CurriculumEnhanced({
         result.ok ? "다른 교사가 편집 중입니다." : result.error,
       ]);
   }
-  async function confirm(plan: Plan) {
+  async function confirm(plan: Plan, startsOn: string, note: string) {
     const state = statesRef.current[plan.id];
     if (
       !state ||
@@ -665,25 +671,31 @@ export function CurriculumEnhanced({
       state.needsResave ||
       !state.locked
     ) {
-      setErrors(["저장을 완료한 뒤 확정본을 생성해 주세요."]);
+      setPublicationError("저장을 완료한 뒤 공개해 주세요.");
       return;
     }
+    setPublishing(true);
+    setPublicationError("");
     const result = await actions
       .confirm({
         planId: plan.id,
         expectedPlanVersion: state.planVersion,
         expectedDocVersion: state.docVersion,
+        startsOn,
+        note,
       })
       .catch(() => ({
         ok: false as const,
         error: "확정본 생성에 실패했습니다. 저장 상태를 확인해 주세요.",
       }));
+    setPublishing(false);
     if (result.ok) {
+      setPublicationPlan(null);
       setStates((prev) => ({
         ...prev,
         [plan.id]: {
           ...prev[plan.id],
-          status: "확정본 생성 완료 · 버전 " + result.data.version,
+          status: `${startsOn} 적용 공개본 저장 완료`,
           snapshots: [
             {
               id: result.data.id,
@@ -694,7 +706,7 @@ export function CurriculumEnhanced({
           ],
         },
       }));
-    } else setErrors([result.error]);
+    } else setPublicationError(result.error);
   }
   function historyMove(planId: string, undo: boolean) {
     const state = statesRef.current[planId];
@@ -1388,10 +1400,13 @@ export function CurriculumEnhanced({
                     {(!simpleStep || simpleStep === "review") && (
                       <button
                         disabled={item.dirty || item.saving || item.needsResave}
-                        onClick={() => void confirm(p)}
+                        onClick={() => {
+                          setPublicationError("");
+                          setPublicationPlan(p);
+                        }}
                       >
                         <ShieldCheck size={13} />
-                        {simpleStep === "review" ? "편성안 확정" : "확정본"}
+                        확정·공개
                       </button>
                     )}
                   </>
@@ -1401,6 +1416,20 @@ export function CurriculumEnhanced({
           })}
         </div>
       </div>
+      <Modal open={!!publicationPlan} onOpenChange={(open) => {
+        if (!open && !publishing) setPublicationPlan(null);
+      }} title="교육과정 공개" description="저장한 교육과정표가 적용 시작일부터 학교 구성원에게 표시됩니다.">
+        {publicationPlan && <form className="form-stack" onSubmit={(event) => {
+          event.preventDefault();
+          const fields = new FormData(event.currentTarget);
+          if (!publishing) void confirm(publicationPlan, String(fields.get("startsOn")), String(fields.get("note")));
+        }}>
+          <PublicationFields start={`${publicationPlan.cohort_year}-03-01`}
+            end={addDays(`${publicationPlan.cohort_year + c.grades.length}-03-01`, -1)} />
+          {publicationError && <p role="alert" className="notice notice-error">{publicationError}</p>}
+          <Button type="submit" disabled={publishing}>{publishing ? "공개본 저장 중…" : "공개본 저장"}</Button>
+        </form>}
+      </Modal>
       {errors.length > 0 && (
         <div className="cv2-errors" role="alert">
           <button onClick={() => setErrors([])} aria-label="오류 메시지 닫기">

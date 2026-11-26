@@ -383,6 +383,9 @@ export type Database = {
           hours: Json;
           confirmed_at: string;
           confirmed_by: string;
+          starts_on: string | null;
+          change_note: string;
+          subject_names: Json;
         };
         Insert: never;
         Update: never;
@@ -964,6 +967,8 @@ export type Database = {
           course_id: string;
           course_snapshot: Json;
           created_at: string;
+          starts_on: string | null;
+          change_note: string;
           document: Json;
           version: number;
           workspace_id: string;
@@ -1175,6 +1180,14 @@ export type Database = {
         Returns: string;
       };
       school_curriculum_publications: { Args: { target: string }; Returns: Json };
+      publish_curriculum_from: {
+        Args: { target_plan: string; expected_plan_version: number; expected_doc_version: number; effective_date: string; note: string };
+        Returns: Json;
+      };
+      publish_teaching_from: {
+        Args: { target_course: string; expected_version: number; payload: Json; effective_date: string; note: string };
+        Returns: number;
+      };
       school_teaching_publications: { Args: { target: string; year_id: string }; Returns: Json };
       operation_push_notice: {
         Args: { subscription: string; notification: string };

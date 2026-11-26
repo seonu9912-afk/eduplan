@@ -134,13 +134,17 @@ export async function saveCurriculumDesign(input: unknown): Promise<Result<{
 }
 export async function confirmCurriculumDesign(input: unknown): Promise<Result<{id:string;version:number}>> {
   try{
-    const {planId,expectedPlanVersion,expectedDocVersion}=z.object({
+    const {planId,expectedPlanVersion,expectedDocVersion,startsOn,note}=z.object({
       planId:uuid,expectedPlanVersion:z.number().int().positive(),expectedDocVersion:z.number().int().positive(),
+      startsOn:z.iso.date().optional(),note:z.string().trim().max(500).default(""),
     }).parse(input);
     const {db}=await checkWorkspace(planId,true);
-    const response=await db.rpc("curriculum_design_confirm_version",{
+    const version={
       target_plan:planId,expected_plan_version:expectedPlanVersion,expected_doc_version:expectedDocVersion,
-    });
+    };
+    const response=startsOn
+      ? await db.rpc("publish_curriculum_from",{...version,effective_date:startsOn,note})
+      : await db.rpc("curriculum_design_confirm_version",version);
     if(response.error)throw response.error;
     const output=z.object({ok:z.boolean(),id:uuid,version:z.number()}).parse(response.data);
     revalidatePath("/app","layout");

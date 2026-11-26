@@ -8,6 +8,9 @@ export type CurriculumPublication = {
   id: string;
   cohort_year: number;
   confirmed_at: string;
+  starts_on?: string | null;
+  change_note?: string;
+  subject_names?: Record<string, string>;
   version: number;
   hours: Pick<Row<"curriculum_hours">, "grade" | "semester" | "subject_id" | "hours">[];
 };
@@ -15,6 +18,8 @@ export type TeachingPublication = {
   course_id: string;
   version: number;
   published_at: string;
+  starts_on?: string | null;
+  change_note?: string;
   grade: number;
   semester: number;
   subject_name: string;

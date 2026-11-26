@@ -8,9 +8,9 @@ export function gradesForSchoolType(type: SchoolType): number[] {
 }
 
 export const roles = {
-  admin: "관리자",
-  editor: "편집자",
-  viewer: "조회 전용",
+  admin: "학교 관리자",
+  editor: "교사(기존)",
+  viewer: "교사",
 } as const;
 export const eventTypes = {
   school: "학교 행사",
