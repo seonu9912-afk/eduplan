@@ -1,5 +1,5 @@
 import { z } from "zod";
-import {canPlan} from "./planning-completion";
+import { canPlan } from "./planning-completion";
 import type { Context } from "./models";
 import type { CurriculumDocument } from "./curriculum-design";
 import type { TimetableRecord } from "./timetable-bridge";
@@ -119,6 +119,8 @@ export type TimetablePublication = {
   document: unknown;
 };
 export type OperationNotification = {
+  request_id?: string | null;
+  request_version?: number | null;
   id: string;
   workspace_id: string;
   academic_year_id: string;
@@ -129,7 +131,7 @@ export type OperationNotification = {
   read_at: string | null;
 };
 export type OperationsData = {
-  effectiveTimetables?: {id:string;starts_on:string;document:unknown}[];
+  effectiveTimetables?: { id: string; starts_on: string; document: unknown }[];
   resources?: import("./planning-resources").PlanningResources;
   directory: TeacherDirectory[];
   staff: StaffAppointment[];
@@ -319,7 +321,7 @@ export function staffingReport(
     issues.push(
       "등록된 학급이 없습니다. 학급 설정 또는 가상 학급 수를 확인하세요.",
     );
-  if (!canPlan(c,"staffing"))
+  if (!canPlan(c, "staffing"))
     issues.push("교원 수급 분석은 운영 담당자에게 제공됩니다.");
   return { semester, rows, issues: [...new Set(issues)], details };
 }

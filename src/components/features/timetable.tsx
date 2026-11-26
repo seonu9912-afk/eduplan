@@ -1,5 +1,6 @@
 "use client";
-import {canPlan} from "@/lib/planning-completion";
+import { TimetableTouch } from "./timetable-touch";
+import { canPlan } from "@/lib/planning-completion";
 import { PlanningResources } from "./planning-resources";
 import { publishTimetable } from "@/app/operations-actions";
 
@@ -57,12 +58,13 @@ export function Timetable({
   });
   const [dirty, setDirty] = useState(false);
   const [matrixDirty, setMatrixDirty] = useState(false);
+  const [wideMobile, setWideMobile] = useState(false);
   const [loading, setLoading] = useState(!!c.year);
   const [saving, startTransition] = useTransition();
   const [message, setMessage] = useState<DocumentMessage>({ text: "" });
   const revision = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
-  const canWrite = canPlan(c,"timetable");
+  const canWrite = canPlan(c, "timetable");
   const document = useMemo(
     () => mergeTimetableDocument(c, space.academics[String(year)]),
     [c, space, year],
@@ -551,10 +553,36 @@ export function Timetable({
           }}
         />
       )}
+      {!loading && document && (
+        <div className="mobile-only">
+          <TimetableTouch
+            context={c}
+            document={document}
+            editable={canWrite && !saving}
+            onChange={(doc) =>
+              updateSpace((previous) => ({
+                ...previous,
+                academics: { ...previous.academics, [String(year)]: doc },
+              }))
+            }
+          />
+        </div>
+      )}
+      {!loading && (
+        <Button
+          className="mobile-only no-print"
+          variant="outline"
+          onClick={() => setWideMobile(!wideMobile)}
+        >
+          {wideMobile ? "전체 시간표 접기" : "자동편성·전체 시간표 열기"}
+        </Button>
+      )}
       {loading ? (
         <section className="panel">시간표 자료를 불러오고 있습니다.</section>
       ) : (
-        <div className={saving ? "tt-save-locked" : ""}>
+        <div
+          className={`${saving ? "tt-save-locked" : ""} ${wideMobile ? "" : "desktop-only"}`}
+        >
           <AcademicPlanner
             key={year}
             mode="timetable"

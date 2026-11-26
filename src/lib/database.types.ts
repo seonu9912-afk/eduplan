@@ -15,22 +15,63 @@ export type Database = {
   public: {
     Tables: {
       staff_appointments: {
-        Row: import("./staffing").StaffAppointment; Insert: never; Update: never; Relationships: [];
+        Row: import("./staffing").StaffAppointment;
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       staffing_scenarios: {
-        Row: {id:string; workspace_id:string; academic_year_id:string; name:string; document:Json; created_at:string; created_by:string};
-        Insert: {workspace_id:string; academic_year_id:string; name:string; document:Json; created_by:string}; Update: never; Relationships: [];
+        Row: {
+          id: string;
+          workspace_id: string;
+          academic_year_id: string;
+          name: string;
+          document: Json;
+          created_at: string;
+          created_by: string;
+        };
+        Insert: {
+          workspace_id: string;
+          academic_year_id: string;
+          name: string;
+          document: Json;
+          created_by: string;
+        };
+        Update: never;
+        Relationships: [];
       };
       timetable_publications: {
-        Row: {id:string; workspace_id:string; academic_year_id:string; source_version:number; document:Json; published_at:string; published_by:string};
-        Insert: never; Update: never; Relationships: [];
+        Row: {
+          id: string;
+          workspace_id: string;
+          academic_year_id: string;
+          source_version: number;
+          document: Json;
+          published_at: string;
+          published_by: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       operation_notifications: {
-        Row: import("./staffing").OperationNotification; Insert: never; Update: {read_at:string}; Relationships: [];
+        Row: import("./staffing").OperationNotification;
+        Insert: never;
+        Update: { read_at: string };
+        Relationships: [];
       };
       calendar_item_history: {
-        Row: { id: number; workspace_id: string; academic_year_id: string; item_key: string;
-          before_value: Json | null; after_value: Json | null; actor_id: string; created_at: string; operation: string };
+        Row: {
+          id: number;
+          workspace_id: string;
+          academic_year_id: string;
+          item_key: string;
+          before_value: Json | null;
+          after_value: Json | null;
+          actor_id: string;
+          created_at: string;
+          operation: string;
+        };
         Insert: never;
         Update: never;
         Relationships: [];
@@ -250,49 +291,116 @@ export type Database = {
         ];
       };
       curriculum_import_batches: {
-        Row: {id:string;workspace_id:string;source_year:number;source_kind:string;
-          source_rows:Json;imported_by:string;imported_at:string};
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          id: string;
+          workspace_id: string;
+          source_year: number;
+          source_kind: string;
+          source_rows: Json;
+          imported_by: string;
+          imported_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_annual_excel_sheets: {
         Row: {
-          workspace_id:string;
-          academic_year:number;
-          edits:Json;
-          custom_rows:Json;
-          version:number;
-          updated_at:string;
-          updated_by:string|null;
+          workspace_id: string;
+          academic_year: number;
+          edits: Json;
+          custom_rows: Json;
+          version: number;
+          updated_at: string;
+          updated_by: string | null;
         };
-        Insert:never;
-        Update:never;
-        Relationships:[];
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_operating_sheets: {
-        Row: {workspace_id:string;academic_year:number;document:Json;version:number;
-          status:string;updated_at:string;updated_by:string|null;confirmed_at:string|null};
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          workspace_id: string;
+          academic_year: number;
+          document: Json;
+          version: number;
+          status: string;
+          updated_at: string;
+          updated_by: string | null;
+          confirmed_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_operating_history: {
-        Row: {id:number;workspace_id:string;academic_year:number;version:number;document:Json;
-          status:string;saved_at:string;saved_by:string|null};
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          id: number;
+          workspace_id: string;
+          academic_year: number;
+          version: number;
+          document: Json;
+          status: string;
+          saved_at: string;
+          saved_by: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_design_documents: {
-        Row: { plan_id:string;workspace_id:string;document:Json;version:number;updated_at:string;updated_by:string|null };
-        Insert: never;Update:never;Relationships:[];
+        Row: {
+          plan_id: string;
+          workspace_id: string;
+          document: Json;
+          version: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_design_locks: {
-        Row: { plan_id:string;workspace_id:string;editor_id:string;expires_at:string;updated_at:string };
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          plan_id: string;
+          workspace_id: string;
+          editor_id: string;
+          expires_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_design_snapshots: {
-        Row: { id:string;plan_id:string;workspace_id:string;version:number;document:Json;hours:Json;confirmed_at:string;confirmed_by:string };
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          id: string;
+          plan_id: string;
+          workspace_id: string;
+          version: number;
+          document: Json;
+          hours: Json;
+          confirmed_at: string;
+          confirmed_by: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_design_revisions: {
-        Row: { id:number;plan_id:string;workspace_id:string;version:number;document:Json;saved_at:string;saved_by:string };
-        Insert:never;Update:never;Relationships:[];
+        Row: {
+          id: number;
+          plan_id: string;
+          workspace_id: string;
+          version: number;
+          document: Json;
+          saved_at: string;
+          saved_by: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       curriculum_hours: {
         Row: {
@@ -648,7 +756,7 @@ export type Database = {
       };
       subjects: {
         Row: {
-          curriculum_position?:number|null;
+          curriculum_position?: number | null;
           group_id: string;
           id: string;
           name: string;
@@ -656,7 +764,7 @@ export type Database = {
           workspace_id: string;
         };
         Insert: {
-          curriculum_position?:number|null;
+          curriculum_position?: number | null;
           group_id: string;
           id?: string;
           name: string;
@@ -664,7 +772,7 @@ export type Database = {
           workspace_id: string;
         };
         Update: {
-          curriculum_position?:number|null;
+          curriculum_position?: number | null;
           group_id?: string;
           id?: string;
           name?: string;
@@ -978,7 +1086,7 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: "academic_years";
             referencedColumns: ["workspace_id", "id"];
-          }
+          },
         ];
       };
       workspace_members: {
@@ -1042,71 +1150,256 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      push_public_settings:{Args:Record<string,never>;Returns:Json};
-      lesson_push_status:{Args:{target:string};Returns:Json};
-      save_lesson_push:{Args:{target:string;payload:Json;active:boolean;lead_minutes:number};Returns:string};
-      planning_access:{Args:{target:string};Returns:Json};
-      planning_completion_data:{Args:{target:string;year_id:string};Returns:Json};
-      planning_source_stamp:{Args:{target:string;year_id:string};Returns:string};
-      assessment_calendar:{Args:{target:string;year_id:string};Returns:Json};
-      save_activity_request:{Args:{target:string;year_id:string;request:string|null;expected:number;payload:Json};Returns:string};
-      review_activity_request:{Args:{target:string;request:string;expected:number;decision:string;note:string;source_stamp:string;area:string};Returns:string|null};
-      save_lesson_records:{Args:{target:string;year_id:string;source_stamp:string;entries:Json};Returns:number};
-      lesson_records_data:{Args:{target:string;year_id:string;first_date:string;last_date:string};Returns:Json};
-      save_planning_permission:{Args:{target:string;member:string;area:string;allowed:boolean;expected:number};Returns:undefined};
-      read_curriculum_design:{Args:{target_plan:string};Returns:Json};
-      workspace_curriculum_documents:{Args:{target:string};Returns:Json};
-      publish_timetable_from:{Args:{target:string;year_id:string;expected_version:number;effective_date:string};Returns:Json};
-      effective_timetables:{Args:{target:string;year_id:string};Returns:Json};
-      academic_days_document:{Args:{target:string;year_id:string};Returns:Json};
-      planning_resources:{Args:{target:string;year_id:string};Returns:Json};
-      read_timetable_document:{Args:{target:string;year_id:string};Returns:Json};
-      save_school_room:{Args:{target:string;room_id:string|null;room_name:string};Returns:string};
-      save_bell_schedule:{Args:{target:string;label:string;schedule_kind:string;rows:Json};Returns:string};
-      apply_bell_schedule:{Args:{target:string;year_id:string;schedule:string;first_date:string;last_date:string;note:string};Returns:string};
-      remove_bell_application:{Args:{target:string;application:string};Returns:undefined};
-      staff_directory: {Args:{target:string;year_id:string}; Returns:Json};
-      save_staff_appointment: {Args:{target:string;year_id:string;appointment_id:string;expected_version:number;payload:Json}; Returns:Json};
-      publish_timetable: {Args:{target:string;year_id:string;expected_version:number}; Returns:Json};
-      reorder_curriculum_subjects_v4:{
-        Args:{p_workspace:string;p_group:string;p_order:string[]};Returns:number;
+      operation_push_notice: {
+        Args: { subscription: string; notification: string };
+        Returns: Json;
+      };
+      disconnect_push_device: {
+        Args: { device: string | null; endpoint_value?: string | null };
+        Returns: undefined;
+      };
+      detach_previous_push_account: {
+        Args: { payload: Json };
+        Returns: undefined;
+      };
+      push_public_settings: { Args: Record<string, never>; Returns: Json };
+      lesson_push_status: { Args: { target: string }; Returns: Json };
+      save_lesson_push: {
+        Args: {
+          target: string;
+          payload: Json;
+          active: boolean;
+          lead_minutes: number;
+        };
+        Returns: string;
+      };
+      planning_access: { Args: { target: string }; Returns: Json };
+      planning_completion_data: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      planning_source_stamp: {
+        Args: { target: string; year_id: string };
+        Returns: string;
+      };
+      assessment_calendar: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      save_activity_request: {
+        Args: {
+          target: string;
+          year_id: string;
+          request: string | null;
+          expected: number;
+          payload: Json;
+        };
+        Returns: string;
+      };
+      review_activity_request: {
+        Args: {
+          target: string;
+          request: string;
+          expected: number;
+          decision: string;
+          note: string;
+          source_stamp: string;
+          area: string;
+        };
+        Returns: string | null;
+      };
+      save_lesson_records: {
+        Args: {
+          target: string;
+          year_id: string;
+          source_stamp: string;
+          entries: Json;
+        };
+        Returns: number;
+      };
+      lesson_records_data: {
+        Args: {
+          target: string;
+          year_id: string;
+          first_date: string;
+          last_date: string;
+        };
+        Returns: Json;
+      };
+      save_planning_permission: {
+        Args: {
+          target: string;
+          member: string;
+          area: string;
+          allowed: boolean;
+          expected: number;
+        };
+        Returns: undefined;
+      };
+      read_curriculum_design: { Args: { target_plan: string }; Returns: Json };
+      workspace_curriculum_documents: {
+        Args: { target: string };
+        Returns: Json;
+      };
+      publish_timetable_from: {
+        Args: {
+          target: string;
+          year_id: string;
+          expected_version: number;
+          effective_date: string;
+        };
+        Returns: Json;
+      };
+      effective_timetables: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      academic_days_document: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      planning_resources: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      read_timetable_document: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      save_school_room: {
+        Args: { target: string; room_id: string | null; room_name: string };
+        Returns: string;
+      };
+      save_bell_schedule: {
+        Args: {
+          target: string;
+          label: string;
+          schedule_kind: string;
+          rows: Json;
+        };
+        Returns: string;
+      };
+      apply_bell_schedule: {
+        Args: {
+          target: string;
+          year_id: string;
+          schedule: string;
+          first_date: string;
+          last_date: string;
+          note: string;
+        };
+        Returns: string;
+      };
+      remove_bell_application: {
+        Args: { target: string; application: string };
+        Returns: undefined;
+      };
+      staff_directory: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      save_staff_appointment: {
+        Args: {
+          target: string;
+          year_id: string;
+          appointment_id: string;
+          expected_version: number;
+          payload: Json;
+        };
+        Returns: Json;
+      };
+      publish_timetable: {
+        Args: { target: string; year_id: string; expected_version: number };
+        Returns: Json;
+      };
+      reorder_curriculum_subjects_v4: {
+        Args: { p_workspace: string; p_group: string; p_order: string[] };
+        Returns: number;
       };
       save_curriculum_operating_v4: {
-        Args:{p_workspace:string;p_year:number;p_expected_version:number;p_document:Json;p_action?:string};
-        Returns:Json;
+        Args: {
+          p_workspace: string;
+          p_year: number;
+          p_expected_version: number;
+          p_document: Json;
+          p_action?: string;
+        };
+        Returns: Json;
       };
       save_curriculum_annual_excel_sheet: {
-        Args:{target:string;target_year:number;expected_version:number;next_edits:Json};
-        Returns:Json;
+        Args: {
+          target: string;
+          target_year: number;
+          expected_version: number;
+          next_edits: Json;
+        };
+        Returns: Json;
       };
       save_curriculum_annual_excel_sheet_v2: {
-        Args:{target:string;target_year:number;expected_version:number;next_edits:Json;next_custom_rows:Json};
-        Returns:Json;
+        Args: {
+          target: string;
+          target_year: number;
+          expected_version: number;
+          next_edits: Json;
+          next_custom_rows: Json;
+        };
+        Returns: Json;
       };
       curriculum_excel_apply: {
-        Args: {target:string;source_year:number;source_kind:string;entries:Json};Returns:Json;
+        Args: {
+          target: string;
+          source_year: number;
+          source_kind: string;
+          entries: Json;
+        };
+        Returns: Json;
       };
       curriculum_design_acquire: {
-        Args:{target_plan:string;take_over?:boolean};Returns:Json;
+        Args: { target_plan: string; take_over?: boolean };
+        Returns: Json;
       };
       curriculum_design_release: {
-        Args:{target_plan:string};Returns:void;
+        Args: { target_plan: string };
+        Returns: void;
       };
       curriculum_design_save: {
-        Args:{target_plan:string;expected_plan_version:number;expected_doc_version:number;next_document:Json};Returns:Json;
+        Args: {
+          target_plan: string;
+          expected_plan_version: number;
+          expected_doc_version: number;
+          next_document: Json;
+        };
+        Returns: Json;
       };
       curriculum_design_confirm: {
-        Args:{target_plan:string};Returns:Json;
+        Args: { target_plan: string };
+        Returns: Json;
       };
       curriculum_design_confirm_version: {
-        Args:{target_plan:string;expected_plan_version:number;expected_doc_version:number};Returns:Json;
+        Args: {
+          target_plan: string;
+          expected_plan_version: number;
+          expected_doc_version: number;
+        };
+        Returns: Json;
       };
       save_timetable_document: {
-        Args: { target: string; year_id: string; expected_version: number; next_document: Json };
+        Args: {
+          target: string;
+          year_id: string;
+          expected_version: number;
+          next_document: Json;
+        };
         Returns: Json;
       };
       save_calendar_changes: {
-        Args: { target: string; year_id: string; changes: Json; initial_document: Json; operation?: string };
+        Args: {
+          target: string;
+          year_id: string;
+          changes: Json;
+          initial_document: Json;
+          operation?: string;
+        };
         Returns: Json;
       };
       accept_invitation: { Args: { token: string }; Returns: string };
@@ -1217,7 +1510,11 @@ export type Database = {
         Returns: string;
       };
       set_teaching_plan_editors: {
-        Args: { target_course: string; expected_version: number; editors: string[] };
+        Args: {
+          target_course: string;
+          expected_version: number;
+          editors: string[];
+        };
         Returns: number;
       };
       save_teaching_plan: {

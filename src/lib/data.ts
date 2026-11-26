@@ -20,6 +20,7 @@ export async function session() {
 export async function getWorkspaceContext(
   workspaceId: string,
   selectedYear?: string,
+  section = "full",
 ): Promise<Context> {
   if (!uuid.safeParse(workspaceId).success) notFound();
   const { db, user } = await session();
@@ -104,19 +105,21 @@ export async function getWorkspaceContext(
       .select("*")
       .eq("workspace_id", workspaceId)
       .order("cohort_year", { ascending: false }),
-    readAllRows((from, to) =>
-      db
-        .from("curriculum_hours")
-        .select("*")
-        .eq("workspace_id", workspaceId)
-        .order("plan_id")
-        .order("subject_id")
-        .order("grade")
-        .order("semester")
-        .range(from, to),
-    ),
+    ["home", "notifications", "people", "settings", "plans"].includes(section)
+      ? Promise.resolve({ data: [], error: null })
+      : readAllRows((from, to) =>
+          db
+            .from("curriculum_hours")
+            .select("*")
+            .eq("workspace_id", workspaceId)
+            .order("plan_id")
+            .order("subject_id")
+            .order("grade")
+            .order("semester")
+            .range(from, to),
+        ),
     db.rpc("list_members", { target: workspaceId }),
-    role === "admin"
+    role === "admin" && ["full", "people"].includes(section)
       ? db
           .from("invitations")
           .select("id,email,role,expires_at,accepted_at,revoked_at")
@@ -136,17 +139,44 @@ export async function getWorkspaceContext(
       "자료를 불러오지 못했습니다. 연결 상태를 확인하고 다시 시도해 주세요.",
     );
   // This read is tied to the annual version. Never combine new date rows with an older document.
-  const normalizedDays = await db.rpc("academic_days_document",{target:workspaceId,year_id:yearId});
-  const calendarVersion = await db.from("annual_academic_plans").select("version").eq("workspace_id",workspaceId).eq("academic_year_id",yearId).maybeSingle();
-  if(normalizedDays.error || calendarVersion.error || calendarVersion.data?.version !== results[10].data?.version)
-    throw new Error("학사일정이 변경되었거나 연결 자료를 불러오지 못했습니다. 다시 불러와 주세요.");
-  const annual=results[10].data;
-  if(annual) annual.document={...(annual.document as Record<string, import("./database.types").Json>), days:normalizedDays.data};
-  const [access,completion]=await Promise.all([db.rpc("planning_access",{target:workspaceId}),db.rpc("planning_completion_data",{target:workspaceId,year_id:yearId})]);
-  if(access.error||completion.error) throw Error("업무 권한과 교육활동 요청을 불러오지 못했습니다.");
+  const normalizedDays = await db.rpc("academic_days_document", {
+    target: workspaceId,
+    year_id: yearId,
+  });
+  const calendarVersion = await db
+    .from("annual_academic_plans")
+    .select("version")
+    .eq("workspace_id", workspaceId)
+    .eq("academic_year_id", yearId)
+    .maybeSingle();
+  if (
+    normalizedDays.error ||
+    calendarVersion.error ||
+    calendarVersion.data?.version !== results[10].data?.version
+  )
+    throw new Error(
+      "학사일정이 변경되었거나 연결 자료를 불러오지 못했습니다. 다시 불러와 주세요.",
+    );
+  const annual = results[10].data;
+  if (annual)
+    annual.document = {
+      ...(annual.document as Record<string, import("./database.types").Json>),
+      days: normalizedDays.data,
+    };
+  const [access, completion] = await Promise.all([
+    db.rpc("planning_access", { target: workspaceId }),
+    ["full", "calendar"].includes(section)
+      ? db.rpc("planning_completion_data", {
+          target: workspaceId,
+          year_id: yearId,
+        })
+      : Promise.resolve({ data: undefined, error: null }),
+  ]);
+  if (access.error || completion.error)
+    throw Error("업무 권한과 교육활동 요청을 불러오지 못했습니다.");
   return {
-    access:access.data as Context["access"],
-    completion:completion.data as unknown as Context["completion"],
+    access: access.data as Context["access"],
+    completion: completion.data as unknown as Context["completion"],
     userId: user.id,
     email: user.email ?? "",
     profile: profileResult.data,

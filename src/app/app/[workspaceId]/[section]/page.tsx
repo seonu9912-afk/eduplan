@@ -15,6 +15,7 @@ export default async function WorkspacePage({
   if (
     ![
       "home",
+      "notifications",
       "teachers",
       "calendar",
       "curriculum",
@@ -26,13 +27,14 @@ export default async function WorkspacePage({
     ].includes(p.section)
   )
     notFound();
-  const context = await getWorkspaceContext(p.workspaceId, q.year);
-  context.operations = await getOperationsData(context);
+  const context = await getWorkspaceContext(p.workspaceId, q.year, p.section);
+  context.operations = await getOperationsData(context, p.section);
+  context.loadedAt = new Date().toISOString();
   if (p.section === "teaching" && context.year)
     context.teaching = await getTeachingData(p.workspaceId, context.year.id);
   return (
     <WorkspaceApp
-      key={`${p.workspaceId}-${context.year?.id}`}
+      key={`${context.userId}-${p.workspaceId}-${context.year?.id}`}
       context={context}
       section={p.section}
       today={seoulToday()}

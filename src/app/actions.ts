@@ -11,7 +11,11 @@ import {
   uuid,
 } from "@/lib/domain";
 import { curriculumDraft, curriculumSource } from "@/lib/curriculum-draft";
-import { middleRevisionForCohort, middleCurriculumCatalog, type MiddleRevision } from "@/lib/middle-curriculum";
+import {
+  middleRevisionForCohort,
+  middleCurriculumCatalog,
+  type MiddleRevision,
+} from "@/lib/middle-curriculum";
 import { subjectIsUsedInDesign } from "@/lib/curriculum-subject-removal";
 import type { Result, Role } from "@/lib/models";
 
@@ -66,9 +70,10 @@ function refresh() {
   revalidatePath("/app", "layout");
 }
 function siteUrl() {
-  const deploymentHost = process.env.VERCEL_ENV === "preview"
-    ? process.env.VERCEL_URL
-    : process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  const deploymentHost =
+    process.env.VERCEL_ENV === "preview"
+      ? process.env.VERCEL_URL
+      : process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const value =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (deploymentHost ? `https://${deploymentHost}` : undefined);
@@ -115,10 +120,25 @@ export async function signup(input: unknown) {
     return { signedIn: !!data.session };
   });
 }
-export async function logout() {
+export async function logout(
+  deviceId: string | null = null,
+  endpoint: string | null = null,
+) {
   return run(async () => {
     const db = await createClient();
-    const { error } = await db.auth.signOut();
+    if (deviceId) z.uuid().parse(deviceId);
+    if (endpoint) z.url().max(2048).parse(endpoint);
+    if (deviceId || endpoint) {
+      const disconnected = await db.rpc("disconnect_push_device", {
+        device: deviceId,
+        endpoint_value: endpoint,
+      });
+      if (disconnected.error)
+        throw Error(
+          "기기 알림 연결을 해제하지 못했습니다. 연결 상태를 확인한 후 다시 로그아웃하세요.",
+        );
+    }
+    const { error } = await db.auth.signOut({ scope: "local" });
     if (error) throw error;
     refresh();
   });
@@ -275,56 +295,78 @@ async function mergeMiddleCurriculumDefaults(
   db: Awaited<ReturnType<typeof createClient>>,
   workspaceId: string,
   revision: MiddleRevision,
-){
-  const {data:groups,error:groupsError}=await db.from("subject_groups")
-    .select("id,name").eq("workspace_id",workspaceId);
-  if(groupsError)throw groupsError;
-  const {data:subjects,error:subjectsError}=await db.from("subjects")
-    .select("group_id,name").eq("workspace_id",workspaceId);
-  if(subjectsError)throw subjectsError;
-  const knownGroups=[...(groups??[])];
-  const knownSubjects=[...(subjects??[])];
-  let addedGroups=0,addedSubjects=0;
-  const catalog=middleCurriculumCatalog(revision);
-  for(const template of [...catalog.groups,catalog.creative]){
-    let groupId=knownGroups.find(row=>row.name===template.name)?.id;
-    if(!groupId){
-      const {data,error}=await db.from("subject_groups")
-        .insert({workspace_id:workspaceId,name:template.name})
-        .select("id,name").single();
-      if(error)throw error;
-      if(!data)throw Error("교과군 추가 결과를 확인하지 못했습니다.");
-      groupId=data.id;
-      knownGroups.push({id:data.id,name:data.name});
+) {
+  const { data: groups, error: groupsError } = await db
+    .from("subject_groups")
+    .select("id,name")
+    .eq("workspace_id", workspaceId);
+  if (groupsError) throw groupsError;
+  const { data: subjects, error: subjectsError } = await db
+    .from("subjects")
+    .select("group_id,name")
+    .eq("workspace_id", workspaceId);
+  if (subjectsError) throw subjectsError;
+  const knownGroups = [...(groups ?? [])];
+  const knownSubjects = [...(subjects ?? [])];
+  let addedGroups = 0,
+    addedSubjects = 0;
+  const catalog = middleCurriculumCatalog(revision);
+  for (const template of [...catalog.groups, catalog.creative]) {
+    let groupId = knownGroups.find((row) => row.name === template.name)?.id;
+    if (!groupId) {
+      const { data, error } = await db
+        .from("subject_groups")
+        .insert({ workspace_id: workspaceId, name: template.name })
+        .select("id,name")
+        .single();
+      if (error) throw error;
+      if (!data) throw Error("교과군 추가 결과를 확인하지 못했습니다.");
+      groupId = data.id;
+      knownGroups.push({ id: data.id, name: data.name });
       addedGroups++;
     }
-    const id=groupId;
-    const missing=template.subjects.filter(name=>
-      !knownSubjects.some(row=>row.group_id===id&&row.name===name));
-    if(missing.length){
-      const rows=missing.map(name=>({workspace_id:workspaceId,group_id:id,name}));
-      const {error}=await db.from("subjects").insert(rows);
-      if(error)throw error;
+    const id = groupId;
+    const missing = template.subjects.filter(
+      (name) =>
+        !knownSubjects.some((row) => row.group_id === id && row.name === name),
+    );
+    if (missing.length) {
+      const rows = missing.map((name) => ({
+        workspace_id: workspaceId,
+        group_id: id,
+        name,
+      }));
+      const { error } = await db.from("subjects").insert(rows);
+      if (error) throw error;
       knownSubjects.push(...rows);
-      addedSubjects+=rows.length;
+      addedSubjects += rows.length;
     }
   }
-  return {addedGroups,addedSubjects};
+  return { addedGroups, addedSubjects };
 }
 
-export async function importMiddleCurriculumDefaults(input:unknown){
-  return run(async()=>{
-    const v=z.object({
-      workspaceId:uuid,
-      revision:z.enum(["2015","2022"]),
-    }).parse(input);
-    const {db}=await authorized(v.workspaceId);
-    const {data:workspace,error}=await db.from("workspaces")
-      .select("school_type").eq("id",v.workspaceId).single();
-    if(error)throw error;
-    if(workspace.school_type!=="중학교")
+export async function importMiddleCurriculumDefaults(input: unknown) {
+  return run(async () => {
+    const v = z
+      .object({
+        workspaceId: uuid,
+        revision: z.enum(["2015", "2022"]),
+      })
+      .parse(input);
+    const { db } = await authorized(v.workspaceId);
+    const { data: workspace, error } = await db
+      .from("workspaces")
+      .select("school_type")
+      .eq("id", v.workspaceId)
+      .single();
+    if (error) throw error;
+    if (workspace.school_type !== "중학교")
       throw Error("중학교 작업공간에서만 기본 편제를 불러올 수 있습니다.");
-    const added=await mergeMiddleCurriculumDefaults(db,v.workspaceId,v.revision);
+    const added = await mergeMiddleCurriculumDefaults(
+      db,
+      v.workspaceId,
+      v.revision,
+    );
     refresh();
     return added;
   });
@@ -352,40 +394,88 @@ export async function deleteSubject(input: unknown) {
  * The legacy delete_subject RPC acts on the whole workspace: never expose it
  * directly for subjects that are actually used in any cohort or saved history.
  */
-export async function removeUnusedCurriculumSubject(input:unknown) {
-  return run(async()=>{
-    const v=z.object({workspaceId:uuid,subjectId:uuid}).parse(input);
-    const {db}=await authorized(v.workspaceId);
-    const [subject,hours,courses,documents,snapshots,revisions,plans]=await Promise.all([
-      db.from("subjects").select("id,name").eq("workspace_id",v.workspaceId)
-        .eq("id",v.subjectId).maybeSingle(),
-      db.from("curriculum_hours").select("hours").eq("workspace_id",v.workspaceId)
-        .eq("subject_id",v.subjectId).gt("hours",0).limit(1),
-      db.from("teaching_courses").select("id").eq("workspace_id",v.workspaceId)
-        .eq("subject_id",v.subjectId).limit(1),
-      db.from("curriculum_design_documents").select("document")
-        .eq("workspace_id",v.workspaceId),
-      db.from("curriculum_design_snapshots").select("document")
-        .eq("workspace_id",v.workspaceId),
-      db.from("curriculum_design_revisions").select("document")
-        .eq("workspace_id",v.workspaceId),
-      db.from("curriculum_plans").select("id,version").eq("workspace_id",v.workspaceId),
-    ]);
-    for(const response of [subject,hours,courses,documents,snapshots,revisions,plans])
-      if(response.error)throw response.error;
-    if(!subject.data)throw Error("과목이 이미 삭제되었거나 찾을 수 없습니다.");
-    if(hours.data?.length||courses.data?.length||
-      (documents.data??[]).some(row=>subjectIsUsedInDesign(row.document,v.subjectId))||
-      (snapshots.data??[]).some(row=>subjectIsUsedInDesign(row.document,v.subjectId))||
-      (revisions.data??[]).some(row=>subjectIsUsedInDesign(row.document,v.subjectId)))
-      throw Error("이미 시수·선택과목군·수업 계획 또는 확정 이력이 있는 과목입니다. 기존 자료를 보호하기 위해 삭제하지 않았습니다.");
-    const expected=(plans.data??[]).map(row=>({id:row.id,version:row.version}));
-    const {error}=await db.rpc("delete_subject",{
-      target:v.workspaceId,target_subject:v.subjectId,expected_plans:expected,
+export async function removeUnusedCurriculumSubject(input: unknown) {
+  return run(async () => {
+    const v = z.object({ workspaceId: uuid, subjectId: uuid }).parse(input);
+    const { db } = await authorized(v.workspaceId);
+    const [subject, hours, courses, documents, snapshots, revisions, plans] =
+      await Promise.all([
+        db
+          .from("subjects")
+          .select("id,name")
+          .eq("workspace_id", v.workspaceId)
+          .eq("id", v.subjectId)
+          .maybeSingle(),
+        db
+          .from("curriculum_hours")
+          .select("hours")
+          .eq("workspace_id", v.workspaceId)
+          .eq("subject_id", v.subjectId)
+          .gt("hours", 0)
+          .limit(1),
+        db
+          .from("teaching_courses")
+          .select("id")
+          .eq("workspace_id", v.workspaceId)
+          .eq("subject_id", v.subjectId)
+          .limit(1),
+        db
+          .from("curriculum_design_documents")
+          .select("document")
+          .eq("workspace_id", v.workspaceId),
+        db
+          .from("curriculum_design_snapshots")
+          .select("document")
+          .eq("workspace_id", v.workspaceId),
+        db
+          .from("curriculum_design_revisions")
+          .select("document")
+          .eq("workspace_id", v.workspaceId),
+        db
+          .from("curriculum_plans")
+          .select("id,version")
+          .eq("workspace_id", v.workspaceId),
+      ]);
+    for (const response of [
+      subject,
+      hours,
+      courses,
+      documents,
+      snapshots,
+      revisions,
+      plans,
+    ])
+      if (response.error) throw response.error;
+    if (!subject.data)
+      throw Error("과목이 이미 삭제되었거나 찾을 수 없습니다.");
+    if (
+      hours.data?.length ||
+      courses.data?.length ||
+      (documents.data ?? []).some((row) =>
+        subjectIsUsedInDesign(row.document, v.subjectId),
+      ) ||
+      (snapshots.data ?? []).some((row) =>
+        subjectIsUsedInDesign(row.document, v.subjectId),
+      ) ||
+      (revisions.data ?? []).some((row) =>
+        subjectIsUsedInDesign(row.document, v.subjectId),
+      )
+    )
+      throw Error(
+        "이미 시수·선택과목군·수업 계획 또는 확정 이력이 있는 과목입니다. 기존 자료를 보호하기 위해 삭제하지 않았습니다.",
+      );
+    const expected = (plans.data ?? []).map((row) => ({
+      id: row.id,
+      version: row.version,
+    }));
+    const { error } = await db.rpc("delete_subject", {
+      target: v.workspaceId,
+      target_subject: v.subjectId,
+      expected_plans: expected,
     });
-    if(error)throw error;
+    if (error) throw error;
     refresh();
-    return {removed:subject.data.name};
+    return { removed: subject.data.name };
   });
 }
 
@@ -393,11 +483,18 @@ export async function createPlan(workspaceId: string, cohortYear: number) {
   return run(async () => {
     schoolYearSchema.parse(cohortYear);
     const { db } = await authorized(workspaceId);
-    const {data:workspace,error:workspaceError}=await db.from("workspaces")
-      .select("school_type").eq("id",workspaceId).single();
-    if(workspaceError)throw workspaceError;
-    if(workspace.school_type==="중학교")
-      await mergeMiddleCurriculumDefaults(db,workspaceId,middleRevisionForCohort(cohortYear));
+    const { data: workspace, error: workspaceError } = await db
+      .from("workspaces")
+      .select("school_type")
+      .eq("id", workspaceId)
+      .single();
+    if (workspaceError) throw workspaceError;
+    if (workspace.school_type === "중학교")
+      await mergeMiddleCurriculumDefaults(
+        db,
+        workspaceId,
+        middleRevisionForCohort(cohortYear),
+      );
     const { data, error } = await db
       .from("curriculum_plans")
       .insert({ workspace_id: workspaceId, cohort_year: cohortYear })
@@ -521,16 +618,27 @@ export async function saveAnnual(input: unknown) {
         workPlans: z.boolean().default(false),
       })
       .parse(input);
-    const { db } = await authorized(v.workspaceId, v.workPlans ? ["admin", "editor"] : ["admin"]);
+    const { db } = await authorized(
+      v.workspaceId,
+      v.workPlans ? ["admin", "editor"] : ["admin"],
+    );
     if (v.workPlans) {
-      const existing = await db.from("annual_academic_plans").select("document").eq("workspace_id", v.workspaceId)
-        .eq("academic_year_id", v.yearId).maybeSingle();
+      const existing = await db
+        .from("annual_academic_plans")
+        .select("document")
+        .eq("workspace_id", v.workspaceId)
+        .eq("academic_year_id", v.yearId)
+        .maybeSingle();
       if (existing.error) throw existing.error;
       const plan = existing.data
         ? annualSchema.parse(existing.data.document)
         : defaultAnnual();
-      v.document = { ...plan, business: v.document.business,
-        departments: v.document.departments, workSettings: v.document.workSettings };
+      v.document = {
+        ...plan,
+        business: v.document.business,
+        departments: v.document.departments,
+        workSettings: v.document.workSettings,
+      };
     }
     const { data: year } = await db
       .from("academic_years")
@@ -564,10 +672,18 @@ export async function saveAnnual(input: unknown) {
 }
 export async function confirmAcademicCalendar(input: unknown) {
   return run(async () => {
-    const v = z.object({ workspaceId: uuid, yearId: uuid, version: z.number().int().positive() }).parse(input);
+    const v = z
+      .object({
+        workspaceId: uuid,
+        yearId: uuid,
+        version: z.number().int().positive(),
+      })
+      .parse(input);
     const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
     const { data, error } = await db.rpc("confirm_academic_calendar", {
-      target: v.workspaceId, year_id: v.yearId, expected_version: v.version,
+      target: v.workspaceId,
+      year_id: v.yearId,
+      expected_version: v.version,
     });
     if (error) throw error;
     refresh();
@@ -580,12 +696,32 @@ export async function loadCalendarState(workspaceId: string, yearId: string) {
     uuid.parse(yearId);
     const { db } = await authorized(workspaceId, ["admin", "editor", "viewer"]);
     const results = await Promise.all([
-      db.from("annual_academic_plans").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).maybeSingle(),
-      db.from("events").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).order("start_date"),
-      db.from("calendar_item_history").select("*").eq("workspace_id", workspaceId).eq("academic_year_id", yearId).order("id", { ascending: false }).limit(200),
+      db
+        .from("annual_academic_plans")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("academic_year_id", yearId)
+        .maybeSingle(),
+      db
+        .from("events")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("academic_year_id", yearId)
+        .order("start_date"),
+      db
+        .from("calendar_item_history")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .eq("academic_year_id", yearId)
+        .order("id", { ascending: false })
+        .limit(200),
     ]);
     for (const result of results) if (result.error) throw result.error;
-    return { annual: results[0].data, events: results[1].data ?? [], history: results[2].data ?? [] };
+    return {
+      annual: results[0].data,
+      events: results[1].data ?? [],
+      history: results[2].data ?? [],
+    };
   });
 }
 
@@ -593,15 +729,25 @@ export async function saveCalendarChanges(input: unknown) {
   return run(async () => {
     const { calendarChangeSchema } = await import("@/lib/academic-calendar");
     const { defaultAnnual } = await import("@/lib/academic");
-    const v = z.object({ workspaceId: uuid, yearId: uuid,
-      changes: z.array(calendarChangeSchema).min(1).max(366), operation: z.string().max(40).default("수정") }).parse(input);
+    const v = z
+      .object({
+        workspaceId: uuid,
+        yearId: uuid,
+        changes: z.array(calendarChangeSchema).min(1).max(366),
+        operation: z.string().max(40).default("수정"),
+      })
+      .parse(input);
     const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
     const { data, error } = await db.rpc("save_calendar_changes", {
-      target: v.workspaceId, year_id: v.yearId, changes: v.changes,
-      initial_document: defaultAnnual(), operation: v.operation,
+      target: v.workspaceId,
+      year_id: v.yearId,
+      changes: v.changes,
+      initial_document: defaultAnnual(),
+      operation: v.operation,
     });
     if (error) throw error;
-    const result = data as unknown as import("@/lib/academic-calendar").CalendarSaveResult;
+    const result =
+      data as unknown as import("@/lib/academic-calendar").CalendarSaveResult;
     const state = await loadCalendarState(v.workspaceId, v.yearId);
     if (state.ok) result.state = state.data;
     // A successful commit stays successful even if the refresh connection fails.

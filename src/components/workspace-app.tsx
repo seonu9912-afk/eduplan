@@ -1,18 +1,48 @@
 "use client";
-import {ServerPush} from "@/components/features/server-push";
-import {ActivityRequests} from "@/components/features/activity-requests";
-import {LessonLedger} from "@/components/features/lesson-ledger";
-import {PlanningPermissions} from "@/components/features/planning-permissions";
+import dynamic from "next/dynamic";
+import { PwaInstallPanel, useOnline } from "@/components/pwa/pwa-provider";
+import {
+  useDeviceDirty,
+  useEditGuard,
+  clearDeviceData,
+  deviceId,
+} from "@/lib/device-session";
+import { beginDraftSession } from "@/lib/draft-storage";
+import { NotificationCenter } from "@/components/features/notification-center";
+import { ServerPush } from "@/components/features/server-push";
+import { ActivityRequests } from "@/components/features/activity-requests";
+import { LessonLedger } from "@/components/features/lesson-ledger";
+import { PlanningPermissions } from "@/components/features/planning-permissions";
 import { LessonReminder } from "@/components/features/lesson-reminder";
-import { Staffing } from "@/components/features/staffing";
-import { TeachingModule } from "@/components/features/teaching";
-import { AcademicCalendar } from "@/components/features/academic-calendar";
-import { Timetable } from "@/components/features/timetable";
-import { WorkPlans } from "@/components/features/work-plans";
+const Staffing = dynamic(
+  () => import("@/components/features/staffing").then((m) => m.Staffing),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
+const TeachingModule = dynamic(
+  () => import("@/components/features/teaching").then((m) => m.TeachingModule),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
+const AcademicCalendar = dynamic(
+  () =>
+    import("@/components/features/academic-calendar").then(
+      (m) => m.AcademicCalendar,
+    ),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
+const Timetable = dynamic(
+  () => import("@/components/features/timetable").then((m) => m.Timetable),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
+const WorkPlans = dynamic(
+  () => import("@/components/features/work-plans").then((m) => m.WorkPlans),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  Bell,
+  Menu,
   BookOpen,
   CalendarDays,
   ChevronRight,
@@ -35,9 +65,13 @@ import {
   ProfileForm,
 } from "@/components/features/workspace-forms";
 import { Dashboard } from "@/components/features/dashboard";
-import { Curriculum } from "@/components/features/curriculum";
+const Curriculum = dynamic(
+  () => import("@/components/features/curriculum").then((m) => m.Curriculum),
+  { loading: () => <p role="status">화면을 불러오는 중…</p> },
+);
 import { SchoolSettings } from "@/components/features/settings";
 import { Members } from "@/components/features/members";
+import { detachPreviousPushAccount } from "@/app/push-actions";
 import { logout } from "@/app/actions";
 import { roles, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -52,6 +86,7 @@ const sections: Record<string, string> = {
   curriculum: "교육과정",
   settings: "작업공간 설정",
   people: "구성원 관리",
+  notifications: "알림",
 };
 export function WorkspaceApp({
   context: c,
@@ -65,13 +100,38 @@ export function WorkspaceApp({
   initialCohort?: string;
 }) {
   const router = useRouter();
-  const [modal, setModal] = useState<"school" | "profile" | null>(null);
+  const [modal, setModal] = useState<"school" | "profile" | "menu" | null>(
+    null,
+  );
   const [error, setError] = useState("");
-  const [dirty, setDirty] = useState(false);
+  const [editorDirty, setDirty] = useState(false);
+  useEditGuard("workspace-editor", editorDirty);
+  const dirty = useDeviceDirty(),
+    online = useOnline();
   const [signingOut, setSigningOut] = useState(false);
   const base = `/app/${c.workspace.id}`;
   const activeYearId = c.year?.id;
   const suffix = c.year ? `?year=${c.year.year}` : "";
+  useEffect(() => {
+    void beginDraftSession(c.userId).catch(() =>
+      setError(
+        "기기 임시 초안을 정리하지 못했습니다. 공용 기기에서는 브라우저의 사이트 데이터를 정리해 주세요.",
+      ),
+    );
+  }, [c.userId]);
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    void navigator.serviceWorker
+      .getRegistration()
+      .then(async (r) => {
+        const sub = await r?.pushManager?.getSubscription();
+        if (sub) {
+          const result = await detachPreviousPushAccount(sub.toJSON());
+          if (!result.ok) setError(result.error);
+        }
+      })
+      .catch(() => setError("기기의 알림 연결 확인에 실패했습니다."));
+  }, [c.userId]);
   function allowNavigation() {
     return (
       !dirty ||
@@ -97,12 +157,17 @@ export function WorkspaceApp({
   useEffect(() => {
     if (!activeYearId || dirty) return;
     const refresh = () => {
-      if (document.visibilityState === "visible") router.refresh();
+      if (document.visibilityState === "visible" && navigator.onLine)
+        router.refresh();
     };
     const interval = window.setInterval(refresh, 30000);
+    window.addEventListener("online", refresh);
+    window.addEventListener("pageshow", refresh);
     document.addEventListener("visibilitychange", refresh);
     return () => {
       window.clearInterval(interval);
+      window.removeEventListener("online", refresh);
+      window.removeEventListener("pageshow", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [router, section, activeYearId, dirty]);
@@ -111,6 +176,13 @@ export function WorkspaceApp({
       <header className="app-header no-print">
         <div className="header-inner">
           <Brand />
+          <button
+            className="icon-button mobile-menu-trigger"
+            aria-label="전체 메뉴 열기"
+            onClick={() => setModal("menu")}
+          >
+            <Menu size={22} />
+          </button>
           <div className="header-right">
             <span className="version-chip">v{buildInfo.version}</span>
             <span className="header-date">
@@ -136,9 +208,25 @@ export function WorkspaceApp({
                 if (!allowNavigation()) return;
                 setSigningOut(true);
                 try {
-                  const result = await logout();
+                  const subscription = await (
+                    await navigator.serviceWorker?.getRegistration()
+                  )?.pushManager?.getSubscription();
+                  const result = await logout(
+                    deviceId(),
+                    subscription?.endpoint ?? null,
+                  );
                   if (result.ok) {
-                    router.push("/login");
+                    try {
+                      await clearDeviceData();
+                    } catch (e) {
+                      window.alert(
+                        e instanceof Error
+                          ? e.message
+                          : "로그아웃했습니다. 공용 기기에서는 사이트 데이터를 정리해 주세요.",
+                      );
+                    }
+                    setDirty(false);
+                    router.replace("/login");
                     router.refresh();
                   } else setError(result.error);
                 } catch {
@@ -170,7 +258,8 @@ export function WorkspaceApp({
                 label: "수업·평가",
                 icon: PanelTop,
               },
-              { id: "plans", label: "학교업무", icon: Building2 },
+              { id: "plans", label: "월중·주간계획", icon: Building2 },
+              { id: "notifications", label: "알림", icon: Bell },
             ].map(({ id, label, icon: Icon, disabled }) =>
               disabled ? (
                 <span
@@ -184,6 +273,7 @@ export function WorkspaceApp({
                 </span>
               ) : (
                 <Link
+                  data-guarded-navigation
                   key={id}
                   href={`${base}/${id}${suffix}`}
                   className={`nav-item ${section === id ? "active" : ""}`}
@@ -283,13 +373,33 @@ export function WorkspaceApp({
           <span>{sections[section]}</span>
         </div>
         <Notice message={error} error />
-        <LessonReminder context={c}/>
-        {section === "teachers" ? <Staffing context={c} onDirtyChange={setDirty}/> : null}
-        {section === "home" && <ServerPush context={c}/>}
+        <p className="data-freshness" role="status">
+          {online
+            ? dirty
+              ? "작성 내용 유지 중 · 원본 변경 확인은 저장 후 자동 재개"
+              : "서버 조회 시각 " +
+                new Date(c.loadedAt ?? "").toLocaleTimeString("ko-KR", {
+                  timeZone: "Asia/Seoul",
+                })
+            : "오프라인 · 최신 데이터 확인 불가"}
+        </p>
+        <LessonReminder context={c} />
+        {section === "teachers" ? (
+          <Staffing context={c} onDirtyChange={setDirty} />
+        ) : null}
+        {section === "notifications" && (
+          <>
+            <NotificationCenter context={c} />
+            <ServerPush context={c} />
+            <PwaInstallPanel />
+          </>
+        )}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
-        {section === "calendar" && <ActivityRequests context={c} today={today}/>}
-        {section === "timetable" && <LessonLedger context={c} today={today}/>}
-        {section === "people" && <PlanningPermissions context={c}/>}
+        {section === "calendar" && (
+          <ActivityRequests context={c} today={today} />
+        )}
+        {section === "timetable" && <LessonLedger context={c} today={today} />}
+        {section === "people" && <PlanningPermissions context={c} />}
         {section === "calendar" ? (
           <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}
@@ -299,8 +409,11 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "timetable" ? (
-          <Timetable key={c.workspace.id + "-" + c.year?.id}
-            context={c} onDirtyChange={setDirty}/>
+          <Timetable
+            key={c.workspace.id + "-" + c.year?.id}
+            context={c}
+            onDirtyChange={setDirty}
+          />
         ) : null}
         {section === "plans" ? (
           <WorkPlans
@@ -318,16 +431,89 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "settings" ? (
-          <SchoolSettings
-            key={`${c.year?.id}-${c.year?.version}`}
-            context={c}
-          />
+          <>
+            <PwaInstallPanel />
+            <SchoolSettings
+              key={`${c.year?.id}-${c.year?.version}`}
+              context={c}
+            />
+          </>
         ) : null}
         {section === "teaching" ? (
           <TeachingModule context={c} onDirtyChange={setDirty} />
         ) : null}
         {section === "people" ? <Members context={c} /> : null}
       </main>
+      <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
+        {[
+          { id: "home", label: "홈", icon: House },
+          { id: "calendar", label: "일정", icon: CalendarDays },
+          { id: "timetable", label: "시간표", icon: Table2 },
+          { id: "notifications", label: "알림", icon: Bell },
+        ].map(({ id, label, icon: Icon }) => (
+          <Link
+            data-guarded-navigation
+            key={id}
+            href={`${base}/${id}${suffix}`}
+            aria-current={section === id ? "page" : undefined}
+            onClick={(e) => {
+              if (!allowNavigation()) e.preventDefault();
+              else setDirty(false);
+            }}
+          >
+            <Icon />
+            <span>{label}</span>
+            {id === "notifications" &&
+              c.operations?.notifications.some((n) => !n.read_at) && (
+                <span className="nav-unread" aria-label="읽지 않은 알림">
+                  ●
+                </span>
+              )}
+          </Link>
+        ))}
+        <button
+          onClick={() => setModal("menu")}
+          aria-expanded={modal === "menu"}
+        >
+          <Menu />
+          <span>전체 메뉴</span>
+        </button>
+      </nav>
+      <Modal
+        open={modal === "menu"}
+        onOpenChange={(v) => !v && setModal(null)}
+        title="전체 메뉴"
+        description={`${c.workspace.name} · ${roles[c.role]}`}
+      >
+        <nav className="mobile-menu-grid" aria-label="모든 기능">
+          {Object.entries(sections).map(([id, label]) => (
+            <Link
+              data-guarded-navigation
+              key={id}
+              href={`${base}/${id}${suffix}`}
+              aria-current={section === id ? "page" : undefined}
+              onClick={(e) => {
+                if (!allowNavigation()) e.preventDefault();
+                else {
+                  setDirty(false);
+                  setModal(null);
+                }
+              }}
+            >
+              {label}
+              <ChevronRight size={16} />
+            </Link>
+          ))}
+        </nav>
+        <div className="mobile-view-toolbar">
+          <Button variant="outline" onClick={() => setModal("profile")}>
+            내 프로필
+          </Button>
+          <Button variant="outline" onClick={() => setModal("school")}>
+            학교 만들기
+          </Button>
+        </div>
+      </Modal>
       <footer className="app-footer no-print">
         <span>EduPlan · 교육과정부터 수업까지, 하나의 계획으로.</span>
         <span>

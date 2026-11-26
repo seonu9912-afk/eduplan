@@ -44,3 +44,6 @@ next-env.d.ts
 test-results/
 playwright-report/
 .artifacts/
+
+# Generated service worker (source: src/service-worker.js)
+/public/lesson-sw.js

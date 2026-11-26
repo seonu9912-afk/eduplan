@@ -3,7 +3,8 @@
   "buildCommand": "npm run check && npm run build",
   "git": {
     "deploymentEnabled": {
-      "recovery/eduplan-integration": false
+      "recovery/eduplan-integration": false,
+      "codex/mobile-pwa-20261125": false
     }
   }
 }

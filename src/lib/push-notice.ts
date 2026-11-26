@@ -64,6 +64,9 @@ export function pushNotice(source: PushSource, lead: number, now = new Date()) {
       resources: resourcesSchema.parse(source.resources),
     },
   };
+  return lessonNotice(c, lead, now);
+}
+export function lessonNotice(c: Context, lead: number, now = new Date()) {
   const doc = publishedTimetable(c);
   if (!doc || lead <= 0) return null;
   const clock = seoulClock(now),
@@ -78,7 +81,16 @@ export function pushNotice(source: PushSource, lead: number, now = new Date()) {
   if (!next || remaining === null || remaining > lead) return null;
   return {
     title: `${remaining}분 후 ${next.subject} · ${next.classes} · ${next.period}교시`,
-    signature: `${next.date}:${next.id}:${next.teacherId}:${next.start}:${next.end}`,
+    signature: JSON.stringify([
+      next.date,
+      next.id,
+      next.teacherId,
+      next.subjectId,
+      next.classIds,
+      next.room,
+      next.start,
+      next.end,
+    ]),
     workspaceId: c.workspace.id,
     year: c.year!.year,
     lead,

@@ -42,9 +42,15 @@ export function LessonReminder({ context: c }: { context: Context }) {
           return;
         const key = `eduplan-notified:${workspaceId}:${userId}`;
         try {
-          if (localStorage.getItem(`eduplan-server-push:${workspaceId}:${userId}`)==="true" || localStorage.getItem(key) === result.data.signature) return;
+          if (
+            localStorage.getItem(
+              `eduplan-server-push:${workspaceId}:${userId}`,
+            ) === "true" ||
+            localStorage.getItem(key) === result.data.signature
+          )
+            return;
           shown = new Notification("다음 수업 안내", {
-            body: result.data.title,
+            body: "곧 수업이 시작됩니다. EduPlan에서 다음 수업을 확인하세요.",
             tag: `eduplan:${workspaceId}:${userId}`,
           });
           localStorage.setItem(key, result.data.signature);

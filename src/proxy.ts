@@ -22,7 +22,23 @@ export async function proxy(request: NextRequest) {
       },
     },
   });
-  await client.auth.getClaims();
+  const { data, error } = await client.auth.getClaims();
+  if (
+    (request.nextUrl.pathname === "/app" ||
+      request.nextUrl.pathname.startsWith("/app/")) &&
+    (error || !data?.claims)
+  ) {
+    const destination = new URL("/login", request.url);
+    destination.searchParams.set(
+      "next",
+      request.nextUrl.pathname + request.nextUrl.search,
+    );
+    const redirect = NextResponse.redirect(destination);
+    for (const cookie of response.cookies.getAll())
+      redirect.cookies.set(cookie);
+    redirect.headers.set("Cache-Control", "private, no-store");
+    return redirect;
+  }
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 }
@@ -35,5 +51,7 @@ export const config = {
     "/signup",
     "/invite/:path*",
     "/reset-password",
+    "/api/lesson-push",
+    "/api/operation-push",
   ],
 };

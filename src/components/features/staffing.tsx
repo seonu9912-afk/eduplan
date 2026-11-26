@@ -1,5 +1,5 @@
 "use client";
-import {canPlan} from "@/lib/planning-completion";
+import { canPlan } from "@/lib/planning-completion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,7 @@ export function Staffing({
     [dirty, edit, onDirtyChange],
   );
   const refresh = () => (onRefresh ? onRefresh() : router.refresh());
-  const manager = canPlan(c,"staffing"),
+  const manager = canPlan(c, "staffing"),
     staff = c.operations?.staff ?? [],
     directory = c.operations?.directory ?? [];
   const baseline = staffingReport(c, term),
@@ -330,74 +330,109 @@ export function Staffing({
                 {x}
               </p>
             ))}
-            <div className="operations-scroll">
-              <table
-                className="operations-table"
-                aria-label="교과별 교원 수급 분석"
-              >
-                <thead>
-                  <tr>
-                    <th>교과·활동</th>
-                    <th>현재 → 가상 주당 총시수</th>
-                    <th>배치 인원</th>
-                    <th>1인 평균</th>
-                    <th>가용 시수</th>
-                    <th>초과(+)/여유(-)</th>
-                    <th>목표 기준 필요 인원</th>
-                    <th>실제 시간표 배정</th>
-                    {previous && <th>저장안 주당 총시수</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {report.rows.map((row) => (
-                    <tr key={row.subjectId}>
-                      <th>
-                        {row.name}
-                        {row.creative && <small>창체</small>}
-                        {row.estimated && <small>개설 규모 가정 확인</small>}
-                      </th>
-                      <td>
-                        {round(
-                          baseline.rows.find(
-                            (x) => x.subjectId === row.subjectId,
-                          )?.totalWeekly ?? 0,
-                        )}{" "}
-                        →{" "}
-                        <strong>
-                          {round(row.totalWeekly)}
-                          {row.incomplete ? " + 미정" : ""}
-                        </strong>
-                      </td>
-                      <td>{row.staffCount}명</td>
-                      <td>{round(row.average)}</td>
-                      <td>{round(row.capacity)}</td>
-                      <td
-                        className={
-                          row.shortage !== null && row.shortage > 0
-                            ? "operations-warning"
-                            : ""
-                        }
-                      >
-                        {round(row.shortage)}
-                      </td>
-                      <td>
-                        {row.needed === null ? "검토 필요" : `${row.needed}명`}
-                      </td>
-                      <td>{row.assigned}시간</td>
-                      {previous && (
+            <div className="mobile-only no-print">
+              <div className="mobile-card-list">
+                {report.rows.map((row) => (
+                  <article key={row.subjectId} className="mobile-edit-card">
+                    <h3>
+                      {row.name}
+                      {row.creative && " · 창체"}
+                    </h3>
+                    <p>
+                      주당 총시수 {round(row.totalWeekly)}
+                      {row.incomplete && " + 미정"} · 배치 {row.staffCount}명
+                    </p>
+                    <p>
+                      1인 평균 {round(row.average)} · 목표 기준 필요{" "}
+                      {row.needed ?? "검토 필요"}명
+                    </p>
+                    <p>
+                      가용 {round(row.capacity)} · 초과(+)/여유(-){" "}
+                      {round(row.shortage)}
+                    </p>
+                    <p>실제 배정 {row.assigned}시간</p>
+                    {row.warnings.map((w) => (
+                      <p key={w}>{w}</p>
+                    ))}
+                  </article>
+                ))}
+              </div>
+            </div>
+            <details className="mobile-comparison" open>
+              <summary className="mobile-only no-print">
+                전체 수급 비교표
+              </summary>
+              <div className="operations-scroll">
+                <table
+                  className="operations-table"
+                  aria-label="교과별 교원 수급 분석"
+                >
+                  <thead>
+                    <tr>
+                      <th>교과·활동</th>
+                      <th>현재 → 가상 주당 총시수</th>
+                      <th>배치 인원</th>
+                      <th>1인 평균</th>
+                      <th>가용 시수</th>
+                      <th>초과(+)/여유(-)</th>
+                      <th>목표 기준 필요 인원</th>
+                      <th>실제 시간표 배정</th>
+                      {previous && <th>저장안 주당 총시수</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.rows.map((row) => (
+                      <tr key={row.subjectId}>
+                        <th>
+                          {row.name}
+                          {row.creative && <small>창체</small>}
+                          {row.estimated && <small>개설 규모 가정 확인</small>}
+                        </th>
                         <td>
                           {round(
-                            previous.rows.find(
+                            baseline.rows.find(
                               (x) => x.subjectId === row.subjectId,
                             )?.totalWeekly ?? 0,
-                          )}
+                          )}{" "}
+                          →{" "}
+                          <strong>
+                            {round(row.totalWeekly)}
+                            {row.incomplete ? " + 미정" : ""}
+                          </strong>
                         </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <td>{row.staffCount}명</td>
+                        <td>{round(row.average)}</td>
+                        <td>{round(row.capacity)}</td>
+                        <td
+                          className={
+                            row.shortage !== null && row.shortage > 0
+                              ? "operations-warning"
+                              : ""
+                          }
+                        >
+                          {round(row.shortage)}
+                        </td>
+                        <td>
+                          {row.needed === null
+                            ? "검토 필요"
+                            : `${row.needed}명`}
+                        </td>
+                        <td>{row.assigned}시간</td>
+                        {previous && (
+                          <td>
+                            {round(
+                              previous.rows.find(
+                                (x) => x.subjectId === row.subjectId,
+                              )?.totalWeekly ?? 0,
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
             {[...new Set(report.rows.flatMap((r) => r.warnings))].map((x) => (
               <p key={x} className="muted-small">
                 {x}

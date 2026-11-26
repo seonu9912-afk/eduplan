@@ -1,4 +1,5 @@
 "use client";
+import { deviceId } from "@/lib/device-session";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, InlineNotice, useMutation } from "@/components/common";
@@ -13,6 +14,10 @@ export function ServerPush({ context: c }: { context: Context }) {
   const [settings, setSettings] = useState<PushSettings | null>(null),
     [statuses, setStatuses] = useState<PushSubscriptionStatus[]>([]),
     [lead, setLead] = useState(5),
+    [deviceLabel, setDeviceLabel] = useState("내 기기"),
+    [showDetails, setShowDetails] = useState(false),
+    [notifyChanges, setNotifyChanges] = useState(true),
+    [permission, setPermission] = useState("상태 확인 전"),
     [loaded, setLoaded] = useState(false),
     m = useMutation();
   const refresh = () =>
@@ -22,6 +27,24 @@ export function ServerPush({ context: c }: { context: Context }) {
         setSettings(v.settings);
         setStatuses(v.subscriptions);
         setLoaded(true);
+        setPermission(
+          !("Notification" in window) || !("PushManager" in window)
+            ? "이 환경에서 푸시 미지원"
+            : Notification.permission === "granted"
+              ? "권한 허용"
+              : Notification.permission === "denied"
+                ? "권한 거부 · 브라우저 설정에서 변경"
+                : "권한 미설정",
+        );
+        const current = v.subscriptions.find(
+          (s) => s.deviceId === deviceId() && s.enabled,
+        );
+        if (current) {
+          setLead(current.lead);
+          setDeviceLabel(current.deviceLabel ?? "내 기기");
+          setShowDetails(!!current.showDetails);
+          setNotifyChanges(current.notifyChanges !== false);
+        }
       },
     );
   async function subscribe() {
@@ -79,6 +102,10 @@ export function ServerPush({ context: c }: { context: Context }) {
         workspaceId: c.workspace.id,
         subscription: subscription.toJSON(),
         active: true,
+        deviceId: deviceId(),
+        deviceLabel,
+        showDetails,
+        notifyChanges,
         lead,
       });
       if (saved.ok) {
@@ -89,6 +116,9 @@ export function ServerPush({ context: c }: { context: Context }) {
           );
         } catch {}
       }
+      setPermission(
+        Notification.permission === "granted" ? "권한 허용" : "권한 미설정",
+      );
       return saved;
     } catch (e) {
       return {
@@ -122,6 +152,31 @@ export function ServerPush({ context: c }: { context: Context }) {
               : "검증 환경의 알림 서버 구성이 필요합니다."}
           </p>
           {settings?.lastError && <p role="alert">{settings.lastError}</p>}
+          <p role="status">{permission}</p>
+          <label>
+            기기 이름
+            <input
+              maxLength={60}
+              value={deviceLabel}
+              onChange={(e) => setDeviceLabel(e.target.value)}
+            />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={showDetails}
+              onChange={(e) => setShowDetails(e.target.checked)}
+            />
+            잠금 화면에 수업·학교 정보 표시 (기본 꺼짐)
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={notifyChanges}
+              onChange={(e) => setNotifyChanges(e.target.checked)}
+            />
+            시간표 변경·교육활동 요청 결과 알림
+          </label>
           <Field label="수업 시작 전 알림" id="server-push-lead">
             <select
               id="server-push-lead"
@@ -144,7 +199,8 @@ export function ServerPush({ context: c }: { context: Context }) {
           {statuses.map((s, i) => (
             <div className="info-box" key={s.id}>
               <p>
-                등록 브라우저 {i + 1} ·{" "}
+                {s.deviceLabel ?? `등록 브라우저 ${i + 1}`}{" "}
+                {s.deviceId === deviceId() ? "(이 기기)" : ""} ·{" "}
                 {s.enabled ? `${s.lead}분 전 알림` : "꺼짐"} · 최근 전달{" "}
                 {s.lastSentAt
                   ? new Date(s.lastSentAt).toLocaleString("ko-KR")

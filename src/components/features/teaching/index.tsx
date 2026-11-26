@@ -1,6 +1,10 @@
 "use client";
-import {canPlan} from "@/lib/planning-completion";
-import { curriculumTeachingTargets, type TeachingTarget } from "@/lib/teaching-targets";
+import { RecoveryDraft } from "./recovery-draft";
+import { canPlan } from "@/lib/planning-completion";
+import {
+  curriculumTeachingTargets,
+  type TeachingTarget,
+} from "@/lib/teaching-targets";
 import {
   assessmentChoices,
   reconcileAssessmentLinks,
@@ -22,7 +26,13 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Empty, InlineNotice, Modal, SaveStatus, useMutation } from "@/components/common";
+import {
+  Empty,
+  InlineNotice,
+  Modal,
+  SaveStatus,
+  useMutation,
+} from "@/components/common";
 import {
   saveTeachingPlan,
   archiveTeachingCourse,
@@ -60,7 +70,9 @@ export function TeachingModule({
   context: Context;
   onDirtyChange: (dirty: boolean) => void;
 }) {
-  const [initialTarget,setInitialTarget]=useState<TeachingTarget|undefined>();
+  const [initialTarget, setInitialTarget] = useState<
+    TeachingTarget | undefined
+  >();
   const router = useRouter(),
     [tab, setTab] = useState<Tab>("lesson"),
     [selected, setSelected] = useState<string | null>(null),
@@ -100,8 +112,11 @@ export function TeachingModule({
       data.classes.some(
         (l) => l.course_id === p.id && l.class_id === f.classId,
       )) &&
-    (f.ownership === "all" || p.owner_id === c.userId ||
-      data.editors.some((editor) => editor.course_id === p.id && editor.user_id === c.userId));
+    (f.ownership === "all" ||
+      p.owner_id === c.userId ||
+      data.editors.some(
+        (editor) => editor.course_id === p.id && editor.user_id === c.userId,
+      ));
   const courses = data.courses.filter((p) => matches(p, filters)),
     course = data.courses.find((p) => p.id === (selected ?? courses[0]?.id));
   const select = (id: string, nextTab: Tab = "lesson") => {
@@ -138,7 +153,7 @@ export function TeachingModule({
             <h1>수업·평가</h1>
             <p>수업의 흐름과 평가를 하나의 계획으로 연결하세요.</p>
           </div>
-          {canPlan(c,"assessment") && (
+          {canPlan(c, "assessment") && (
             <Button
               onClick={() => {
                 if (canLeave()) {
@@ -154,7 +169,63 @@ export function TeachingModule({
             </Button>
           )}
         </div>
-        <details className="panel"><summary>교육과정에서 계산한 작성 대상</summary><p>현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만 표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통 자료에서 표시합니다.</p><div className="operations-scroll"><table className="operations-table"><thead><tr><th>학년·학기</th><th>과목</th><th>편성 기준</th><th>시간표 담당</th><th>작성 상태</th></tr></thead><tbody>{curriculumTeachingTargets(c).map(target=><tr key={`${target.grade}:${target.semester}:${target.subjectId}`}><td>{target.grade}학년 {target.semester}학기</td><td>{target.subjectName}</td><td>{target.hours}{target.unit==="credits"?"학점":"시간"}</td><td>{target.teacherName||"담당 확인 필요"}</td><td>{target.exists?"기존 계획 있음":canPlan(c,"assessment")?<Button variant="outline" onClick={()=>{if(canLeave()){setInitialTarget(target);setCreating(true);}}}>이 과목 계획 시작</Button>:"미작성"}</td></tr>)}</tbody></table></div></details>
+        <details className="panel">
+          <summary>교육과정에서 계산한 작성 대상</summary>
+          <p>
+            현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만
+            표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통
+            자료에서 표시합니다.
+          </p>
+          <div className="operations-scroll">
+            <table className="operations-table">
+              <thead>
+                <tr>
+                  <th>학년·학기</th>
+                  <th>과목</th>
+                  <th>편성 기준</th>
+                  <th>시간표 담당</th>
+                  <th>작성 상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {curriculumTeachingTargets(c).map((target) => (
+                  <tr
+                    key={`${target.grade}:${target.semester}:${target.subjectId}`}
+                  >
+                    <td>
+                      {target.grade}학년 {target.semester}학기
+                    </td>
+                    <td>{target.subjectName}</td>
+                    <td>
+                      {target.hours}
+                      {target.unit === "credits" ? "학점" : "시간"}
+                    </td>
+                    <td>{target.teacherName || "담당 확인 필요"}</td>
+                    <td>
+                      {target.exists ? (
+                        "기존 계획 있음"
+                      ) : canPlan(c, "assessment") ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (canLeave()) {
+                              setInitialTarget(target);
+                              setCreating(true);
+                            }
+                          }}
+                        >
+                          이 과목 계획 시작
+                        </Button>
+                      ) : (
+                        "미작성"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
         <section className="panel teaching-filters" aria-label="수업 선택 조건">
           <label>
             학년도
@@ -251,7 +322,11 @@ export function TeachingModule({
             </select>
           </label>
         </section>
-        <nav className="teaching-tabs" data-arrow-axis="horizontal" aria-label="수업·평가 보기">
+        <nav
+          className="teaching-tabs"
+          data-arrow-axis="horizontal"
+          aria-label="수업·평가 보기"
+        >
           {tabs.map(([id, label]) => (
             <button
               key={id}
@@ -267,7 +342,10 @@ export function TeachingModule({
         </nav>
         {tab === "overview" ? (
           <section className="teaching-overview">
-            <SchoolTeachingReview context={c} openPlan={(id) => select(id, "review")} />
+            <SchoolTeachingReview
+              context={c}
+              openPlan={(id) => select(id, "review")}
+            />
             <div className="section-title">
               <div>
                 <h2>
@@ -293,7 +371,7 @@ export function TeachingModule({
                     : "첫 수업을 설정하세요"}
                 </h3>
                 <p>편성 과목을 불러오거나 직접 등록할 수 있습니다.</p>
-                {canPlan(c,"assessment") && (
+                {canPlan(c, "assessment") && (
                   <Button onClick={() => setCreating(true)}>
                     첫 수업 만들기
                   </Button>
@@ -325,9 +403,15 @@ export function TeachingModule({
                       <h3>{p.subject_name}</h3>
                       <p className="course-teacher">
                         {p.teacher_name} ·{" "}
-                        {p.owner_id === c.userId ? "내 계획" :
-                          data.editors.some((editor) => editor.course_id === p.id && editor.user_id === c.userId)
-                            ? "공동작성" : "공유 계획"}
+                        {p.owner_id === c.userId
+                          ? "내 계획"
+                          : data.editors.some(
+                                (editor) =>
+                                  editor.course_id === p.id &&
+                                  editor.user_id === c.userId,
+                              )
+                            ? "공동작성"
+                            : "공유 계획"}
                       </p>
                       <p className="course-class-list">{classNames(p.id)}</p>
                       <div className="course-hours">
@@ -414,7 +498,11 @@ export function TeachingModule({
         wide
       >
         <CourseForm
-          key={initialTarget?`${initialTarget.grade}:${initialTarget.semester}:${initialTarget.subjectId}`:"manual"}
+          key={
+            initialTarget
+              ? `${initialTarget.grade}:${initialTarget.semester}:${initialTarget.subjectId}`
+              : "manual"
+          }
           initial={initialTarget}
           context={c}
           onDone={(id) => {
@@ -471,15 +559,26 @@ function CourseEditor({
   const autoInFlight = useRef(false);
   const attempted = useRef(-1);
   const m = useMutation();
-  const managesCourse = canPlan(c,"assessment") && (course.owner_id === c.userId ||
-    (course.visibility === "workspace" && c.role === "admin"));
-  const assigned = c.role === "editor" && course.visibility === "workspace" && c.teaching!.editors.some(
-    (editor) => editor.course_id === course.id && editor.user_id === c.userId,
-  );
-  const editable = canPlan(c,"assessment") && (managesCourse || assigned) && !course.archived;
+  const managesCourse =
+    canPlan(c, "assessment") &&
+    (course.owner_id === c.userId ||
+      (course.visibility === "workspace" && c.role === "admin"));
+  const assigned =
+    c.role === "editor" &&
+    course.visibility === "workspace" &&
+    c.teaching!.editors.some(
+      (editor) => editor.course_id === course.id && editor.user_id === c.userId,
+    );
+  const editable =
+    canPlan(c, "assessment") && (managesCourse || assigned) && !course.archived;
   // Revalidation must never replace unsaved teacher input. Keep the loaded
   // version for CAS until a successful save or an explicit navigation.
-  if (serverCourse.version > course.version && !dirty && !m.pending && !autoActive) {
+  if (
+    serverCourse.version > course.version &&
+    !dirty &&
+    !m.pending &&
+    !autoActive
+  ) {
     setCourse(serverCourse);
     setDoc(
       teachingDocumentSchema.parse(
@@ -514,43 +613,94 @@ function CourseEditor({
     onDirtyChange(false);
   };
   const busy = m.pending || referencePending || restorePending;
-  const serverPlan = c.teaching!.plans.find(p => p.course_id === course.id);
-  const previousDocument = serverPlan && teachingDocumentSchema.safeParse(serverPlan.document).data;
-  const previousUnitsLocked = previousDocument?.lesson_status === "확정" ||
-    !!previousDocument?.evaluations.some(v => v.status === "확정");
+  const serverPlan = c.teaching!.plans.find((p) => p.course_id === course.id);
+  const previousDocument =
+    serverPlan && teachingDocumentSchema.safeParse(serverPlan.document).data;
+  const previousUnitsLocked =
+    previousDocument?.lesson_status === "확정" ||
+    !!previousDocument?.evaluations.some((v) => v.status === "확정");
   const automaticSave = useEffectEvent(async () => {
+    if (!navigator.onLine) {
+      setAutoError("오프라인 · 연결 복구 후 계획 저장을 눌러 주세요.");
+      return;
+    }
     const submittedRevision = revision.current;
-    if (autoInFlight.current || m.isInFlight() || attempted.current === submittedRevision || !dirty || !weeklyDraft) return;
+    if (
+      autoInFlight.current ||
+      m.isInFlight() ||
+      attempted.current === submittedRevision ||
+      !dirty ||
+      !weeklyDraft
+    )
+      return;
     autoInFlight.current = true;
     attempted.current = submittedRevision;
     setAutoActive(true);
     setAutoError("");
     try {
-      const response = await saveTeachingPlan(course.id, course.version, doc, false);
-      if (!response.ok) { setAutoError(response.error); return; }
-      setCourse(value => ({ ...value, version: response.data }));
+      const response = await saveTeachingPlan(
+        course.id,
+        course.version,
+        doc,
+        false,
+      );
+      if (!response.ok) {
+        setAutoError(response.error);
+        return;
+      }
+      setCourse((value) => ({ ...value, version: response.data }));
       if (revision.current === submittedRevision) saved();
     } catch {
-      setAutoError("서버 연결을 확인해 주세요. 입력 내용은 이 화면에 유지됩니다.");
+      setAutoError(
+        "서버 연결을 확인해 주세요. 입력 내용은 이 화면에 유지됩니다.",
+      );
     } finally {
       autoInFlight.current = false;
       setAutoActive(false);
     }
   });
-  const hasConfirmation = doc.lesson_status === "확정" || doc.evaluations.some(v => v.status === "확정");
+  const hasConfirmation =
+    doc.lesson_status === "확정" ||
+    doc.evaluations.some((v) => v.status === "확정");
   useEffect(() => {
-    if (!dirty || !weeklyDraft || !editable || busy || autoActive || previousUnitsLocked || hasConfirmation) return;
+    if (
+      !dirty ||
+      !weeklyDraft ||
+      !editable ||
+      busy ||
+      autoActive ||
+      previousUnitsLocked ||
+      hasConfirmation
+    )
+      return;
     const timer = window.setTimeout(() => void automaticSave(), 1000);
     return () => window.clearTimeout(timer);
-  }, [doc, course.version, dirty, weeklyDraft, editable, busy, autoActive, previousUnitsLocked, hasConfirmation]);
+  }, [
+    doc,
+    course.version,
+    dirty,
+    weeklyDraft,
+    editable,
+    busy,
+    autoActive,
+    previousUnitsLocked,
+    hasConfirmation,
+  ]);
   const ev =
     doc.evaluations.find((v) => v.semester === evaluation) ??
     doc.evaluations[0];
   const calendar = linkedTeachingCalendar(c, course.semester, course.grade);
-  const projected = { ...doc, units: formatProjectedUnits(calendar.weeks, doc.units) };
-  const reportDocument = doc.lesson_status === "확정" ? doc : {
-    ...doc, units: formatProjectedUnits(calendar.weeks, doc.units, true),
+  const projected = {
+    ...doc,
+    units: formatProjectedUnits(calendar.weeks, doc.units),
   };
+  const reportDocument =
+    doc.lesson_status === "확정"
+      ? doc
+      : {
+          ...doc,
+          units: formatProjectedUnits(calendar.weeks, doc.units, true),
+        };
   const issues = reviewTeaching(
     projected,
     course,
@@ -588,16 +738,25 @@ function CourseEditor({
     const submittedRevision = revision.current;
     m.execute(
       () => saveTeachingPlan(course.id, course.version, doc, confirm),
-      version => {
-        setCourse(value => ({ ...value, version }));
+      (version) => {
+        setCourse((value) => ({ ...value, version }));
         if (revision.current === submittedRevision) saved();
       },
       "계획을 저장했습니다.",
     );
   };
-  const versionConflict = dirty && serverCourse.version > course.version && !autoActive && !m.pending;
-  const saveState = autoActive || m.pending ? "saving" : versionConflict ? "conflict" :
-    m.notice.error || autoError ? "error" : dirty ? "dirty" : "saved";
+  const versionConflict =
+    dirty && serverCourse.version > course.version && !autoActive && !m.pending;
+  const saveState =
+    autoActive || m.pending
+      ? "saving"
+      : versionConflict
+        ? "conflict"
+        : m.notice.error || autoError
+          ? "error"
+          : dirty
+            ? "dirty"
+            : "saved";
   const print = (mode: "lesson" | "assessment") => {
     flushSync(() => setPrintMode(mode));
     window.print();
@@ -628,17 +787,21 @@ function CourseEditor({
               {autoActive
                 ? "자동 저장 중…"
                 : m.pending
-                ? "저장 중…"
-                : versionConflict
-                  ? "충돌 · 최신 저장본 확인 필요"
-                  : m.notice.error || autoError
-                  ? "저장 실패 · 입력 내용 유지"
-                  : dirty
-                    ? "저장하지 않은 변경사항"
-                    : `저장 완료 · v${course.version}`}
+                  ? "저장 중…"
+                  : versionConflict
+                    ? "충돌 · 최신 저장본 확인 필요"
+                    : m.notice.error || autoError
+                      ? "저장 실패 · 입력 내용 유지"
+                      : dirty
+                        ? "저장하지 않은 변경사항"
+                        : `저장 완료 · v${course.version}`}
             </SaveStatus>
             <small>
-              {new Date(serverCourse.version === course.version ? serverCourse.updated_at : course.updated_at).toLocaleString("ko-KR", {
+              {new Date(
+                serverCourse.version === course.version
+                  ? serverCourse.updated_at
+                  : course.updated_at,
+              ).toLocaleString("ko-KR", {
                 timeZone: "Asia/Seoul",
               })}
             </small>
@@ -646,18 +809,28 @@ function CourseEditor({
           <div className="teaching-actions">
             {editable && (
               <>
-                {managesCourse && <Button
-                  variant="outline"
-                  disabled={dirty || busy}
-                  onClick={() => setEditing(true)}
+                {managesCourse && (
+                  <Button
+                    variant="outline"
+                    disabled={dirty || busy}
+                    onClick={() => setEditing(true)}
+                  >
+                    <Settings2 /> 수업 설정
+                  </Button>
+                )}
+                {managesCourse && course.visibility === "workspace" && (
+                  <Button
+                    variant="outline"
+                    disabled={dirty || busy}
+                    onClick={() => setCollaborating(true)}
+                  >
+                    <Users /> 공동작성 담당자
+                  </Button>
+                )}
+                <Button
+                  disabled={!dirty || busy || autoActive || versionConflict}
+                  onClick={save}
                 >
-                  <Settings2 /> 수업 설정
-                </Button>}
-                {managesCourse && course.visibility === "workspace" && <Button variant="outline"
-                  disabled={dirty || busy} onClick={() => setCollaborating(true)}>
-                  <Users /> 공동작성 담당자
-                </Button>}
-                <Button disabled={!dirty || busy || autoActive || versionConflict} onClick={save}>
                   <Save />
                   {m.pending ? "저장 중…" : "계획 저장"}
                 </Button>
@@ -670,10 +843,40 @@ function CourseEditor({
             )}
           </div>
         </div>
+        <RecoveryDraft
+          userId={c.userId}
+          workspaceId={c.workspace.id}
+          courseId={course.id}
+          version={course.version}
+          document={doc}
+          dirty={dirty}
+          editable={editable}
+          onRestore={(value) =>
+            change({
+              ...value,
+              lesson_status: "작성 중",
+              evaluations: value.evaluations.map((e) => ({
+                ...e,
+                status: "작성 중",
+              })),
+            })
+          }
+        />
         <InlineNotice mutation={m} />
-        {autoError && <p role="alert" className="notice notice-error">{autoError}</p>}
-        {dirty && (autoError || m.notice.error) && !versionConflict && !busy && !autoActive &&
-          <Button variant="outline" onClick={m.refresh}>최신 저장본 확인</Button>}
+        {autoError && (
+          <p role="alert" className="notice notice-error">
+            {autoError}
+          </p>
+        )}
+        {dirty &&
+          (autoError || m.notice.error) &&
+          !versionConflict &&
+          !busy &&
+          !autoActive && (
+            <Button variant="outline" onClick={m.refresh}>
+              최신 저장본 확인
+            </Button>
+          )}
         {versionConflict && (
           <p role="alert" className="notice notice-error">
             다른 곳에서 이 계획이 변경되었습니다. 현재 입력은 유지했습니다.
@@ -732,9 +935,7 @@ function CourseEditor({
                   }
                 />
               </label>
-              <p>
-                주차와 자동 비고는 학사일정에서 가져옵니다.
-              </p>
+              <p>주차와 자동 비고는 학사일정에서 가져옵니다.</p>
             </div>
             <WeeklyPlanGrid
               calendar={calendar}
@@ -871,8 +1072,14 @@ function CourseEditor({
           </>
         )}
         {tab === "document" && (
-          <TeachingPrint context={c} course={course} document={reportDocument}
-            dirty={dirty} mode="both" preview />
+          <TeachingPrint
+            context={c}
+            course={course}
+            document={reportDocument}
+            dirty={dirty}
+            mode="both"
+            preview
+          />
         )}
         <footer className="teaching-plan-footer">
           <p>
@@ -880,33 +1087,33 @@ function CourseEditor({
             연동은 제공하지 않습니다.
           </p>
           {managesCourse && (
-              <Button
-                variant="ghost"
-                disabled={dirty || busy}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      course.archived
-                        ? "보관을 해제할까요?"
-                        : "수업을 보관할까요? 내용과 이력은 유지됩니다.",
-                    )
+            <Button
+              variant="ghost"
+              disabled={dirty || busy}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    course.archived
+                      ? "보관을 해제할까요?"
+                      : "수업을 보관할까요? 내용과 이력은 유지됩니다.",
                   )
-                    m.execute(
-                      () =>
-                        archiveTeachingCourse(
-                          course.id,
-                          course.version,
-                          !course.archived,
-                        ),
-                      saved,
-                      "수업 보관 상태를 변경했습니다.",
-                    );
-                }}
-              >
-                <Archive />
-                {course.archived ? "보관 해제" : "수업 보관"}
-              </Button>
-            )}
+                )
+                  m.execute(
+                    () =>
+                      archiveTeachingCourse(
+                        course.id,
+                        course.version,
+                        !course.archived,
+                      ),
+                    saved,
+                    "수업 보관 상태를 변경했습니다.",
+                  );
+              }}
+            >
+              <Archive />
+              {course.archived ? "보관 해제" : "수업 보관"}
+            </Button>
+          )}
         </footer>
         <Modal
           open={editing}
@@ -923,8 +1130,16 @@ function CourseEditor({
             }}
           />
         </Modal>
-        <Modal open={collaborating} onOpenChange={setCollaborating} title="공동작성 담당자">
-          <CourseEditors context={c} course={course} onDone={() => setCollaborating(false)} />
+        <Modal
+          open={collaborating}
+          onOpenChange={setCollaborating}
+          title="공동작성 담당자"
+        >
+          <CourseEditors
+            context={c}
+            course={course}
+            onDone={() => setCollaborating(false)}
+          />
         </Modal>
       </div>
       <TeachingPrint
@@ -938,31 +1153,62 @@ function CourseEditor({
   );
 }
 
-function CourseEditors({ context, course, onDone }: {
+function CourseEditors({
+  context,
+  course,
+  onDone,
+}: {
   context: Context;
   course: Row<"teaching_courses">;
   onDone: () => void;
 }) {
   const mutation = useMutation();
-  const assigned = new Set(context.teaching!.editors.filter((editor) => editor.course_id === course.id)
-    .map((editor) => editor.user_id));
-  const candidates = context.members.filter((item) => item.role === "editor" && item.user_id !== course.owner_id);
-  return <form className="form-stack" onSubmit={(event) => {
-    event.preventDefault();
-    const users = new FormData(event.currentTarget).getAll("editors");
-    mutation.execute(() => setTeachingPlanEditors(course.id, course.version, users), onDone);
-  }}>
-    <p>이 계획의 교수학습·평가 내용을 함께 작성할 교사를 선택하세요.</p>
-    {candidates.length ? <fieldset className="course-classes" disabled={mutation.pending}>
-      <legend>작업공간 편집자</legend>
-      {candidates.map((member) => <label key={member.user_id}>
-        <input type="checkbox" name="editors" value={member.user_id} defaultChecked={assigned.has(member.user_id)} />
-        {member.display_name}
-      </label>)}
-    </fieldset> : <p className="muted">현재 지정할 수 있는 작업공간 편집자가 없습니다.</p>}
-    <InlineNotice mutation={mutation} />
-    <Button type="submit" disabled={mutation.pending || (!candidates.length && !assigned.size)}>
-      {mutation.pending ? "저장 중…" : "담당자 저장"}
-    </Button>
-  </form>;
+  const assigned = new Set(
+    context
+      .teaching!.editors.filter((editor) => editor.course_id === course.id)
+      .map((editor) => editor.user_id),
+  );
+  const candidates = context.members.filter(
+    (item) => item.role === "editor" && item.user_id !== course.owner_id,
+  );
+  return (
+    <form
+      className="form-stack"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const users = new FormData(event.currentTarget).getAll("editors");
+        mutation.execute(
+          () => setTeachingPlanEditors(course.id, course.version, users),
+          onDone,
+        );
+      }}
+    >
+      <p>이 계획의 교수학습·평가 내용을 함께 작성할 교사를 선택하세요.</p>
+      {candidates.length ? (
+        <fieldset className="course-classes" disabled={mutation.pending}>
+          <legend>작업공간 편집자</legend>
+          {candidates.map((member) => (
+            <label key={member.user_id}>
+              <input
+                type="checkbox"
+                name="editors"
+                value={member.user_id}
+                defaultChecked={assigned.has(member.user_id)}
+              />
+              {member.display_name}
+            </label>
+          ))}
+        </fieldset>
+      ) : (
+        <p className="muted">현재 지정할 수 있는 작업공간 편집자가 없습니다.</p>
+      )}
+      <InlineNotice mutation={mutation} />
+      <Button
+        type="submit"
+        disabled={mutation.pending || (!candidates.length && !assigned.size)}
+      >
+        {mutation.pending ? "저장 중…" : "담당자 저장"}
+      </Button>
+    </form>
+  );
 }

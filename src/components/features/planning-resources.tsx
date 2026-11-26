@@ -1,5 +1,6 @@
 "use client";
-import {canPlan} from "@/lib/planning-completion";
+import { useEditGuard } from "@/lib/device-session";
+import { canPlan } from "@/lib/planning-completion";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -36,7 +37,7 @@ export function PlanningResources({
     [room, setRoom] = useState("");
   const resources = c.operations?.resources ?? emptyResources(),
     missing = unresolvedReferences(c, doc),
-    canWrite = canPlan(c,"timetable");
+    canWrite = canPlan(c, "timetable");
   const [name, setName] = useState("단축수업"),
     [kind, setKind] = useState("shortened"),
     [schedule, setSchedule] = useState("");
@@ -57,6 +58,8 @@ export function PlanningResources({
     closing: 10,
     step: 5,
   });
+  const [inputDirty, setInputDirty] = useState(false);
+  useEditGuard("planning-resources", inputDirty || pending);
   const result = shortenedSchedules(v);
   const execute = (
     task: () => Promise<{ ok: boolean; error?: string }>,
@@ -66,13 +69,19 @@ export function PlanningResources({
       try {
         const r = await task();
         setMessage(r.ok ? success : (r.error ?? "저장하지 못했습니다."));
-        if (r.ok) router.refresh();
+        if (r.ok) {
+          setInputDirty(false);
+          router.refresh();
+        }
       } catch {
         setMessage("요청을 완료하지 못했습니다. 현재 입력은 유지됩니다.");
       }
     });
   return (
-    <section className="panel planning-resources">
+    <section
+      className="panel planning-resources"
+      onChangeCapture={() => setInputDirty(true)}
+    >
       <details open={missing.length > 0}>
         <summary>
           <strong>공통 자료 연결 · 특별실</strong>

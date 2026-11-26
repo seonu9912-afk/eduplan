@@ -199,35 +199,14 @@ export async function currentLessonNotice(
       })
       .parse(input);
     await authorized(v.workspaceId, ["admin", "editor", "viewer"]);
-    const c = await getWorkspaceContext(v.workspaceId, String(v.year));
-    c.operations = await getOperationsData(c);
-    const {
-      publishedTimetable,
-      createLessonResolver,
-      currentAndNext,
-      myTeacherIds,
-      seoulClock,
-    } = await import("@/lib/school-operations");
-    const doc = publishedTimetable(c);
-    if (!doc || !v.lead) return { ok: true, data: null };
-    const clock = seoulClock(new Date()),
-      ids = myTeacherIds(c),
-      { next, remaining } = currentAndNext(
-        createLessonResolver(
-          c,
-          doc,
-        )(clock.date).filter((x) => ids.has(x.teacherId)),
-        clock.minutes,
-      );
-    if (!next || remaining === null || remaining > v.lead)
-      return { ok: true, data: null };
-    return {
-      ok: true,
-      data: {
-        title: `${remaining}분 후 ${next.subject} · ${next.classes} · ${next.period}교시`,
-        signature: `${next.date}:${next.id}:${next.teacherId}:${next.start}:${next.end}`,
-      },
-    };
+    const c = await getWorkspaceContext(
+      v.workspaceId,
+      String(v.year),
+      "notifications",
+    );
+    c.operations = await getOperationsData(c, "notifications");
+    const { lessonNotice } = await import("@/lib/push-notice");
+    return { ok: true, data: lessonNotice(c, v.lead) };
   } catch {
     return {
       ok: false,

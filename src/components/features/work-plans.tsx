@@ -1,5 +1,6 @@
 "use client";
-import {canPlan} from "@/lib/planning-completion";
+import { useEditGuard } from "@/lib/device-session";
+import { canPlan } from "@/lib/planning-completion";
 import { useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,12 +30,12 @@ export function WorkPlans({
   context: c,
   today,
   onDirtyChange,
-  save=saveAnnual,
+  save = saveAnnual,
 }: {
   context: Context;
   today: string;
   onDirtyChange: (v: boolean) => void;
-  save?:typeof saveAnnual;
+  save?: typeof saveAnnual;
 }) {
   const start = `${c.year?.year ?? 2026}-03-01`,
     end = monthRange(`${(c.year?.year ?? 2026) + 1}-02`).end;
@@ -52,13 +53,19 @@ export function WorkPlans({
   const [editing, setEditing] = useState<Partial<Business> | null>(null),
     [error, setError] = useState("");
   const m = useMutation();
+  useEditGuard("work-plan-form", !!editing);
   const revision = useRef(0);
   const latestVersion = c.annual?.version ?? 0;
-  const latestPlan = useMemo(() => c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual(), [c.annual]);
+  const latestPlan = useMemo(
+    () => (c.annual ? annualSchema.parse(c.annual.document) : defaultAnnual()),
+    [c.annual],
+  );
   const needsSync = latestVersion > version;
-  const reconciled = useMemo(() => needsSync && dirty
-    ? mergeAnnualPlans(savedPlan, plan, latestPlan) : null,
-    [needsSync, dirty, savedPlan, plan, latestPlan]);
+  const reconciled = useMemo(
+    () =>
+      needsSync && dirty ? mergeAnnualPlans(savedPlan, plan, latestPlan) : null,
+    [needsSync, dirty, savedPlan, plan, latestPlan],
+  );
   const versionConflict = !!reconciled?.conflicts.length;
   if (!dirty && !editing && !m.pending && needsSync) {
     setPlan(latestPlan);
@@ -72,7 +79,7 @@ export function WorkPlans({
         description="설정에서 학년도를 개설한 뒤 업무계획을 작성합니다."
       />
     );
-  const editable = canPlan(c,"plans"),
+  const editable = canPlan(c, "plans"),
     duty =
       plan.workSettings?.dutyEnabled ??
       plan.business.some((b) => b.kind === "당직");
@@ -155,7 +162,12 @@ export function WorkPlans({
               </p>
             ))}
           {c.events
-            .filter((e) => e.start_date <= d && e.end_date >= d && (!departmentFilter || e.department === departmentFilter))
+            .filter(
+              (e) =>
+                e.start_date <= d &&
+                e.end_date >= d &&
+                (!departmentFilter || e.department === departmentFilter),
+            )
             .map((e) => (
               <article key={e.id} className="work-card academic-work-card">
                 {deptTag(e.department)}
@@ -170,7 +182,10 @@ export function WorkPlans({
             ))}
           {plan.allocations
             .filter(
-              (a) => a.date === d && (!departmentFilter || a.department === departmentFilter) && !c.events.some((e) => e.id === a.eventId),
+              (a) =>
+                a.date === d &&
+                (!departmentFilter || a.department === departmentFilter) &&
+                !c.events.some((e) => e.id === a.eventId),
             )
             .map((a) => (
               <article key={a.id} className="work-card academic-work-card">
@@ -185,7 +200,12 @@ export function WorkPlans({
               </article>
             ))}
           {plan.business
-            .filter((b) => b.date === d && b.kind === "업무" && (!departmentFilter || b.department === departmentFilter))
+            .filter(
+              (b) =>
+                b.date === d &&
+                b.kind === "업무" &&
+                (!departmentFilter || b.department === departmentFilter),
+            )
             .map(businessCard)}
           {editable && inYear && (
             <button
@@ -203,7 +223,12 @@ export function WorkPlans({
               (k) =>
                 (k !== "당직" || duty) &&
                 (view === "week" ||
-                  plan.business.some((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter))),
+                  plan.business.some(
+                    (b) =>
+                      b.date === d &&
+                      b.kind === k &&
+                      (!departmentFilter || b.department === departmentFilter),
+                  )),
             )
             .map((k) => (
               <section key={k}>
@@ -220,11 +245,19 @@ export function WorkPlans({
                   )}
                 </div>
                 {plan.business
-                  .filter((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter))
+                  .filter(
+                    (b) =>
+                      b.date === d &&
+                      b.kind === k &&
+                      (!departmentFilter || b.department === departmentFilter),
+                  )
                   .map(businessCard)}
-                {!plan.business.some((b) => b.date === d && b.kind === k && (!departmentFilter || b.department === departmentFilter)) && (
-                  <small className="muted">없음</small>
-                )}
+                {!plan.business.some(
+                  (b) =>
+                    b.date === d &&
+                    b.kind === k &&
+                    (!departmentFilter || b.department === departmentFilter),
+                ) && <small className="muted">없음</small>}
               </section>
             ))}
         </div>
@@ -233,11 +266,32 @@ export function WorkPlans({
   };
   const notices = plan.business.filter(
     (b) =>
-      b.kind === "협의사항" && b.date >= range.start && b.date <= range.end && (!departmentFilter || b.department === departmentFilter),
+      b.kind === "협의사항" &&
+      b.date >= range.start &&
+      b.date <= range.end &&
+      (!departmentFilter || b.department === departmentFilter),
   );
   return (
     <>
-      <div className="no-print"><label>조회 부서 <select aria-label="학교업무 조회 부서" value={departmentFilter} onChange={e=>setDepartmentFilter(e.target.value)}><option value="">학교 전체</option>{plan.departments.map(d=><option key={d}>{d}</option>)}</select></label><p className="muted-small">월중·주간계획은 같은 학사·업무 일정에서 생성됩니다. 원본 수정 시 함께 갱신됩니다.</p></div>
+      <div className="no-print">
+        <label>
+          조회 부서{" "}
+          <select
+            aria-label="학교업무 조회 부서"
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+          >
+            <option value="">학교 전체</option>
+            {plan.departments.map((d) => (
+              <option key={d}>{d}</option>
+            ))}
+          </select>
+        </label>
+        <p className="muted-small">
+          월중·주간계획은 같은 학사·업무 일정에서 생성됩니다. 원본 수정 시 함께
+          갱신됩니다.
+        </p>
+      </div>
       <div className="page-heading">
         <div>
           <span className="eyebrow">SCHOOL WORK PLANS</span>
@@ -285,16 +339,43 @@ export function WorkPlans({
           )}
         </div>
       </div>
-      {editable && <div className="annual-status no-print">
-        <SaveStatus state={m.pending ? "saving" : versionConflict ? "conflict" : m.notice.error ? "error" : dirty ? "dirty" : version ? "saved" : "draft"}>
-          {m.pending ? "저장 중…" : versionConflict ? "충돌 · 입력을 복사한 뒤 최신 저장본을 확인해 주세요." :
-            m.notice.error ? "저장 실패 · 입력 내용 유지" : dirty ? "저장하지 않은 변경사항이 있습니다." :
-            version ? `저장 완료 · v${version}` : "초안"}
-        </SaveStatus>
-      </div>}
+      {editable && (
+        <div className="annual-status no-print">
+          <SaveStatus
+            state={
+              m.pending
+                ? "saving"
+                : versionConflict
+                  ? "conflict"
+                  : m.notice.error
+                    ? "error"
+                    : dirty
+                      ? "dirty"
+                      : version
+                        ? "saved"
+                        : "draft"
+            }
+          >
+            {m.pending
+              ? "저장 중…"
+              : versionConflict
+                ? "충돌 · 입력을 복사한 뒤 최신 저장본을 확인해 주세요."
+                : m.notice.error
+                  ? "저장 실패 · 입력 내용 유지"
+                  : dirty
+                    ? "저장하지 않은 변경사항이 있습니다."
+                    : version
+                      ? `저장 완료 · v${version}`
+                      : "초안"}
+          </SaveStatus>
+        </div>
+      )}
       <InlineNotice mutation={m} />
-      {editable && dirty && m.notice.error && !versionConflict &&
-        <Button variant="outline" className="no-print" onClick={m.refresh}>최신 저장본 확인</Button>}
+      {editable && dirty && m.notice.error && !versionConflict && (
+        <Button variant="outline" className="no-print" onClick={m.refresh}>
+          최신 저장본 확인
+        </Button>
+      )}
       <div className="work-toolbar no-print">
         <div className="work-view-tabs">
           {(["week", "month"] as const).map((v) => (

@@ -12,10 +12,16 @@ import { timetableDocumentSchema } from "./timetable-bridge";
 import type { CurriculumDocument } from "./curriculum-design";
 import type { Context } from "./models";
 
-export async function getOperationsData(c: Context): Promise<OperationsData> {
+export async function getOperationsData(
+  c: Context,
+  section = "full",
+): Promise<OperationsData> {
   if (!c.year) return emptyOperations();
   const db = await createClient(),
-    manager = canPlan(c,"staffing"),
+    manager =
+      canPlan(c, "staffing") &&
+      ["full", "teachers", "curriculum"].includes(section),
+    editing = ["full", "teachers", "timetable", "curriculum"].includes(section),
     yearId = c.year.id,
     workspaceId = c.workspace.id;
   const [
@@ -30,14 +36,23 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
     effective,
   ] = await Promise.all([
     db.rpc("staff_directory", { target: workspaceId, year_id: yearId }),
-    db
-      .from("staff_appointments")
-      .select("*")
-      .eq("workspace_id", workspaceId)
-      .eq("academic_year_id", yearId)
-      .order("display_name"),
-    db.rpc("workspace_curriculum_documents",{target:workspaceId}),
-    db.rpc("read_timetable_document", { target: workspaceId, year_id: yearId }),
+    editing
+      ? db
+          .from("staff_appointments")
+          .select("*")
+          .eq("workspace_id", workspaceId)
+          .eq("academic_year_id", yearId)
+          .order("display_name")
+      : Promise.resolve({ data: [], error: null }),
+    editing
+      ? db.rpc("workspace_curriculum_documents", { target: workspaceId })
+      : Promise.resolve({ data: [], error: null }),
+    editing
+      ? db.rpc("read_timetable_document", {
+          target: workspaceId,
+          year_id: yearId,
+        })
+      : Promise.resolve({ data: null, error: null }),
     db
       .from("timetable_publications")
       .select("*")
@@ -93,10 +108,12 @@ export async function getOperationsData(c: Context): Promise<OperationsData> {
     directory: directory.data as unknown as TeacherDirectory[],
     staff: staff.data ?? [],
     designs: Object.fromEntries(
-      ((designs.data ?? []) as unknown as {plan_id:string;document:unknown}[]).map((d) => [
-        d.plan_id,
-        d.document as unknown as CurriculumDocument,
-      ]),
+      (
+        (designs.data ?? []) as unknown as {
+          plan_id: string;
+          document: unknown;
+        }[]
+      ).map((d) => [d.plan_id, d.document as unknown as CurriculumDocument]),
     ),
     timetable: saved
       ? {

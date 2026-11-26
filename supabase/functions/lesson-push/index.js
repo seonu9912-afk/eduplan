@@ -41,7 +41,7 @@ Deno.serve(async (request) => {
     while (Date.now() - started < 90000) {
       const result = await db
         .from("lesson_push_subscriptions")
-        .select("id,endpoint,p256dh,auth_key,lead")
+        .select("id,endpoint,p256dh,auth_key,lead,show_details,notify_changes")
         .eq("enabled", true)
         .gt("id", cursor)
         .order("id")
@@ -53,6 +53,57 @@ Deno.serve(async (request) => {
         let key = "source";
         try {
           if (!allowedEndpoint(sub.endpoint)) throw Error("invalid_endpoint");
+          // Change notices have separate idempotency records from lesson reminders.
+          if (sub.notify_changes) {
+            const pending = await rpc("pending_operation_push", {
+              subscription: sub.id,
+            });
+            for (const item of pending) {
+              if (
+                !(await rpc("claim_operation_push", {
+                  subscription: sub.id,
+                  notification: item.id,
+                }))
+              )
+                continue;
+              try {
+                const current = await rpc("operation_push_notice", {
+                  subscription: sub.id,
+                  notification: item.id,
+                });
+                if (!current) {
+                  await rpc("finish_operation_push", {
+                    subscription: sub.id,
+                    notification: item.id,
+                    result_state: "invalidated",
+                  });
+                  continue;
+                }
+                await webpush.sendNotification(
+                  {
+                    endpoint: sub.endpoint,
+                    keys: { p256dh: sub.p256dh, auth: sub.auth_key },
+                  },
+                  JSON.stringify(current),
+                  { TTL: 300, urgency: "normal", timeout: 8000 },
+                );
+                await rpc("finish_operation_push", {
+                  subscription: sub.id,
+                  notification: item.id,
+                  result_state: "sent",
+                });
+                sent++;
+              } catch (error) {
+                failed++;
+                await rpc("finish_operation_push", {
+                  subscription: sub.id,
+                  notification: item.id,
+                  result_state: "failed",
+                  disable: [404, 410].includes(error.statusCode),
+                });
+              }
+            }
+          }
           const source = await rpc("push_source", { subscription: sub.id });
           if (!source) continue;
           const notice = pushNotice(source, sub.lead);
@@ -79,7 +130,13 @@ Deno.serve(async (request) => {
               endpoint: sub.endpoint,
               keys: { p256dh: sub.p256dh, auth: sub.auth_key },
             },
-            JSON.stringify(latest),
+            JSON.stringify({
+              ...latest,
+              title: sub.show_details
+                ? latest.title
+                : "곧 수업이 시작됩니다. 앱에서 다음 수업을 확인하세요.",
+              subscriptionId: sub.id,
+            }),
             {
               TTL: Math.min(
                 60,
