@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
@@ -47,8 +48,8 @@ async function member(workspaceId:string,canEdit=false){
   if(auth.error||!auth.data.user)throw Error("로그인이 필요합니다.");
   const m=await db.from("workspace_members").select("role").eq("workspace_id",workspaceId)
     .eq("user_id",auth.data.user.id).maybeSingle();
-  if(m.error||!m.data||canEdit&&!["admin","editor"].includes(m.data.role))
-    throw Error(canEdit?"이 편성표를 수정할 권한이 없습니다.":"교육과정 자료에 접근할 권한이 없습니다.");
+  if (m.error || !m.data) throw Error("이 학교의 구성원이 아닙니다.");
+  if (canEdit) await requirePlanPermission(db, workspaceId, "curriculum");
   return db;
 }
 function errText(error:unknown){

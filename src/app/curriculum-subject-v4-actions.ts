@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
@@ -11,8 +12,8 @@ async function check(workspaceId:string){
   if(user.error||!user.data.user)throw Error("로그인이 필요합니다.");
   const membership=await db.from("workspace_members").select("role")
     .eq("workspace_id",workspaceId).eq("user_id",user.data.user.id).maybeSingle();
-  if(membership.error||!membership.data||!["admin","editor"].includes(membership.data.role))
-    throw Error("교육과정 수정 권한이 없습니다.");
+  if (membership.error || !membership.data) throw Error("이 학교의 구성원이 아닙니다.");
+  await requirePlanPermission(db, workspaceId, "curriculum");
   return db;
 }
 function err(e:unknown){return e instanceof Error?e.message:"교과목을 수정하지 못했습니다.";}

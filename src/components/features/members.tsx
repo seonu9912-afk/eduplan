@@ -1,6 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
-import { Users, UserPlus, Copy, ShieldCheck } from "lucide-react";
+import { Users, UserPlus, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Confirm,
@@ -28,6 +28,7 @@ export function Members({ context: c, relatedTools }: { context: Context; relate
   const [revoke, setRevoke] = useState<string | null>(null);
   const m = useMutation();
   const admin = c.role === "admin";
+  const admins = c.members.filter((member) => member.role === "admin").length;
   return (
     <>
       <div className="page-heading">
@@ -77,7 +78,7 @@ export function Members({ context: c, relatedTools }: { context: Context; relate
                   </td>
                   <td>{member.email || "—"}</td>
                   <td>
-                    {admin && member.user_id !== c.workspace.owner_id ? (
+                    {admin && (member.role !== "admin" || admins > 1) ? (
                       <select
                         aria-label={`${member.display_name} 역할`}
                         value={member.role}
@@ -99,14 +100,11 @@ export function Members({ context: c, relatedTools }: { context: Context; relate
                     ) : (
                       <span className="role-badge">
                         {roles[member.role as Role]}
-                        {member.user_id === c.workspace.owner_id
-                          ? " · 소유자"
-                          : ""}
                       </span>
                     )}
                   </td>
                   <td>
-                    {admin && member.user_id !== c.workspace.owner_id ? (
+                    {admin && (member.role !== "admin" || admins > 1) ? (
                       <Button
                         variant="ghost"
                         onClick={() =>
@@ -129,15 +127,7 @@ export function Members({ context: c, relatedTools }: { context: Context; relate
           </table>
         </div>
       </section>
-      {c.workspace.kind === "personal" ? (
-        <div className="info-box members-note">
-          <ShieldCheck size={20} />
-          <p>
-            개인 작업공간은 본인만 사용할 수 있습니다. 동료와 함께하려면 상단의
-            ‘학교 만들기’를 이용하세요.
-          </p>
-        </div>
-      ) : admin ? (
+      {admin ? (
         <section className="panel invitations-panel">
           <div className="panel-heading">
             <h2>발급한 초대</h2>

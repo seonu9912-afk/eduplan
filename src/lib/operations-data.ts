@@ -15,13 +15,15 @@ import type { Context } from "./models";
 export async function getOperationsData(
   c: Context,
   section = "full",
+  management = section === "full" || section === "teachers",
 ): Promise<OperationsData> {
   if (!c.year) return emptyOperations();
   const db = await createClient(),
     manager =
       canPlan(c, "staffing") &&
       ["full", "teachers", "curriculum"].includes(section),
-    editing = ["full", "teachers", "timetable", "curriculum"].includes(section),
+    editing = management && ["full", "teachers", "timetable", "curriculum"].includes(section),
+    timetableEditing = editing && (c.role === "admin" || canPlan(c, "timetable") || canPlan(c, "staffing")),
     yearId = c.year.id,
     workspaceId = c.workspace.id;
   const [
@@ -47,7 +49,7 @@ export async function getOperationsData(
     editing
       ? db.rpc("workspace_curriculum_documents", { target: workspaceId })
       : Promise.resolve({ data: [], error: null }),
-    editing
+    timetableEditing
       ? db.rpc("read_timetable_document", {
           target: workspaceId,
           year_id: yearId,
@@ -101,10 +103,11 @@ export async function getOperationsData(
     updated_at: string | null;
     document: unknown;
   } | null;
+  const resourceData = resourcesSchema.parse(resources.data);
   return {
     effectiveTimetables:
       effective.data as unknown as OperationsData["effectiveTimetables"],
-    resources: resourcesSchema.parse(resources.data),
+    resources: management ? resourceData : { ...resourceData, links: [], bells: [], applications: [] },
     directory: directory.data as unknown as TeacherDirectory[],
     staff: staff.data ?? [],
     designs: Object.fromEntries(

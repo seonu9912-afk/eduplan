@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -85,7 +86,8 @@ export async function saveTimetableDocument(
         document: timetableDocumentSchema,
       })
       .parse(input);
-    const db = await withMember(v.workspaceId, ["admin", "editor"]);
+    const db = await withMember(v.workspaceId, ["admin", "editor", "viewer"]);
+    await requirePlanPermission(db, v.workspaceId, "timetable");
     const c = await getWorkspaceContext(v.workspaceId, String(v.document.year));
     if (c.year?.id !== v.yearId) throw Error("학년도 연결을 확인하세요.");
     const result = await db.rpc("save_timetable_document", {

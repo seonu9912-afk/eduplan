@@ -558,17 +558,15 @@ function CourseEditor({
   const attempted = useRef(-1);
   const m = useMutation();
   const managesCourse =
-    canPlan(c, "assessment") &&
     (course.owner_id === c.userId ||
-      (course.visibility === "workspace" && c.role === "admin"));
+      (course.visibility === "workspace" && canPlan(c, "assessment")));
   const assigned =
-    c.role === "editor" &&
     course.visibility === "workspace" &&
-    c.teaching!.editors.some(
+    (c.teaching!.editors.some(
       (editor) => editor.course_id === course.id && editor.user_id === c.userId,
-    );
+    ) || !!c.operations?.directory.some((teacher) => teacher.id === course.teacher_id && teacher.user_id === c.userId));
   const editable =
-    canPlan(c, "assessment") && (managesCourse || assigned) && !course.archived;
+    (managesCourse || assigned) && !course.archived;
   // Revalidation must never replace unsaved teacher input. Keep the loaded
   // version for CAS until a successful save or an explicit navigation.
   if (

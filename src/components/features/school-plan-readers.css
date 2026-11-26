@@ -1,0 +1,99 @@
+.school-entry {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 16px;
+  margin-block: 16px;
+}
+.school-entry > .panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 20px;
+}
+.school-plan-reader {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.school-reader-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.school-reader-empty {
+  padding: 16px;
+}
+.school-reader-list,
+.school-reader-calendar {
+  background: white;
+  border: 1px solid var(--border);
+}
+.school-reader-list :is(th, td),
+.school-reader-calendar :is(th, td) {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+.school-reader-calendar {
+  table-layout: fixed;
+  min-width: 510px;
+}
+.school-reader-calendar :is(th, td) {
+  vertical-align: top;
+}
+.school-reader-calendar td {
+  height: 78px;
+}
+.school-reader-calendar time {
+  color: #4b607b;
+  font-weight: 650;
+}
+.school-reader-calendar p {
+  margin-top: 4px;
+  color: #243e59;
+}
+.school-reader-calendar [data-outside] {
+  background: #f5f7fa;
+}
+.school-curriculum-sheet {
+  min-width: 480px;
+}
+.school-curriculum-sheet :is(th, td):not(:first-child) {
+  text-align: center;
+}
+@media (max-width: 767px) {
+  .school-entry {
+    grid-template-columns: minmax(0,1fr);
+  }
+}
+@media print {
+  .school-reader-calendar,.school-curriculum-sheet {
+    min-width: 0;
+  }
+}
+.school-dashboard-plans {
+  margin-top: 18px;
+}
+.school-dashboard-plans > .panel {
+  padding: 18px;
+}
+.school-dashboard-plans h2 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+.school-dashboard-links {
+  list-style: none;
+  padding: 0;
+}
+.school-dashboard-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.school-dashboard-links small {
+  color: #536b88;
+  padding-inline-start: 6px;
+}

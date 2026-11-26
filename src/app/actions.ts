@@ -18,6 +18,8 @@ import {
 } from "@/lib/middle-curriculum";
 import { subjectIsUsedInDesign } from "@/lib/curriculum-subject-removal";
 import type { Result, Role } from "@/lib/models";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
+import type { PlanningDomain } from "@/lib/planning-completion";
 
 function userError(error: unknown): string {
   if (error instanceof z.ZodError)
@@ -53,7 +55,7 @@ async function authenticated() {
     throw new Error("로그인이 만료되었습니다. 다시 로그인해 주세요.");
   return { db, user: data.user };
 }
-async function authorized(id: string, allowed: Role[] = ["admin", "editor"]) {
+async function authorized(id: string, allowed: Role[] | PlanningDomain = "curriculum") {
   uuid.parse(id);
   const { db, user } = await authenticated();
   const { data, error } = await db
@@ -62,8 +64,9 @@ async function authorized(id: string, allowed: Role[] = ["admin", "editor"]) {
     .eq("workspace_id", id)
     .eq("user_id", user.id)
     .single();
-  if (error || !data || !allowed.includes(data.role as Role))
+  if (error || !data || (Array.isArray(allowed) && !allowed.includes(data.role as Role)))
     throw new Error("이 작업을 수행할 권한이 없습니다.");
+  if (typeof allowed === "string") await requirePlanPermission(db, id, allowed);
   return { db, user };
 }
 function refresh() {
@@ -192,7 +195,7 @@ export async function createSchool(input: unknown) {
           .trim()
           .min(1, "학교명을 입력해 주세요.")
           .max(80),
-        school_region: z.string().trim().max(40),
+        school_region: z.string().trim().min(1, "지역을 입력해 주세요.").max(40),
         school_type: schoolTypeSchema,
       })
       .parse(input);
@@ -216,7 +219,7 @@ export async function saveYear(input: unknown) {
 export async function saveEvent(input: unknown) {
   return run(async () => {
     const { id, version, ...value } = eventSchema.parse(input);
-    const { db } = await authorized(value.workspace_id, ["admin"]);
+    const { db } = await authorized(value.workspace_id, "calendar");
     const result = id
       ? await db
           .from("events")
@@ -244,7 +247,7 @@ export async function deleteEvent(
   return run(async () => {
     uuid.parse(id);
     z.number().int().positive().parse(version);
-    const { db } = await authorized(workspaceId, ["admin"]);
+    const { db } = await authorized(workspaceId, "calendar");
     const { data, error } = await db
       .from("events")
       .delete()
@@ -620,7 +623,7 @@ export async function saveAnnual(input: unknown) {
       .parse(input);
     const { db } = await authorized(
       v.workspaceId,
-      v.workPlans ? ["admin", "editor"] : ["admin"],
+      v.workPlans ? "plans" : "calendar",
     );
     if (v.workPlans) {
       const existing = await db
@@ -630,9 +633,10 @@ export async function saveAnnual(input: unknown) {
         .eq("academic_year_id", v.yearId)
         .maybeSingle();
       if (existing.error) throw existing.error;
-      const plan = existing.data
-        ? annualSchema.parse(existing.data.document)
-        : defaultAnnual();
+      const { data: school, error: schoolError } = await db.from("workspaces").select("school_type").eq("id", v.workspaceId).single();
+      if (schoolError) throw schoolError;
+      const plan = existing.data ? annualSchema.parse(existing.data.document) :
+        defaultAnnual(school.school_type === "초등학교" ? [1, 2, 3, 4, 5, 6] : [1, 2, 3]);
       v.document = {
         ...plan,
         business: v.document.business,
@@ -671,19 +675,48 @@ export async function saveAnnual(input: unknown) {
   });
 }
 export async function confirmAcademicCalendar(input: unknown) {
+  return publishSchoolPlan(input, "calendar");
+}
+
+export async function publishWorkPlan(input: unknown) {
+  return publishSchoolPlan(input, "plans");
+}
+
+export async function previousWorkPlan(workspaceId: string, year: number) {
+  return run(async () => {
+    schoolYearSchema.parse(year);
+    const { db } = await authorized(workspaceId, "plans");
+    const lookup = await db.from("academic_years").select("id").eq("workspace_id", workspaceId)
+      .eq("year", year - 1).maybeSingle();
+    if (lookup.error) throw lookup.error;
+    if (!lookup.data) return [];
+    const plan = await db.from("annual_academic_plans").select("document").eq("workspace_id", workspaceId)
+      .eq("academic_year_id", lookup.data.id).maybeSingle();
+    if (plan.error) throw plan.error;
+    const { annualSchema } = await import("@/lib/academic");
+    return plan.data ? annualSchema.parse(plan.data.document).business : [];
+  });
+}
+
+async function publishSchoolPlan(input: unknown, domain: "calendar" | "plans") {
   return run(async () => {
     const v = z
       .object({
         workspaceId: uuid,
         yearId: uuid,
         version: z.number().int().positive(),
+        startsOn: z.iso.date(),
+        note: z.string().trim().max(500).default(""),
       })
       .parse(input);
-    const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
-    const { data, error } = await db.rpc("confirm_academic_calendar", {
+    const { db } = await authorized(v.workspaceId, domain);
+    const { data, error } = await db.rpc("publish_school_plan", {
       target: v.workspaceId,
       year_id: v.yearId,
       expected_version: v.version,
+      plan_domain: domain,
+      effective_date: v.startsOn,
+      note: v.note,
     });
     if (error) throw error;
     refresh();
@@ -737,7 +770,7 @@ export async function saveCalendarChanges(input: unknown) {
         operation: z.string().max(40).default("수정"),
       })
       .parse(input);
-    const { db } = await authorized(v.workspaceId, ["admin", "editor"]);
+    const { db } = await authorized(v.workspaceId, "calendar");
     const { data, error } = await db.rpc("save_calendar_changes", {
       target: v.workspaceId,
       year_id: v.yearId,
@@ -758,7 +791,7 @@ export async function saveCalendarChanges(input: unknown) {
 
 export async function previewHolidays(workspaceId: string, year: number) {
   return run(async () => {
-    await authorized(workspaceId);
+    await authorized(workspaceId, "calendar");
     schoolYearSchema.parse(year);
     const { getHolidays } = await import("@/lib/public-data");
     const { academicHolidayImport } = await import("@/lib/academic");
@@ -779,7 +812,7 @@ export async function previewWeather(workspaceId: string, settings: unknown) {
 export async function saveSemesters(input: unknown) {
   return run(async () => {
     const value = academicSchema.parse(input);
-    const { db } = await authorized(value.target, ["admin"]);
+    const { db } = await authorized(value.target, "calendar");
     const { data: year, error: readError } = await db
       .from("academic_years")
       .select("id")

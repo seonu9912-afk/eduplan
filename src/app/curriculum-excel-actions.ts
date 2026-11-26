@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
@@ -30,8 +31,8 @@ export async function applyCurriculumExcel(input:unknown):Promise<Result<{
   if(auth.error||!auth.data.user)throw Error("로그인이 필요합니다.");
   const member=await db.from("workspace_members").select("role")
     .eq("workspace_id",v.workspaceId).eq("user_id",auth.data.user.id).maybeSingle();
-  if(member.error||!member.data||!["admin","editor"].includes(member.data.role))
-    throw Error("교육과정 편집 권한이 없습니다.");
+  if (member.error || !member.data) throw Error("이 학교의 구성원이 아닙니다.");
+  await requirePlanPermission(db, v.workspaceId, "curriculum");
   const result=await db.rpc("curriculum_excel_apply",{
     target:v.workspaceId,source_year:v.year,source_kind:v.kind,
     entries:v.courses as unknown as Json,

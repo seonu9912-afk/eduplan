@@ -1,16 +1,13 @@
 "use client";
 import { Disclosure } from "@/components/ui/disclosure";
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarDays,
   GraduationCap,
-  Plus,
   Save,
   ShieldCheck,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Field,
   InlineNotice,
@@ -19,31 +16,20 @@ import {
 } from "@/components/common";
 import { saveYear, setSchoolType } from "@/app/actions";
 import {
-  academicYearOf,
-  seoulToday,
   monthRange,
   schoolTypes,
 } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
 export function SchoolSettings({ context: c }: { context: Context }) {
-  const current = academicYearOf(seoulToday());
-  const [creating, setCreating] = useState(!c.year);
-  const [newYear, setNewYear] = useState(c.year ? c.year.year + 1 : current);
   const editable = c.role === "admin";
-  const selected = creating ? newYear : c.year!.year;
+  if (!c.year) return null;
   return (
     <>
       <div className="page-heading">
         <div>
           <h1>작업공간 설정</h1>
         </div>
-        {editable && c.year ? (
-          <Button variant="outline" onClick={() => setCreating(!creating)}>
-            <Plus />
-            {creating ? "현재 학년도 수정" : "새 학년도 개설"}
-          </Button>
-        ) : null}
       </div>
       <div className="settings-layout">
         <div className="settings-main">
@@ -53,36 +39,17 @@ export function SchoolSettings({ context: c }: { context: Context }) {
             </div>
             <div>
               <h2>{c.workspace.name}</h2>
-              <p>
-                {c.workspace.kind === "school"
-                  ? `학교 공동 작업공간 · ${c.schoolType}`
-                  : `개인 작업공간 · ${c.schoolType}`}
-              </p>
+              <p>{c.schoolType}</p>
             </div>
             <span className="scope-tag">
               {c.role === "admin" ? "관리자" : "조회 전용"}
             </span>
           </div>
           <SchoolTypeForm key={c.schoolType} context={c} />
-          {creating ? (
-            <div className="panel new-year-picker">
-              <Field label="개설할 학년도" id="new-year">
-                <input
-                  id="new-year"
-                  type="number"
-                  min={2000}
-                  max={2100}
-                  value={newYear}
-                  onChange={(e) => setNewYear(Number(e.target.value))}
-                />
-              </Field>
-            </div>
-          ) : null}
           <YearForm
-            key={`${selected}-${creating}-${c.schoolType}`}
+            key={`${c.year.id}-${c.schoolType}`}
             context={c}
-            year={selected}
-            creating={creating}
+            year={c.year.year}
             editable={editable}
           />
         </div>
@@ -123,18 +90,15 @@ export function SchoolSettings({ context: c }: { context: Context }) {
 function YearForm({
   context: c,
   year,
-  creating,
   editable,
 }: {
   context: Context;
   year: number;
-  creating: boolean;
   editable: boolean;
 }) {
   const m = useMutation();
   const router = useRouter();
-  const term = (n: number) =>
-    !creating ? c.semesters.find((s) => s.number === n) : null;
+  const term = (n: number) => c.semesters.find((s) => s.number === n);
   const defaults = [
     { start_date: `${year}-03-01`, end_date: `${year}-07-20` },
     { start_date: `${year}-08-17`, end_date: monthRange(`${year + 1}-02`).end },
@@ -150,7 +114,7 @@ function YearForm({
             saveYear({
               target: c.workspace.id,
               school_year: year,
-              expected_version: creating ? 0 : c.year!.version,
+              expected_version: c.year!.version,
               terms: [1, 2].map((n) => ({
                 start_date: term(n)?.start_date ?? defaults[n - 1].start_date,
                 end_date: term(n)?.end_date ?? defaults[n - 1].end_date,
@@ -171,14 +135,12 @@ function YearForm({
             학년도는 3월 1일부터 다음 해 2월 말까지입니다. 학기 기간과 방학은
             학사운영에서 조정하세요.
           </p>
-          {!creating && (
-            <Link
+          <Link
               className="text-link"
               href={`/app/${c.workspace.id}/calendar?year=${year}`}
             >
               학사운영에서 학기 설정하기 →
-            </Link>
-          )}
+          </Link>
         </div>
         <div className="settings-section">
           <div className="section-label">
@@ -198,11 +160,7 @@ function YearForm({
                     type="number"
                     min={0}
                     max={30}
-                    defaultValue={
-                      creating
-                        ? 0
-                        : c.classes.filter((x) => x.grade === n).length
-                    }
+                    defaultValue={c.classes.filter((x) => x.grade === n).length}
                     required
                   />
                   <span>학급</span>

@@ -1,0 +1,146 @@
+.official-timetable {
+  min-width: 0;
+}
+.official-timetable-controls,
+.official-timetable-caption {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.official-timetable-tabs,
+.official-timetable-filters,
+.official-timetable-date,
+.official-timetable-filters label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.official-timetable-tabs,
+.official-timetable-filters,
+.official-timetable-date {
+  flex-wrap: wrap;
+}
+.official-timetable-tabs {
+  gap: 4px;
+  padding: 4px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  width: fit-content;
+}
+.official-timetable-filters select,
+.official-timetable-filters input {
+  min-height: 40px;
+  padding-block: 6px;
+}
+.official-timetable-filters label {
+  color: #425a77;
+}
+.official-timetable-caption {
+  gap: 2px;
+}
+.official-timetable-caption p {
+  color: #506885;
+  font-size: 12px;
+}
+.official-timetable-empty {
+  padding: 18px;
+}
+.official-timetable-scroll {
+  overflow-x: auto;
+  border: 1px solid #c9d6e6;
+  border-radius: 8px;
+  overscroll-behavior-inline: contain;
+  background: white;
+}
+.official-timetable-grid {
+  min-width: 335px;
+  table-layout: fixed;
+  text-align: center;
+}
+.official-timetable-grid th,
+.official-timetable-grid td {
+  border: 1px solid #d3deeb;
+  text-align: center;
+  padding: 5px;
+}
+.official-timetable-grid th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: clamp(44px, 10vw, 68px);
+  background: #eff4fa;
+}
+.official-timetable-grid tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.official-timetable-grid td {
+  height: 59px;
+  vertical-align: middle;
+  background: white;
+}
+.official-timetable-grid td.timetable-nonperiod {
+  background: #f2f5fa;
+}
+.official-timetable-grid :is(th, td) small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+}
+.official-lesson {
+  display: grid;
+  gap: 1px;
+  padding: 4px;
+  border-radius: 4px;
+  background: #eaf2ff;
+  color: #183b6b;
+  overflow-wrap: anywhere;
+}
+.official-lesson + .official-lesson {
+  margin-top: 4px;
+}
+.official-lesson:not([data-kind="subject"]) {
+  background: #e6f5ec;
+  color: #1c5a44;
+}
+.official-lesson[data-kind="creative_career"] {
+  background: #f2ebfb;
+  color: #513073;
+}
+.official-lesson[data-blocked] {
+  background: #fff4e4;
+  color: #744815;
+}
+.official-lesson span {
+  font-size: 12px;
+  word-break: keep-all;
+}
+.official-lesson > :where(strong, small) {
+  word-break: keep-all;
+}
+.timetable-day-notice {
+  color: #7c511e;
+}
+@media screen and (max-width: 600px) {
+  .official-timetable-grid th,
+  .official-timetable-grid td {
+    padding: 3px;
+  }
+  .official-lesson {
+    padding: 3px 2px;
+  }
+}
+@media print {
+  .official-timetable-scroll {
+    overflow: visible;
+  }
+  .official-timetable-grid {
+    min-width: 0;
+  }
+  .official-timetable-grid th:first-child {
+    position: static;
+  }
+  .official-timetable-grid tr {
+    break-inside: avoid;
+  }
+}

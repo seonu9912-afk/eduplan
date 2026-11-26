@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -59,8 +60,8 @@ async function checkWorkspace(planId: string, canEdit: boolean) {
   if(plan.error || !plan.data) throw Error("편성표를 찾지 못했습니다.");
   const membership=await db.from("workspace_members").select("role")
     .eq("workspace_id",plan.data.workspace_id).eq("user_id",identity.data.user.id).maybeSingle();
-  if(membership.error||!membership.data||
-     (canEdit&&!["admin","editor"].includes(membership.data.role))) throw Error("편집 권한이 없습니다.");
+  if (membership.error || !membership.data) throw Error("이 학교의 구성원이 아닙니다.");
+  if (canEdit) await requirePlanPermission(db, plan.data.workspace_id, "curriculum");
   return {db,plan:plan.data,role:membership.data.role,userId:identity.data.user.id};
 }
 export async function loadCurriculumDesign(input: unknown): Promise<Result<{

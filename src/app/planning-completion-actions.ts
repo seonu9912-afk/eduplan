@@ -55,9 +55,9 @@ async function source(v: z.infer<typeof scope>) {
     year_id: year.data.id,
   });
   if (before.error) throw before.error;
-  const c = await getWorkspaceContext(v.workspaceId, String(v.year));
+  const c = await getWorkspaceContext(v.workspaceId, String(v.year), "calendar", false);
   if (c.year?.id !== year.data.id) throw Error("선택한 학년도를 확인하세요.");
-  c.operations = await getOperationsData(c);
+  c.operations = await getOperationsData(c, "calendar", false);
   const assessments = await db.rpc("assessment_calendar", {
     target: v.workspaceId,
     year_id: year.data.id,
@@ -83,7 +83,7 @@ export async function analyzeActivity(input: unknown) {
   return run(async () => {
     const v = scope.extend({ activity: activityInputSchema }).parse(input),
       { c, stamp, assessments } = await source(v);
-    if (!annualSchema.safeParse(c.annual?.document).success)
+    if (!c.hasOfficialCalendar || !annualSchema.safeParse(c.annual?.document).success)
       throw Error("학사일정이 없거나 형식이 맞지 않아 분석할 수 없습니다.");
     if (
       v.activity.starts_on < `${v.year}-03-01` ||

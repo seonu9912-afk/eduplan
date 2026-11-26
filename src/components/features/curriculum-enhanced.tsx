@@ -1,4 +1,5 @@
 "use client";
+import { canPlan } from "@/lib/planning-completion";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -356,7 +357,7 @@ export function CurriculumEnhanced({
   const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const active = useRef(true);
   const savingIds = useRef(new Set<string>());
-  const editable = c.role === "admin" || c.role === "editor";
+  const editable = canPlan(c,"curriculum");
   const plansRef = useRef(plans);
   useEffect(() => {
     statesRef.current = states;

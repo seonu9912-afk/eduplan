@@ -26,6 +26,11 @@ export type TeachingData = {
   >[];
 };
 export type Context = {
+  schoolPublications?: import("./school-publications").SchoolPlanPublication[];
+  curriculumPublications?: import("./school-publications").CurriculumPublication[];
+  teachingPublications?: import("./school-publications").TeachingPublication[];
+  hasOfficialCalendar?: boolean;
+  hasPersonalArchive?: boolean;
   access?: Record<import("./planning-completion").PlanningDomain, boolean>;
   completion?: import("./planning-completion").CompletionData;
   operations?: import("./staffing").OperationsData;

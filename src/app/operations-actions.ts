@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -80,7 +81,8 @@ export async function saveStaffingScenario(
 ): Promise<Result<string>> {
   return run(async () => {
     const v = scopeSchema.extend({ scenario: scenarioSchema }).parse(input),
-      { db, user } = await authorized(v.workspaceId, ["admin", "editor"]);
+      { db, user } = await authorized(v.workspaceId, ["admin", "editor", "viewer"]);
+    await requirePlanPermission(db, v.workspaceId, "staffing");
     const year = await db
       .from("academic_years")
       .select("year")
@@ -121,7 +123,8 @@ export async function publishTimetable(
           effectiveDate: z.iso.date(),
         })
         .parse(input),
-      { db } = await authorized(v.workspaceId, ["admin", "editor"]);
+      { db } = await authorized(v.workspaceId, ["admin", "editor", "viewer"]);
+    await requirePlanPermission(db, v.workspaceId, "timetable");
     const saved = await db.rpc("read_timetable_document", {
       target: v.workspaceId,
       year_id: v.yearId,

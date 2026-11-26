@@ -1,4 +1,5 @@
 "use client";
+import { canPlan } from "@/lib/planning-completion";
 
 import {useRef,useState} from "react";
 import {useRouter} from "next/navigation";
@@ -21,7 +22,7 @@ export function CurriculumExcelImport({context:c,onImported,disabled=false}:{
   const [year,setYear]=useState(2026);
   const [kind,setKind]=useState<"cohort"|"operating">("cohort");
   const [open,setOpen]=useState(false);
-  const editable=c.role==="admin"||c.role==="editor";
+  const editable=canPlan(c,"curriculum");
   async function uploaded(file:File|undefined){
     if(!file)return;
     setBusy(true);setMessage("");setPreview(null);setSelected([]);setAck(false);

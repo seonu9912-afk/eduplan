@@ -1,4 +1,5 @@
 "use client";
+import { canPlan } from "@/lib/planning-completion";
 /* eslint-disable react-hooks/refs -- JSX map callbacks only call ref-using handlers on user events, never during rendering. */
 import {useEffect,useMemo,useRef,useState} from "react";
 import {useRouter} from "next/navigation";
@@ -97,7 +98,7 @@ export function CurriculumOperatingV4({context:c,year,onDirtyChange,onNavigate,f
   const serial=useRef(0);
   const timer=useRef<ReturnType<typeof setTimeout>|null>(null);
   const sourceRef=useRef({doc:null as OperatingDocument|null,version:0});
-  const editable=c.role!=="viewer"&&status==="draft";
+  const editable=canPlan(c,"curriculum") && status==="draft";
   const groups=useMemo(()=>orderedCurriculumGroups(c.groups),[c.groups]);
   const subjects=useMemo(()=>orderedCurriculumSubjects(c.subjects,c.groups),[c.subjects,c.groups]);
   const totals=useMemo(()=>doc?operatingTotals(doc):null,[doc]);

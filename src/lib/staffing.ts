@@ -131,7 +131,7 @@ export type OperationNotification = {
   read_at: string | null;
 };
 export type OperationsData = {
-  effectiveTimetables?: { id: string; starts_on: string; document: unknown }[];
+  effectiveTimetables?: { id: string; starts_on: string; published_at?: string; document: unknown }[];
   resources?: import("./planning-resources").PlanningResources;
   directory: TeacherDirectory[];
   staff: StaffAppointment[];

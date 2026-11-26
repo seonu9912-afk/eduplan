@@ -72,8 +72,12 @@ import { SchoolSettings } from "@/components/features/settings";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
 import { logout } from "@/app/actions";
-import { roles } from "@/lib/domain";
+import { academicYearOf, roles } from "@/lib/domain";
 import type { Context } from "@/lib/models";
+import { canPlan } from "@/lib/planning-completion";
+import { managementDomains } from "@/lib/school-publications";
+import { OfficialTimetable } from "@/components/features/official-timetable";
+import { OfficialCurriculum, OfficialSchedule, OfficialTeaching } from "@/components/features/school-plan-readers";
 const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
@@ -91,11 +95,13 @@ export function WorkspaceApp({
   section,
   today,
   initialCohort,
+  management = false,
 }: {
   context: Context;
   section: string;
   today: string;
   initialCohort?: string;
+  management?: boolean;
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<"school" | "profile" | "menu" | null>(
@@ -107,6 +113,22 @@ export function WorkspaceApp({
   const dirty = useDeviceDirty();
   const [signingOut, setSigningOut] = useState(false);
   const base = `/app/${c.workspace.id}`;
+  const currentSchoolYear = academicYearOf(today);
+  const yearOptions = [...new Set([
+    ...c.years.map((y) => y.year),
+    currentSchoolYear - 1,
+    currentSchoolYear,
+    currentSchoolYear + 1,
+  ])].filter((year) => year >= 2000 && year <= 2100).sort((a, b) => b - a);
+  const otherYears = Array.from({ length: 101 }, (_, index) => 2100 - index)
+    .filter((year) => !yearOptions.includes(year));
+  const schoolAdmin = c.role === "admin";
+  const staffingAccess = schoolAdmin || canPlan(c, "staffing");
+  const area = managementDomains[section];
+  const sharedPlan = ["calendar", "plans", "curriculum", "timetable", "teaching"].includes(section);
+  const mayManage = sharedPlan && (section === "teaching" || (area && (schoolAdmin || canPlan(c, area))));
+  const visibleSection = (id: string) =>
+    id === "settings" || id === "people" ? schoolAdmin : id === "teachers" ? staffingAccess : true;
   const activeYearId = c.year?.id;
   const suffix = c.year ? `?year=${c.year.year}` : "";
   useEffect(() => {
@@ -248,7 +270,7 @@ export function WorkspaceApp({
             },
             { id: "plans", label: "월중·주간계획", icon: Building2 },
             { id: "notifications", label: "알림", icon: Bell },
-          ].map(({ id, label, icon: Icon, disabled }) =>
+          ].filter(({ id }) => visibleSection(id)).map(({ id, label, icon: Icon, disabled }) =>
             disabled ? (
               <span
                 key={id}
@@ -294,12 +316,11 @@ export function WorkspaceApp({
             <select
               id="workspace-picker"
               value={c.workspace.id}
-              onChange={(e) => navigate(`/app/${e.target.value}/${section}`)}
+              onChange={(e) => navigate(`/app/${e.target.value}/home`)}
             >
               {c.workspaces.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
-                  {w.kind === "personal" ? " · 개인" : ""}
                 </option>
               ))}
             </select>
@@ -309,19 +330,14 @@ export function WorkspaceApp({
             <select
               id="year-picker"
               value={c.year?.year ?? ""}
-              onChange={(e) =>
-                navigate(`${base}/${section}?year=${e.target.value}`)
-              }
+              onChange={(e) => navigate(`${base}/${section}?year=${e.target.value}${management ? "&view=manage" : ""}`)}
             >
-              {!c.years.length ? (
-                <option value="">학년도 미설정</option>
-              ) : (
-                c.years.map((y) => (
-                  <option key={y.id} value={y.year}>
-                    {y.year}학년도
-                  </option>
-                ))
-              )}
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>{year}학년도</option>
+              ))}
+              <optgroup label="다른 학년도">
+                {otherYears.map((year) => <option key={year} value={year}>{year}학년도</option>)}
+              </optgroup>
             </select>
           </div>
           <div className="workspace-actions">
@@ -329,7 +345,7 @@ export function WorkspaceApp({
               <Plus />
               학교 만들기
             </Button>
-            <Button
+            {schoolAdmin && <Button
               variant="ghost"
               className={section === "people" ? "selected" : ""}
               aria-current={section === "people" ? "page" : undefined}
@@ -337,8 +353,8 @@ export function WorkspaceApp({
             >
               <Users />
               구성원
-            </Button>
-            <Button
+            </Button>}
+            {schoolAdmin && <Button
               variant="ghost"
               aria-label="작업공간 설정"
               className={section === "settings" ? "selected" : ""}
@@ -347,13 +363,28 @@ export function WorkspaceApp({
             >
               <Settings2 />
               <span className="desktop-label">설정</span>
-            </Button>
+            </Button>}
           </div>
         </div>
       </div>
       <main id="main-content" className="workspace-content">
         <Notice message={error} error />
         <LessonReminder context={c} showErrors={section === "notifications"} />
+        {sharedPlan && (
+          <header className="page-heading no-print">
+            {!management && <h1>{sections[section]}</h1>}
+            {mayManage && <Button asChild variant="outline">
+              <Link data-guarded-navigation href={`${base}/${section}${suffix}${management ? "" : suffix ? "&view=manage" : "?view=manage"}`}
+                onClick={(event) => {
+                  if (!allowNavigation()) event.preventDefault();
+                  else setDirty(false);
+                }}>
+                {management ? "공개본 보기" : section === "teaching" ? "내 계획·관리"
+                  : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
+              </Link>
+            </Button>}
+          </header>
+        )}
         {section === "teachers" ? (
           <Staffing context={c} onDirtyChange={setDirty} />
         ) : null}
@@ -365,7 +396,7 @@ export function WorkspaceApp({
           </>
         )}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
-        {section === "calendar" ? (
+        {section === "calendar" && management ? (
           <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
@@ -374,7 +405,11 @@ export function WorkspaceApp({
             relatedTools={c.year && <ActivityRequests context={c} today={today} />}
           />
         ) : null}
-        {section === "timetable" ? (
+        {section === "calendar" && !management && <>
+          <OfficialSchedule context={c} today={today} />
+          <ActivityRequests context={c} today={today} />
+        </>}
+        {section === "timetable" && management ? (
           <Timetable
             key={c.workspace.id + "-" + c.year?.id}
             context={c}
@@ -382,7 +417,12 @@ export function WorkspaceApp({
             relatedTools={<LessonLedger context={c} today={today} />}
           />
         ) : null}
-        {section === "plans" ? (
+        {section === "timetable" && !management && <>
+          <OfficialTimetable context={c} today={today} />
+          {!canPlan(c, "timetable") && c.operations?.directory.some((staff) => staff.user_id === c.userId) &&
+            <div className="workspace-related-tools"><LessonLedger context={c} today={today} /></div>}
+        </>}
+        {section === "plans" && management ? (
           <WorkPlans
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
@@ -390,14 +430,16 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "curriculum" ? (
+        {section === "plans" && !management && <OfficialSchedule context={c} today={today} work />}
+        {section === "curriculum" && management ? (
           <Curriculum
             context={c}
             initialCohort={initialCohort}
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "settings" ? (
+        {section === "curriculum" && !management && <OfficialCurriculum context={c} />}
+        {section === "settings" && schoolAdmin ? (
           <>
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
@@ -406,10 +448,11 @@ export function WorkspaceApp({
             <PwaInstallPanel />
           </>
         ) : null}
-        {section === "teaching" ? (
+        {section === "teaching" && management ? (
           <TeachingModule context={c} onDirtyChange={setDirty} />
         ) : null}
-        {section === "people" ? (
+        {section === "teaching" && !management && <OfficialTeaching context={c} />}
+        {section === "people" && schoolAdmin ? (
           <Members
             context={c}
             relatedTools={c.role === "admin" && <PlanningPermissions context={c} />}
@@ -456,7 +499,7 @@ export function WorkspaceApp({
         description={`${c.workspace.name} · ${roles[c.role]}`}
       >
         <nav className="mobile-menu-grid" aria-label="모든 기능">
-          {Object.entries(sections).map(([id, label]) => (
+          {Object.entries(sections).filter(([id]) => visibleSection(id)).map(([id, label]) => (
             <Link
               data-guarded-navigation
               key={id}

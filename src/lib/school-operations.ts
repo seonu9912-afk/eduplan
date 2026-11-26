@@ -10,6 +10,8 @@ import {
 } from "./academic";
 import { addDays } from "./domain";
 import type { Context } from "./models";
+import { emptyResources, resourcesSchema } from "./planning-resources";
+import { publicationAt, publishedSchoolContext } from "./school-publications";
 import {
   timetableDocumentSchema,
   type TimetableDocument,
@@ -65,16 +67,31 @@ export function createLessonResolver(
     return (date: string): DatedLesson[] => {
       const version = versions.find((v) => v.starts_on <= date);
       if (!version || !version.parsed.success) return [];
-      if (!resolvers.has(version.id))
+      const calendar = c.schoolPublications && !annual
+        ? publicationAt(c.schoolPublications, "calendar", date) : undefined;
+      if (c.schoolPublications && !annual && !calendar) return [];
+      const key = `${version.id}:${calendar?.id ?? ""}`;
+      if (!resolvers.has(key)) {
+        const official = calendar ? publishedSchoolContext(c, date) : c;
+        const resources = resourcesSchema.safeParse(version.parsed.data.publishedResources);
+        const resolvedContext = !official.operations ? official : {
+          ...official,
+          operations: {
+            ...official.operations,
+            resources: resources.success ? resources.data :
+              c.schoolPublications ? emptyResources() : official.operations.resources,
+          },
+        };
         resolvers.set(
-          version.id,
+          key,
           createLessonResolver(
-            c,
+            resolvedContext,
             { ...version.parsed.data, _published: false },
             annual,
           ),
         );
-      return resolvers.get(version.id)!(date);
+      }
+      return resolvers.get(key)!(date);
     };
   }
   const parsed = annualSchema.safeParse(c.annual?.document),
@@ -236,7 +253,7 @@ export function createLessonResolver(
             .join(", "),
           room:
             c.operations?.resources?.rooms.find((r) => r.id === slot.room)
-              ?.name ?? slot.room,
+              ?.name ?? document.roomLabels?.[slot.room] ?? slot.room,
           start: time?.start ?? null,
           end: time?.end ?? null,
           changed: slot.changed,
@@ -563,21 +580,29 @@ export function calendarImpact(
 }
 
 export function dailyOperationNotice(c: Context, date: string): string {
-  if (!annualSchema.safeParse(c.annual?.document).success)
-    return "학사일정이 없어 수업 운영 정보를 확정할 수 없습니다.";
+  const official = publishedSchoolContext(c, date);
+  const parsed = annualSchema.safeParse(official.annual?.document);
+  if (!parsed.success || (c.schoolPublications && !official.hasOfficialCalendar))
+    return "적용 중인 공개 학사일정이 없습니다.";
   if (
     c.operations?.effectiveTimetables &&
     !c.operations.effectiveTimetables.some((v) => v.starts_on <= date)
   )
     return "이 날짜에 적용할 확정 시간표가 없습니다. 시간표에서 적용 시작일을 지정해 주세요.";
-  const plan = annualSchema.parse(c.annual?.document),
-    day = academicDays(c.year!.year, plan, c.semesters).find(
+  const plan = parsed.data,
+    day = academicDays(c.year!.year, plan, official.semesters).find(
       (d) => d.date === date,
     );
-  const app = c.operations?.resources?.applications.find(
+  const version = [...(c.operations?.effectiveTimetables ?? [])]
+    .sort((a, b) => b.starts_on.localeCompare(a.starts_on)).find((v) => v.starts_on <= date);
+  const doc = timetableDocumentSchema.safeParse(version?.document);
+  const savedResources = resourcesSchema.safeParse(doc.success ? doc.data.publishedResources : null);
+  const resources = savedResources.success ? savedResources.data :
+    c.schoolPublications ? undefined : c.operations?.resources;
+  const app = resources?.applications.find(
     (a) => a.starts_on <= date && a.ends_on >= date,
   );
-  const bell = c.operations?.resources?.bells.find(
+  const bell = resources?.bells.find(
     (b) => b.id === app?.schedule_id,
   );
   return [

@@ -22,7 +22,7 @@ import {
   monthRange,
   moveMonth,
 } from "@/lib/domain";
-import { saveAnnual } from "@/app/actions";
+import { previousWorkPlan, publishWorkPlan, saveAnnual } from "@/app/actions";
 import type { Context } from "@/lib/models";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -54,6 +54,11 @@ export function WorkPlans({
   const [editing, setEditing] = useState<Partial<Business> | null>(null),
     [error, setError] = useState("");
   const m = useMutation();
+  const publication = useMutation();
+  const importState = useMutation();
+  const [publishing, setPublishing] = useState(false);
+  const [previous, setPrevious] = useState<Business[] | null>(null);
+  const [copyIds, setCopyIds] = useState<string[]>([]);
   useEditGuard("work-plan-form", !!editing);
   const revision = useRef(0);
   const latestVersion = c.annual?.version ?? 0;
@@ -77,7 +82,7 @@ export function WorkPlans({
     return (
       <Empty
         title="학년도를 먼저 설정해 주세요"
-        description="설정에서 학년도를 개설한 뒤 업무계획을 작성합니다."
+        description="상단에서 학년도를 선택한 뒤 업무계획을 작성합니다."
       />
     );
   const editable = canPlan(c, "plans"),
@@ -102,6 +107,15 @@ export function WorkPlans({
     setDirty(true);
     onDirtyChange(true);
   };
+  const shiftedDate = (source: string) => {
+    const month = `${Number(source.slice(0, 4)) + 1}${source.slice(4, 7)}`;
+    const value = month + source.slice(7);
+    return value > monthRange(month).end ? monthRange(month).end : value;
+  };
+  const matching = (item: Business) => plan.business.some((current) =>
+    current.date === shiftedDate(item.date) && current.department === item.department &&
+    current.kind === item.kind && current.text === item.text,
+  );
   const open = (d: string, kind: Business["kind"] = "업무") => {
     setError("");
     setEditing({ date: clamp(d), kind });
@@ -280,6 +294,15 @@ export function WorkPlans({
         </div>
         <div className="heading-actions">
           <PrintButton />
+          {editable && c.years.some((item) => item.year === c.year!.year - 1) &&
+            <Button variant="outline" disabled={importState.pending || !!editing} onClick={() => {
+              importState.execute(() => previousWorkPlan(c.workspace.id, c.year!.year), (rows) => {
+                setCopyIds([]);
+                setPrevious(rows);
+              });
+            }}>전년도 자료 불러오기</Button>}
+          {editable && <Button variant="outline" disabled={!version || dirty || !!editing || versionConflict}
+            onClick={() => setPublishing(true)}>확정·공개</Button>}
           {editable && (
             <Button
               disabled={!dirty || !!editing || m.pending || versionConflict}
@@ -317,6 +340,59 @@ export function WorkPlans({
           )}
         </div>
       </div>
+      <InlineNotice mutation={importState} />
+      <Modal open={previous !== null} onOpenChange={(open) => !open && setPrevious(null)}
+        title="전년도 업무 일정 선택"
+        description="선택한 일정을 같은 월·일의 새 항목으로 추가합니다. 이미 있는 일정은 건너뜁니다." wide>
+        {!previous?.length ? <p>전년도 업무 일정이 없습니다.</p> : (
+          <div className="operations-scroll">
+            <table aria-label="전년도 업무 일정">
+              <thead><tr><th>선택</th><th>일정</th><th>가져올 날짜</th></tr></thead>
+              <tbody>{previous.map((item) => <tr key={item.id}>
+                <td><input type="checkbox" aria-label={`${item.date} ${item.text}`} disabled={matching(item)}
+                  checked={copyIds.includes(item.id)} onChange={(event) => {
+                    setCopyIds((old) => event.target.checked ? [...old, item.id] : old.filter((id) => id !== item.id));
+                  }} /></td>
+                <td>{item.department} · {item.text}</td>
+                <td>{shiftedDate(item.date)}{matching(item) && " · 이미 있음"}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        )}
+        <Button disabled={!copyIds.length} onClick={() => {
+          const rows = (previous ?? []).filter((item) => copyIds.includes(item.id) && !matching(item));
+          const departments = [...new Set([...plan.departments, ...rows.map((item) => item.department).filter(Boolean)])];
+          if (departments.length > 20 || plan.business.length + rows.length > 3000) {
+            setError("부서 또는 업무 일정 수가 허용 범위를 초과합니다. 가져올 자료를 줄여 주세요.");
+            return;
+          }
+          change({ ...plan, departments, business: [...plan.business,
+            ...rows.map((item) => ({ ...item, id: crypto.randomUUID(), date: shiftedDate(item.date) })),
+          ] });
+          setPrevious(null);
+        }}>선택 일정 추가</Button>
+      </Modal>
+      <Modal open={publishing} onOpenChange={setPublishing} title="월중·주간계획 공개"
+        description="저장한 업무 일정을 지정한 날짜부터 공개합니다. 학사일정은 학사일정 공개본에서 가져옵니다.">
+        <form className="form-stack" onSubmit={(event) => {
+          event.preventDefault();
+          const fields = new FormData(event.currentTarget);
+          publication.execute(() => publishWorkPlan({
+            workspaceId: c.workspace.id, yearId: c.year!.id, version,
+            startsOn: fields.get("startsOn"), note: fields.get("note"),
+          }), () => {
+            setPublishing(false);
+            publication.refresh();
+          });
+        }}>
+          <label className="field">적용 시작일
+            <input type="date" name="startsOn" min={start} max={end} defaultValue={clamp(today)} required />
+          </label>
+          <label className="field">변경 내용 <textarea name="note" maxLength={500} rows={2} /></label>
+          <InlineNotice mutation={publication} />
+          <Button type="submit" disabled={publication.pending || dirty}>확정·공개</Button>
+        </form>
+      </Modal>
       {editable && (
         <div className="annual-status no-print">
           <SaveStatus

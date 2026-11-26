@@ -58,6 +58,7 @@ import { DateFields, EventFields } from "./academic-calendar-editors";
 import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
 import { Button } from "@/components/ui/button";
+import { addDays } from "@/lib/domain";
 
 type DayEdit = {
   kind: "day";
@@ -1270,38 +1271,42 @@ export function AcademicCalendar({
       <Modal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="현재 편성안 확정"
-        description="현재 날짜·행사·기준 정보를 함께 보존합니다. 확정 후에도 수정할 수 있으며, 변경하면 재확인 필요 상태로 표시됩니다."
+        title="학사일정 공개"
+        description="저장한 학사일정이 적용 시작일부터 학교 구성원에게 표시됩니다."
       >
-        <div className="ar">
+        <form className="form-stack" onSubmit={(event) => {
+          event.preventDefault();
+          const fields = new FormData(event.currentTarget);
+          startTransition(async () => {
+            const result = await confirmAcademicCalendar({
+              workspaceId: c.workspace.id,
+              yearId: c.year!.id,
+              version: c.annual?.version,
+              startsOn: fields.get("startsOn"),
+              note: fields.get("note"),
+            });
+            setMessage({
+              text: result.ok ? "학사일정 공개본을 저장했습니다." : result.error,
+              error: !result.ok,
+            });
+            if (result.ok) {
+              setConfirmOpen(false);
+              router.refresh();
+            }
+          });
+        }}>
           <p>
             편성 경고 {report.warnings.length}건 ·{" "}
             {summer ? "학기 경계 설정됨" : "학기 경계 미확정"}
           </p>
-          <button
-            className="ar-primary"
-            disabled={pending || dirty}
-            onClick={() =>
-              startTransition(async () => {
-                const result = await confirmAcademicCalendar({
-                  workspaceId: c.workspace.id,
-                  yearId: c.year!.id,
-                  version: c.annual?.version,
-                });
-                setMessage({
-                  text: result.ok ? "확정본을 보존했습니다." : result.error,
-                  error: !result.ok,
-                });
-                if (result.ok) {
-                  setConfirmOpen(false);
-                  router.refresh();
-                }
-              })
-            }
-          >
-            현재 저장본 확정
-          </button>
-        </div>
+          <label className="field">적용 시작일
+            <input type="date" name="startsOn" min={`${year}-03-01`}
+              max={addDays(`${year + 1}-03-01`, -1)}
+              defaultValue={today >= `${year}-03-01` && today < `${year + 1}-03-01` ? today : `${year}-03-01`} required />
+          </label>
+          <label className="field">변경 내용 <textarea name="note" maxLength={500} rows={2} /></label>
+          <Button type="submit" disabled={pending || dirty}>확정·공개</Button>
+        </form>
       </Modal>
       <Modal
         open={historyOpen}
@@ -1437,7 +1442,7 @@ export function AcademicCalendar({
                 disabled={!c.annual || pending || dirty}
                 onClick={() => setConfirmOpen(true)}
               >
-                편성안 확정
+                확정·공개
               </Button>
             )}
           </div>

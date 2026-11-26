@@ -1,4 +1,5 @@
 "use server";
+import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import {z} from "zod";
 import {revalidatePath} from "next/cache";
 import {createClient} from "@/lib/supabase/server";
@@ -46,8 +47,8 @@ async function access(workspaceId:string,edit:boolean){
   if(userError||!user.user)throw Error("로그인 후 교육과정을 열어 주세요.");
   const member=await db.from("workspace_members").select("role")
     .eq("workspace_id",workspaceId).eq("user_id",user.user.id).maybeSingle();
-  if(member.error||!member.data||edit&&!["admin","editor"].includes(member.data.role))
-    throw Error("교육과정을 열거나 편집할 권한이 없습니다.");
+  if (member.error || !member.data) throw Error("이 학교의 구성원이 아닙니다.");
+  if (edit) await requirePlanPermission(db, workspaceId, "curriculum");
   return db;
 }
 function issue(error:unknown){

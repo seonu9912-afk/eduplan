@@ -15,9 +15,7 @@ export function PlanningPermissions({ context: c }: { context: Context }) {
   return (
     <Disclosure className="panel no-print" label="업무별 편집 권한">
       <p>
-        편집 구성원의 담당 업무를 지정합니다. 기존 권한은 유지하며 여기서 변경한
-        항목부터 적용됩니다. 관리자는 모든 업무를 관리하고 조회 구성원은 본인
-        수업 확인·교육활동 요청을 할 수 있습니다.
+        계획을 작성하고 공개할 사람을 업무별로 지정합니다. 학교 관리자가 직접 편집할 때도 해당 업무를 지정하세요.
       </p>
       <div className="operations-scroll">
         <table className="operations-table">
@@ -30,9 +28,7 @@ export function PlanningPermissions({ context: c }: { context: Context }) {
             </tr>
           </thead>
           <tbody>
-            {c.members
-              .filter((x) => x.role === "editor")
-              .map((user) => (
+            {c.members.map((user) => (
                 <tr key={user.user_id}>
                   <td>{user.display_name}</td>
                   {(Object.keys(planningDomains) as PlanningDomain[]).map(
@@ -47,7 +43,7 @@ export function PlanningPermissions({ context: c }: { context: Context }) {
                             aria-label={`${user.display_name} ${planningDomains[domain]} 권한`}
                             type="checkbox"
                             disabled={m.pending}
-                            checked={p?.can_edit ?? domain !== "calendar"}
+                            checked={p?.can_edit ?? false}
                             onChange={(e) =>
                               m.execute(
                                 () =>

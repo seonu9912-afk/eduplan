@@ -1118,6 +1118,23 @@ export type Database = {
           },
         ];
       };
+      school_plan_publications: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          academic_year_id: string;
+          domain: "calendar" | "plans";
+          source_version: number;
+          starts_on: string;
+          published_at: string;
+          published_by: string | null;
+          change_note: string;
+          payload: Json;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       workspaces: {
         Row: {
           created_at: string;
@@ -1150,6 +1167,15 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      ensure_school_year: { Args: { target: string; school_year: number }; Returns: string };
+      personal_archive: { Args: never; Returns: Json };
+      has_personal_archive: { Args: never; Returns: boolean };
+      publish_school_plan: {
+        Args: { target: string; year_id: string; plan_domain: string; expected_version: number; effective_date: string; note: string };
+        Returns: string;
+      };
+      school_curriculum_publications: { Args: { target: string }; Returns: Json };
+      school_teaching_publications: { Args: { target: string; year_id: string }; Returns: Json };
       operation_push_notice: {
         Args: { subscription: string; notification: string };
         Returns: Json;

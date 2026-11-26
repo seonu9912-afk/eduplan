@@ -10,7 +10,8 @@ import {
 } from "@/components/common";
 import { schoolTypes } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-export function CreateSchoolForm({ onDone }: { onDone: () => void }) {
+import "./school-plan-readers.css";
+export function CreateSchoolForm({ onDone }: { onDone?: () => void }) {
   const m = useMutation();
   const router = useRouter();
   return (
@@ -27,7 +28,7 @@ export function CreateSchoolForm({ onDone }: { onDone: () => void }) {
               school_type: f.get("school_type"),
             }),
           (id) => {
-            onDone();
+            onDone?.();
             router.push(`/app/${id}/settings`);
           },
         );
@@ -55,6 +56,7 @@ export function CreateSchoolForm({ onDone }: { onDone: () => void }) {
           name="school_region"
           placeholder="예: 서울특별시"
           maxLength={40}
+          required
         />
       </Field>
       <Field label="학교급" id="school_type">
@@ -67,6 +69,42 @@ export function CreateSchoolForm({ onDone }: { onDone: () => void }) {
       <InlineNotice mutation={m} />
       <SubmitButton pending={m.pending}>학교 작업공간 만들기</SubmitButton>
     </form>
+  );
+}
+export function SchoolOnboarding({ hasArchive }: { hasArchive: boolean }) {
+  const router = useRouter();
+  const m = useMutation();
+  return (
+    <main id="main-content" className="workspace-content">
+      <header className="page-heading"><h1>학교 시작하기</h1></header>
+      <div className="school-entry">
+        <section className="panel">
+          <h2>학교 참여</h2>
+          <form className="form-stack" onSubmit={(event) => {
+            event.preventDefault();
+            const input = String(new FormData(event.currentTarget).get("invite") ?? "").trim();
+            const token = input.match(/(?:^|\/invite\/)([0-9a-f]{64})\/?$/i)?.[1];
+            m.execute(
+              () => token ? acceptInvitation(token.toLowerCase()) : Promise.resolve({
+                ok: false, error: "학교 관리자가 보낸 초대 링크를 입력하세요.",
+              }),
+              (id) => router.push(`/app/${id}/home`),
+            );
+          }}>
+            <Field id="school-invite" label="초대 링크">
+              <input id="school-invite" name="invite" maxLength={2000} required />
+            </Field>
+            <InlineNotice mutation={m} />
+            <SubmitButton pending={m.pending}>학교 참여</SubmitButton>
+          </form>
+        </section>
+        <section className="panel">
+          <h2>새 학교 개설</h2>
+          <CreateSchoolForm />
+        </section>
+      </div>
+      {hasArchive && <a className="text-link" href="/app/personal-archive" download>기존 개인 자료 내려받기</a>}
+    </main>
   );
 }
 export function ProfileForm({ context }: { context: Context }) {
@@ -114,6 +152,7 @@ export function ProfileForm({ context }: { context: Context }) {
       </Field>
       <InlineNotice mutation={m} />
       <SubmitButton pending={m.pending} />
+      {context.hasPersonalArchive && <a className="text-link" href="/app/personal-archive" download>기존 개인 자료 내려받기</a>}
     </form>
   );
 }

@@ -12,6 +12,7 @@ export const timetableDocumentSchema = z.object({
   teachers: z.array(z.object({ id: z.string().min(1), label: z.string().min(1) }).passthrough()).max(150),
   groups: z.array(z.object({ id: z.string().min(1), label: z.string().min(1), classIds: z.array(z.string()) }).passthrough()).max(120),
   rooms: z.array(z.string().max(70)).max(100),
+  roomLabels: z.record(z.string(), z.string()).optional(),
   weekly: z.array(z.object({
     id: z.string().min(1), scope: z.enum(["class", "group"]), scopeId: z.string().min(1),
     weekday: z.number().int().min(1).max(5), period: z.number().int().min(1).max(12),
