@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { AssessmentDesign } from "./assessment-design";
 import { AssessmentSchedule } from "./assessment-links";
 import {
@@ -361,11 +362,16 @@ export function AssessmentEditor({
             editable={editable}
             weighted={weighted}
           />
-          <details
+          <Disclosure
             className="rubric-details"
             open={a.type === "수행평가" ? true : undefined}
+            compact
+            label={
+              <>
+                채점기준 · 평가 요소 {a.rubric.length}개
+              </>
+            }
           >
-            <summary>채점기준 · 평가 요소 {a.rubric.length}개</summary>
             <RubricEditor
               name={`${i + 1}번 평가`}
               value={a.rubric}
@@ -377,7 +383,7 @@ export function AssessmentEditor({
               editable={editable}
               onChange={(rubric) => update(a.id, { rubric })}
             />
-          </details>
+          </Disclosure>
         </article>
       ))}
       <label className="assessment-notes">

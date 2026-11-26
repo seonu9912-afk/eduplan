@@ -122,7 +122,6 @@
 .c5-selection-help{font-size:12px;line-height:1.7;color:#637f99;margin:0}
 .c5-selection-heading{font-size:15px;color:#315b82;margin:8px 0 12px}
 .c5-catalog-import summary{font-size:12px;color:#4876a2;cursor:pointer}
-.c5-catalog-import[open]>div{margin-top:10px}
 .cv2-step-review .cv2-table-scroll{max-height:none;overflow:auto}
 .cv2-step-review .cv2-table .cv2-year-sum{font-variant-numeric:tabular-nums}
 @media print{
@@ -137,7 +136,7 @@
   padding:14px 16px;border:1px solid #d6e5f5;border-radius:11px;background:#f7faff}
 .c5-catalog-import strong{display:block;color:#2a5c91;font-size:13px;font-weight:800}
 .c5-catalog-import p{font-size:11px;color:#677f97;margin:5px 0 0;line-height:1.6}
-.c5-catalog-import>div:last-child{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.c5-catalog-import .edu-disclosure-body > div{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .c5-catalog-import button{border:1px solid #b9d3ec;border-radius:8px;background:white;color:#235b93;
   padding:9px 12px;font-size:11px;font-weight:750;cursor:pointer}
 .c5-catalog-import button:hover:not(:disabled){background:#edf6ff}
@@ -148,7 +147,7 @@
 .c5-creative-heading h3{font-size:17px;color:#244b70;font-weight:850;margin:5px 0}
 .c5-creative-heading p{font-size:12px;line-height:1.65;color:#627f9a;margin:0}
 .c5-creative-section .c5-group-grid{margin:0}
-@media(max-width:680px){.c5-catalog-import{align-items:stretch}.c5-catalog-import>div:last-child{width:100%}
+@media(max-width:680px){.c5-catalog-import{align-items:stretch}.c5-catalog-import .edu-disclosure-body > div{width:100%}
   .c5-catalog-import button{flex:1}.c5-creative-section{padding:12px}}
 
 /* Delete only unused subjects; confirmation explains workspace-wide scope. */

@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useEditGuard } from "@/lib/device-session";
 import { canPlan } from "@/lib/planning-completion";
 import { useMemo, useRef, useState } from "react";
@@ -545,8 +546,7 @@ export function WorkPlans({
         </section>
       </div>
       {editable && (
-        <details className="panel work-options no-print">
-          <summary>업무계획 설정</summary>
+        <Disclosure className="panel work-options no-print" label="업무계획 설정">
           <label className="duty-option">
             <input
               type="checkbox"
@@ -601,7 +601,7 @@ export function WorkPlans({
             <Button variant="outline">부서 목록 적용</Button>
           </form>
           {error && !editing && <p role="alert">{error}</p>}
-        </details>
+        </Disclosure>
       )}
       {editing && (
         <Modal

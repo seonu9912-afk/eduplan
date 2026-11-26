@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { deviceId } from "@/lib/device-session";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -128,8 +129,7 @@ export function ServerPush({ context: c }: { context: Context }) {
     }
   }
   return (
-    <details className="panel no-print">
-      <summary>브라우저를 닫아도 받는 수업 알림</summary>
+    <Disclosure className="panel no-print" label="브라우저를 닫아도 받는 수업 알림">
       <p>
         회원 계정에 연결된 교원의 확정 수업만 안내합니다. 발송 직전과 수신 직후
         최신 시간표를 확인하며, 로그인이 만료되거나 연결 확인에 실패하면 알림을
@@ -153,7 +153,7 @@ export function ServerPush({ context: c }: { context: Context }) {
           </p>
           {settings?.lastError && <p role="alert">{settings.lastError}</p>}
           <p role="status">{permission}</p>
-          <label>
+          <label className="field">
             기기 이름
             <input
               maxLength={60}
@@ -197,7 +197,7 @@ export function ServerPush({ context: c }: { context: Context }) {
             이 브라우저에서 알림 켜기·시간 변경
           </Button>
           {statuses.map((s, i) => (
-            <div className="info-box" key={s.id}>
+            <div className="info-box push-device-status" key={s.id}>
               <p>
                 {s.deviceLabel ?? `등록 브라우저 ${i + 1}`}{" "}
                 {s.deviceId === deviceId() ? "(이 기기)" : ""} ·{" "}
@@ -243,6 +243,6 @@ export function ServerPush({ context: c }: { context: Context }) {
         </>
       )}
       <InlineNotice mutation={m} />
-    </details>
+    </Disclosure>
   );
 }

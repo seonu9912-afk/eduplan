@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { TimetableTouch } from "./timetable-touch";
 import { canPlan } from "@/lib/planning-completion";
 import { PlanningResources } from "./planning-resources";
@@ -416,8 +417,7 @@ export function Timetable({
         </div>
       </header>
       <div className="tt-workspace-actions no-print">
-        <details className="tt-file-actions">
-          <summary>백업·불러오기</summary>
+        <Disclosure className="tt-file-actions" compact label="백업·불러오기">
           <div className="heading-actions">
             <Button
               variant="outline"
@@ -455,7 +455,7 @@ export function Timetable({
               <RefreshCcw size={15} /> 다시 불러오기
             </Button>
           </div>
-        </details>
+        </Disclosure>
         {canWrite && (
           <div className="heading-actions tt-primary-actions">
             <label className="tt-effective-date">

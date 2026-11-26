@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, InlineNotice, useMutation } from "@/components/common";
@@ -30,14 +31,18 @@ export function SemesterSettings({
     ? effective.find((term) => term.number === 2)?.start_date
     : null;
   return (
-    <details className="panel vacation-settings no-print">
-      <summary>
-        학기 설정{" "}
-        <span>
-          1학기 {terms[0].start_date} ~ {terms[0].end_date} · 2학기{" "}
-          {terms[1].start_date} ~ {terms[1].end_date}
-        </span>
-      </summary>
+    <Disclosure
+      className="panel vacation-settings no-print"
+      label={
+        <>
+          학기 설정{" "}
+          <span>
+            1학기 {terms[0].start_date} ~ {terms[0].end_date} · 2학기{" "}
+            {terms[1].start_date} ~ {terms[1].end_date}
+          </span>
+        </>
+      }
+    >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -100,6 +105,6 @@ export function SemesterSettings({
         </fieldset>
         <InlineNotice mutation={m} />
       </form>
-    </details>
+    </Disclosure>
   );
 }

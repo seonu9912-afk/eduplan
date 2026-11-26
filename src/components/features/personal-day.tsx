@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -138,8 +139,7 @@ export function PersonalDay({
                   <span>{lesson.end}</span>
                 </article>
               ))}
-              <details>
-                <summary>이번 주 내 시간표</summary>
+              <Disclosure compact label="이번 주 내 시간표">
                 {Array.from({ length: 7 }, (_, i) =>
                   addDays(weekRange(clock.date).start, i),
                 ).map((date) => (
@@ -157,7 +157,7 @@ export function PersonalDay({
                     </p>
                   </div>
                 ))}
-              </details>
+              </Disclosure>
             </>
           )}
           <div className="operations-controls personal-reminder-controls no-print">

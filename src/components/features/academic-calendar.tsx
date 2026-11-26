@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { canPlan } from "@/lib/planning-completion";
 import { CalendarImpact, EventImpact } from "./calendar-impact";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
@@ -838,13 +839,19 @@ export function AcademicCalendar({
               </tbody>
             </table>
           </div>
-          <details className="ar-panel">
-            <summary>수업일수 확인 · 연간 {counts.total}일</summary>
+          <Disclosure
+            className="ar-panel"
+            label={
+              <>
+                수업일수 확인 · 연간 {counts.total}일
+              </>
+            }
+          >
             <p>
               1학기 {counts.semesters[0]}일 · 2학기{" "}
               {summer ? `${counts.semesters[1]}일` : "미확정"}
             </p>
-          </details>
+          </Disclosure>
         </>
       )}
       {tab === "행사 편성" && (
@@ -1339,15 +1346,20 @@ export function AcademicCalendar({
           <div className="ar-range-rows">
             {history.length ? (
               history.map((h) => (
-                <details key={h.id}>
-                  <summary>
-                    {h.item_key} ·{" "}
-                    {new Date(h.created_at).toLocaleString("ko-KR")} ·{" "}
-                    {h.operation}
-                    {confirmation && h.created_at > confirmation.at
-                      ? " · 재확인 전"
-                      : ""}
-                  </summary>
+                <Disclosure
+                  key={h.id}
+                  compact
+                  label={
+                    <>
+                      {h.item_key} ·{" "}
+                      {new Date(h.created_at).toLocaleString("ko-KR")} ·{" "}
+                      {h.operation}
+                      {confirmation && h.created_at > confirmation.at
+                        ? " · 재확인 전"
+                        : ""}
+                    </>
+                  }
+                >
                   <p>
                     작성자{" "}
                     {c.members.find((m) => m.user_id === h.actor_id)
@@ -1362,7 +1374,7 @@ export function AcademicCalendar({
                       변경 전 상태 복원
                     </button>
                   )}
-                </details>
+                </Disclosure>
               ))
             ) : (
               <p>이 화면에서 저장한 항목별 변경 이력이 없습니다.</p>

@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useMemo } from "react";
 import { addDays } from "@/lib/domain";
 import { linkedTeachingCalendar } from "@/lib/teaching-calendar-context";
@@ -62,8 +63,7 @@ export function TimetableReference({
     };
   });
   return (
-    <details className="panel">
-      <summary>확정 시간표 기반 주차별 수업 가능 차시</summary>
+    <Disclosure className="panel" label="확정 시간표 기반 주차별 수업 가능 차시">
       <p>
         최신 학사일정·교환·보결·행사 배정을 반영합니다. 각 학급의 차시는 따로
         계산하며 교사의 수업 내용과 확정 계획서는 변경하지 않습니다.
@@ -113,6 +113,6 @@ export function TimetableReference({
           </tfoot>
         </table>
       </div>
-    </details>
+    </Disclosure>
   );
 }

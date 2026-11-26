@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import {canPlan} from "@/lib/planning-completion";
 import { SemesterSettings } from "./semester-settings";
 import { useState, useRef, useMemo, useCallback } from "react";
@@ -425,12 +426,17 @@ export function AnnualAcademic({
             )}
           </div>
           {holiday && (
-            <details className="annual-api no-print">
-              <summary>
-                {holiday.ok
-                  ? `공휴일 ${Object.keys(holiday.days).length}일 반영 · 조회 내역`
-                  : "공휴일 조회 오류 상세"}
-              </summary>
+            <Disclosure
+              className="annual-api no-print"
+              compact
+              label={
+                <>
+                  {holiday.ok
+                    ? `공휴일 ${Object.keys(holiday.days).length}일 반영 · 조회 내역`
+                    : "공휴일 조회 오류 상세"}
+                </>
+              }
+            >
               {holiday.ok ? (
                 <ul>
                   {Object.entries(holiday.days)
@@ -454,7 +460,7 @@ export function AnnualAcademic({
                   </div>
                 ))
               )}
-            </details>
+            </Disclosure>
           )}
           <SemesterSettings key={c.year!.version} context={c} plan={plan} />
           <VacationSettings
@@ -494,8 +500,7 @@ export function AnnualAcademic({
                   </Select>
                   <Input label="명칭" name="name" defaultValue={periodMode ? "" : chosen?.name} maxLength={100} />
                 </div>
-                <details>
-                  <summary>고급 설정</summary>
+                <Disclosure compact label="고급 설정">
                   <div className="annual-form-grid">
                     <Select label="교체 대상 요일" name="weekday" defaultValue={
                       chosen?.weekday && chosen.weekday <= 5 ? chosen.weekday : 1}>
@@ -517,7 +522,7 @@ export function AnnualAcademic({
                       </div>)}
                     </div>
                   </fieldset>}
-                </details>
+                </Disclosure>
                 <div className="heading-actions">
                   <Button type="submit">{periodMode ? "변경 미리보기" : "날짜 설정 적용"}</Button>
                   {!periodMode && plan.days[selected] &&
@@ -555,8 +560,7 @@ export function AnnualAcademic({
         </>
       )}
       {tab === "연간 학사력" && (
-        <details className="panel annual-section">
-          <summary>기본 운영 교시·반복 창체</summary>
+        <Disclosure className="panel annual-section" label="기본 운영 교시·반복 창체">
           <h2>요일별 기본 교시</h2>
           <p>
             학년별 월~금 운영 교시를 설정합니다. 빈 요일은 시수 집계에서 미설정으로 표시합니다.
@@ -734,14 +738,13 @@ export function AnnualAcademic({
               <Button>반복 활동 적용</Button>
             </form>
           )}
-        </details>
+        </Disclosure>
       )}
       {tab === "행사 편성" && <>
         <Calendar context={c} today={today} focusDate={selected} onFocusDate={setSelected} />
         <AcademicEventPeriods key={selected} context={c} plan={plan} days={result.days} focusDate={selected}
           onChange={update} onMessage={setMessage} />
-        <details className="panel annual-section">
-          <summary>기존 교시 배정 관리</summary>
+        <Disclosure className="panel annual-section" label="기존 교시 배정 관리">
           <h2>행사 교시 배정</h2>
           <p>
             학년별로 다른 활동 영역을 배정할 수 있습니다. 등록된 행사의 날짜별·교시별 편성은 위에서 관리합니다.
@@ -898,7 +901,7 @@ export function AnnualAcademic({
               <Button>교시 행사 적용</Button>
             </form>
           )}
-        </details>
+        </Disclosure>
       </>}
       {tab === "시수 확인" && (
         <section className="panel annual-section">
@@ -961,8 +964,7 @@ export function AnnualAcademic({
               </tbody>
             </table>
           </div>
-          {result.classTotals.length > 0 && <details>
-            <summary>학급별 시수</summary>
+          {result.classTotals.length > 0 && <Disclosure compact label="학급별 시수">
             <div className="table-scroll">
               <table className="plan-table">
                 <thead><tr><th>학급</th><th>학기</th><th>교과 확보</th><th>교과 시수 차이</th>
@@ -982,7 +984,7 @@ export function AnnualAcademic({
                 })}</tbody>
               </table>
             </div>
-          </details>}
+          </Disclosure>}
         </section>
       )}
       {tab === "편성 점검" && (

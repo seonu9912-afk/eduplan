@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useMemo, useState } from "react";
 import { proposeDatedSwap } from "@/lib/timetable-touch-editing";
 import { Button } from "@/components/ui/button";
@@ -210,8 +211,7 @@ export function TimetableTouch({
                   <p role="alert">{s.blockedBy.join(" · ")}</p>
                 )}
                 {editable && s.classIds.length === 1 && (
-                  <details>
-                    <summary>이 날짜 수업 변경</summary>
+                  <Disclosure compact label="이 날짜 수업 변경">
                     <label>
                       보결 담당 교원
                       <select
@@ -320,14 +320,13 @@ export function TimetableTouch({
                     >
                       해당 날짜 수업 취소
                     </Button>
-                  </details>
+                  </Disclosure>
                 )}
               </article>
             ))}
       </div>
       {mode === "daily" && editable && kind === "class" && (
-        <details>
-          <summary>두 날짜·교시의 수업 교환</summary>
+        <Disclosure compact label="두 날짜·교시의 수업 교환">
           <div className="mobile-view-toolbar">
             <label>
               {date} 교시
@@ -388,7 +387,7 @@ export function TimetableTouch({
           >
             교환 검토·적용
           </Button>
-        </details>
+        </Disclosure>
       )}
       {mode === "daily" &&
         editable &&

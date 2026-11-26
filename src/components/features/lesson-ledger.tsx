@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, InlineNotice, useMutation } from "@/components/common";
@@ -82,8 +83,7 @@ export function LessonLedger({
     version: record?.version ?? 0,
   });
   return (
-    <details className="panel no-print">
-      <summary>수업 실시 확인·인정 시수</summary>
+    <Disclosure className="panel no-print" label="수업 실시 확인·인정 시수">
       <p>
         예정 수업은 확정 시간표와 학사일정에서 계산합니다. 실시 여부는 담당자가
         확인하고 인정 시수는 기준·사유와 함께 별도로 기록합니다.
@@ -298,8 +298,7 @@ export function LessonLedger({
           {records.some(
             (r) => !rows.some((l) => recordKey(r) === recordKey(l)),
           ) && (
-            <details>
-              <summary>현재 예정표와 연결되지 않는 과거 기록</summary>
+            <Disclosure compact label="현재 예정표와 연결되지 않는 과거 기록">
               {records
                 .filter((r) => !rows.some((l) => recordKey(r) === recordKey(l)))
                 .map((r) => (
@@ -315,12 +314,12 @@ export function LessonLedger({
                 운영 계획 변경으로 예정 수업이 사라져도 실시 기록은 삭제하지
                 않습니다.
               </p>
-            </details>
+            </Disclosure>
           )}
         </>
       )}
       <InlineNotice mutation={m} />
-    </details>
+    </Disclosure>
   );
 }
 function RecordForm({
@@ -336,12 +335,16 @@ function RecordForm({
 }) {
   const [outcome, setOutcome] = useState(r?.outcome ?? "held");
   return (
-    <details>
-      <summary>
-        {r
-          ? `${r.outcome === "held" ? "실시" : "취소"} ${r.actual_minutes}분 · 인정 ${r.recognized_hours ?? "미판정"}`
-          : "미확인 · 기록"}
-      </summary>
+    <Disclosure
+      compact
+      label={
+        <>
+          {r
+            ? `${r.outcome === "held" ? "실시" : "취소"} ${r.actual_minutes}분 · 인정 ${r.recognized_hours ?? "미판정"}`
+            : "미확인 · 기록"}
+        </>
+      }
+    >
       <form
         className="form-stack"
         onSubmit={(e) => {
@@ -402,6 +405,6 @@ function RecordForm({
           <Button>실시·인정 기록 저장</Button>
         </fieldset>
       </form>
-    </details>
+    </Disclosure>
   );
 }

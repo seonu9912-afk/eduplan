@@ -1,0 +1,144 @@
+details.edu-disclosure {
+  --disclosure-inset: 18px;
+  --disclosure-gap: 12px;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 1px solid #dce6f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #243e59;
+}
+
+.workspace-content > details.edu-disclosure {
+  margin-block: 12px;
+}
+
+details.edu-disclosure[data-compact] {
+  --disclosure-inset: 12px;
+  --disclosure-gap: 10px;
+}
+
+details.edu-disclosure > .edu-disclosure-heading {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 11px var(--disclosure-inset);
+  border-radius: inherit;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 700;
+  line-height: 1.5;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+details.edu-disclosure > .edu-disclosure-heading::-webkit-details-marker {
+  display: none;
+}
+
+details.edu-disclosure > .edu-disclosure-heading::before {
+  content: "";
+  display: block;
+  width: 7px;
+  height: 7px;
+  margin-block-start: 6px;
+  border-block-end: 1.5px solid currentColor;
+  border-inline-end: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+details.edu-disclosure[open] > .edu-disclosure-heading {
+  border-radius: 9px 9px 0 0;
+  background: #f4f8fd;
+}
+
+details.edu-disclosure[open] > .edu-disclosure-heading::before {
+  transform: rotate(45deg);
+}
+
+details.edu-disclosure > .edu-disclosure-heading:hover {
+  background: #edf4fc;
+}
+
+details.edu-disclosure > .edu-disclosure-heading:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: -3px;
+}
+
+details.edu-disclosure > .edu-disclosure-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--disclosure-gap);
+  padding: var(--disclosure-inset);
+  border-block-start: 1px solid #e4edf5;
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.edu-disclosure-body > :where(p, ul, ol, dl, pre, .operations-scroll) {
+  margin-block: 0;
+}
+
+.edu-disclosure-body > :where(ul, ol) {
+  padding-inline-start: 1.3em;
+}
+
+.edu-disclosure-body > :where(pre) {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.edu-disclosure-body > [data-slot="button"] {
+  justify-self: start;
+}
+
+.edu-disclosure-body :is(button, a)[data-slot="button"] {
+  max-width: 100%;
+  height: auto;
+  min-height: 36px;
+  white-space: normal;
+  text-align: start;
+}
+
+.edu-disclosure-body > :is(select, input):not([type="checkbox"], [type="radio"]) {
+  max-width: 100%;
+  min-width: 0;
+  justify-self: start;
+}
+
+.edu-disclosure-body > label:has(> input[type="checkbox"]) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media screen and (max-width: 767px) {
+  details.edu-disclosure {
+    --disclosure-inset: 13px;
+  }
+
+  details.edu-disclosure[data-compact] {
+    --disclosure-inset: 10px;
+  }
+
+  .edu-disclosure-body :is(button, a)[data-slot="button"] {
+    min-height: 44px;
+  }
+}
+
+@media print {
+  details.edu-disclosure > .edu-disclosure-heading {
+    min-height: 0;
+    padding-block: 5px;
+  }
+
+  details.edu-disclosure > .edu-disclosure-body {
+    padding-block: 8px;
+  }
+}

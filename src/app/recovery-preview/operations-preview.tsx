@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useCallback, useState, useSyncExternalStore } from "react";
 import { z } from "zod";
 import { operationsPreviewContext } from "./operations-fixture";
@@ -268,8 +269,7 @@ export function OperationsPreview() {
           </Button>
         ))}
       </nav>
-      <details className="panel">
-        <summary>교육과정 변경 연계 실습</summary>
+      <Disclosure className="panel" label="교육과정 변경 연계 실습">
         <p>
           1학기 국어의 학급당 주당 시수를 모든 학년에 적용합니다. 교원 수급과
           수업 기준은 즉시 갱신되고, 기존 시간표 배정은 유지됩니다.
@@ -297,7 +297,7 @@ export function OperationsPreview() {
             }}
           />
         </label>
-      </details>
+      </Disclosure>
       {tab === "오늘" && (
         <PersonalDay
           context={c}

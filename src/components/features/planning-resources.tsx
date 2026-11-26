@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useEditGuard } from "@/lib/device-session";
 import { canPlan } from "@/lib/planning-completion";
 import { useState, useTransition } from "react";
@@ -79,14 +80,18 @@ export function PlanningResources({
     });
   return (
     <section
-      className="panel planning-resources"
+      className="planning-resources"
       onChangeCapture={() => setInputDirty(true)}
     >
-      <details open={missing.length > 0}>
-        <summary>
-          <strong>공통 자료 연결 · 특별실</strong>
-          {missing.length > 0 && ` · 미연결 ${missing.length}개`}
-        </summary>
+      <Disclosure
+        open={missing.length > 0}
+        label={
+          <>
+            <strong>공통 자료 연결 · 특별실</strong>
+            {missing.length > 0 && ` · 미연결 ${missing.length}개`}
+          </>
+        }
+      >
         <p>
           학급·과목·교원은 학교 공통 목록을 사용합니다. 기존 자료의 연결은
           담당자가 선택하며, 연결 전 원본과 변환 관계를 보존합니다.
@@ -182,11 +187,14 @@ export function PlanningResources({
             <Button disabled={pending}>공통 특별실 등록</Button>
           </form>
         )}
-      </details>
-      <details>
-        <summary>
-          <strong>특별 시정표 · 날짜별 적용</strong>
-        </summary>
+      </Disclosure>
+      <Disclosure
+        label={
+          <>
+            <strong>특별 시정표 · 날짜별 적용</strong>
+          </>
+        }
+      >
         <p>
           대체 요일은 학사일정에서 지정합니다. 특별 시정표는 아래 기간에만
           적용되고 기간이 끝나면 기본 시정표로 돌아갑니다. 수업 운영 시간은
@@ -194,7 +202,7 @@ export function PlanningResources({
         </p>
         {canWrite && (
           <>
-            <div className="form-grid">
+            <div className="planning-resource-fields">
               {(
                 [
                   ["start", "첫 수업 시작"],
@@ -264,7 +272,7 @@ export function PlanningResources({
             </label>
             {result.error && <p role="status">{result.error}</p>}
             {result.options.map((option) => (
-              <div key={option.priority} className="info-box">
+              <div key={option.priority} className="info-box planning-resource-option">
                 <strong>{option.priority}</strong>
                 <p>
                   수업 {option.lesson}분 · 쉬는 시간 {option.break}분 · 마지막
@@ -315,7 +323,7 @@ export function PlanningResources({
                 );
               }}
             >
-              <div className="form-grid">
+              <div className="planning-resource-fields">
                 <label className="field">
                   저장된 시정표
                   <select
@@ -385,7 +393,7 @@ export function PlanningResources({
             )}
           </p>
         ))}
-      </details>
+      </Disclosure>
       {message && <p role="status">{message}</p>}
     </section>
   );

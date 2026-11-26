@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useRouter } from "next/navigation";
 import { InlineNotice, useMutation } from "@/components/common";
 import { savePlanningPermission } from "@/app/planning-completion-actions";
@@ -12,8 +13,7 @@ export function PlanningPermissions({ context: c }: { context: Context }) {
     router = useRouter();
   if (c.role !== "admin") return null;
   return (
-    <details className="panel no-print">
-      <summary>업무별 편집 권한</summary>
+    <Disclosure className="panel no-print" label="업무별 편집 권한">
       <p>
         편집 구성원의 담당 업무를 지정합니다. 기존 권한은 유지하며 여기서 변경한
         항목부터 적용됩니다. 관리자는 모든 업무를 관리하고 조회 구성원은 본인
@@ -72,6 +72,6 @@ export function PlanningPermissions({ context: c }: { context: Context }) {
         </table>
       </div>
       <InlineNotice mutation={m} />
-    </details>
+    </Disclosure>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { TimetableReference } from "./timetable-reference";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -62,17 +63,19 @@ export function ReferencePanel({
     return () => onBusyChange(false);
   }, [m.pending, onBusyChange]);
   return (
-    <details
+    <Disclosure
       className={`teaching-reference ${changed || calendarChanged ? "reference-changed" : ""}`}
+      label={
+        <>
+          교육과정·학사일정 참고{" "}
+          {changed || calendarChanged ? (
+            <b>원본 변경 확인 필요</b>
+          ) : (
+            <span>연결 기준 확인</span>
+          )}
+        </>
+      }
     >
-      <summary>
-        교육과정·학사일정 참고{" "}
-        {changed || calendarChanged ? (
-          <b>원본 변경 확인 필요</b>
-        ) : (
-          <span>연결 기준 확인</span>
-        )}
-      </summary>
       <div className="reference-content">
         <div>
           <h3>편성 기준</h3>
@@ -171,6 +174,6 @@ export function ReferencePanel({
           </ul>
         </div>
       </div>
-    </details>
+    </Disclosure>
   );
 }

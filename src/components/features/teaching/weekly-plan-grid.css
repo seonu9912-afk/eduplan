@@ -17,5 +17,21 @@
 .teaching-report-preview th, .teaching-report-preview td { border: 1px solid var(--border); padding: .5rem; vertical-align: top; white-space: pre-wrap; }
 .teaching-report-preview th { background: var(--muted); }
 .teaching-week-options { font-size: .75rem; margin-top: .375rem; }
-.teaching-week-options label { display: block; }
-.teaching-week-options input, .teaching-week-options select { max-width: 8rem; }
+.teaching-week-options > summary {
+  cursor: pointer;
+  padding-block: 4px;
+}
+.teaching-week-options[open] {
+  border: 1px solid #dce6f0;
+  border-radius: 8px;
+  padding: 6px;
+}
+.teaching-week-options label {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+.teaching-week-options input, .teaching-week-options select {
+  width: 100%;
+  max-width: 8rem;
+}

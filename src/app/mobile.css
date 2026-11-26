@@ -633,14 +633,3 @@ html[data-keyboard="true"] {
 .pwa-install-panel {
   margin-block: 14px;
 }
-.pwa-install-panel summary {
-  cursor: pointer;
-  font-size: 15px;
-  font-weight: 700;
-}
-.pwa-install-content {
-  display: grid;
-  gap: 8px;
-  justify-items: start;
-  padding-top: 12px;
-}

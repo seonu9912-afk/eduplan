@@ -1,3 +1,4 @@
+import { Disclosure } from "@/components/ui/disclosure";
 import { PersonalDay } from "./personal-day";
 import Link from "next/link";
 import {
@@ -56,7 +57,7 @@ export function Dashboard({
         </Button>
       </div>
       <PersonalDay context={c} today={today}/>
-      <details className="no-print"><summary>학교 운영 시작 가이드</summary>
+      <Disclosure className="no-print" label="학교 운영 시작 가이드">
       <section className="dashboard-hero">
         <div>
           <span className="hero-badge subtle">
@@ -98,7 +99,7 @@ export function Dashboard({
           ))}
         </div>
       </section>
-      </details>
+      </Disclosure>
       <section className="stats-grid" aria-label="작업공간 현황">
         {[
           {

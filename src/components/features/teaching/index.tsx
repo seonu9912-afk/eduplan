@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { RecoveryDraft } from "./recovery-draft";
 import { canPlan } from "@/lib/planning-completion";
 import {
@@ -169,8 +170,7 @@ export function TeachingModule({
             </Button>
           )}
         </div>
-        <details className="panel">
-          <summary>교육과정에서 계산한 작성 대상</summary>
+        <Disclosure className="panel" label="교육과정에서 계산한 작성 대상">
           <p>
             현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만
             표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통
@@ -225,7 +225,7 @@ export function TeachingModule({
               </tbody>
             </table>
           </div>
-        </details>
+        </Disclosure>
         <section className="panel teaching-filters" aria-label="수업 선택 조건">
           <label>
             학년도

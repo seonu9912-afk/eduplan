@@ -1,3 +1,4 @@
+import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import { teachingDocumentSchema, reviewTeaching } from "@/lib/teaching";
 import { reviewAuthoring } from "@/lib/teaching-authoring";
@@ -10,10 +11,16 @@ export function SchoolTeachingReview({ context, openPlan }: { context: Context; 
   const shared = data.courses.filter((course) => !course.archived && course.visibility === "workspace");
   if (!shared.length) return null;
 
-  return <details className="panel annual-section">
-    <summary>학교 공유 계획 검토 · {shared.length}과목</summary>
+  return <Disclosure
+    className="panel annual-section"
+    label={
+      <>
+        학교 공유 계획 검토 · {shared.length}과목
+      </>
+    }
+  >
     <SchoolReviewTable context={context} year={year} openPlan={openPlan} />
-  </details>;
+  </Disclosure>;
 }
 
 function SchoolReviewTable({ context, year, openPlan }: {

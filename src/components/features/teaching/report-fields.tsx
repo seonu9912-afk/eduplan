@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import {
   emptyEvaluationDetail,
@@ -141,8 +142,7 @@ export function EvaluationFields({
     absence_policy: "미응시자·학적변동자 처리",
   } as const;
   return (
-    <details className="report-fields">
-      <summary>평가 운영 기준 · 학교 제출 항목</summary>
+    <Disclosure className="report-fields" compact label="평가 운영 기준 · 학교 제출 항목">
       <p className="muted">
         학교의 평가 규정에 맞게 작성하세요. 성취도 구간과 성취수준은 행을 추가해
         구성합니다.
@@ -185,7 +185,7 @@ export function EvaluationFields({
         editable={editable}
         onChange={(additional) => onChange({ ...d, additional })}
       />
-    </details>
+    </Disclosure>
   );
 }
 export function AssessmentDetailFields({
@@ -216,8 +216,7 @@ export function AssessmentDetailFields({
     standard_levels: [],
   };
   return (
-    <details className="report-fields">
-      <summary>세부 운영 · 평가 유형·역량·성취수준</summary>
+    <Disclosure className="report-fields" compact label="세부 운영 · 평가 유형·역량·성취수준">
       <div className="report-field-grid">
         <label>
           평가 차시
@@ -286,6 +285,6 @@ export function AssessmentDetailFields({
           </strong>
         </p>
       )}
-    </details>
+    </Disclosure>
   );
 }

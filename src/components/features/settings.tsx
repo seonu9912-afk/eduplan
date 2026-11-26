@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -103,8 +104,7 @@ export function SchoolSettings({ context: c }: { context: Context }) {
             <li>학급 수는 학년별로 입력합니다.</li>
             <li>설정 변경은 관리자만 가능합니다.</li>
           </ul>
-          {editable && <details className="info-box">
-            <summary>버전 및 배포 정보</summary>
+          {editable && <Disclosure className="info-box" compact label="버전 및 배포 정보">
             <dl className="build-info">
               <dt>버전</dt><dd>{buildInfo.version}</dd>
               <dt>환경</dt><dd>{buildInfo.deployment === "production" ? "Production" : buildInfo.deployment === "preview" ? "Preview" : "Development"}</dd>
@@ -114,7 +114,7 @@ export function SchoolSettings({ context: c }: { context: Context }) {
               <dt>Git 커밋</dt><dd>{buildInfo.commit ? <code title={buildInfo.commit}>{buildInfo.commit.slice(0, 12)}</code> : "제공되지 않음"}</dd>
               {buildInfo.id && <><dt>Vercel 배포 ID</dt><dd><code>{buildInfo.id}</code></dd></>}
             </dl>
-          </details>}
+          </Disclosure>}
           <div className="info-box">
             학생 이름이나 성적 등 민감한 개인정보는 입력하지 않습니다.
           </div>

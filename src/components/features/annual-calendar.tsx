@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { monthRange } from "@/lib/domain";
@@ -198,18 +199,20 @@ export function VacationSettings({
   const start = `${year}-03-01`,
     end = monthRange(`${year + 1}-02`).end;
   return (
-    <details
+    <Disclosure
       className="panel vacation-settings no-print"
       open={!plan.vacations.length || undefined}
+      label={
+        <>
+          방학 설정{" "}
+          <span>
+            {plan.vacations.length
+              ? `${plan.vacations.length}개 구간`
+              : "여름·겨울·학년말 방학을 설정하세요"}
+          </span>
+        </>
+      }
     >
-      <summary>
-        방학 설정{" "}
-        <span>
-          {plan.vacations.length
-            ? `${plan.vacations.length}개 구간`
-            : "여름·겨울·학년말 방학을 설정하세요"}
-        </span>
-      </summary>
       <div className="vacation-list">
         {plan.vacations.map((v, i) => (
           <div key={i}>
@@ -347,6 +350,6 @@ export function VacationSettings({
       <p className="field-hint">
         기간 양 끝 날짜를 포함합니다. 날짜별 수동 수정은 방학보다 우선합니다.
       </p>
-    </details>
+    </Disclosure>
   );
 }

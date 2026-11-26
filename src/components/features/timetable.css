@@ -24,19 +24,6 @@
   border-radius: 12px;
   background: #fff;
 }
-.tt-file-actions {
-  min-width: 0;
-}
-.tt-file-actions summary {
-  padding: 8px 0;
-  color: #36557d;
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-}
-.tt-file-actions .heading-actions {
-  margin-top: 8px;
-}
 .tt-effective-date {
   display: grid;
   gap: 4px;
@@ -67,4 +54,29 @@
     width: 100%;
     min-width: 0;
   }
+}
+
+.planning-resources {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.planning-resource-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+  gap: 12px;
+}
+.planning-resource-option {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.timetable-module .tt-preview-details {
+  padding: 12px;
+  border: 1px solid #dce6f0;
+  border-radius: 10px;
+}
+.timetable-module .tt-result details[open] > ul {
+  margin-top: 8px;
+  padding-inline-start: 1.3em;
 }

@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useRef, useState } from "react";
 import { areas, dayTypes, type AnnualPlan } from "@/lib/academic";
 import { availablePeriods, calendarDates, eventVisiblePeriods, sharedEventArea, type Area, type EventDraft } from "@/lib/academic-calendar";
@@ -184,12 +185,12 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
         <p className="ar-muted">전체 선택은 모든 대상 학년의 운영 교시에 해당하는 칸을 선택합니다. 노란 칸은 일부 학년의 운영 교시 밖이며, 개별 선택은 가능합니다.</p>
       </>}
     </section>
-    <details><summary>특정 학급만 행사 대상 지정 · 비고</summary>
+    <Disclosure compact label="특정 학급만 행사 대상 지정 · 비고">
       <p>학급을 선택하지 않으면 체크한 학년의 모든 학급이 행사 대상입니다. 특정 학급만 참여하는 행사일 때만 선택해 주세요.</p>
       <div className="ar-tools">{context.classes.filter((c) => selectedGrades.includes(c.grade)).map((c) => <label key={c.id} className="ar-check">
         <input type="checkbox" checked={e.target_class_ids?.includes(c.id) ?? false} onChange={(event) => patch({ target_class_ids: event.target.checked ? [...(e.target_class_ids ?? []),c.id] : e.target_class_ids?.filter((id) => id !== c.id) })}/>{c.grade}-{c.class_number}</label>)}</div>
       <label>비고<textarea value={e.description} maxLength={2000} onChange={(event) => patch({ description: event.target.value })}/></label>
-    </details>
+    </Disclosure>
     {!!overlap.length && <div className="ar-callout"><strong>기간·대상이 겹치는 행사 {overlap.length}건</strong><p>운영 교시가 겹치면 시수는 중복 합산하지 않고 확인 필요로 표시합니다. 확인한 뒤 저장할 수 있습니다.</p>
       {overlap.map((other) => <p key={other.id}>{other.title} · {other.start_date}~{other.end_date} · {other.target_grades.join(", ")}학년</p>)}</div>}
   </fieldset>;

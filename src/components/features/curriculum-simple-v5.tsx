@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import {canPlan} from "@/lib/planning-completion";
 
 import {useCallback,useEffect,useRef,useState} from "react";
@@ -197,11 +198,10 @@ export function CurriculumSimpleV5({context:c,initialCohort,onDirtyChange,
   const renderSubjects=(selection:CurriculumSelectionControls)=><>
     <p className="c5-selection-help">체크한 과목만 다음 단계와 교육과정표에 표시됩니다.
       시수나 선택과목군이 연결된 과목은 기존 입력을 보호하기 위해 선택 해제가 제한됩니다.</p>
-    {c.schoolType==="중학교"&&editable&&<details className="c5-catalog-import no-print">
-      <summary>기본 과목 목록 보완</summary>
+    {c.schoolType==="중학교"&&editable&&<Disclosure className="c5-catalog-import no-print" compact label="기본 과목 목록 보완">
       <div><button type="button" disabled={pending} onClick={()=>void importDefaults("2015")}>2015 개정 불러오기</button>
         <button type="button" disabled={pending} onClick={()=>void importDefaults("2022")}>2022 개정 불러오기</button></div>
-    </details>}
+    </Disclosure>}
     {[false,true].map(creative=><section key={String(creative)} aria-label={creative?"창의적 체험활동 선택":"교과 과목 선택"}>
       <h3 className="c5-selection-heading">{creative?"창의적 체험활동":"교과·과목"}</h3>
       <div className="c5-group-grid">

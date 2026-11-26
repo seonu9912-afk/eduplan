@@ -1,5 +1,6 @@
 "use client";
 
+import { Disclosure } from "@/components/ui/disclosure";
 import { useState, type KeyboardEvent } from "react";
 import "./weekly-plan-grid.css";
 import { Modal } from "@/components/common";
@@ -474,10 +475,15 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
         </>
       )}
       {unattached.length > 0 && (
-        <details className="teaching-unlinked">
-          <summary>
-            현재 주차와 연결되지 않은 기존 수업 {unattached.length}건
-          </summary>
+        <Disclosure
+          className="teaching-unlinked"
+          compact
+          label={
+            <>
+              현재 주차와 연결되지 않은 기존 수업 {unattached.length}건
+            </>
+          }
+        >
           <LessonEditor
             {...props}
             legacyOnly
@@ -490,7 +496,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               ]);
             }}
           />
-        </details>
+        </Disclosure>
       )}
       {expanded && selected && (
         <Modal

@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { useRef, useState } from "react";
 import { ArrowUp, ArrowDown, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -122,8 +123,7 @@ export function ReportFormatEditor({
         </p>
       )}
       {notice && <p role="status">{notice}</p>}
-      <details>
-        <summary>학교별 출력 서식 설정</summary>
+      <Disclosure compact label="학교별 출력 서식 설정">
         <div className="report-field-grid">
           <label>
             서식 이름
@@ -384,7 +384,7 @@ export function ReportFormatEditor({
             }
           }}
         />
-      </details>
+      </Disclosure>
     </section>
   );
 }

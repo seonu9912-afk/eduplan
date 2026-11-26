@@ -1,4 +1,5 @@
 "use client";
+import { Disclosure } from "@/components/ui/disclosure";
 import { canPlan } from "@/lib/planning-completion";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -128,8 +129,7 @@ export function Staffing({
             학년도 기록은 보존됩니다.
           </p>
           {c.role === "admin" && (
-            <details>
-              <summary>이전 학년도 명부에서 가져오기</summary>
+            <Disclosure compact label="이전 학년도 명부에서 가져오기">
               <p>
                 과거 명부를 보존하고 선택한 교원의 새 학년도 등록안을 만듭니다.
                 담임과 근무 상태는 새 학년도에 맞게 검토하세요.
@@ -197,7 +197,7 @@ export function Staffing({
                   </Button>
                 </p>
               ))}
-            </details>
+            </Disclosure>
           )}
           <div className="operations-scroll">
             <table className="operations-table">

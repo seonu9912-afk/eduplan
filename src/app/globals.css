@@ -3445,7 +3445,7 @@ button[data-slot="button"][data-size="icon"] {
   font-size: 14px;
   font-weight: 600;
 }
-.vacation-settings summary span {
+.vacation-settings summary .edu-disclosure-label > span {
   margin-left: 12px;
   color: #64768e;
   font-size: 12px;
@@ -3731,7 +3731,7 @@ button[data-slot="button"][data-size="icon"] {
   .vacation-settings {
     padding: 15px;
   }
-  .vacation-settings summary span {
+  .vacation-settings summary .edu-disclosure-label > span {
     display: block;
     margin: 8px 0 0;
   }
@@ -3828,7 +3828,7 @@ button[data-slot="button"][data-size="icon"] {
   .vacation-settings .term-row {
     grid-template-columns: minmax(0, 1fr);
   }
-  .vacation-settings summary span {
+  .vacation-settings summary .edu-disclosure-label > span {
     display: block;
     line-height: 1.6;
   }
@@ -4570,7 +4570,7 @@ button[data-slot="button"][data-size="icon"] {
   font-size: 13px;
   font-weight: 650;
 }
-.teaching-reference summary span,
+.teaching-reference summary .edu-disclosure-label > span,
 .teaching-reference summary b {
   margin-left: 10px;
   font-size: 11px;
@@ -4587,7 +4587,6 @@ button[data-slot="button"][data-size="icon"] {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 22px;
-  padding: 0 20px 20px;
   font-size: 12px;
   line-height: 1.8;
 }
@@ -5317,6 +5316,11 @@ button[data-slot="button"][data-size="icon"] {
 .academic-period-slots button[aria-pressed="true"], .calendar-focus {
   background: #dceaff;
   color: #173e82;
+}
+.info-box.push-device-status {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
 }
 .build-info {
   display: grid;
