@@ -54,6 +54,7 @@ export function PersonalDay({ context: c, today, previewNow }: {
   }, [previewNow]);
 
   return <section className="operations-module personal-day" aria-label="나의 학교 생활">
+    <HomeLiveClock today={clock.date} previewNow={previewNow} />
     <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
     <div className="personal-widgets">
       <div className="personal-widget-column">
@@ -115,6 +116,39 @@ export function PersonalDay({ context: c, today, previewNow }: {
     </div>
     {previewNow && <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />}
   </section>;
+}
+
+
+const liveClockFormat = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+});
+const liveDateFormat = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "long",
+});
+
+function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: string }) {
+  const [instant, setInstant] = useState<Date | null>(() => previewNow ? new Date(previewNow) : null);
+  useEffect(() => {
+    const tick = () => setInstant(new Date(previewNow ?? Date.now()));
+    const first = window.setTimeout(tick, 0);
+    const timer = previewNow ? undefined : window.setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearTimeout(first);
+      if (timer !== undefined) window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [previewNow]);
+
+  return <div className="home-live-clock">
+    <div className="home-clock-date">
+      <span>오늘</span>
+      <time dateTime={instant?.toISOString() ?? today}>{liveDateFormat.format(instant ?? new Date(`${today}T00:00:00+09:00`))}</time>
+    </div>
+    <time className="home-clock-time" aria-label="현재 시각 (한국 표준시)" dateTime={instant?.toISOString()}>
+      {instant ? liveClockFormat.format(instant) : "--:--:--"}
+    </time>
+  </div>;
 }
 
 const weekdayNames = ["월", "화", "수", "목", "금", "토", "일"];
