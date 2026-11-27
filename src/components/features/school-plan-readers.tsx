@@ -19,6 +19,7 @@ import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./
 import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
 import { ScheduleSearch } from "./schedule-search";
 import type { ScheduleSearchResult } from "@/lib/schedule-search";
+import { ScheduleListView, useScheduleListView } from "./schedule-list-view";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -43,6 +44,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const [requestedDate, setDate] = useState(clamp(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) && !Number.isNaN(Date.parse(initialDate)) ? initialDate : today));
   const [view, setView] = useState<ScheduleView>(initialDate ? "month" : work ? "week" : "month");
   const weekend = useWeekendVisibility(c.workspace.id, c.userId);
+  const listView = useScheduleListView(c.workspace.id, c.userId, work);
   const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start) : requestedDate;
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const detail = useScheduleDetail();
@@ -121,6 +123,10 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             {options.map(({ value, label }) => <button key={value} type="button" aria-pressed={view === value}
               onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
           </div>
+          {work && view !== "year" && <div className="schedule-segments" role="group" aria-label="일정 표시 방식">
+            <button type="button" aria-pressed={!listView.isList} onClick={() => listView.setIsList(false)}>달력</button>
+            <button type="button" aria-pressed={listView.isList} onClick={() => listView.setIsList(true)}>목록</button>
+          </div>}
           {view === "week" && <WeekendToggle {...weekend} />}
           <Button variant="outline" size="sm" aria-expanded={searchOpen} onClick={() => setSearchOpen((open) => !open)}><Search size={16} />일정 검색</Button>
           <label className="schedule-jump"><span className="sr-only">기준일</span>
@@ -165,6 +171,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <MyTasks />
         </aside>}
         <div className="official-schedule-main">
+        {work && listView.isList ? <ScheduleListView dates={dates.filter(day => day >= start && day <= end && (view !== "month" || day.startsWith(month)))} days={days} today={today} selectedDate={date} available={available} onOpen={showEntry} /> : <>
         <div className="school-calendar-mobile no-print">
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
             emphasizeToday spanDays={calendarDays} items={(day) => days.get(day)?.entries ?? []}
@@ -238,6 +245,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             </div>
           )}
         </div>
+        </>}
         </div>
       </div>}
       <ScheduleDetailDialog context={selected && !searchResult ? undefined : c} entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
