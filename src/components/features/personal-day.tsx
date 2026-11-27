@@ -5,7 +5,7 @@ import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "l
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import {
-  dailyOperationNotice, createLessonResolver, currentAndNext, dailyLessonStatus,
+  dailyOperationSummary, createLessonResolver, currentAndNext, dailyLessonStatus,
   myTeacherIds, publishedTimetable, seoulClock,
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
@@ -41,7 +41,8 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
   useHomeRefresh(today, !!publicData && !previewNow);
   const publicDataDateChanged = !!publicData && !previewNow && clock.date !== today;
   const lessons = resolver?.(clock.date).filter((lesson) => ids.has(lesson.teacherId)) ?? [];
-  const operationNotice = dailyOperationNotice(c, clock.date);
+  const operation = dailyOperationSummary(c, clock.date, lessons);
+  const hasOperationNotice = operation.notices.length > 0 || operation.changed > 0 || operation.cancelled > 0;
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
   const statuses = lessons.map((lesson) => dailyLessonStatus(lesson, now ? clock.minutes : null));
   const allFinished = statuses.includes("finished") && statuses.every((status) => status === "finished" || status === "cancelled");
@@ -70,7 +71,12 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
             <h2><Clock3 aria-hidden="true" />오늘 수업</h2>
             <time className="daily-clock" dateTime={clock.date}>{dayTitle(clock.date)}</time>
           </header>
-          {operationNotice && <p className="personal-widget-note" role="status">{operationNotice}</p>}
+          {hasOperationNotice && <div className="home-operation-notice" data-warning={operation.warning ? "" : undefined}>
+            <div className="home-operation-title"><Clock3 aria-hidden="true" size={15}/><strong>{operation.warning ? "일과 확인 필요" : "오늘의 일과 안내"}</strong></div>
+            {operation.notices.map((notice,index)=><p key={index}>{notice}</p>)}
+            {(operation.changed>0||operation.cancelled>0)&&<p>나의 수업 · {[operation.changed>0?`변경 ${operation.changed}건`:"",operation.cancelled>0?`미운영·확인 필요 ${operation.cancelled}건`:""].filter(Boolean).join(" · ")}</p>}
+            {operation.changes.length>0&&<details><summary>교시별 시각 변경 {operation.changes.length}건</summary><ul>{operation.changes.map(row=><li key={row.period}><b>{row.period}교시</b><span>{row.before} → {row.after}</span></li>)}</ul></details>}
+          </div>}
           {!doc ? <p className="personal-widget-note">시간표가 확정되면 담당 수업이 표시됩니다.</p>
             : !teacher ? <p className="personal-widget-note">교원 명부에 연결되지 않았습니다. 관리자에게 계정 연결을 요청하세요.</p>
             : <>

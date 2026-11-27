@@ -621,40 +621,69 @@ export function calendarImpact(
   };
 }
 
+export type DailyOperationSummary = {
+  notices: string[];
+  warning: boolean;
+  changes: { period: number; before: string; after: string }[];
+  changed: number;
+  cancelled: number;
+};
+
+export function compareLessonBells(
+  normal: { type: string; period?: number; start: string; end: string }[],
+  special: { type: string; period?: number; start: string; end: string }[],
+): DailyOperationSummary["changes"] {
+  const map = (rows: typeof normal) => new Map(rows.filter(r => r.type === "lesson" && Number.isInteger(r.period)).map(r => [r.period!, r.start + "–" + r.end]));
+  const a=map(normal), b=map(special);
+  return [...new Set([...a.keys(),...b.keys()])].sort((x,y)=>x-y)
+    .filter(p=>a.get(p)!==b.get(p))
+    .map(period=>({period,before:a.get(period)??"미설정",after:b.get(period)??"미설정"}));
+}
+
+export function dailyOperationSummary(c: Context, date: string, lessons: DatedLesson[] = []): DailyOperationSummary {
+  const result: DailyOperationSummary = {notices:[],warning:false,changes:[],changed:lessons.filter(l=>l.changed&&!l.blockedBy.length).length,cancelled:lessons.filter(l=>l.blockedBy.length).length};
+  const warn=(message:string)=>{result.notices.push(message);result.warning=true;return result;};
+  const official=publishedSchoolContext(c,date);
+  const parsed=annualSchema.safeParse(official.annual?.document);
+  if(!c.year || !parsed.success || (c.schoolPublications && !official.hasOfficialCalendar))
+    return warn("적용 중인 공개 학사일정이 없습니다.");
+  const day=academicDays(c.year.year,parsed.data,official.semesters).find(d=>d.date===date);
+  if(!day)return warn("선택한 날짜의 학사일정을 확인하세요.");
+  if(day.type==="swap") result.notices.push(`${["일","월","화","수","목","금","토"][day.weekday]}요일 시간표 적용`);
+  if(!isTeachingDay(day)){
+    if(day.type!=="weekend" || day.name) result.notices.push(day.name || "수업일이 아닙니다.");
+    // Ordinary weekends and holidays do not count the underlying blocked weekly slots as changes.
+    result.changed=0;result.cancelled=0;
+    return result;
+  }
+  const ranges=c.grades.flatMap(grade=>{
+    const base=parsed.data.timetable.find(row=>row.grade===grade&&row.weekday===day.weekday);
+    const actual=operatingPeriodRange(day,parsed.data,grade);
+    if(!actual||!base||(base.start===actual.start&&base.end===actual.end))return [];
+    return [`${grade}학년 ${actual.start}~${actual.end}교시`];
+  });
+  if(ranges.length)result.notices.push("운영 교시 변경: "+ranges.join(" · "));
+  const versions=c.operations?.effectiveTimetables;
+  const version=[...(versions??[])].sort((a,b)=>b.starts_on.localeCompare(a.starts_on)).find(v=>v.starts_on<=date);
+  if(versions&&!version)return warn("이 날짜에 적용할 확정 시간표가 없습니다.");
+  const doc=timetableDocumentSchema.safeParse(version?.document??c.operations?.publication?.document);
+  if(!doc.success)return result;
+  const savedResources=resourcesSchema.safeParse(doc.data.publishedResources);
+  const resources=savedResources.success?savedResources.data:c.schoolPublications?undefined:c.operations?.resources;
+  const applications=(resources?.applications??[]).filter(a=>a.starts_on<=date&&a.ends_on>=date);
+  if(applications.length>1)return warn("특별 시정표 적용 충돌 · 시간표를 확인하세요.");
+  if(applications.length===1){
+    const bell=resources?.bells.find(b=>b.id===applications[0].schedule_id);
+    if(!bell)return warn("특별 시정표 원본 확인 필요");
+    result.notices.push("특별 시정표: "+bell.name);
+    const normal=bellSchema.safeParse(doc.data.timetableConfig?.bell);
+    if(normal.success)result.changes=compareLessonBells(normal.data,bell.rows);
+  }
+  return result;
+}
+
 export function dailyOperationNotice(c: Context, date: string): string {
-  const official = publishedSchoolContext(c, date);
-  const parsed = annualSchema.safeParse(official.annual?.document);
-  if (!parsed.success || (c.schoolPublications && !official.hasOfficialCalendar))
-    return "적용 중인 공개 학사일정이 없습니다.";
-  if (
-    c.operations?.effectiveTimetables &&
-    !c.operations.effectiveTimetables.some((v) => v.starts_on <= date)
-  )
-    return "이 날짜에 적용할 확정 시간표가 없습니다. 시간표에서 적용 시작일을 지정해 주세요.";
-  const plan = parsed.data,
-    day = academicDays(c.year!.year, plan, official.semesters).find(
-      (d) => d.date === date,
-    );
-  const version = [...(c.operations?.effectiveTimetables ?? [])]
-    .sort((a, b) => b.starts_on.localeCompare(a.starts_on)).find((v) => v.starts_on <= date);
-  const doc = timetableDocumentSchema.safeParse(version?.document);
-  const savedResources = resourcesSchema.safeParse(doc.success ? doc.data.publishedResources : null);
-  const resources = savedResources.success ? savedResources.data :
-    c.schoolPublications ? undefined : c.operations?.resources;
-  const app = resources?.applications.find(
-    (a) => a.starts_on <= date && a.ends_on >= date,
-  );
-  const bell = resources?.bells.find(
-    (b) => b.id === app?.schedule_id,
-  );
-  return [
-    day?.type === "swap"
-      ? `${["일", "월", "화", "수", "목", "금", "토"][day.weekday]}요일 시간표 적용`
-      : "",
-    bell ? `특별 시정표: ${bell.name}` : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  return dailyOperationSummary(c,date).notices.join(" · ");
 }
 
 /** Adapter for the preserved timetable editor. Dates and counts use the same engine as home and teaching plans. */
