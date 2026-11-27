@@ -1,0 +1,15 @@
+.schedule-search-panel { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+.schedule-search-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.schedule-search-heading h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-size: 16px; font-weight: 700; }
+.schedule-search-heading small, .schedule-search-count, .schedule-search-empty { color: var(--text-secondary); font-size: 12px; font-weight: 400; }
+.schedule-search-input { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 7px; padding: 0 10px; min-width: 0; }
+.schedule-search-input input { flex: 1; min-width: 0; width: 100%; border: 0; background: transparent; min-height: 42px; }
+.schedule-search-results { list-style: none; margin: 0; padding: 0; max-height: 430px; overflow: auto; }
+.schedule-search-results li + li { border-top: 1px solid var(--border); }
+.schedule-search-results li > button { display: grid; grid-template-columns: minmax(80px, 110px) minmax(0, 1fr) 16px; gap: 10px; align-items: center; text-align: left; width: 100%; padding: 12px 4px; border: 0; background: transparent; cursor: pointer; }
+.schedule-search-results li > button:hover { background: var(--surface-muted); }
+.schedule-search-date, .schedule-search-title { display: grid; gap: 4px; min-width: 0; overflow-wrap: anywhere; font-size: 13px; }
+.schedule-search-date small, .schedule-search-title small { color: var(--text-secondary); font-size: 11px; }
+.schedule-search-title .department-badge { justify-self: start; }
+.schedule-detail-footer { gap: 8px; flex-wrap: wrap; }
+@media screen and (max-width: 767px) { .schedule-search-panel { padding: 10px; } .schedule-search-results li > button { grid-template-columns: 82px minmax(0,1fr) 16px; } }

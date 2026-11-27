@@ -29,7 +29,7 @@ export function ScheduleDetailTitle({ entry, label, onOpen }: { entry: ScheduleE
   return <button type="button" className="schedule-detail-trigger" aria-haspopup="dialog" aria-label={`${entry.title} 상세 보기`} onClick={(event) => onOpen(entry, event.currentTarget)}>{label ?? entry.title}</button>;
 }
 
-export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus }: { entry: ScheduleEntry | null; onClose: () => void; onCloseAutoFocus: (event: Event) => void }) {
+export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus, onJump }: { entry: ScheduleEntry | null; onClose: () => void; onCloseAutoFocus: (event: Event) => void; onJump?: () => void }) {
   const category = entry ? entry.operationGroup ?? tones[entry.tone] : "";
   const department = entry?.department ? departmentBadgeInfo(entry.department) : null;
   const rows = entry ? [
@@ -47,7 +47,7 @@ export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus }: { ent
       <h3>{entry.assignmentText ?? entry.title}</h3>
       <dl>{rows.map(({ icon: Icon, label, value }) => <div key={label}><dt><Icon size={16} aria-hidden="true" />{label}</dt><dd>{value}</dd></div>)}</dl>
       {!!readableResources(entry.resources).length && <section className="schedule-detail-resources"><h4><Link2 size={16} aria-hidden="true" />관련 자료</h4><ResourceLinks value={entry.resources} /></section>}
-      <div className="schedule-detail-footer"><Button type="button" variant="outline" onClick={onClose}>닫기</Button></div>
+      <div className="schedule-detail-footer">{onJump && <Button type="button" onClick={onJump}><CalendarDays size={16} />달력에서 보기</Button>}<Button type="button" variant="outline" onClick={onClose}>닫기</Button></div>
     </div>}
   </Modal>;
 }

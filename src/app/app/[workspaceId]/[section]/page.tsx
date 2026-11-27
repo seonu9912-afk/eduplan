@@ -12,7 +12,7 @@ export default async function WorkspacePage({
   searchParams,
 }: {
   params: Promise<{ workspaceId: string; section: string }>;
-  searchParams: Promise<{ year?: string; cohort?: string; view?: string }>;
+  searchParams: Promise<{ year?: string; cohort?: string; view?: string; date?: string }>;
 }) {
   const [p, q] = await Promise.all([params, searchParams]);
   if (
@@ -43,6 +43,7 @@ export default async function WorkspacePage({
       section={p.section}
       today={today}
       initialCohort={q.cohort}
+      initialScheduleDate={q.date}
       management={management}
       homePublicData={p.section === "home"
         ? <SchoolHomePublicData school={context.school} today={today} unavailable={context.schoolInfoError} mealEnds={schoolMealEndTimes(context, today)} />

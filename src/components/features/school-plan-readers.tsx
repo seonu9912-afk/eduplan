@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -16,6 +17,8 @@ import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { MyTasks } from "./my-tasks";
 import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
 import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
+import { ScheduleSearch } from "./schedule-search";
+import type { ScheduleSearchResult } from "@/lib/schedule-search";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -23,16 +26,19 @@ const weekLabels = [...weekdays.slice(1), weekdays[0]];
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
-export function OfficialSchedule({ context: c, today, work = false, actions }: { context: Context; today: string; work?: boolean; actions?: ReactNode }) {
+export function OfficialSchedule({ context: c, today, work = false, actions, initialDate }: { context: Context; today: string; work?: boolean; actions?: ReactNode; initialDate?: string }) {
   const year = c.year!.year;
   const start = `${year}-03-01`, end = addDays(`${year + 1}-03-01`, -1);
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
-  const [requestedDate, setDate] = useState(clamp(today));
-  const [view, setView] = useState<ScheduleView>(work ? "week" : "month");
+  const router = useRouter();
+  const [requestedDate, setDate] = useState(clamp(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) && !Number.isNaN(Date.parse(initialDate)) ? initialDate : today));
+  const [view, setView] = useState<ScheduleView>(initialDate ? "month" : work ? "week" : "month");
   const weekend = useWeekendVisibility(c.workspace.id, c.userId);
   const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start) : requestedDate;
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const detail = useScheduleDetail();
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResult, setSearchResult] = useState<ScheduleSearchResult | null>(null);
   const month = date.slice(0, 7);
   const [miniMonthOverride, setMiniMonthOverride] = useState<string | null>(null);
   const miniMonth = miniMonthOverride ?? month;
@@ -80,6 +86,16 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
     if (view === "week")
       requestAnimationFrame(() => document.getElementById(`agenda-${day}`)?.scrollIntoView({ block: "nearest" }));
   }
+  function showEntry(entry: ScheduleEntry, trigger: HTMLElement) { setSearchResult(null); detail.show(entry, trigger); }
+  function jumpToResult(result: ScheduleSearchResult) {
+    detail.close(); setSearchResult(null); setSearchOpen(false);
+    if (result.entry.tone === "work" && !work) {
+      const params = new URLSearchParams({ year: String(year), date: result.from });
+      router.push(`/app/${c.workspace.id}/plans?${params}`);
+      return;
+    }
+    setSelectedRelease(null); setMiniMonthOverride(null); setView("month"); setDate(clamp(result.from));
+  }
   const updates = publications.filter((p) => p.domain === (work ? "plans" : "calendar"))
     .sort((a, b) => b.published_at.localeCompare(a.published_at));
   return (
@@ -97,6 +113,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
               onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
           </div>
           {view === "week" && <WeekendToggle {...weekend} />}
+          <Button variant="outline" size="sm" aria-expanded={searchOpen} onClick={() => setSearchOpen((open) => !open)}><Search size={16} />일정 검색</Button>
           <label className="schedule-jump"><span className="sr-only">기준일</span>
             <input type="date" value={date} min={start} max={end} onChange={(e) => {
               if (e.target.value) { setMiniMonthOverride(null); setDate(clamp(e.target.value)); }
@@ -106,6 +123,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
           {actions}
         </div>
       </div>
+      {searchOpen && <ScheduleSearch context={c} start={start} end={end} onSelect={(result, trigger) => { setSearchResult(result); detail.show(result.entry, trigger); }} onClose={() => setSearchOpen(false)} />}
       <h2 className="schedule-print-title">{title}</h2>
       {selected && <div className="school-reader-toolbar">
         <span className="muted">공개본 · {selected.starts_on} 적용 · 버전 {selected.source_version}</span>
@@ -115,7 +133,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
         available ? (
           <table className="school-reader-list"><thead><tr><th>기간</th><th>학사일정</th></tr></thead>
             <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td>
-              <td><ScheduleDetailTitle entry={item} onOpen={detail.show} /><ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
+              <td><ScheduleDetailTitle entry={item} onOpen={showEntry} /><ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
           </table>
         ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
       ) : <div className={workWeek ? "official-work-week-layout" : "official-schedule-body"}>
@@ -154,7 +172,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                   const location = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
-                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={detail.show} /></div>
+                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={showEntry} /></div>
                       {location && <small>{location}</small>}
                       <ResourceLinks value={entry.resources} />
                     </div>
@@ -162,7 +180,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
                   {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
                 </p>}
-                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} onOpen={detail.show} /></section>)}</div> : null}
+                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} onOpen={showEntry} /></section>)}</div> : null}
               </section>;
             })}
           </div>
@@ -188,7 +206,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
                           data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
-                          {span && <DesktopCalendarEvent entry={span.entry} onOpen={detail.show} />}
+                          {span && <DesktopCalendarEvent entry={span.entry} onOpen={showEntry} />}
                         </td>;
                       })}
                     </tr>)}
@@ -201,7 +219,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                       const entries = schedule?.entries.filter((entry) => entry.operationGroup === name) ?? [];
                       return <td key={day} data-outside={outside(day)}>
                         <div className="weekly-operation-cell"><h4>{name}</h4>
-                          {active || entries.length ? <OperationEntries entries={entries} onOpen={detail.show} /> : <span className="weekly-operation-empty">—</span>}
+                          {active || entries.length ? <OperationEntries entries={entries} onOpen={showEntry} /> : <span className="weekly-operation-empty">—</span>}
                         </div>
                       </td>;
                     })}</tr>)}
@@ -213,7 +231,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
         </div>
         </div>
       </div>}
-      <ScheduleDetailDialog entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} />
+      <ScheduleDetailDialog entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
       {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
