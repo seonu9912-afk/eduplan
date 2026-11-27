@@ -14,7 +14,9 @@ export type NeisSchool = {
 };
 
 export type SchoolMeal = { code: string; name: string; dishes: string[] };
+export type HourlySchoolWeather = { date: string; hour: string; temperature: number | null; condition: string | null; precipitation: number | null };
 export type SchoolWeather = {
+  hourly: HourlySchoolWeather[];
   temperature: number | null;
   condition: string | null;
   forecastHour: string | null;

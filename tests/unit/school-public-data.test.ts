@@ -119,3 +119,15 @@ describe("school public data", () => {
     expect(villageForecastGrid(0, 0)).toBeNull();
   });
 });
+
+it("provides six hourly forecasts across midnight without inventing missing values", () => {
+  const timing = weatherReleaseTimes(new Date("2026-11-27T14:30:00Z"));
+  const result = summarizeSchoolWeather([
+    { category: "TMP", fcstDate: "20261128", fcstTime: "0000", fcstValue: "4" },
+    { category: "SKY", fcstDate: "20261128", fcstTime: "0000", fcstValue: "1" },
+    { category: "POP", fcstDate: "20261128", fcstTime: "0000", fcstValue: "0" },
+  ], [], [], timing);
+  expect(result.hourly).toHaveLength(6);
+  expect(result.hourly[0]).toEqual({ date: "20261128", hour: "00", temperature: 4, condition: "맑음", precipitation: 0 });
+  expect(result.hourly[1]).toMatchObject({ hour: "01", temperature: null, condition: null, precipitation: null });
+});

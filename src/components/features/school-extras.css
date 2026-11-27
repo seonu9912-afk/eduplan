@@ -152,3 +152,14 @@
 @media screen and (max-width: 767px) {
   .school-meal-tabs button { min-height: 44px; }
 }
+
+.school-weather-overview { justify-content: space-between; align-items: center; }
+.school-weather-overview > div > strong { font-size: 38px; line-height: 1.1; }
+.school-weather-status { display: grid; justify-items: end; gap: 2px; text-align: end; }
+.weather-icon { width: 22px; height: 22px; color: var(--schedule-accent); }
+.weather-icon.sunny { color: #d49b18; }
+.school-weather-status > .weather-icon { width: 28px; height: 28px; }
+.school-hourly-weather { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; border-top: 1px solid var(--border); padding-top: 8px; }
+.school-hourly-item { display: grid; justify-items: center; gap: 4px; min-width: 0; font-variant-numeric: tabular-nums; }
+.school-hourly-item > span, .school-hourly-item > small { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.school-hourly-item > b { font-size: 13px; white-space: nowrap; }

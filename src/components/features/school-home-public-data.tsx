@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from "react";
-import { CloudSun, Utensils } from "lucide-react";
+import { CloudSun, Sun, Cloud, CloudRain, CloudSnow, CloudSunRain, CircleHelp, Utensils } from "lucide-react";
 import { dateLabel } from "@/lib/domain";
 import { getSchoolMeals } from "@/lib/neis";
 import { getSchoolWeather } from "@/lib/school-weather";
@@ -20,6 +20,11 @@ function Availability({ children }: { children: ReactNode }) {
   return <p className="personal-widget-note" role="status">{children}</p>;
 }
 
+function WeatherIcon({ condition }: { condition: string | null }) {
+  const Icon = !condition ? CircleHelp : /눈/.test(condition) ? CloudSnow : /비|소나기|빗방울/.test(condition) ? CloudRain : condition === "맑음" ? Sun : condition === "구름 많음" ? CloudSun : condition === "흐림" ? Cloud : CloudSunRain;
+  return <Icon className={condition === "맑음" ? "weather-icon sunny" : "weather-icon"} role="img" aria-label={condition ?? "예보 없음"} />;
+}
+
 async function WeatherSummary({ school, unavailable }: { school?: Row<"schools"> | null; unavailable?: boolean }) {
   const result = unavailable ? { status: "error" as const } : await getSchoolWeather(school);
   if (result.status !== "available") return <Availability>{{
@@ -31,19 +36,24 @@ async function WeatherSummary({ school, unavailable }: { school?: Row<"schools">
   const weather = result.value;
   return <>
     <p className="public-data-address">{school?.road_address || school?.region || "학교에 설정된 위치"}</p>
-    <div className="school-weather-now">
-      <strong>{weather.temperature === null ? "—" : `${weather.temperature}°`}</strong>
-      <div>
-        <b>{weather.condition ?? "날씨 상태 확인 불가"}</b>
-        {weather.forecastHour && <small>{weather.forecastHour} 예보</small>}
-        <small>{weather.observedAt ? `${weather.observedAt} 관측 기온` : "관측 기온 확인 불가"}</small>
+    <div className="school-weather-now school-weather-overview">
+      <div><strong>{weather.temperature === null ? "—" : `${weather.temperature}°`}</strong>
+        <small>{weather.observedAt ? `${weather.observedAt} 관측` : "관측 기온 확인 불가"}</small></div>
+      <div className="school-weather-status">
+        <WeatherIcon condition={weather.condition} />
+        <b>{weather.condition ?? "날씨 확인 불가"}</b>
+        <small>최고 {weather.high === null ? "—" : `${weather.high}°`} · 최저 {weather.low === null ? "—" : `${weather.low}°`}</small>
+        {weather.forecastHour && <small>{weather.forecastHour} 날씨 예보</small>}
       </div>
     </div>
-    <dl className="school-weather-details">
-      <div><dt>최저</dt><dd>{weather.low === null ? "—" : `${weather.low}°`}</dd></div>
-      <div><dt>최고</dt><dd>{weather.high === null ? "—" : `${weather.high}°`}</dd></div>
-      <div><dt>강수확률</dt><dd>{weather.precipitation === null ? "—" : `${weather.precipitation}%`}</dd></div>
-    </dl>
+    <div className="school-hourly-weather" aria-label="앞으로 6시간 날씨 예보">
+      {weather.hourly.map((hour) => <div key={hour.date + hour.hour} className="school-hourly-item">
+        <span>{Number(hour.hour)}시</span>
+        <WeatherIcon condition={hour.condition} />
+        <b>{hour.temperature === null ? "—" : `${hour.temperature}°`}</b>
+        <small>{hour.precipitation === null ? "—" : `${hour.precipitation}%`}</small>
+      </div>)}
+    </div>
     <p className="public-data-source">기상청</p>
   </>;
 }

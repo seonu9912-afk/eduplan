@@ -59,8 +59,16 @@ export function summarizeSchoolWeather(
   const temperature = validNumber(observed("T1H"), -65, 65);
   const observationCondition = precipitationConditions[observed("PTY")];
   const condition = observationCondition || precipitationConditions[hourly("PTY")] || skyConditions[hourly("SKY")] || null;
+  const hours = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(Date.UTC(Number(timing.day.slice(0, 4)), Number(timing.day.slice(4, 6)) - 1, Number(timing.day.slice(6, 8)), Number(timing.time.slice(0, 2)) + index + 1));
+    const day = dateCode(date), hour = hourCode(date.getUTCHours());
+    const value = (category: string) => forecast.find((item) => item.fcstDate === day && item.fcstTime === hour && item.category === category)?.fcstValue ?? "";
+    return { date: day, hour: hour.slice(0, 2), temperature: validNumber(value("TMP"), -65, 65),
+      condition: precipitationConditions[value("PTY")] || skyConditions[value("SKY")] || null,
+      precipitation: validNumber(value("POP"), 0, 100) };
+  });
   return {
-    temperature, condition,
+    hourly: hours, temperature, condition,
     observedAt: temperature !== null
       ? `${timing.observationDay === timing.day ? "" : "어제 "}${timing.observationTime.slice(0, 2)}:00` : null,
     forecastHour: nextHour && condition && !observationCondition ? nextHour.slice(0, 2) + ":00" : null,
@@ -95,7 +103,7 @@ export async function getSchoolWeather(school: unknown, now = new Date()): Promi
     observation.status === "fulfilled" ? observation.value : [],
     daily.status === "fulfilled" ? daily.value : [], timing,
   );
-  return [data.temperature, data.condition, data.low, data.high, data.precipitation].some((value) => value !== null)
+  return [data.temperature, data.condition, data.low, data.high, data.precipitation, ...data.hourly.flatMap((hour) => [hour.temperature, hour.condition, hour.precipitation])].some((value) => value !== null)
     ? { status: "available", value: data }
     : { status: forecast.status === "rejected" || observation.status === "rejected" ? "error" : "missing" };
 }
