@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/common";
 import { canPlan } from "@/lib/planning-completion";
@@ -219,7 +220,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
       </div>}
       <div className="calendar-reader-layout" data-list={work && listView.isList ? "" : undefined}>
         <aside id="calendar-reader-sidebar" className="calendar-reader-sidebar no-print" aria-label="캘린더 보조 영역">
-          <div className="calendar-sidebar-desktop-tools">{actions && <div className="calendar-sidebar-action">{actions}</div>}{miniCalendar}</div>
+          <div className="calendar-sidebar-desktop-tools">{work && canPlan(c,"plans") && <Button asChild className="calendar-quick-add"><Link href={`/app/${c.workspace.id}/plans?year=${year}&view=manage&date=${date}&quick=1`}><Plus size={18}/>일정 등록</Link></Button>}{actions && <div className="calendar-sidebar-action">{actions}</div>}{miniCalendar}</div>
           <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={today} compact dashboard />
         </aside>
         <div className="official-schedule-main">

@@ -1,4 +1,5 @@
 "use client";
+import { WorkBatch } from "./work-batch";
 import { Disclosure } from "@/components/ui/disclosure";
 import "./schedule-surfaces.css";
 import { useEditGuard } from "@/lib/device-session";
@@ -37,11 +38,15 @@ const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
 export function WorkPlans({
   context: c,
   today,
+  initialDate,
+  initialQuickAdd = false,
   onDirtyChange,
   save = saveAnnual,
 }: {
   context: Context;
   today: string;
+  initialDate?: string;
+  initialQuickAdd?: boolean;
   onDirtyChange: (v: boolean) => void;
   save?: typeof saveAnnual;
 }) {
@@ -53,12 +58,14 @@ export function WorkPlans({
   );
   const [savedPlan, setSavedPlan] = useState(plan);
   const [version, setVersion] = useState(c.annual?.version ?? 0),
-    [date, setDate] = useState(clamp(today)),
+    [date, setDate] = useState(clamp(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) && Number.isFinite(Date.parse(initialDate)) ? initialDate : today)),
     [view, setView] = useState<"week" | "month">("week"),
     [monthList, setMonthList] = useState(false),
     [departmentFilter, setDepartmentFilter] = useState(""),
     [dirty, setDirty] = useState(false);
-  const [editing, setEditing] = useState<Partial<Business> | null>(null),
+  const [batch, setBatch] = useState(false);
+  const [batchDirty,setBatchDirty]=useState(false);
+  const [editing, setEditing] = useState<Partial<Business> | null>(()=>initialQuickAdd && canPlan(c,"plans") ? {date,kind:"업무"} : null),
     [error, setError] = useState("");
   const m = useMutation();
   const publication = useMutation();
@@ -66,7 +73,7 @@ export function WorkPlans({
   const [publishing, setPublishing] = useState(false);
   const [previous, setPrevious] = useState<Business[] | null>(null);
   const [copyIds, setCopyIds] = useState<string[]>([]);
-  useEditGuard("work-plan-form", !!editing);
+  useEditGuard("work-plan-form", !!editing || batchDirty);
   const revision = useRef(0);
   const latestVersion = c.annual?.version ?? 0;
   const latestPlan = useMemo(
@@ -80,7 +87,7 @@ export function WorkPlans({
     [needsSync, dirty, savedPlan, plan, latestPlan],
   );
   const versionConflict = !!reconciled?.conflicts.length;
-  if (!dirty && !editing && !m.pending && needsSync) {
+  if (!dirty && !editing && !batch && !m.pending && needsSync) {
     setPlan(latestPlan);
     setSavedPlan(latestPlan);
     setVersion(latestVersion);
@@ -266,6 +273,8 @@ export function WorkPlans({
         </div>
         <div className="heading-actions">
           <PrintButton />
+          {editable && <Button variant="outline" disabled={!!editing||batch||m.pending} onClick={()=>open(date)}>+ 일정 등록</Button>}
+          {editable && <Button variant="outline" disabled={!!editing||m.pending} onClick={()=>{if(batchDirty&&!window.confirm("초안에 추가하지 않은 입력을 버릴까요?"))return;setBatchDirty(false);onDirtyChange(dirty);setBatch(v=>!v);}}>{batch?"달력으로 돌아가기":"일괄 입력"}</Button>}
           {editable && c.years.some((item) => item.year === c.year!.year - 1) &&
             <Button variant="outline" disabled={importState.pending || !!editing} onClick={() => {
               importState.execute(() => previousWorkPlan(c.workspace.id, c.year!.year), (rows) => {
@@ -273,11 +282,11 @@ export function WorkPlans({
                 setPrevious(rows);
               });
             }}>전년도 자료 불러오기</Button>}
-          {editable && <Button variant="outline" disabled={!version || dirty || !!editing || versionConflict}
+          {editable && <Button variant="outline" disabled={!version || dirty || batchDirty || !!editing || versionConflict}
             onClick={() => setPublishing(true)}>확정·공개</Button>}
           {editable && (
             <Button
-              disabled={!dirty || !!editing || m.pending || versionConflict}
+              disabled={!dirty || batchDirty || !!editing || m.pending || versionConflict}
               onClick={() => {
                 const submittedRevision = revision.current;
                 const submittedPlan = reconciled?.plan ?? plan;
@@ -401,6 +410,8 @@ export function WorkPlans({
           최신 저장본 확인
         </Button>
       )}
+      {batch && editable && <WorkBatch plan={plan} start={start} end={end} date={date} disabled={m.pending||versionConflict} onDraftChange={v=>{setBatchDirty(v);if(v)onDirtyChange(true);}} onApply={rows=>change({...plan,business:[...plan.business,...rows]})}/>}
+      <div hidden={batch}>
       <div className="work-toolbar schedule-management-toolbar no-print">
         <div className="work-view-tabs">
           {(["week", "month"] as const).map((v) => (
@@ -657,7 +668,8 @@ export function WorkPlans({
           {error && !editing && <p role="alert">{error}</p>}
         </Disclosure>
       )}
-      {editing && (
+      </div>
+      {editable && editing && (
         <Modal
           title={editing.id ? "업무 수정" : "업무 추가"}
           open

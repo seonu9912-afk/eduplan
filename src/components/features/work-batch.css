@@ -1,0 +1,18 @@
+.work-batch{display:grid;gap:16px;min-width:0;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:12px}
+.work-batch-heading,.work-batch-toolbar,.work-batch-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.work-batch-heading h2{font-size:19px;font-weight:700}.work-batch-heading p,.work-batch-hint,.work-batch-footer p{font-size:13px;color:var(--text-secondary)}
+.work-batch-defaults{display:flex;gap:10px;flex-wrap:wrap}.work-batch-defaults label{display:grid;gap:4px;font-size:13px;color:var(--text-secondary)}
+.work-batch-toolbar{justify-content:flex-start}.work-batch-total{margin-left:auto;color:var(--text-secondary);font-size:13px}
+.work-batch-table-wrap{overflow-x:auto;min-width:0;border:1px solid var(--border);border-radius:8px}
+.work-batch-table{width:100%;min-width:910px;table-layout:fixed;border-collapse:collapse}
+.work-batch-table th{font-size:12px;background:var(--surface-muted);color:var(--text-secondary);padding:8px 4px}
+.work-batch-table th:first-child,.work-batch-table th:last-child{width:36px}
+.work-batch-table th:nth-child(2){width:120px}.work-batch-table th:nth-child(3){width:105px}.work-batch-table th:nth-child(4){width:32%}.work-batch-table th:nth-child(8){width:100px}
+.work-batch-table td,.work-batch-table tbody th{border-top:1px solid var(--border);border-right:1px solid var(--border);padding:0;vertical-align:middle}
+.work-batch-table td input{display:block;width:100%;min-width:0;height:44px;border:0;background:transparent;color:var(--foreground);border-radius:0;padding:8px;font-size:14px;box-shadow:none}
+.work-batch-table td input:focus{outline:2px solid var(--primary);outline-offset:-2px;background:var(--card)}
+.work-batch-table td button{width:100%;min-height:44px;color:var(--text-secondary);font-size:18px}
+.work-batch-table tr[data-error] th{color:var(--closure-accent)}.work-batch-table tr[data-error] td{background:color-mix(in srgb,var(--closure-accent) 8%,var(--card))}
+.work-batch-table tr[data-duplicate] th{color:var(--warning-accent)}.work-batch-errors{color:var(--closure-accent);font-size:13px}
+.work-batch-duplicate{display:flex;align-items:flex-start;gap:8px;font-size:13px}.work-batch-footer{border-top:1px solid var(--border);padding-top:12px}
+@media(max-width:767px){.work-batch{padding:12px;gap:12px}.work-batch-footer>button{width:100%}}
