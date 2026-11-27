@@ -381,7 +381,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                     <td>{week.month}</td>
                     <td>{week.week}</td>
                     <td>
-                      {week.day}
+                      <span className="teaching-week-date">{week.day.split("~").map((part,i,parts)=><span key={i}>{part}{i<parts.length-1?"~":""}</span>)}</span>
                       <details className="teaching-week-options">
                         <summary>차시·구분</summary>
                         <label>

@@ -44,18 +44,26 @@
  .teaching-module table.teaching-week-grid { table-layout:fixed; width:100%; min-width:1616px; border-collapse:separate; border-spacing:0; }
  .teaching-module .teaching-week-grid :is(th,td) { width:auto; min-width:0; max-width:none; padding:6px; box-sizing:border-box; }
  .teaching-module .teaching-week-grid col.teaching-col-month,
- .teaching-module .teaching-week-grid col.teaching-col-week { width:42px; }
- .teaching-module .teaching-week-grid col.teaching-col-date { width:112px; }
- .teaching-module .teaching-week-grid col.teaching-col-title { width:190px; }
+ .teaching-module .teaching-week-grid col.teaching-col-week { width:30px; }
+ .teaching-module .teaching-week-grid col.teaching-col-date { width:76px; }
+ .teaching-module .teaching-week-grid col.teaching-col-title { width:170px; }
  .teaching-module .teaching-week-grid col.teaching-col-standard { width:160px; }
- .teaching-module .teaching-week-grid col.teaching-col-content { width:250px; }
- .teaching-module .teaching-week-grid col.teaching-col-method { width:210px; }
+ .teaching-module .teaching-week-grid col.teaching-col-content { width:auto; }
+ .teaching-module .teaching-week-grid col.teaching-col-method { width:auto; }
  .teaching-module .teaching-week-grid col.teaching-col-assessment { width:190px; }
- .teaching-module .teaching-week-grid col.teaching-col-alignment { width:245px; }
+ .teaching-module .teaching-week-grid col.teaching-col-alignment { width:auto; }
  .teaching-module .teaching-week-grid col.teaching-col-note { width:175px; }
  .teaching-module .teaching-week-grid thead th { white-space:normal; overflow-wrap:anywhere; }
  .teaching-module .teaching-week-grid tbody td { white-space:normal; overflow-wrap:anywhere; }
- .teaching-module .teaching-week-grid tbody td:nth-child(-n+2) { text-align:center; }
+ .teaching-module .teaching-week-grid tbody td:nth-child(-n+2) { text-align:center; padding-inline:2px; }
+ .teaching-module .teaching-week-grid thead tr:first-child th:nth-child(-n+3){text-align:center;padding-inline:2px;}
+ .teaching-module .teaching-week-grid tbody td:nth-child(3){padding-inline:3px;text-align:center;font-size:12px;line-height:1.45;}
+ .teaching-module .teaching-week-date{display:block;white-space:normal;overflow-wrap:normal;font-variant-numeric:tabular-nums;}
+ .teaching-module .teaching-week-date span{display:block;}
+ .teaching-module .teaching-week-options>summary{font-size:10px;white-space:normal;overflow-wrap:anywhere;}
+ .teaching-module .teaching-week-options[open]{padding:3px;}
+ .teaching-module .teaching-week-options label{min-width:0;text-align:left;font-size:10px;}
+ .teaching-module .teaching-week-options :is(input,select){min-width:0;max-width:100%;padding-inline:2px;font-size:11px;}
  .teaching-module .teaching-week-cell { display:grid; grid-template-columns:minmax(0,1fr); gap:2px; min-width:0; }
  .teaching-module .teaching-cell-fit { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; }
  .teaching-module .teaching-cell-fit > :is(textarea,.teaching-cell-mirror) { grid-area:1/1; box-sizing:border-box; width:100%; min-width:0; min-height:56px; margin:0; padding:7px 8px; font-family:inherit; font-size:13px; font-weight:400; line-height:1.55; letter-spacing:normal; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; border:1px solid transparent; }

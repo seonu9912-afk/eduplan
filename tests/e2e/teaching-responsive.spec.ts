@@ -42,6 +42,9 @@ test("weekly sheet keeps content and connection buttons inside their cells",asyn
   const rects=cells.map(c=>c.getBoundingClientRect());
   return {widths:rects.map(r=>r.width),overflow:cells.flatMap((c,i)=>Array.from(c.querySelectorAll("textarea,.standard-control > button,.lesson-assessment-links > button")).filter(x=>x.getBoundingClientRect().right>rects[i].right+1).map(x=>x.textContent))};
  });
+ expect(geometry.widths[0]).toBeLessThanOrEqual(34);
+ expect(geometry.widths[1]).toBeLessThanOrEqual(34);
+ expect(geometry.widths[2]).toBeLessThanOrEqual(80);
  expect(geometry.widths[4]).toBeGreaterThanOrEqual(155);
  expect(geometry.widths[5]).toBeGreaterThanOrEqual(245);
  expect(geometry.overflow).toEqual([]);
