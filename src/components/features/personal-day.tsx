@@ -13,6 +13,7 @@ import { publicationAt } from "@/lib/school-publications";
 import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
 import { scheduleDates } from "@/lib/schedule-dates";
 import { ResourceLinks } from "./resource-links";
+import { DepartmentBadge } from "./department-badge";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import "./school-operations.css";
 
@@ -183,7 +184,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
           title={entry.title}
           onClick={() => setSelection(dates.includes(selected) && selected >= dates[start] && selected <= dates[end] ? selected : dates[start])}>
-          {entry.title}
+          <span className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span>
         </button>))}
       {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
     </div>
@@ -191,8 +192,8 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       <h3>{dayTitle(selected)} 일정</h3>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
         <li key={`${entry.id}:${index}`} data-tone={entry.tone}>
-          <strong>{entry.title}</strong>
-          <small>{[entry.time, entry.department, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
+          <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
+          <small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
           <ResourceLinks value={entry.resources} compact />
         </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
     </div>

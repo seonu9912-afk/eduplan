@@ -1,0 +1,33 @@
+/* Department colors are independent of the surrounding event category. */
+.schedule-department-badge {
+  --dept-fg: #46576b;
+  --dept-bg: #e8edf2;
+  display: inline-block;
+  align-self: start;
+  flex: none;
+  max-width: min(100%, 92px);
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--dept-bg);
+  color: var(--dept-fg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: baseline;
+}
+.schedule-department-badge[data-color="blue"] { --dept-fg: #24528e; --dept-bg: #e0ebfa; }
+.schedule-department-badge[data-color="amber"] { --dept-fg: #8a4d12; --dept-bg: #f8ead5; }
+.schedule-department-badge[data-color="rose"] { --dept-fg: #983b60; --dept-bg: #f8e1eb; }
+.schedule-department-badge[data-color="purple"] { --dept-fg: #65418b; --dept-bg: #ede4f7; }
+.schedule-department-badge[data-color="green"] { --dept-fg: #24694d; --dept-bg: #dcefe4; }
+.schedule-department-badge[data-color="teal"] { --dept-fg: #14676b; --dept-bg: #d8eff0; }
+.schedule-department-badge[data-color="indigo"] { --dept-fg: #4c4f93; --dept-bg: #e6e7fa; }
+.schedule-department-title { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.schedule-department-title > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.work-day-extras .schedule-department-badge { display: none; }
+@media print {
+  .schedule-department-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

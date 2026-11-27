@@ -26,6 +26,7 @@ import type { Context } from "@/lib/models";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
 import { shiftScheduleDate } from "@/lib/schedule-dates";
 import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
+import { DepartmentBadge } from "./department-badge";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
@@ -126,13 +127,7 @@ export function WorkPlans({
     if (direction < 0 ? range.start <= start : range.end >= end) return;
     setDate(clamp(shiftScheduleDate(date, view, direction)));
   };
-  const deptTag = (department: string) => (
-    <span
-      className={`department-chip dept-${Math.max(0, plan.departments.indexOf(department)) % 6}`}
-    >
-      {department || "학교"}
-    </span>
-  );
+  const deptTag = (department: string) => <DepartmentBadge department={department} />;
   const businessCard = (b: Business) => (
     <article className="work-card" key={b.id}>
       {deptTag(b.department)}
