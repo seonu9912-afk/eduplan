@@ -126,8 +126,8 @@
   gap: 1px;
   padding: 4px;
   border-radius: 4px;
-  border-inline-start: 2px solid var(--lesson-accent);
-  background: var(--card);
+  background: #eaf1fb;
+  background: color-mix(in srgb, var(--lesson-accent) 15%, white);
   color: var(--foreground);
   overflow-wrap: anywhere;
 }
