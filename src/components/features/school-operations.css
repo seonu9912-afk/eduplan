@@ -517,3 +517,17 @@
 .published-change li p { margin: 3px 0; color: var(--foreground); }
 .published-change li p span { color: var(--text-secondary); font-size: 11px; margin-right: 4px; }
 .published-change-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
+
+/* A whole two-line agenda entry is the touch target, rather than a padded title button plus a separate metadata row. */
+.home-week-detail-list > li { padding: 0; align-content: start; gap: 0; }
+.workspace-content .home-week-detail-list .home-week-detail-trigger { display: grid; gap: 3px; width: 100%; min-height: 44px; padding: 7px 10px; align-content: center; line-height: 1.35; }
+.home-week-detail-title { display: flex; gap: 4px; align-items: baseline; min-width: 0; }
+.home-week-detail-title > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.home-week-detail-trigger > small { display: block; font-weight: 400; line-height: 1.35; }
+.home-week-detail-list > li > .resource-details { margin: 0 10px 7px; }
+@media screen and (max-width: 767px) {
+  .home-weekly-agenda { gap: 8px; }
+  .home-week-detail { padding-top: 9px; gap: 6px; }
+  .home-week-detail-list { grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .workspace-content .home-week-detail-list .home-week-detail-trigger { padding: 7px 10px; min-height: 44px; }
+}
