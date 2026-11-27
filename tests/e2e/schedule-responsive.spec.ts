@@ -96,6 +96,11 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
      await expect(agenda.locator(".school-calendar-agenda > section")).toHaveAttribute("id","agenda-"+(await day.getAttribute("aria-label"))!.slice(0,10));
    }
    await expect(reader.locator(".weekly-operation-row > th[scope=row]").first()).toBeVisible();
+   await toolbar.locator(".reader-period-picker").click();
+   const picker=page.getByRole("dialog",{name:"날짜 이동"});
+   await expect(picker).toBeVisible();
+   await picker.locator(".official-work-mini-grid button:not(:disabled)").first().click();
+   await expect(picker).toBeHidden();
  }
  const geometry=await toolbar.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
  expect(geometry.scroll).toBeLessThanOrEqual(geometry.client+1);

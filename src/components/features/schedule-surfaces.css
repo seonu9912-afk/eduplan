@@ -241,3 +241,8 @@
 }
 
 .official-work-mini[aria-label="월간 날짜 선택"] { display:block; }
+
+@media screen and (max-width:767px){
+ .schedule-surface[data-work-plan] .schedule-secondary-controls .schedule-view-extra[data-open=true] { padding:0; border:0; }
+ .official-work-plan-sidebar .task-dashboard-body { max-height:none; }
+}
