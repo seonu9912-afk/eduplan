@@ -17,6 +17,7 @@ import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import { MyTasks } from "./my-tasks";
+import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
 import "./school-operations.css";
 
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
@@ -139,6 +140,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
   context: Context; today: string; department?: string; plansHref: string;
 }) {
   const [selection, setSelection] = useState<string | null>(null);
+  const scheduleDetail = useScheduleDetail();
   const selected = selection ?? today;
   const dates = useMemo(() => scheduleDates(selected, "week"), [selected]);
   const days = useMemo(() => {
@@ -206,7 +208,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
           aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
           title={entry.title}
-          onClick={() => setSelection(dates.includes(selected) && selected >= dates[start] && selected <= dates[end] ? selected : dates[start])}>
+          onClick={(event) => { setSelection(dates.includes(selected) && selected >= dates[start] && selected <= dates[end] ? selected : dates[start]); scheduleDetail.show(entry, event.currentTarget); }}>
           <span className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span>
         </button>))}
       {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
@@ -215,10 +217,11 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       <h3>{dayTitle(selected)} 일정</h3>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
         <li key={`${entry.id}:${index}`} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-          <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
+          <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={scheduleDetail.show} /></div>
           <small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
           <ResourceLinks value={entry.resources} compact />
         </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
     </div>
+    <ScheduleDetailDialog entry={scheduleDetail.entry} onClose={scheduleDetail.close} onCloseAutoFocus={scheduleDetail.restoreFocus} />
   </section>;
 }

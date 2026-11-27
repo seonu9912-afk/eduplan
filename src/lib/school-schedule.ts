@@ -17,6 +17,7 @@ export type ScheduleEntry = {
   operationGroup?: string;
   assignmentText?: string;
   participants?: string;
+  targetGrades?: number[];
 };
 
 export function schoolScheduleEntries(official: Context, start: string, end: string, work: boolean): ScheduleEntry[] {
@@ -24,11 +25,13 @@ export function schoolScheduleEntries(official: Context, start: string, end: str
   const business = new Map(plan.success ? plan.data.business.map((row) => [row.id, row] as const) : []);
   const items = unifiedSchedule(official, start, end)
     .filter((item) => work || item.source !== "business")
-    .map(({ id, date, end, title, source, time, department, location, resources }): ScheduleEntry => {
+    .map(({ id, date, end, title, source, time, department, location, resources, grades }): ScheduleEntry => {
       const row = source === "business" ? business.get(id) : undefined;
       const group = row ? operationName(row) ?? (row.kind === "출장" ? "출장" : undefined) : undefined;
       return { id, date, end, title, tone: source === "business" ? "work" : "event", time, department, location, resources,
-        ...(group && row ? { operationGroup: group, assignmentText: row.text, participants: row.participants } : {}) };
+        ...(group && row ? { operationGroup: group, assignmentText: row.text } : {}),
+        ...(row?.participants ? { participants: row.participants } : {}),
+        ...(grades.length ? { targetGrades: grades } : {}) };
     });
   if (!official.hasOfficialCalendar || !plan.success) return items;
   const breaks = plan.data.vacations.map((v): ScheduleEntry => ({
@@ -91,7 +94,7 @@ export function calendarWeekLanes(
     for (const entry of days.get(day)?.entries ?? []) {
       // Include the visible metadata so publication changes are never hidden.
       const key = JSON.stringify([entry.id, entry.tone, entry.date, entry.end,
-        entry.title, entry.time, entry.department, entry.location, entry.resources]);
+        entry.title, entry.time, entry.department, entry.location, entry.resources, entry.operationGroup, entry.assignmentText, entry.participants, entry.targetGrades]);
       const previous = latest.get(key);
       if (previous?.end === column) continue;
       if (previous?.end === column - 1) {

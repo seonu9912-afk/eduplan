@@ -14,6 +14,7 @@ import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { MyTasks } from "./my-tasks";
+import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -28,6 +29,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   const [date, setDate] = useState(clamp(today));
   const [view, setView] = useState<ScheduleView>(work ? "week" : "month");
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
+  const detail = useScheduleDetail();
   const month = date.slice(0, 7);
   const [miniMonthOverride, setMiniMonthOverride] = useState<string | null>(null);
   const miniMonth = miniMonthOverride ?? month;
@@ -107,7 +109,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
         available ? (
           <table className="school-reader-list"><thead><tr><th>기간</th><th>학사일정</th></tr></thead>
             <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td>
-              <td>{item.title}<ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
+              <td><ScheduleDetailTitle entry={item} onOpen={detail.show} /><ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
           </table>
         ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
       ) : <div className={workWeek ? "official-work-week-layout" : "official-schedule-body"}>
@@ -146,7 +148,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                   const detail = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
-                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
+                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={detail.show} /></div>
                       {detail && <small>{detail}</small>}
                       <ResourceLinks value={entry.resources} />
                     </div>
@@ -154,7 +156,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
                   {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
                 </p>}
-                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} /></section>)}</div> : null}
+                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} onOpen={detail.show} /></section>)}</div> : null}
               </section>;
             })}
           </div>
@@ -180,7 +182,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
                           data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
-                          {span && <DesktopCalendarEvent entry={span.entry} />}
+                          {span && <DesktopCalendarEvent entry={span.entry} onOpen={detail.show} />}
                         </td>;
                       })}
                     </tr>)}
@@ -193,7 +195,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                       const entries = schedule?.entries.filter((entry) => entry.operationGroup === name) ?? [];
                       return <td key={day} data-outside={outside(day)}>
                         <div className="weekly-operation-cell"><h4>{name}</h4>
-                          {active || entries.length ? <OperationEntries entries={entries} /> : <span className="weekly-operation-empty">—</span>}
+                          {active || entries.length ? <OperationEntries entries={entries} onOpen={detail.show} /> : <span className="weekly-operation-empty">—</span>}
                         </div>
                       </td>;
                     })}</tr>)}
@@ -205,6 +207,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
         </div>
         </div>
       </div>}
+      <ScheduleDetailDialog entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} />
       {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
@@ -220,10 +223,10 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   );
 }
 
-function OperationEntries({ entries }: { entries: ScheduleEntry[] }) {
+function OperationEntries({ entries, onOpen }: { entries: ScheduleEntry[]; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
   if (!entries.length) return <span className="weekly-operation-empty">없음</span>;
   return <div className="weekly-operation-entries">{entries.map((entry) => <div key={entry.id} className="weekly-operation-entry">
-    <strong>{entry.assignmentText ?? entry.title}</strong>
+    <ScheduleDetailTitle entry={entry} label={entry.assignmentText ?? entry.title} onOpen={onOpen} />
     {entry.participants && <span>{entry.participants}</span>}
     {entry.time && <small>{entry.time}</small>}
     {entry.location && <small>{entry.location}</small>}
@@ -231,10 +234,10 @@ function OperationEntries({ entries }: { entries: ScheduleEntry[] }) {
   </div>)}</div>;
 }
 
-function DesktopCalendarEvent({ entry }: { entry: ScheduleEntry }) {
+function DesktopCalendarEvent({ entry, onOpen }: { entry: ScheduleEntry; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
   const detail = entry.tone === "work" ? entry.time : "";
   return <div className="school-reader-event" data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-    <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></div>{detail && <small>{detail}</small>}
+    <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={onOpen} /></div>{detail && <small>{detail}</small>}
     <ResourceLinks value={entry.resources} compact />
   </div>;
 }
