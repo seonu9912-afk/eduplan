@@ -332,3 +332,32 @@
 .timetable-lesson-detail dd { margin: 0; overflow-wrap: anywhere; }
 .timetable-detail-notice { margin-top: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
 @media print { .official-timetable-grid[data-change-badges] button.official-lesson { appearance: none; } }
+
+/* Reserve the same status slot in every lesson, including the basic timetable.
+   Fixed card geometry prevents a single changed lesson from stretching its row. */
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] { --lesson-card-height: 60px; --lesson-status-height: 15px; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges][data-audience="all"] { --lesson-card-height: 74px; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] tbody td { height: calc(var(--lesson-card-height) + 5px); padding: 2px; vertical-align: top; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson {
+  box-sizing: border-box; display: grid; grid-template-rows: var(--lesson-status-height) 17px 15px;
+  width: 100%; min-width: 0; height: var(--lesson-card-height); min-height: var(--lesson-card-height); max-height: var(--lesson-card-height);
+  align-content: start; justify-items: center; align-items: center; gap: 1px; padding: 3px 2px; border: 1px solid transparent; overflow: hidden;
+}
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges][data-audience="all"] button.official-lesson { grid-template-rows: var(--lesson-status-height) 17px 15px 13px; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson[data-cancelled] { border: 1px dashed #b6bec9; }
+.official-timetable-grid[data-change-badges] button.official-lesson > :is(.timetable-lesson-subject,.timetable-lesson-secondary,.timetable-lesson-meta) { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }
+.official-timetable-grid[data-change-badges] button.official-lesson > .timetable-lesson-subject { font-size: 13px; }
+.official-timetable-grid[data-change-badges] button.official-lesson > .timetable-lesson-secondary { font-size: 11px; }
+.official-timetable-grid[data-change-badges] .timetable-badges { display: flex; justify-content: center; align-items: center; flex-wrap: nowrap; min-height: var(--lesson-status-height); height: var(--lesson-status-height); width: 100%; min-width: 0; overflow: hidden; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge { box-sizing: border-box; display: inline-flex; align-items: center; gap: 1px; min-height: 0; height: 14px; padding: 0 3px; font-size: 10px; line-height: 14px; white-space: nowrap; }
+.official-timetable-grid[data-change-badges] .timetable-extra-status { font-size: 9px; line-height: 1; white-space: nowrap; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] thead button.timetable-date-detail,
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] thead button.timetable-day-badge {
+  box-sizing: border-box; display: block; margin: 0 auto; padding: 0; min-width: 0; width: fit-content; border: 0; cursor: pointer;
+}
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] thead button.timetable-date-detail { background: transparent; color: inherit; min-height: 26px; height: 26px; }
+.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] thead button.timetable-day-badge { min-height: 18px; height: 18px; padding: 0 4px; margin-top: 2px; }
+.timetable-date-detail:focus-visible { outline: 2px solid #24528e; outline-offset: -2px; border-radius: 4px; }
+@media screen and (max-width: 767px) {
+  .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges]:not([data-audience="all"]) { --lesson-card-height: 58px; }
+}

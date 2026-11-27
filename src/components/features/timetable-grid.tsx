@@ -35,8 +35,8 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
           <th scope="col">교시</th>
           {columns.map((column, index) => (
             <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}><span className="timetable-weekday-label">{days[index]}</span>
-              {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time>}
-              {column.notice && (showChangeBadges ? <button type="button" className="timetable-day-badge" aria-label={dateLabel(column.date) + " " + column.notice} onClick={() => setDetail({ date: column.date, notice: column.notice })}>{column.noticeLabel ?? (/방학/.test(column.notice) ? "방학" : /수업일 아님|휴업|공휴일/.test(column.notice) || !column.teaching && column.cells.length ? "휴업" : "안내")}</button> : <small className="timetable-day-notice">{column.notice}</small>)}
+              {mode === "weekly" && (showChangeBadges && column.noticeLabel === "단축" ? <button type="button" className="timetable-date-detail" aria-label={dateLabel(column.date) + " 일과 운영 상세 보기"} onClick={() => setDetail({date: column.date, notice: column.notice})}><time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time></button> : <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time>)}
+              {column.notice && !(showChangeBadges && column.noticeLabel === "단축") && (showChangeBadges ? <button type="button" className="timetable-day-badge" aria-label={dateLabel(column.date) + " " + column.notice} onClick={() => setDetail({ date: column.date, notice: column.notice })}>{column.noticeLabel ?? (/방학/.test(column.notice) ? "방학" : /수업일 아님|휴업|공휴일/.test(column.notice) || !column.teaching && column.cells.length ? "휴업" : "안내")}</button> : <small className="timetable-day-notice">{column.notice}</small>)}
             </th>
           ))}
         </tr></thead>
@@ -59,6 +59,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                     const grades = [...new Set(Array.from(classLabel.matchAll(/(?:^|[,\s])(\d+)-\d+(?=$|[,\s])/g), (match) => match[1]))];
                     const badges = cell.badges ?? [];
                     const content = <>
+                      {showChangeBadges && <span className="timetable-badges" aria-hidden="true">{badges.slice(0, 1).map(badge => <small key={badge} className="timetable-status-badge" data-status={badge}>{badge === "확인 필요" ? "확인" : badge}{badges.length > 1 && <span className="timetable-extra-status">+{badges.length - 1}</span>}</small>)}</span>}
                       <strong className="timetable-lesson-subject">{classFirst ? classLabel : cell.subject}</strong>
                       {audience === "class" ? (cell.teacher && <span className="timetable-lesson-secondary">{cell.teacher}</span>) : <>
                         <span className="timetable-lesson-secondary">{classFirst ? cell.subject : classLabel}</span>
@@ -67,7 +68,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                       {!showChangeBadges && showFreePeriods && cell.room && <small className="timetable-lesson-meta">{cell.room}</small>}
                       {!showChangeBadges && mode === "weekly" && !time && lessonTime(cell) && <small className="timetable-lesson-meta timetable-varying-time">{cell.start}~{cell.end}</small>}
                       {!showChangeBadges && current(cell, column.date) && <small className="timetable-current-label">진행 중</small>}
-                      {showChangeBadges ? (badges.length > 0 && <span className="timetable-badges">{badges.map(badge => <small key={badge} className="timetable-status-badge" data-status={badge}>{badge}</small>)}</span>) : (cell.blocked || cell.changed) && <small className="timetable-lesson-state">{cell.blocked || "변경 수업"}</small>}
+                      {!showChangeBadges && (cell.blocked || cell.changed) && <small className="timetable-lesson-state">{cell.blocked || "변경 수업"}</small>}
                     </>;
                     const attributes = { className: "official-lesson", "data-kind": cell.kind, "data-grade": classFirst && grades.length === 1 ? grades[0] : undefined, "data-blocked": cell.blocked ? "" : undefined, "data-current": current(cell, column.date) ? "" : undefined, "data-cancelled": badges.includes("미실시") ? "" : undefined };
                     return showChangeBadges ? <button type="button" {...attributes} key={cell.id} aria-label={[dateLabel(column.date), period + "교시", cell.classes, cell.subject, ...badges, "상세 보기"].join(" ")} onClick={() => setDetail({ cell, date: column.date, notice: column.notice })}>{content}</button> : <div {...attributes} key={cell.id}>{content}</div>;

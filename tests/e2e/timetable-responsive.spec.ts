@@ -41,3 +41,20 @@ for(const width of [320,390,430]) test(`shared reader controls at ${width}px`,as
  await sheet.getByRole("button",{name:"시간표 더보기"}).click();
  await expect(sheet.getByLabel("기준 날짜")).toHaveCount(0);
 });
+
+for (const width of [320,390,430]) test(`lesson card geometry stays uniform in both modes at ${width}px`, async ({page}) => {
+  await page.setViewportSize({width,height:900});
+  await page.goto("/recovery-preview/operations");
+  await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
+  const sheet=page.locator(".official-timetable");
+  await sheet.getByRole("button",{name:"학급별",exact:true}).click();
+  for (const mode of ["기본","주간"]) {
+    await sheet.getByRole("button",{name:mode,exact:true}).click();
+    const cards=sheet.locator("button.official-lesson");
+    await expect(cards.first()).toBeVisible();
+    const sizes=await cards.evaluateAll(elements=>elements.map(el=>({height:el.getBoundingClientRect().height,slot:el.firstElementChild?.classList.contains("timetable-badges"),slotHeight:el.firstElementChild?.getBoundingClientRect().height})));
+    expect(sizes.every(s=>s.slot&&s.slotHeight===15&&s.height===sizes[0].height)).toBe(true);
+    expect(sizes[0].height).toBe(58);
+    await expect(sheet.locator("thead .timetable-day-badge").filter({hasText:"단축"})).toHaveCount(0);
+  }
+});
