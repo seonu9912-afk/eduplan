@@ -571,8 +571,8 @@
  .home-lessons-widget .home-operation-notice { padding:6px 8px; }
  .home-week-and-tasks { grid-template-columns:minmax(0,1fr) minmax(280px,23%); align-items:stretch; gap:16px; }
  .home-week-and-tasks:not(:has(>.my-tasks)) { grid-template-columns:minmax(0,1fr); }
- .home-week-and-tasks > .personal-widget { min-width:0; height:408px; box-sizing:border-box; padding:14px 16px; }
- .home-week-and-tasks > .my-tasks { height:408px; min-width:0; box-sizing:border-box; overflow:auto; padding:14px 16px; }
+ .home-week-and-tasks > .personal-widget { min-width:0; height:420px; box-sizing:border-box; padding:14px 16px; }
+ .home-week-and-tasks > .my-tasks { height:420px; min-width:0; box-sizing:border-box; overflow:auto; padding:14px 16px; }
  .task-widget-actions[data-dashboard] .task-direct-actions { display:none; }
  .task-widget-actions[data-dashboard] .task-dashboard-more { display:block; position:relative; margin-left:auto; }
  .task-dashboard-more > summary { display:grid; place-items:center; width:32px; height:32px; min-height:32px; border:1px solid var(--border); border-radius:6px; }
@@ -589,10 +589,6 @@
  .home-period-grid { grid-template-columns:repeat(var(--home-period-columns),minmax(0,1fr)); }
 }
 
-@media screen and (min-width:1251px) and (max-width:1450px) {
- .home-today-grid:not(.home-today-grid-single) .home-period-grid { grid-template-columns:repeat(var(--home-period-narrow-columns),minmax(0,1fr)); }
- .home-today-grid:not(.home-today-grid-single) > .personal-widget { height:272px; }
-}
 
 /* The explicit track sum is 180px (50 + 3*30 + 24 + 4*4).
    Do not let a parent grid shrink the calendar below its track geometry. */
@@ -612,7 +608,7 @@
 }
 @media screen and (min-width:1024px) {
  .personal-day .home-weekly-agenda { overflow:auto; }
- .personal-day .home-week-detail { flex:1 0 124px; min-height:124px; }
+ .personal-day .home-week-detail { flex:1 1 auto; min-height:94px; }
  .personal-day .home-week-detail-list { flex:1 1 auto; }
  .personal-day .home-lessons-widget .next-lesson[data-lesson-summary="upcoming"] { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:8px; }
  .personal-day .home-lessons-widget .next-lesson[data-lesson-summary="upcoming"] .next-lesson-label { grid-column:1; grid-row:1; }

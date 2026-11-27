@@ -22,7 +22,7 @@ for(const width of [1280,1600]) test(`desktop home cards stay bounded at ${width
  expect(await lessonCard.evaluate(el=>el.getBoundingClientRect().height)).toBe(before);
 });
 
-for (const width of [800,1024,1280,1440,1600,1920]) test(`home weekly calendar cannot overlap day detail at ${width}px`,async({page})=>{
+for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calendar cannot overlap day detail at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});
  await page.goto("/recovery-preview/operations");
  const home=page.locator(".personal-day");
