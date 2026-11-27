@@ -110,7 +110,7 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
     </div>
     <div className="home-week-and-tasks">
       <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
-      <MyTasks />
+      <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={clock.date} />
     </div>
     {previewNow && <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />}
   </section>;

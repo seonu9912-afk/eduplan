@@ -7,6 +7,8 @@ import { CalendarDays, Clock3, Building2, MapPin, Users, GraduationCap, Link2 } 
 import { Modal } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import type { ScheduleEntry } from "@/lib/school-schedule";
+import { seoulToday } from "@/lib/domain";
+import { taskPlanSources } from "@/lib/school-tasks";
 import { departmentBadgeInfo } from "@/lib/department-badge";
 import { readableResources } from "@/lib/external-links";
 import { ResourceLinks } from "./resource-links";
@@ -17,8 +19,8 @@ const dateFormat = new Intl.DateTimeFormat("ko-KR", { year: "numeric", month: "l
 function fullDate(date: string) { return dateFormat.format(new Date(date + "T00:00:00+09:00")); }
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 
-export function useScheduleDetail() {
-  const [entry, setEntry] = useState<ScheduleEntry | null>(null);
+export function useScheduleDetail(initial: () => ScheduleEntry | null = () => null) {
+  const [entry, setEntry] = useState(initial);
   const trigger = useRef<HTMLElement | null>(null);
   return {
     entry,
@@ -34,6 +36,9 @@ export function ScheduleDetailTitle({ entry, label, onOpen }: { entry: ScheduleE
 
 export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus, onJump, context }: { entry: ScheduleEntry | null; onClose: () => void; onCloseAutoFocus: (event: Event) => void; onJump?: () => void; context?: Context }) {
   const impacts = useMemo(() => context && entry ? eventLessonImpacts(context, entry) : [], [context, entry]);
+  const canDistribute = entry?.tone === "work" && context?.year &&
+    context.myTasks?.directory.some((teacher) => teacher.user_id === context.userId) &&
+    taskPlanSources(context.schoolPublications ?? [], context.year.year, seoulToday()).current.has(entry.id);
   const impactDates = [...new Set(impacts.map(row => row.lesson.date))];
   const category = entry ? entry.operationGroup ?? tones[entry.tone] : "";
   const department = entry?.department ? departmentBadgeInfo(entry.department) : null;
@@ -64,7 +69,13 @@ export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus, onJump,
           </li>)}</ul>
         </div>)}
       </section>}
-      <div className="schedule-detail-footer">{onJump && <Button type="button" onClick={onJump}><CalendarDays size={16} />달력에서 보기</Button>}<Button type="button" variant="outline" onClick={onClose}>닫기</Button></div>
+      <div className="schedule-detail-footer">
+        {canDistribute && context?.year && <Button asChild variant="outline"><Link
+          href={`/app/${context.workspace.id}/home?${new URLSearchParams({ year: String(context.year.year), source: entry.id })}#my-tasks`}
+          onClick={onClose}>할 일로 배포</Link></Button>}
+        {onJump && <Button type="button" onClick={onJump}><CalendarDays size={16} />달력에서 보기</Button>}
+        <Button type="button" variant="outline" onClick={onClose}>닫기</Button>
+      </div>
     </div>}
   </Modal>;
 }

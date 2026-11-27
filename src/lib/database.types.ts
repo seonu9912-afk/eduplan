@@ -54,6 +54,18 @@ export type Database = {
         Update: never;
         Relationships: [];
       };
+      school_tasks: {
+        Row: import("./school-tasks").SchoolTask;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      school_task_recipients: {
+        Row: import("./school-tasks").TaskRecipient;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       operation_notifications: {
         Row: import("./staffing").OperationNotification;
         Insert: never;
@@ -1232,6 +1244,18 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      school_task_audience: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
+      save_school_task: {
+        Args: { target: string; year_id: string; task: string; expected_version: number; input: Json };
+        Returns: string;
+      };
+      change_school_task: {
+        Args: { target: string; task: string; expected_version: number; command: string; input: Json };
+        Returns: undefined;
+      };
       ensure_school_year: { Args: { target: string; school_year: number }; Returns: string };
       personal_archive: { Args: never; Returns: Json };
       has_personal_archive: { Args: never; Returns: boolean };
