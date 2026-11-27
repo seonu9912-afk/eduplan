@@ -36,10 +36,11 @@ export function NotificationCenter({ context: c, onNavigate, changes }: { contex
             <div className="notification-actions">
               <Button asChild variant="ghost">
                 <Link
-                  href={`/app/${c.workspace.id}/${n.request_id ? "calendar" : "timetable"}?year=${c.year?.year}`}
+                  href={n.task_id ? `/app/${c.workspace.id}/home?year=${c.year?.year}&task=${n.task_id}#my-tasks`
+                    : `/app/${c.workspace.id}/${n.request_id ? "calendar" : "timetable"}?year=${c.year?.year}`}
                   onClick={(event) => { if (onNavigate && !onNavigate()) event.preventDefault(); }}
                 >
-                  {n.request_id ? "학사일정 열기" : "시간표 열기"}
+                  {n.task_id ? "할 일 열기" : n.request_id ? "학사일정 열기" : "시간표 열기"}
                 </Link>
               </Button>
               <Button variant="ghost" disabled={m.pending} onClick={() => m.execute(

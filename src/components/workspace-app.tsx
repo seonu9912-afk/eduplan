@@ -101,6 +101,7 @@ export function WorkspaceApp({
   today,
   initialCohort,
   initialScheduleDate,
+  initialWorkItem,
   management = false,
   homePublicData,
   planOverview,
@@ -111,6 +112,7 @@ export function WorkspaceApp({
   today: string;
   initialCohort?: string;
   initialScheduleDate?: string;
+  initialWorkItem?: string;
   management?: boolean;
   homePublicData?: ReactNode;
   planOverview?: PlanOverviewRow[];
@@ -432,7 +434,7 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "plans" && !management && <OfficialSchedule key={`${c.year?.id}:plans:${initialScheduleDate ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} work actions={managementLink} />}
+        {section === "plans" && !management && <OfficialSchedule key={`${c.year?.id}:plans:${initialScheduleDate ?? ""}:${initialWorkItem ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} initialWorkItem={initialWorkItem} work actions={managementLink} />}
         {section === "curriculum" && management ? (
           <Curriculum
             context={c}

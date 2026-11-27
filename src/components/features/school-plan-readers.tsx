@@ -29,7 +29,7 @@ const weekLabels = [...weekdays.slice(1), weekdays[0]];
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
-export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, initialDate }: { context: Context; today: string; work?: boolean; actions?: ReactNode; initialDate?: string }) {
+export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, initialDate, initialWorkItem }: { context: Context; today: string; work?: boolean; actions?: ReactNode; initialDate?: string; initialWorkItem?: string }) {
   const [today, setToday] = useState(serverToday);
   useEffect(() => {
     const tick = () => setToday(seoulToday());
@@ -49,7 +49,10 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const listView = useScheduleListView(c.workspace.id, c.userId, work);
   const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start) : requestedDate;
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
-  const detail = useScheduleDetail();
+  const detail = useScheduleDetail(() => work && initialWorkItem
+    ? schoolScheduleEntries(publishedSchoolContext(c, clamp(serverToday)), requestedDate, requestedDate, true)
+      .find((entry) => entry.tone === "work" && entry.id === initialWorkItem) ?? null
+    : null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchResult, setSearchResult] = useState<ScheduleSearchResult | null>(null);
   const month = date.slice(0, 7);
@@ -168,7 +171,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
             </div>
           </section>
-          <MyTasks />
+          <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={today} />
         </aside>}
         <div className="official-schedule-main">
         {work && listView.isList ? <ScheduleListView dates={dates.filter(day => day >= start && day <= end && (view !== "month" || day.startsWith(month)))} days={days} today={today} selectedDate={date} available={available} onOpen={showEntry} /> : <>
