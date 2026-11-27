@@ -5,14 +5,15 @@ import "./mobile-calendar-dates.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
+export type CalendarCellItem = { tone: CalendarTone; title: string };
 
-export function MobileCalendarDates({ date, today, start, end, period, indicators, onSelect, onNavigate }: {
+export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate }: {
   date: string;
   today: string;
   start: string;
   end: string;
   period: CalendarPeriod;
-  indicators: (day: string) => CalendarTone[];
+  items: (day: string) => CalendarCellItem[];
   onSelect: (day: string) => void;
   onNavigate: (step: number) => void;
 }) {
@@ -42,17 +43,18 @@ export function MobileCalendarDates({ date, today, start, end, period, indicator
       <div className="mobile-calendar-day-grid">
         {days.map((day, index) => {
           const enabled = day >= start && day <= end;
-          const tones = enabled ? indicators(day) : [];
+          const entries = enabled ? items(day) : [];
+          const first = entries[0];
           const weekday = labels[index % 7];
           return <button key={day} type="button" data-date={day} data-weekday={weekday}
             data-adjacent={period === "month" && !day.startsWith(month) ? "" : undefined}
-            aria-label={`${Number(day.slice(0, 4))}년 ${dateLabel(day)} ${weekday}요일${tones.length ? `, 일정 ${tones.length}건` : ""}`}
+            aria-label={`${Number(day.slice(0, 4))}년 ${dateLabel(day)} ${weekday}요일${first ? `, 일정 ${entries.length}건, ${first.title}` : ""}`}
             disabled={!enabled} aria-pressed={day === date} aria-current={day === today ? "date" : undefined}
             onClick={() => onSelect(day)}>
             <time dateTime={day}>{Number(day.slice(8))}</time>
-            <span className="mobile-calendar-markers" aria-hidden="true">
-              {tones.slice(0, 3).map((tone, position) => <i key={position} data-tone={tone} />)}
-            </span>
+            {first && <span className="mobile-calendar-cell-entry" data-tone={first.tone} aria-hidden="true">
+              <span>{first.title}</span>{entries.length > 1 && <small>+{entries.length - 1}</small>}
+            </span>}
           </button>;
         })}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
@@ -17,7 +17,7 @@ const weekLabels = [...weekdays.slice(1), weekdays[0]];
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
-export function OfficialSchedule({ context: c, today, work = false }: { context: Context; today: string; work?: boolean }) {
+export function OfficialSchedule({ context: c, today, work = false, actions }: { context: Context; today: string; work?: boolean; actions?: ReactNode }) {
   const year = c.year!.year;
   const start = `${year}-03-01`, end = addDays(`${year + 1}-03-01`, -1);
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
@@ -81,7 +81,8 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
               if (e.target.value) setDate(clamp(e.target.value));
             }} />
           </label>
-          <Button variant="outline" size="icon" aria-label="인쇄" onClick={() => window.print()} disabled={!available}><Printer /></Button>
+          <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄" onClick={() => window.print()} disabled={!available}><Printer /></Button>
+          {actions}
         </div>
       </div>
       <h2 className="schedule-print-title">{title}</h2>
@@ -98,7 +99,7 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
       ) : <>
         <div className="school-calendar-mobile no-print">
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view}
-            indicators={(day) => days.get(day)?.entries.map((entry) => entry.tone) ?? []}
+            items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
           <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
             {agendaDates.map((day) => {

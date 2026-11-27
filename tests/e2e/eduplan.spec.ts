@@ -113,6 +113,7 @@ test("subject deletion cleans all linked cohort hours and survives reload", asyn
   await expect(
     page.getByRole("button", { name: "삭제할과목 과목 삭제", exact: true }),
   ).toHaveCount(0);
+  await page.getByRole("button", { name: "내 프로필", exact: true }).click();
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await loginAs(page, admin);
   await page.getByLabel("작업공간 선택").selectOption(deletionSchoolId);
@@ -373,7 +374,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
   await secondContext.close();
   await page.getByRole("link", { name: "홈", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "학교 현황" }),
+    page.getByRole("heading", { name: "오늘 수업" }),
   ).toBeVisible();
   await page.screenshot({
     path: ".artifacts/dashboard-desktop.png",
@@ -391,6 +392,7 @@ test("real auth, school setup, shared calendar, curriculum persistence, invitati
     path: ".artifacts/dashboard-mobile.png",
     fullPage: true,
   });
+  await page.getByRole("button", { name: "내 프로필", exact: true }).click();
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await loginAs(page, admin);

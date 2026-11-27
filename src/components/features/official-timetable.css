@@ -1,11 +1,10 @@
 .official-timetable {
   min-width: 0;
 }
-.official-timetable-controls,
-.official-timetable-caption {
+.official-timetable-controls {
   display: grid;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 7px;
+  margin-bottom: 4px;
 }
 .official-timetable-tabs,
 .official-timetable-filters,
@@ -22,11 +21,17 @@
 }
 .official-timetable-tabs {
   gap: 4px;
-  padding: 4px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  width: fit-content;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+}
+.official-timetable-tabs button[data-slot="button"] {
+  border: 0;
+  border-radius: 0;
+  font-size: 14px;
+}
+.official-timetable-tabs button[aria-pressed="true"] {
+  color: var(--primary);
+  box-shadow: inset 0 -2px var(--primary);
 }
 .official-timetable-filters select,
 .official-timetable-filters input {
@@ -37,12 +42,15 @@
   color: #425a77;
 }
 .official-timetable-caption {
+  display: grid;
   gap: 2px;
+  margin-bottom: 8px;
 }
 .official-timetable-caption p {
-  color: #506885;
-  font-size: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
 }
+.timetable-print-title { display: none; }
 .official-timetable-empty {
   padding: 18px;
 }
@@ -96,6 +104,9 @@
 .official-timetable-grid tbody tr:last-child > * {
   border-bottom: 0;
 }
+.official-timetable-grid th { font-size: 14px; }
+.official-timetable-grid thead th time { display: block; font-size: 12px; font-weight: 500; }
+.official-timetable-grid thead th[data-today] { color: var(--schedule-accent); box-shadow: inset 0 -2px var(--schedule-accent); }
 .official-timetable-grid td {
   height: 59px;
   vertical-align: middle;
@@ -133,8 +144,9 @@
   --lesson-accent: var(--warning-accent);
 }
 .official-lesson :is(strong, small) { color: var(--lesson-accent); }
+.official-lesson strong { font-size: 14px; }
 .official-lesson span {
-  font-size: 12px;
+  font-size: 13px;
   word-break: keep-all;
 }
 .official-lesson > :where(strong, small) {
@@ -153,6 +165,7 @@
   }
 }
 @media print {
+  .timetable-print-title { display: block; }
   .official-timetable-scroll {
     overflow: visible;
   }
@@ -165,4 +178,14 @@
   .official-timetable-grid tr {
     break-inside: avoid;
   }
+}
+
+@media screen and (max-width: 767px) {
+  .official-timetable-tabs { flex-wrap: nowrap; }
+  .official-timetable-tabs button[data-slot="button"] { flex: 1; min-width: 0; height: 44px; padding-inline: 3px; font-size: 12px; }
+  .official-timetable-filters { gap: 5px; }
+  .official-timetable-filters :is(select, input, button[data-slot="button"]) { min-height: 44px; }
+  .official-timetable-date input { width: 124px; padding-inline: 4px; }
+  .official-lesson strong { font-size: 13px; }
+  .official-lesson span { font-size: 12px; }
 }

@@ -4,13 +4,14 @@ import "./official-timetable.css";
 
 const days = ["월", "화", "수", "목", "금"];
 
-export function TimetableGrid({ week, mode, audience, label, visible, compact = false }: {
+export function TimetableGrid({ week, mode, audience, label, visible, compact = false, today }: {
   week: ReturnType<typeof timetableWeek>;
   mode: TimetableMode;
   audience: TimetableAudience;
   label: string;
   visible: (cell: TimetableCell) => boolean;
   compact?: boolean;
+  today?: string;
 }) {
   const columns = week.weekdays.map((column) => ({ ...column, cells: column.cells.filter(visible) }));
   return (
@@ -21,8 +22,8 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
         <thead><tr>
           <th scope="col">교시</th>
           {columns.map((column, index) => (
-            <th scope="col" key={column.date}>{days[index]}
-              {mode === "weekly" && <small>{dateLabel(column.date)}</small>}
+            <th scope="col" key={column.date} data-today={column.date === today ? "" : undefined}>{days[index]}
+              {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}>{dateLabel(column.date)}</time>}
               {column.notice && <small className="timetable-day-notice">{column.notice}</small>}
             </th>
           ))}

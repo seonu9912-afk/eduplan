@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
@@ -17,12 +17,12 @@ const audiences: Record<TimetableAudience, string> = {
   all: "전체 시간표",
 };
 
-export function OfficialTimetable({ context: c, today }: { context: Context; today: string }) {
+export function OfficialTimetable({ context: c, today, actions }: { context: Context; today: string; actions?: ReactNode }) {
   if (!c.year) return <p>학년도를 선택하세요.</p>;
-  return <TimetableSheet context={c} today={today} year={c.year.year} />;
+  return <TimetableSheet context={c} today={today} year={c.year.year} actions={actions} />;
 }
 
-function TimetableSheet({ context: c, today, year }: { context: Context; today: string; year: number }) {
+function TimetableSheet({ context: c, today, year, actions }: { context: Context; today: string; year: number; actions?: ReactNode }) {
   const start = `${year}-03-01`;
   const end = addDays(`${year + 1}-03-01`, -1);
   const thisYear = today >= start && today <= end;
@@ -36,6 +36,10 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
   const defaultMode = timetableModeForWeek(c, date);
   const mode = selectedMode ?? defaultMode;
   const week = useMemo(() => timetableWeek(c, date, mode), [c, date, mode]);
+  const firstDate = week.weekdays[0].date;
+  const lastDate = week.weekdays[4].date;
+  const endLabel = firstDate.slice(0, 7) === lastDate.slice(0, 7)
+    ? `${Number(lastDate.slice(8))}일` : dateLabel(lastDate);
   const document = week.schedule.document;
   const teachers = new Map([
     ...(c.operations?.directory ?? []).filter((t) => t.active).map((t) => [t.id, t.display_name] as const),
@@ -64,9 +68,9 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
   return (
     <section className="official-timetable">
       <div className="official-timetable-controls no-print">
-        <div className="official-timetable-tabs" aria-label="시간표 조회 대상">
+        <div className="official-timetable-tabs" role="group" aria-label="시간표 조회 대상">
           {Object.entries(audiences).map(([id, name]) => (
-            <Button key={id} variant={audience === id ? "secondary" : "ghost"}
+            <Button key={id} variant="ghost"
               aria-pressed={audience === id} onClick={() => setAudience(id as TimetableAudience)}>
               {name}
             </Button>
@@ -119,14 +123,16 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
               <Button variant="outline" disabled={!thisYear} onClick={() => setDate(today)}>이번 주</Button>
             </>}
           </div>
-          <Button variant="outline" disabled={!available} onClick={() => window.print()}>
-            <Printer /> 인쇄·PDF 저장
+          <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄·PDF 저장" disabled={!available} onClick={() => window.print()}>
+            <Printer />
           </Button>
+          {actions}
         </div>
       </div>
       <header className="official-timetable-caption">
-        <h2>{label} · {mode === "basic" ? "기본" : "주간"}</h2>
-        {mode === "weekly" && <p>{dateLabel(week.weekdays[0].date)} – {dateLabel(week.weekdays[4].date)}</p>}
+        <h2 className="sr-only">{label} · {mode === "basic" ? "기본" : "주간"}</h2>
+        <strong className="timetable-print-title">{label}</strong>
+        {mode === "weekly" && <p>{dateLabel(firstDate)} – {endLabel}</p>}
         {mode === "basic" && week.schedule.startsOn && (
           <p>적용 {week.schedule.startsOn} ~ {week.schedule.endsOn}
             {week.schedule.publishedAt && ` · 공개 ${week.schedule.publishedAt.slice(0, 10)}`}
@@ -144,7 +150,7 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
       ) : !available ? (
         <p className="panel official-timetable-empty">선택한 기간에 공개된 시간표가 없습니다.</p>
       ) : (
-        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} />
+        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} today={today} />
       )}
     </section>
   );

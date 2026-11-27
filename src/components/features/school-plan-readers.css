@@ -241,12 +241,9 @@
 .school-dashboard-plans {
   margin-top: 18px;
 }
-.school-dashboard-plans > .panel {
-  padding: 18px;
-}
 .school-dashboard-plans h2 {
   margin-bottom: 8px;
-  font-size: 16px;
+  font-size: 18px;
 }
 .school-dashboard-links {
   list-style: none;
@@ -263,4 +260,21 @@
 .school-dashboard-links small {
   color: #536b88;
   padding-inline-start: 6px;
+}
+
+.schedule-reader-toolbar { border: 0; border-radius: 0; padding: 0 0 6px; }
+.schedule-period-nav h2 { font-size: 20px; }
+.school-reader-calendar-wrap { border-radius: 0; }
+.school-reader-calendar p, .school-reader-event { font-size: 13px; }
+.school-dashboard-plans > .school-dashboard-section { border-top: 1px solid var(--border); padding-block: 12px 0; }
+.secondary-disclosure { margin-top: 14px; }
+details.secondary-disclosure.edu-disclosure,
+details.school-publication-history.edu-disclosure { border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+details.secondary-disclosure.edu-disclosure > .edu-disclosure-heading,
+details.school-publication-history.edu-disclosure > .edu-disclosure-heading { padding-inline: 0; }
+@media screen and (max-width: 767px) {
+  .schedule-reader-toolbar { gap: 5px; }
+  .schedule-view-controls .workspace-manage-link { padding-inline: 7px; }
+  .schedule-view-controls .workspace-manage-link svg { width: 15px; }
+  .schedule-period-nav h2 { font-size: 18px; }
 }

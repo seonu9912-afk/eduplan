@@ -34,7 +34,7 @@ export function ActivityRequests({
     [review, setReview] = useState<ActivityRequest | null>(null);
   if (!c.year) return null;
   return (
-    <Disclosure className="panel no-print" label="교육활동 편성 요청 · 가능한 날짜 분석">
+    <Disclosure className="secondary-disclosure no-print" label="교육활동 편성 요청 · 가능한 날짜 분석">
       <p>
         대상 학급·교원·특별실과 확정 평가 일정을 함께 확인합니다. 승인된 활동은
         학사일정에 한 번 등록되고 월중·주간계획에 연결됩니다.

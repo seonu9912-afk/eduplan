@@ -1,8 +1,7 @@
 .mobile-calendar-dates {
   min-width: 0;
   padding: 10px 6px 8px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border-block: 1px solid var(--border);
   background: #fff;
   touch-action: pan-y pinch-zoom;
 }
@@ -22,12 +21,12 @@
 .mobile-calendar-dates [data-weekday="토"] { color: #315e95; }
 .mobile-calendar-day-grid > button {
   display: grid;
-  grid-template-rows: 30px 6px;
-  place-content: center;
+  grid-template-rows: 28px 17px;
+  align-content: center;
   justify-items: center;
   gap: 2px;
   min-width: 0;
-  min-height: 45px;
+  min-height: 53px;
   padding: 2px 0;
   border: 0;
   border-radius: 8px;
@@ -61,15 +60,24 @@
   background: #214b7e;
   color: #fff;
 }
-.mobile-calendar-markers { display: flex; justify-content: center; gap: 3px; }
-.mobile-calendar-markers i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--schedule-accent);
+.mobile-calendar-cell-entry {
+  --cell-color: var(--schedule-accent);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding-inline: 2px;
+  border-inline-start: 2px solid currentColor;
+  color: var(--cell-color);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.3;
 }
-.mobile-calendar-markers i[data-tone="work"] { background: var(--work-accent); }
-.mobile-calendar-markers i[data-tone="break"] { background: var(--closure-accent); }
+.mobile-calendar-cell-entry > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: start; }
+.mobile-calendar-cell-entry small { flex: none; font-size: 9px; }
+.mobile-calendar-cell-entry[data-tone="work"] { --cell-color: var(--work-accent); }
+.mobile-calendar-cell-entry[data-tone="break"] { --cell-color: var(--closure-accent); }
 
 @media screen and (max-width: 767px) {
   .mobile-calendar-management { display: grid; gap: 10px; margin-top: 12px; }

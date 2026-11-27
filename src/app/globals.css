@@ -570,21 +570,21 @@ button[data-slot="button"][data-size="icon"] {
   border-bottom: 1px solid var(--border);
 }
 .header-inner,
-.nav-inner,
-.workspace-inner {
+.nav-inner {
   max-width: 1440px;
   margin: auto;
   padding-left: 42px;
   padding-right: 42px;
 }
 .header-inner {
-  height: 64px;
+  min-height: 60px;
+  max-width: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
 }
 .header-right {
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -668,18 +668,8 @@ button[data-slot="button"][data-size="icon"] {
   line-height: 16px;
   color: #a1acbd;
 }
-.workspace-bar {
-  background: #fff;
-  border-bottom: 1px solid #e5eaf2;
-}
-.workspace-inner {
-  min-height: 60px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
 .workspace-pickers {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -691,18 +681,10 @@ button[data-slot="button"][data-size="icon"] {
   padding: 5px 10px;
   font-size: 13px;
   font-weight: 650;
-  max-width: min(300px, 100%);
+  max-width: min(330px, 100%);
   text-overflow: ellipsis;
 }
 .workspace-pickers #year-picker {
-  flex-shrink: 0;
-}
-.workspace-icon {
-  color: #536e95;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 36px;
   flex-shrink: 0;
 }
 .workspace-actions {
@@ -730,16 +712,20 @@ button[data-slot="button"][data-size="icon"] {
   max-width: 1440px;
   margin: 0 auto;
   padding: 22px 42px 40px;
-  min-height: calc(100vh - 300px);
+  min-height: calc(100vh - 120px);
 }
+.workspace-content[data-surface="wide"] { width: 100%; max-width: none; }
+.workspace-content[data-surface="form"] { width: 100%; max-width: 1080px; }
+.workspace-view-tools { display: flex; justify-content: end; margin-bottom: 6px; }
+.workspace-manage-link { white-space: normal; }
+.profile-actions { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; }
+.profile-sign-out { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 650; color: #a73137; }
+.profile-sign-out:hover { text-decoration: underline; }
 .app-shell .workspace-content .page-heading:first-child {
   margin-block-start: 0;
 }
 .workspace-related-tools {
   margin-block-end: 16px;
-}
-.notification-center .notification-card {
-  padding: 16px;
 }
 .notification-heading {
   display: flex;
@@ -2142,8 +2128,7 @@ button[data-slot="button"][data-size="icon"] {
 }
 @media (max-width: 1100px) {
   .header-inner,
-  .nav-inner,
-  .workspace-inner {
+  .nav-inner {
     padding-left: 25px;
     padding-right: 25px;
   }
@@ -2199,12 +2184,6 @@ button[data-slot="button"][data-size="icon"] {
   }
   .nav-disabled {
     display: none;
-  }
-  .workspace-inner {
-    flex-wrap: wrap;
-    padding-top: 12px;
-    padding-bottom: 10px;
-    gap: 8px;
   }
   .workspace-pickers {
     gap: 9px;
@@ -2376,8 +2355,7 @@ button[data-slot="button"][data-size="icon"] {
 }
 @media (max-width: 520px) {
   .header-inner,
-  .nav-inner,
-  .workspace-inner {
+  .nav-inner {
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -2667,7 +2645,6 @@ button[data-slot="button"][data-size="icon"] {
   }
   .no-print,
   .app-header,
-  .workspace-bar,
   .workspace-related-tools,
   .heading-actions,
   .curriculum-note,
@@ -5176,4 +5153,24 @@ button[data-slot="button"][data-size="icon"] {
 @media (max-width: 640px) {
   .academic-date-editor { top: .35rem; max-height: 53dvh; }
   .academic-date-heading { align-items: start; }
+}
+
+.workspace-content[data-section="settings"] .settings-form,
+.workspace-content[data-section="settings"] .school-type-settings,
+.workspace-content[data-section="settings"] .settings-intro,
+.workspace-content[data-section="teachers"] .operations-module > .panel,
+.workspace-content[data-section="teaching"] .teaching-filters {
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+  padding-inline: 0;
+}
+.workspace-content[data-section="teachers"] .operations-table :is(td, th),
+.workspace-content[data-section="teaching"] .teaching-grid :is(td, th) { font-size: 14px; }
+.workspace-content[data-section="plans"] .work-board-panel,
+.workspace-content[data-section="plans"] .work-sidebar {
+  border: 0;
+  box-shadow: none;
+  padding-inline: 0;
 }

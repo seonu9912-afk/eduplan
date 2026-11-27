@@ -93,7 +93,7 @@ test("calendar closure previews lesson losses and updates personal lessons witho
   page,
 }) => {
   await page.goto(route);
-  await expect(page.locator(".next-lesson")).toContainText("3분 후");
+  await expect(page.locator(".next-lesson")).toContainText("시작까지 3분");
   await page.getByRole("button", { name: "학사일정", exact: true }).click();
   await page
     .getByRole("button", { name: "2027-03-02 수업일", exact: true })
@@ -133,11 +133,11 @@ test("one school event update is reflected in work plans and teaching calendar",
   ).toBeVisible();
   await page.getByRole("button", { name: "월중·주간", exact: true }).click();
   await expect(
-    page.getByText("통합 연계 진로 행사", { exact: true }),
+    page.getByRole("region", { name: "요일별 주간계획" }).getByText("통합 연계 진로 행사", { exact: true }),
   ).toHaveCount(1);
   await page.getByRole("button", { name: "월중계획", exact: true }).click();
   await expect(
-    page.getByText("통합 연계 진로 행사", { exact: true }),
+    page.getByRole("region", { name: "월중계획 달력" }).getByText("통합 연계 진로 행사", { exact: true }),
   ).toHaveCount(1);
   await page.getByRole("button", { name: "수업 연계", exact: true }).click();
   await expect(
@@ -161,9 +161,9 @@ test("mobile personal day and persisted notification preference stay usable", as
   await expect(
     page.getByRole("heading", { name: "오늘 수업" }),
   ).toBeVisible();
-  await expect(
-    page.getByText(/다음 수업 · .*국어/),
-  ).toBeVisible();
+  const nextLesson = page.getByRole("group", { name: "다음 수업", exact: true });
+  await expect(nextLesson).toContainText("09:00");
+  await expect(nextLesson).toContainText("국어");
   await page.locator("summary").filter({ hasText: "이번 주 내 시간표" }).click();
   const timetable = page.getByRole("table", { name: "이번 주 내 시간표" });
   await expect(timetable.getByRole("columnheader", { name: /^월(?:\s|$)/ })).toBeVisible();

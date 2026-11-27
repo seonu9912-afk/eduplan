@@ -119,14 +119,11 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
-.notification-list li + li {
-  margin-top: 8px;
-}
+.notification-list li:last-child { border-bottom: 0; }
 .notification-list li > div {
   display: grid;
   gap: 4px;
@@ -192,15 +189,6 @@
   }
 }
 
-.personal-day .dashboard-columns {
-  align-items: start;
-}
-.personal-day .panel {
-  display: grid;
-  justify-items: start;
-  gap: 14px;
-  min-width: 0;
-}
 .personal-day-heading {
   display: flex;
   justify-content: space-between;
@@ -209,12 +197,11 @@
   gap: 6px 12px;
   width: 100%;
 }
-.personal-day-heading h2,
-.personal-day-notification-title {
+.personal-day-heading h2 {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 .personal-day h2 > svg {
@@ -229,16 +216,12 @@
 .personal-day .daily-lesson,
 .personal-day .next-lesson,
 .personal-day .notification-list,
-.personal-day .panel > details,
 .personal-schedule-list {
   width: 100%;
   margin: 0;
 }
 .personal-day .notification-list:empty {
   display: none;
-}
-.personal-day .personal-reminder-controls {
-  align-items: end;
 }
 .personal-schedule-list {
   list-style: none;
@@ -268,11 +251,6 @@
   border: 1px solid var(--border);
   border-radius: 4px;
 }
-.personal-day-notification-title {
-  border-top: 1px solid var(--border);
-  padding-top: 14px;
-  width: 100%;
-}
 
 @media screen and (max-width: 767px) {
   .operations-module .mobile-comparison {
@@ -287,4 +265,70 @@
     font-weight: 650;
     cursor: pointer;
   }
+}
+
+.personal-widgets {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.personal-widget-column { display: grid; gap: 16px; min-width: 0; }
+.personal-widget {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.personal-widget-note { color: var(--text-secondary); font-size: 14px; }
+.personal-day .next-lesson {
+  background: var(--surface-muted);
+  border: 0;
+  border-radius: 8px;
+  gap: 2px;
+  padding: 12px 14px;
+}
+.next-lesson-label, .next-lesson small { color: var(--text-secondary); font-size: 13px; }
+.next-lesson-clock {
+  color: var(--foreground);
+  font-size: clamp(30px, 4vw, 38px);
+  line-height: 1.18;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.personal-day .next-lesson strong { color: var(--foreground); font-size: 15px; }
+.personal-lesson-list { list-style: none; margin: 0; padding: 0; }
+.personal-lesson-list li:last-child { border-bottom: 0; padding-bottom: 1px; }
+.personal-agenda h3 { padding-top: 10px; border-top: 1px solid var(--border); }
+.widget-link { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; color: var(--schedule-accent); min-height: 36px; }
+.widget-link svg { width: 14px; height: 14px; }
+.widget-link:hover { text-decoration: underline; }
+.personal-schedule-list > li { grid-template-columns: 1fr; }
+.personal-schedule-list > li:has(time) { grid-template-columns: 88px minmax(0, 1fr); }
+.personal-schedule-list > li > div { border-inline-start: 2px solid var(--schedule-accent); padding-inline-start: 8px; }
+.personal-schedule-list > li[data-source="business"] > div { border-color: var(--work-accent); }
+.personal-schedule-list time { border: 0; padding: 0; }
+.notification-list .notification-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.notification-center, .notifications-settings { max-width: 900px; }
+.notification-center .notification-list li { border-bottom: 1px solid var(--border); }
+.notification-empty { min-height: 76px; color: var(--text-secondary); }
+.notifications-settings { margin-top: 20px; }
+.notifications-settings > h2 { margin-bottom: 8px; }
+.lesson-reminder-settings > label, .lesson-reminder-browser {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  padding-block: 10px; border-bottom: 1px solid var(--border);
+}
+.notifications-settings details.edu-disclosure {
+  border: 0; border-bottom: 1px solid var(--border); border-radius: 0; margin-block: 0;
+}
+.notifications-settings details.edu-disclosure > .edu-disclosure-heading { padding-inline: 0; }
+
+@media screen and (max-width: 767px) {
+  .personal-widgets { grid-template-columns: minmax(0, 1fr); }
+  .personal-widgets, .personal-widget-column { gap: 12px; }
+  .personal-widget { padding: 14px; }
+  .widget-link { min-height: 44px; }
+  .notification-center .notification-list li { flex-wrap: wrap; }
 }

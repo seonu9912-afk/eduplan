@@ -61,7 +61,7 @@ import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/schedule-dates";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MobileCalendarDates, type CalendarTone } from "./mobile-calendar-dates";
+import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
 
 type DayEdit = {
   kind: "day";
@@ -695,13 +695,13 @@ export function AcademicCalendar({
                 </label>
               </div>
               <MobileCalendarDates date={date} today={today} start={firstDate} end={lastDate} period={mobileRange}
-                indicators={(day) => {
+                items={(day) => {
                   const operation = days.get(day);
-                  const tones: CalendarTone[] = (eventTitlesByDate.get(day) ?? []).map(() => "event");
+                  const entries: CalendarCellItem[] = (eventTitlesByDate.get(day) ?? []).map((title) => ({ title, tone: "event" }));
                   if (operation && ["holiday", "vacation", "discretionary"].includes(operation.type))
-                    tones.unshift("break");
-                  if (operation?.type === "swap") tones.unshift("event");
-                  return tones;
+                    entries.unshift({ title: operation.name || dayTypes[operation.type], tone: "break" });
+                  if (operation?.type === "swap") entries.unshift({ title: operation.name || "요일 교체", tone: "event" });
+                  return entries;
                 }}
                 onSelect={selectMobileDate} onNavigate={navigateMobile} />
               <div className="mobile-card-list">

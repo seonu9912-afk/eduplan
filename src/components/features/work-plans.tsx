@@ -23,7 +23,7 @@ import {
 } from "@/lib/domain";
 import { previousWorkPlan, publishWorkPlan, saveAnnual } from "@/app/actions";
 import type { Context } from "@/lib/models";
-import { MobileCalendarDates, type CalendarTone } from "./mobile-calendar-dates";
+import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
 import { shiftScheduleDate } from "@/lib/schedule-dates";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -556,20 +556,21 @@ export function WorkPlans({
           </h2>
           {!(view === "month" && monthList) && <div className="mobile-only work-mobile-date-picker no-print">
             <MobileCalendarDates date={date} today={today} start={start} end={end} period={view}
-              indicators={(day) => {
+              items={(day) => {
                 const matchesDepartment = (department: string) => !departmentFilter || departmentFilter === department;
-                const tones: CalendarTone[] = [];
-                if (plan.holidays[day] || plan.vacations.some((item) => item.start <= day && item.end >= day)) tones.push("break");
+                const entries: CalendarCellItem[] = [];
+                const closure = plan.holidays[day] || plan.vacations.find((item) => item.start <= day && item.end >= day)?.name;
+                if (closure) entries.push({ title: closure, tone: "break" });
                 for (const event of c.events) {
-                  if (event.start_date <= day && event.end_date >= day && matchesDepartment(event.department)) tones.push("event");
+                  if (event.start_date <= day && event.end_date >= day && matchesDepartment(event.department)) entries.push({ title: event.title, tone: "event" });
                 }
                 for (const allocation of plan.allocations) {
-                  if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) tones.push("event");
+                  if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) entries.push({ title: allocation.title, tone: "event" });
                 }
                 for (const item of plan.business) {
-                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) tones.push("work");
+                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) entries.push({ title: item.text, tone: "work" });
                 }
-                return tones;
+                return entries;
               }} onNavigate={navigate} onSelect={(day) => {
                 setDate(day);
                 if (view === "week") requestAnimationFrame(() => document.getElementById(`work-day-${day}`)?.scrollIntoView({ block: "nearest" }));

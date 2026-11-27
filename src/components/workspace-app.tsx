@@ -14,6 +14,7 @@ import { ActivityRequests } from "@/components/features/activity-requests";
 import { LessonLedger } from "@/components/features/lesson-ledger";
 import { PlanningPermissions } from "@/components/features/planning-permissions";
 import { LessonReminder } from "@/components/features/lesson-reminder";
+import { LessonReminderSettings } from "@/components/features/lesson-reminder-settings";
 const Staffing = dynamic(
   () => import("@/components/features/staffing").then((m) => m.Staffing),
   { loading: () => <p role="status">화면을 불러오는 중…</p> },
@@ -52,7 +53,6 @@ import {
   Settings2,
   Users,
   Building2,
-  UserRound,
   PanelTop,
   Table2,
 } from "lucide-react";
@@ -112,6 +112,7 @@ export function WorkspaceApp({
   useEditGuard("workspace-editor", editorDirty);
   const dirty = useDeviceDirty();
   const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
   const base = `/app/${c.workspace.id}`;
   const currentSchoolYear = academicYearOf(today);
   const yearOptions = [...new Set([
@@ -190,126 +191,24 @@ export function WorkspaceApp({
       document.removeEventListener("visibilitychange", refresh);
     };
   }, [router, section, activeYearId, dirty]);
+  const readerTools = !management && ["calendar", "plans", "timetable"].includes(section);
+  const managementLink = mayManage && <Button asChild variant="ghost" className="workspace-manage-link">
+    <Link data-guarded-navigation href={`${base}/${section}${suffix}${management ? "" : suffix ? "&view=manage" : "?view=manage"}`}
+      onClick={(event) => {
+        if (!allowNavigation()) event.preventDefault();
+        else setDirty(false);
+      }}>
+      <Settings2 aria-hidden="true" />
+      {management ? "공개본 보기" : section === "teaching" ? "내 계획·관리"
+        : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
+    </Link>
+  </Button>;
   return (
     <div className="app-shell">
       <header className="app-header no-print">
         <div className="header-inner">
           <Brand />
-          <div className="header-right">
-            <button
-              className="profile-trigger"
-              aria-label="내 프로필"
-              onClick={() => setModal("profile")}
-            >
-              <span className="avatar">
-                {c.profile.display_name.slice(0, 1)}
-              </span>
-              <span>
-                {c.profile.display_name}
-                <small>{roles[c.role]}</small>
-              </span>
-            </button>
-            <button
-              className="icon-button"
-              aria-label="로그아웃"
-              disabled={signingOut}
-              onClick={async () => {
-                if (!allowNavigation()) return;
-                setSigningOut(true);
-                try {
-                  const subscription = await (
-                    await navigator.serviceWorker?.getRegistration()
-                  )?.pushManager?.getSubscription();
-                  const result = await logout(
-                    deviceId(),
-                    subscription?.endpoint ?? null,
-                  );
-                  if (result.ok) {
-                    try {
-                      await clearDeviceData();
-                    } catch (e) {
-                      window.alert(
-                        e instanceof Error
-                          ? e.message
-                          : "로그아웃했습니다. 공용 기기에서는 사이트 데이터를 정리해 주세요.",
-                      );
-                    }
-                    setDirty(false);
-                    router.replace("/login");
-                    router.refresh();
-                  } else setError(result.error);
-                } catch {
-                  setError("로그아웃하지 못했습니다. 다시 시도해 주세요.");
-                } finally {
-                  setSigningOut(false);
-                }
-              }}
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
-      <nav className="main-nav no-print" aria-label="주요 메뉴">
-        <div className="nav-inner" data-arrow-axis="layout">
-          {[
-            { id: "home", label: "홈", icon: House },
-            { id: "curriculum", label: "교육과정", icon: BookOpen },
-            { id: "calendar", label: "학사운영", icon: CalendarDays },
-            { id: "timetable", label: "시간표", icon: Table2 },
-            {
-              id: "teachers",
-              label: "교원 관리",
-              icon: Users,
-              disabled: false,
-            },
-            {
-              id: "teaching",
-              label: "수업·평가",
-              icon: PanelTop,
-            },
-            { id: "plans", label: "월중·주간계획", icon: Building2 },
-            { id: "notifications", label: "알림", icon: Bell },
-          ].filter(({ id }) => visibleSection(id)).map(({ id, label, icon: Icon, disabled }) =>
-            disabled ? (
-              <span
-                key={id}
-                className="nav-item nav-disabled"
-                aria-disabled="true"
-              >
-                <Icon size={17} />
-                {label}
-                <small>예정</small>
-              </span>
-            ) : (
-              <Link
-                data-guarded-navigation
-                key={id}
-                href={`${base}/${id}${suffix}`}
-                className={`nav-item ${section === id ? "active" : ""}`}
-                aria-current={section === id ? "page" : undefined}
-                onClick={(e) => {
-                  if (!allowNavigation()) e.preventDefault();
-                  else setDirty(false);
-                }}
-              >
-                <Icon size={17} />
-                {label}
-              </Link>
-            ),
-          )}
-        </div>
-      </nav>
-      <div className="workspace-bar no-print">
-        <div className="workspace-inner">
           <div className="workspace-pickers">
-            <span className="workspace-icon" aria-hidden="true">
-              {c.workspace.kind === "school" ? (
-                <Building2 size={18} />
-              ) : (
-                <UserRound size={18} />
-              )}
-            </span>
             <label className="sr-only" htmlFor="workspace-picker">
               작업공간 선택
             </label>
@@ -365,24 +264,82 @@ export function WorkspaceApp({
               <span className="desktop-label">설정</span>
             </Button>}
           </div>
+          <div className="header-right">
+            <button
+              className="profile-trigger"
+              aria-label="내 프로필"
+              onClick={() => { setSignOutError(""); setModal("profile"); }}
+            >
+              <span className="avatar">
+                {c.profile.display_name.slice(0, 1)}
+              </span>
+              <span>
+                {c.profile.display_name}
+                <small>{roles[c.role]}</small>
+              </span>
+            </button>
+          </div>
         </div>
-      </div>
-      <main id="main-content" className="workspace-content">
+      </header>
+      <nav className="main-nav no-print" aria-label="주요 메뉴">
+        <div className="nav-inner" data-arrow-axis="layout">
+          {[
+            { id: "home", label: "홈", icon: House },
+            { id: "curriculum", label: "교육과정", icon: BookOpen },
+            { id: "calendar", label: "학사운영", icon: CalendarDays },
+            { id: "timetable", label: "시간표", icon: Table2 },
+            {
+              id: "teachers",
+              label: "교원 관리",
+              icon: Users,
+              disabled: false,
+            },
+            {
+              id: "teaching",
+              label: "수업·평가",
+              icon: PanelTop,
+            },
+            { id: "plans", label: "월중·주간계획", icon: Building2 },
+            { id: "notifications", label: "알림", icon: Bell },
+          ].filter(({ id }) => visibleSection(id)).map(({ id, label, icon: Icon, disabled }) =>
+            disabled ? (
+              <span
+                key={id}
+                className="nav-item nav-disabled"
+                aria-disabled="true"
+              >
+                <Icon size={17} />
+                {label}
+                <small>예정</small>
+              </span>
+            ) : (
+              <Link
+                data-guarded-navigation
+                key={id}
+                href={`${base}/${id}${suffix}`}
+                className={`nav-item ${section === id ? "active" : ""}`}
+                aria-current={section === id ? "page" : undefined}
+                onClick={(e) => {
+                  if (!allowNavigation()) e.preventDefault();
+                  else setDirty(false);
+                }}
+              >
+                <Icon size={17} />
+                {label}
+              </Link>
+            ),
+          )}
+        </div>
+      </nav>
+      <main id="main-content" className="workspace-content"
+        data-surface={section === "settings" ? "form" : "wide"} data-section={section}>
         <Notice message={error} error />
         <LessonReminder context={c} showErrors={section === "notifications"} />
-        {sharedPlan && (
-          <header className="page-heading no-print">
+        {readerTools && <h1 className="sr-only">{sections[section]}</h1>}
+        {sharedPlan && !readerTools && (
+          <header className={management ? "workspace-view-tools no-print" : "page-heading no-print"}>
             {!management && <h1>{sections[section]}</h1>}
-            {mayManage && <Button asChild variant="outline">
-              <Link data-guarded-navigation href={`${base}/${section}${suffix}${management ? "" : suffix ? "&view=manage" : "?view=manage"}`}
-                onClick={(event) => {
-                  if (!allowNavigation()) event.preventDefault();
-                  else setDirty(false);
-                }}>
-                {management ? "공개본 보기" : section === "teaching" ? "내 계획·관리"
-                  : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
-              </Link>
-            </Button>}
+            {managementLink}
           </header>
         )}
         {section === "teachers" ? (
@@ -391,8 +348,12 @@ export function WorkspaceApp({
         {section === "notifications" && (
           <>
             <NotificationCenter context={c} />
-            <ServerPush context={c} />
-            <PwaInstallPanel />
+            <section className="notifications-settings" aria-label="알림 설정">
+              <h2>알림 설정</h2>
+              <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />
+              <ServerPush context={c} />
+              <PwaInstallPanel />
+            </section>
           </>
         )}
         {section === "home" ? <Dashboard context={c} today={today} /> : null}
@@ -406,7 +367,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "calendar" && !management && <>
-          <OfficialSchedule key={c.year?.id} context={c} today={today} />
+          <OfficialSchedule key={c.year?.id} context={c} today={today} actions={managementLink} />
           <ActivityRequests context={c} today={today} />
         </>}
         {section === "timetable" && management ? (
@@ -418,7 +379,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "timetable" && !management && <>
-          <OfficialTimetable context={c} today={today} />
+          <OfficialTimetable key={c.year?.id} context={c} today={today} actions={managementLink} />
           {!canPlan(c, "timetable") && c.operations?.directory.some((staff) => staff.user_id === c.userId) &&
             <div className="workspace-related-tools"><LessonLedger context={c} today={today} /></div>}
         </>}
@@ -430,7 +391,7 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "plans" && !management && <OfficialSchedule key={c.year?.id} context={c} today={today} work />}
+        {section === "plans" && !management && <OfficialSchedule key={c.year?.id} context={c} today={today} work actions={managementLink} />}
         {section === "curriculum" && management ? (
           <Curriculum
             context={c}
@@ -519,7 +480,7 @@ export function WorkspaceApp({
           ))}
         </nav>
         <div className="mobile-view-toolbar">
-          <Button variant="outline" onClick={() => setModal("profile")}>
+          <Button variant="outline" onClick={() => { setSignOutError(""); setModal("profile"); }}>
             내 프로필
           </Button>
           <Button variant="outline" onClick={() => setModal("school")}>
@@ -542,6 +503,48 @@ export function WorkspaceApp({
         description="이름과 로그인 후 기본 작업공간을 설정합니다."
       >
         <ProfileForm context={c} />
+        <div className="profile-actions">
+            <Notice message={signOutError} error />
+            <button
+              className="profile-sign-out"
+              aria-label="로그아웃"
+              disabled={signingOut}
+              onClick={async () => {
+                if (!allowNavigation()) return;
+                setSignOutError("");
+                setSigningOut(true);
+                try {
+                  const subscription = await (
+                    await navigator.serviceWorker?.getRegistration()
+                  )?.pushManager?.getSubscription();
+                  const result = await logout(
+                    deviceId(),
+                    subscription?.endpoint ?? null,
+                  );
+                  if (result.ok) {
+                    try {
+                      await clearDeviceData();
+                    } catch (e) {
+                      window.alert(
+                        e instanceof Error
+                          ? e.message
+                          : "로그아웃했습니다. 공용 기기에서는 사이트 데이터를 정리해 주세요.",
+                      );
+                    }
+                    setDirty(false);
+                    router.replace("/login");
+                    router.refresh();
+                  } else setSignOutError(result.error);
+                } catch {
+                  setSignOutError("로그아웃하지 못했습니다. 다시 시도해 주세요.");
+                } finally {
+                  setSigningOut(false);
+                }
+              }}
+            >
+              <LogOut size={17} aria-hidden="true" /> 로그아웃
+            </button>
+        </div>
       </Modal>
     </div>
   );

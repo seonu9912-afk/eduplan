@@ -1,7 +1,6 @@
 import { PersonalDay } from "./personal-day";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Table2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import type { Context } from "@/lib/models";
 import { canPlan } from "@/lib/planning-completion";
 import { managementDomains } from "@/lib/school-publications";
@@ -35,16 +34,10 @@ export function Dashboard({ context: c, today }: { context: Context; today: stri
   }
   releases.sort((a, b) => b.date.localeCompare(a.date));
   return <>
-    <header className="page-heading">
-      <h1>학교 현황</h1>
-      <div className="heading-actions no-print">
-        <Button asChild variant="outline"><Link href={`${base}/timetable${suffix}`}><Table2 /> 나의 시간표</Link></Button>
-        <Button asChild variant="outline"><Link href={`${base}/calendar${suffix}`}><CalendarDays /> 학사일정</Link></Button>
-      </div>
-    </header>
+    <h1 className="sr-only">홈</h1>
     <PersonalDay context={c} today={today} />
     <div className="dashboard-columns school-dashboard-plans">
-      <section className="panel">
+      <section className="school-dashboard-section">
         <h2>최근 공개 계획</h2>
         {releases.length ? <ul className="school-dashboard-links">
           {releases.slice(0, 5).map((release) => <li key={release.id}>
@@ -54,7 +47,7 @@ export function Dashboard({ context: c, today }: { context: Context; today: stri
           </li>)}
         </ul> : <p>공개된 계획이 없습니다.</p>}
       </section>
-      {(duties.length > 0 || c.role === "admin") && <section className="panel">
+      {(duties.length > 0 || c.role === "admin") && <section className="school-dashboard-section">
         <h2>담당 업무</h2>
         <ul className="school-dashboard-links">
           {duties.map((duty) => <li key={duty.section}>

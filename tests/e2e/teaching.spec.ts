@@ -369,6 +369,7 @@ test("teaching lifecycle: shared classes, standards, weighted/free-semester, his
     page.getByLabel("교수학습계획 상태", { exact: true }),
   ).toHaveValue("작성 중");
   // Reload/re-login exercises actual Supabase persistence, not client state.
+  await page.getByRole("button", { name: "내 프로필", exact: true }).click();
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await login(page);
   await page.getByLabel("작업공간 선택").selectOption(schoolId);
