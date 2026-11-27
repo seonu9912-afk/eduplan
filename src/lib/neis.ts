@@ -1,10 +1,20 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
-import { isoDate } from "./domain";
+import { isoDate, schoolTypeSchema, type SchoolType } from "./domain";
 import { externalUrl, neisSchoolCode } from "./external-links";
 import type { NeisSchool, PublicDataResult, SchoolMeal } from "./school-public-data-model";
 
 type NeisEndpoint = "schoolInfo" | "mealServiceDietInfo";
+const alternativeSchoolLevels: Record<string, SchoolType | undefined> = {
+  "각종학교(초)": "초등학교",
+  "각종학교(중)": "중학교",
+  "각종학교(고)": "고등학교",
+};
+
+export function matchesNeisSchoolLevel(officialType: string, workspaceType: string) {
+  if (officialType === "각종학교") return schoolTypeSchema.safeParse(workspaceType).success;
+  return (alternativeSchoolLevels[officialType] ?? officialType) === workspaceType;
+}
 
 async function neisRows(endpoint: NeisEndpoint, query: Record<string, string>): Promise<Record<string, unknown>[]> {
   const key = process.env.NEIS_API_KEY;
@@ -53,8 +63,8 @@ function schoolInfo(row: Record<string, unknown>): NeisSchool[] {
 
 export const findNeisSchools = unstable_cache(
   async (name: string, type: string) => (await neisRows("schoolInfo", { SCHUL_NM: name }))
-    .flatMap(schoolInfo).filter((school) => school.type === type),
-  ["neis-school-search-v1"], { revalidate: 86400 },
+    .flatMap(schoolInfo).filter((school) => matchesNeisSchoolLevel(school.type, type)),
+  ["neis-school-search-v2"], { revalidate: 86400 },
 );
 
 export const readNeisSchool = unstable_cache(

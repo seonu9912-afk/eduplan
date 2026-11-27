@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/cache", () => ({ unstable_cache: (work: unknown) => work }));
 
 import { externalUrl, readableResources } from "../../src/lib/external-links";
-import { getSchoolMeals, parseNeisMeals } from "../../src/lib/neis";
+import { findNeisSchools, getSchoolMeals, matchesNeisSchoolLevel, parseNeisMeals } from "../../src/lib/neis";
 import { getSchoolWeather, weatherReleaseTimes, summarizeSchoolWeather } from "../../src/lib/school-weather";
 import { schoolLocationKey, villageForecastGrid } from "../../src/lib/school-location";
 import schoolIndex from "../../src/lib/data/school-weather-grid.json";
@@ -28,6 +28,28 @@ const date = "2026-11-27";
 const mealRow = { MLSV_YMD: "20261127", MMEAL_SC_CODE: "2", MMEAL_SC_NM: "중식", DDISH_NM: "밥<br/>된장국 (5.6)<BR />과일" };
 
 describe("school public data", () => {
+  it("includes alternative schools for the matching curriculum level without dropping ordinary schools", async () => {
+    vi.stubEnv("NEIS_API_KEY", "example-key");
+    const schools = [
+      ["C10", "7201238", "각종학교(중)", "부산광역시"],
+      ["B10", "7081499", "중학교", "서울특별시"],
+      ["C10", "7209999", "각종학교(고)", "부산광역시"],
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ schoolInfo: [
+      { head: [{ RESULT: { CODE: "INFO-000" } }] },
+      { row: schools.map(([office, code, type, region]) => ({
+        ATPT_OFCDC_SC_CODE: office, SD_SCHUL_CODE: code, SCHUL_KND_SC_NM: type,
+        SCHUL_NM: "송정중학교", LCTN_SC_NM: region,
+      })) },
+    ] })));
+    expect((await findNeisSchools("송정중학교", "중학교")).map(({ neis_school_code }) => neis_school_code))
+      .toEqual(["7201238", "7081499"]);
+    expect(matchesNeisSchoolLevel("각종학교(초)", "초등학교")).toBe(true);
+    expect(matchesNeisSchoolLevel("각종학교(고)", "고등학교")).toBe(true);
+    expect(matchesNeisSchoolLevel("각종학교", "중학교")).toBe(true);
+    expect(matchesNeisSchoolLevel("각종학교(고)", "중학교")).toBe(false);
+  });
+
   it("uses the school and Korean date and distinguishes no published meals from provider errors", async () => {
     expect(await getSchoolMeals({}, date)).toEqual({ status: "unlinked" });
     vi.stubEnv("NEIS_API_KEY", "");

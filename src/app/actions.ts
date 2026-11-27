@@ -21,7 +21,7 @@ import type { Result, Role } from "@/lib/models";
 import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import type { PlanningDomain } from "@/lib/planning-completion";
 import { neisSchoolCode, schoolLinkFields, weatherGrid } from "@/lib/external-links";
-import { findNeisSchools, readNeisSchool } from "@/lib/neis";
+import { findNeisSchools, matchesNeisSchoolLevel, readNeisSchool } from "@/lib/neis";
 import { schoolLocationKey } from "@/lib/school-location";
 
 function userError(error: unknown): string {
@@ -250,7 +250,8 @@ export async function connectNeisSchool(input: unknown) {
     const { data, error } = await db.from("schools").select("*").eq("id", workspaceId).single();
     if (error) throw error;
     const official = await readNeisSchool(neis_office_code, neis_school_code);
-    if (!official || official.type !== data.school_type) throw Error("해당 학교급의 나이스 학교정보를 확인하지 못했습니다.");
+    if (!official || !matchesNeisSchoolLevel(official.type, data.school_type))
+      throw Error("이 작업공간의 교육과정 단계에 맞는 나이스 학교를 선택해 주세요.");
     let nx: number | null = null, ny: number | null = null;
     if (official.road_address) {
       const index: Record<string, number> = (await import("@/lib/data/school-weather-grid.json")).schools;
@@ -269,7 +270,7 @@ export async function connectNeisSchool(input: unknown) {
       neis_office_code, neis_school_code, road_address: official.road_address,
       homepage_url: official.homepage_url, foundation_day: official.foundation_day,
       weather_nx: nx, weather_ny: ny,
-    }).eq("id", workspaceId).eq("school_type", official.type).select("id").single();
+    }).eq("id", workspaceId).eq("school_type", data.school_type).select("id").single();
     if (result.error) throw result.error;
     refresh();
   });

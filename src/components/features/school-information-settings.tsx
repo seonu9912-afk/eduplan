@@ -62,10 +62,12 @@ export function SchoolInformationSettings({ context: c }: { context: Context }) 
     {error && <p role="alert">{error}</p>}
     {results && (results.length > 0 ? <ul className="school-settings-link-list">
       {results.map((result) => <li key={result.neis_office_code + result.neis_school_code}>
-        <div><strong>{result.name}</strong><small>{result.road_address || result.region} · {result.neis_school_code}</small></div>
+        <div><strong>{result.name}</strong>
+          <small>{[result.type, result.road_address || result.region, result.neis_school_code].filter(Boolean).join(" · ")}</small>
+        </div>
         <Button type="button" variant="outline" disabled={connect.pending} onClick={() => connectSchool(result)}>연결</Button>
       </li>)}
-    </ul> : <p role="status">같은 학교급의 검색 결과가 없습니다.</p>)}
+    </ul> : <p role="status">이 교육과정 단계에 해당하는 검색 결과가 없습니다.</p>)}
     <InlineNotice mutation={connect} />
 
     <Disclosure compact label="학교 날씨 위치">
