@@ -99,6 +99,7 @@ export function AssessmentEditor({
           </small>
         </div>
       </div>
+      {value.items.length > 0 && <div className="assessment-index no-print"><strong>평가 항목 바로가기</strong><div>{value.items.map((item,index)=><button type="button" key={item.id} onClick={()=>{const target=document.getElementById(`assessment-${item.id}`);target?.scrollIntoView({block:"start"});target?.focus({preventScroll:true});}}><span>{index+1}. {item.name || "새 평가 항목"}</span><small>{weighted && item.ratio !== null ? `${item.ratio}%` : item.type}</small></button>)}</div></div>}
       <EvaluationFields
         value={value.detail}
         onChange={(detail) => onChange({ ...value, detail })}
@@ -126,9 +127,9 @@ export function AssessmentEditor({
           tabIndex={-1}
         >
           <div className="assessment-card-heading">
-            <h3>
+            <div className="assessment-title-block"><h3>
               {i + 1}. {a.name || "새 평가 항목"}
-            </h3>
+            </h3><p>{[a.type,a.period,weighted && a.ratio !== null ? `${a.ratio}% 반영` : ""].filter(Boolean).join(" · ")}</p></div>
             <div className="row-tools">
               <button
                 aria-label={`${i + 1}번 평가 위로`}

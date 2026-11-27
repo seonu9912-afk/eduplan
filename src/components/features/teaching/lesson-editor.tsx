@@ -79,7 +79,7 @@ export function LessonEditor({
         open={draftOpen}
         onOpenChange={setDraftOpen}
         title="주차별 수업 초안"
-        description="학교 수업일이 있는 주만 만듭니다. 기존 날짜와 겹치는 주는 건너뛰고, 내용과 실제 과목 차시는 직접 확인합니다."
+        description="학교 수업일이 있는 주만 만듭니다. 기존 날짜와 겹치는 주는 건너뛰고, 단원과 수업 내용을 직접 작성합니다."
       >
         <p>
           {draft.length}개 수업을 추가할 수 있습니다. 기존 내용은 유지됩니다.
@@ -108,7 +108,7 @@ export function LessonEditor({
         <div className="teaching-empty">
           <h3>첫 주 수업부터 시작하세요</h3>
           <p>
-            단원과 성취기준을 연결하고 배당 차시를 입력하세요. 작성 중인 초안도
+            단원과 성취기준을 연결하세요. 작성 중인 초안도
             저장할 수 있습니다.
           </p>
           {editable && (
@@ -132,7 +132,6 @@ export function LessonEditor({
                   "시기 · 기간",
                   "단원·주제 · 학생 학습활동",
                   "성취기준",
-                  "차시",
                   "수업 방법",
                   "평가 방법",
                   "수업·평가 연계",
@@ -148,20 +147,6 @@ export function LessonEditor({
                 <tr key={u.id} id={`lesson-${u.id}`} tabIndex={-1}>
                   <th scope="row">
                     {i + 1}
-                    <select
-                      aria-label={`${i + 1}번 수업 구분`}
-                      value={u.kind ?? "lesson"}
-                      disabled={!editable}
-                      onChange={(e) =>
-                        update(u.id, {
-                          kind: e.target.value as TeachingUnit["kind"],
-                        })
-                      }
-                    >
-                      <option value="lesson">교과 수업</option>
-                      <option value="activity">학교 교육활동</option>
-                      <option value="reflection">학기 성찰</option>
-                    </select>
                   </th>
                   <td>
                     <div className="week-fields">
@@ -243,34 +228,6 @@ export function LessonEditor({
                       grade={course.grade}
                       label={`${i + 1}번 단원 성취기준 선택`}
                       disabled={!editable}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label={`${i + 1}번 배당 차시`}
-                      type="number"
-                      min={0}
-                      max={10000}
-                      step="0.5"
-                      value={u.lessons ?? ""}
-                      disabled={!editable}
-                      onChange={(e) =>
-                        update(u.id, {
-                          lessons:
-                            e.target.value === ""
-                              ? null
-                              : Number(e.target.value),
-                        })
-                      }
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          const next = document.querySelector<HTMLInputElement>(
-                            `input[aria-label="${i + 2}번 배당 차시"]`,
-                          );
-                          next?.focus();
-                        }
-                      }}
                     />
                   </td>
                   {(
@@ -363,9 +320,7 @@ export function LessonEditor({
             </tbody>
             <tfoot>
               <tr>
-                <th colSpan={4}>계획 차시 합계</th>
-                <td>{units.reduce((s, u) => s + (u.lessons ?? 0), 0)}</td>
-                <td colSpan={5}>공통 계획은 연결한 모든 학급에 적용됩니다.</td>
+                <th colSpan={9}>공통 계획은 연결한 모든 학급에 적용됩니다.</th>
               </tr>
             </tfoot>
           </table>

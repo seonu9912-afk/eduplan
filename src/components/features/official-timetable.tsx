@@ -130,7 +130,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
               <option value="weekly">주간 시간표</option>
             </select>
           </label>
-          <div className="official-timetable-date">
+          <div className="official-timetable-date" data-weekly={mode === "weekly" ? "" : undefined}>
             {mode === "weekly" && <Button variant="ghost" size="icon" aria-label="이전 주"
               disabled={addDays(week.weekdays[0].date, -1) < start} onClick={() => setDate(clamp(addDays(date, -7)))}><ChevronLeft /></Button>}
             <label>

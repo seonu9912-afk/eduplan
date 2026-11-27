@@ -76,6 +76,18 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
   const { rows, unattached } = bindTeachingCalendarGrid(calendar.weeks, units);
   const [weekAnchor, setWeekAnchor] = useState("");
   const [wide, setWide] = useState(false);
+  const namedWeeks = rows.filter(({unit}) => !!unit?.title.trim()).length;
+  const firstUnnamed = rows.find(({unit}) => !unit?.title.trim());
+  const jumpToUnnamed = () => {
+    if (!firstUnnamed) return;
+    setWeekAnchor(firstUnnamed.week.anchor);
+    window.requestAnimationFrame(() => {
+      const mobile = window.matchMedia("(max-width: 767px)").matches && !wide;
+      const container = mobile ? document.getElementById(`teaching-mobile-week-${firstUnnamed.week.anchor}`) : document.querySelector(`[data-week-anchor="${firstUnnamed.week.anchor}"]`);
+      container?.scrollIntoView({block:"nearest"});
+      container?.querySelector<HTMLTextAreaElement>("textarea")?.focus({preventScroll:true});
+    });
+  };
   const mobileRow =
     rows.find((row) => row.week.anchor === weekAnchor) ?? rows[0];
   const [expanded, setExpanded] = useState<{
@@ -141,6 +153,8 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
     column: number,
   ) => (
     <div className="teaching-week-cell">
+      <div className="teaching-cell-fit">
+        <div className="teaching-cell-mirror" aria-hidden="true">{unit?.[field] ?? ""}{"\u200b"}</div>
       <textarea
         aria-label={`${week.period} ${fields[field].label}`}
         data-row={row}
@@ -155,6 +169,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
           update(week, unit, { [field]: event.target.value }, field)
         }
       />
+      </div>
       {editable && (
         <button
           type="button"
@@ -178,7 +193,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
       {rows.length > 0 && (
         <>
           <div className="section-title">
-            <p>학사일정 연동 · {rows.length}주</p>
+            <p>학사일정 연동 · 수업일이 있는 {rows.length}주</p>
             {editable && (
               <div className="teaching-actions">
                 <Button
@@ -198,15 +213,20 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               </div>
             )}
           </div>
+          <div className="teaching-week-progress no-print">
+            <div><strong>단원명 입력 {namedWeeks}/{rows.length}주</strong><span>미입력 {rows.length-namedWeeks}주 · 작성 내용의 완성도와는 별개입니다.</span><progress aria-label="단원명 입력 주차" value={namedWeeks} max={rows.length}/></div>
+            {editable && <Button variant="outline" size="sm" disabled={!firstUnnamed} onClick={jumpToUnnamed}>첫 미입력 주차</Button>}
+          </div>
           <div className="mobile-only no-print">
             <Button variant="outline" onClick={() => setWide(!wide)}>
               {wide ? "주차별 편집으로 보기" : "전체 편성표 보기"}
             </Button>
             {!wide && mobileRow && (
               <>
-                <div className="mobile-view-toolbar">
+                <div className="mobile-view-toolbar teaching-week-navigation">
+                  <Button variant="outline" size="sm" aria-label="이전 주차" disabled={rows.indexOf(mobileRow) <= 0} onClick={() => { const previous = rows[rows.indexOf(mobileRow)-1]; if(previous) setWeekAnchor(previous.week.anchor); }}>이전</Button>
                   <label>
-                    작성할 주차
+                    {editable ? "작성할 주차" : "조회할 주차"}
                     <select
                       value={mobileRow.week.anchor}
                       onChange={(e) => setWeekAnchor(e.target.value)}
@@ -218,50 +238,16 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       ))}
                     </select>
                   </label>
+                  <Button variant="outline" size="sm" aria-label="다음 주차" disabled={rows.indexOf(mobileRow) >= rows.length-1} onClick={() => { const next = rows[rows.indexOf(mobileRow)+1]; if(next) setWeekAnchor(next.week.anchor); }}>다음</Button>
                 </div>
                 {(() => {
                   const { week, unit } = mobileRow;
                   return (
-                    <article className="mobile-edit-card">
+                    <article id={`teaching-mobile-week-${week.anchor}`} className="mobile-edit-card teaching-week-mobile-card">
                       <h3>{week.period}</h3>
                       {week.calendarNotes.map((note) => (
                         <p key={note}>{note}</p>
                       ))}
-                      <label>
-                        계획 차시
-                        <input
-                          type="number"
-                          min="0"
-                          max="10000"
-                          step="0.5"
-                          disabled={!editable}
-                          value={unit?.lessons ?? ""}
-                          onChange={(e) =>
-                            update(week, unit, {
-                              lessons:
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        수업 구분
-                        <select
-                          disabled={!editable}
-                          value={unit?.kind ?? "lesson"}
-                          onChange={(e) =>
-                            update(week, unit, {
-                              kind: e.target.value as TeachingUnit["kind"],
-                            })
-                          }
-                        >
-                          <option value="lesson">교과 수업</option>
-                          <option value="activity">학교 교육활동</option>
-                          <option value="reflection">학기 성찰</option>
-                        </select>
-                      </label>
                       <StandardPicker
                         context={context}
                         value={unit?.standard_ids ?? []}
@@ -276,7 +262,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       {(Object.keys(fields) as Field[]).map((field) => (
                         <label key={field}>
                           {fields[field].label}
-                          <textarea
+                          {editable ? <textarea
                             rows={field === "title" ? 2 : 4}
                             maxLength={fields[field].max}
                             readOnly={!editable}
@@ -290,7 +276,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                                 field,
                               )
                             }
-                          />
+                          /> : <p className="teaching-read-value">{unit?.[field] || "—"}</p>}
                         </label>
                       ))}
                       <LessonLinks
@@ -316,13 +302,16 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               </>
             )}
           </div>
+          <p className={`teaching-grid-hint no-print ${wide ? "" : "desktop-only"}`}>표를 좌우로 움직여 전체 항목을 확인할 수 있습니다. 입력 내용에 맞춰 셀 높이가 늘어납니다.</p>
           <div
             className={`table-scroll teaching-grid-scroll ${wide ? "" : "desktop-only"}`}
+            role="region" aria-label="교수학습계획 표 가로 스크롤" tabIndex={0}
           >
             <table
               className="teaching-grid teaching-week-grid"
               aria-label="주차별 교수학습계획"
             >
+              <colgroup>{["month","week","date","title","standard","content","method","assessment","alignment","note"].map(name => <col key={name} className={`teaching-col-${name}`} />)}</colgroup>
               <thead>
                 <tr>
                   {["월", "주", "일", "단원명", "성취기준"].map((label) => (
@@ -351,52 +340,13 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                   <tr
                     key={week.anchor}
                     id={unit ? `lesson-${unit.id}` : undefined}
+                    data-week-anchor={week.anchor}
                     tabIndex={-1}
                   >
                     <td>{week.month}</td>
                     <td>{week.week}</td>
                     <td>
-                      {week.day}
-                      <details className="teaching-week-options">
-                        <summary>차시·구분</summary>
-                        <label>
-                          계획 차시
-                          <input
-                            aria-label={week.period + " 계획 차시"}
-                            type="number"
-                            min="0"
-                            max="10000"
-                            step="0.5"
-                            value={unit?.lessons ?? ""}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              update(week, unit, {
-                                lessons:
-                                  event.target.value === ""
-                                    ? null
-                                    : Number(event.target.value),
-                              })
-                            }
-                          />
-                        </label>
-                        <label>
-                          수업 구분
-                          <select
-                            value={unit?.kind ?? "lesson"}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              update(week, unit, {
-                                kind: event.target
-                                  .value as TeachingUnit["kind"],
-                              })
-                            }
-                          >
-                            <option value="lesson">교과 수업</option>
-                            <option value="activity">학교 교육활동</option>
-                            <option value="reflection">학기 성찰</option>
-                          </select>
-                        </label>
-                      </details>
+                      <span className="teaching-week-date">{week.day.split("~").map((part,i,parts)=><span key={i}>{part}{i<parts.length-1?"~":""}</span>)}</span>
                     </td>
                     <td>{cell(week, unit, "title", index, 0)}</td>
                     <td>
@@ -480,10 +430,11 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
           compact
           label={
             <>
-              현재 주차와 연결되지 않은 기존 수업 {unattached.length}건
+              현재 수업 주차와 연결되지 않은 기존 계획 {unattached.length}건
             </>
           }
         >
+          <p className="muted">방학·휴업일 또는 학사일정 변경으로 연결되지 않은 계획입니다. 기존 내용은 보존되며, 필요한 경우 날짜를 다시 지정해 주세요.</p>
           <LessonEditor
             {...props}
             legacyOnly

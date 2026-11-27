@@ -335,25 +335,10 @@ export function reviewTeaching(
       add("교수학습계획", `${name}: 단원명·학습 내용을 입력하세요.`);
     if (!u.period.trim() && !u.start && !u.day?.trim())
       add("교수학습계획", `${name}: 시기를 입력하세요.`);
-    if (
-      (u.kind ?? "lesson") === "lesson" &&
-      (u.lessons === null || u.lessons === 0)
-    )
-      add("교수학습계획", `${name}: 배당 차시를 확인하세요.`, "확인 필요");
     dates("교수학습계획", name, u.start, u.end, course.semester);
     if ((u.kind ?? "lesson") === "lesson" || u.standard_ids.length)
       linked("교수학습계획", name, u.standard_ids);
   });
-  const sum = doc.units.reduce((n, u) => n + (u.lessons ?? 0), 0);
-  if (
-    course.expected_hours !== null &&
-    Math.abs(sum - course.expected_hours) > 0.01
-  )
-    add(
-      "교수학습계획",
-      `계획 ${sum}차시 / 기준 ${course.expected_hours}차시: ${Math.abs(sum - course.expected_hours)}차이`,
-      "확인 필요",
-    );
   for (const ev of doc.evaluations) {
     const prefix = `${ev.semester}학기`;
     if (!ev.items.length) add("평가계획", `${prefix}: 평가 항목을 추가하세요.`);

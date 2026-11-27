@@ -175,3 +175,21 @@
   }
   .c5-subject .cv4-subject-actions { opacity: 1; }
 }
+
+/* Compact, consistent stage navigation; maintain the three existing steps. */
+@media screen {
+ .c5-page{gap:14px}.c5-hero{gap:12px;padding:0}.c5-hero h1{font-weight:720;color:var(--foreground)}
+ .c5-kicker{margin-bottom:3px}.c5-hero p{margin-top:4px;color:var(--text-secondary)}
+ .c5-year-row select{font-size:13px;border-radius:var(--ui-control-radius,7px)}
+ .c5-steps{border-radius:var(--ui-panel-radius,11px)}.c5-step{padding:10px 12px}
+ .c5-step.active{background:#edf4fc;color:#24528e}.c5-stage{gap:12px}
+ .c5-stage-heading{padding-bottom:10px}.c5-stage-heading h2{font-weight:700}.c5-stage-heading p{margin-top:4px;color:var(--text-secondary)}
+ .c5-group-header{padding:9px 12px}.c5-group-header>div{flex-wrap:wrap}.c5-subject{min-height:40px}.c5-stage-footer{padding-top:10px}
+}
+@media screen and (max-width:767px){
+ .c5-year-control{width:100%;min-width:0}.c5-year-row select{min-height:44px}.c5-icon-button{width:44px;min-height:44px;flex:none}
+ .c5-step{flex-direction:column;justify-content:center;gap:4px;padding:7px 3px;text-align:center;min-height:64px}
+ .c5-step-copy strong{white-space:normal;font-size:11px;line-height:1.25}.c5-step-arrow{display:none}
+ .c5-step-copy small{display:none}.c5-count{white-space:normal;max-width:100%}.c5-stage-heading h2{font-size:16px}
+ .c5-group-grid{gap:8px}.c5-subject .cv4-subject-actions{opacity:1}.c5-stage-footer{gap:6px}
+}

@@ -23,6 +23,8 @@ import {
 } from "@/lib/staffing";
 import type { Context } from "@/lib/models";
 import "./school-operations.css";
+import "./staffing-display.css";
+import { filterStaffDirectory, emptyStaffFilters } from "@/lib/staff-directory-filter";
 export const staffingActions = {
   saveStaff,
   saveScenario: saveStaffingScenario,
@@ -64,6 +66,7 @@ export function Staffing({
     [pending, setPending] = useState(false),
     [message, setMessage] = useState("");
   const [comparison, setComparison] = useState("");
+  const [filters, setFilters] = useState(emptyStaffFilters);
   const [copyYear, setCopyYear] = useState(""),
     [templates, setTemplates] = useState<StaffAppointment[]>([]);
   useEffect(
@@ -74,6 +77,10 @@ export function Staffing({
   const manager = canPlan(c, "staffing"),
     staff = c.operations?.staff ?? [],
     directory = c.operations?.directory ?? [];
+  const people = manager ? staff.map(directoryEntry) : directory;
+  const departments = [...new Set(people.map(p=>p.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko"));
+  const subjectNames = new Map(c.subjects.map(s=>[s.id,s.name]));
+  const visible = filterStaffDirectory(people, filters, subjectNames);
   const baseline = staffingReport(c, term),
     report = staffingReport(c, term, scenario);
   const saved = c.operations?.scenarios.find((x) => x.id === comparison),
@@ -91,7 +98,7 @@ export function Staffing({
       </section>
     );
   return (
-    <div className="operations-module">
+    <div className="operations-module staffing-display">
       <header className="page-heading">
         <div>
           <h1>교원 관리·수급 분석</h1>
@@ -121,7 +128,7 @@ export function Staffing({
         </p>
       )}
       {tab === "명부" ? (
-        <section className="panel">
+        <section className="panel staffing-directory">
           <h2>학년도별 교원 명부</h2>
           <p>
             계정 연결은 관리자가 승인합니다. 휴직·전출 처리 후에도 과거 수업과
@@ -198,106 +205,56 @@ export function Staffing({
               ))}
             </Disclosure>
           )}
-          <div className="operations-scroll">
-            <table className="operations-table">
-              <thead>
-                <tr>
-                  <th>성명</th>
-                  <th>담당 교과</th>
-                  <th>부서·업무</th>
-                  <th>담임</th>
-                  <th>계정 연결</th>
-                  {manager && (
-                    <>
-                      <th>재직·근무 형태</th>
-                      <th>목표 / 경감 / 가용 주당 시수</th>
-                      <th>실제 배정</th>
-                    </>
-                  )}
-                  {c.role === "admin" && <th>관리</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {(manager
-                  ? staff.map((x) => directoryEntry(x))
-                  : directory
-                ).map((person) => {
-                  const item = staff.find((x) => x.id === person.id),
-                    home = c.classes.find(
-                      (x) => x.id === person.homeroom_class_id,
-                    ),
-                    assigned = (
-                      c.operations?.timetable?.document.weekly ?? []
-                    ).filter(
-                      (x) =>
-                        x.teacherId === person.id ||
-                        (!!person.user_id && x.teacherId === person.user_id),
-                    ).length;
-                  return (
-                    <tr key={person.id}>
-                      <th>{person.display_name}</th>
-                      <td>
-                        {person.subject_ids
-                          .map(
-                            (id) =>
-                              c.subjects.find((s) => s.id === id)?.name ??
-                              "보관 과목",
-                          )
-                          .join(", ") || "미지정"}
-                      </td>
-                      <td>
-                        {person.department}
-                        <small>{person.duties}</small>
-                      </td>
-                      <td>
-                        {home ? `${home.grade}-${home.class_number}` : "—"}
-                      </td>
-                      <td>{person.user_id ? "연결됨" : "가입 전·미연결"}</td>
-                      {manager && (
-                        <>
-                          <td>
-                            {item?.status} · {item?.employment}
-                          </td>
-                          <td>
-                            {item &&
-                              `${item.target_hours} / ${item.reduction_hours} / ${item.target_hours - item.reduction_hours}`}
-                          </td>
-                          <td>
-                            {assigned}시간
-                            {item &&
-                              assigned >
-                                item.target_hours - item.reduction_hours && (
-                                <strong className="operations-warning">
-                                  {" "}
-                                  목표 초과
-                                </strong>
-                              )}
-                          </td>
-                        </>
-                      )}
-                      {c.role === "admin" && (
-                        <td>
-                          <Button
-                            variant="outline"
-                            onClick={() => setEdit(item!)}
-                            aria-label={`${person.display_name} 교원 수정`}
-                          >
-                            수정
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
+          <div className="staffing-summary" aria-label="교원 명부 현황">
+            {[[ "등록 교원",people.length],["활성 교원",people.filter(p=>p.active).length],["담임",people.filter(p=>p.active&&p.homeroom_class_id).length],["활성 계정 미연결",people.filter(p=>p.active&&!p.user_id).length]].map(([label,value])=><div key={label}><small>{label}</small><strong>{value}명</strong></div>)}
+          </div>
+          <div className="staffing-filters no-print">
+            <label>검색<input aria-label="교원 검색" placeholder="성명·교과·부서·업무" value={filters.query} onChange={e=>setFilters({...filters,query:e.target.value})}/></label>
+            <label>교과<select aria-label="교원 교과 필터" value={filters.subject} onChange={e=>setFilters({...filters,subject:e.target.value})}><option value="">전체</option>{c.subjects.filter(s=>people.some(p=>p.subject_ids.includes(s.id))).map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+            <label>부서<select aria-label="교원 부서 필터" value={filters.department} onChange={e=>setFilters({...filters,department:e.target.value})}><option value="">전체</option>{departments.map(d=><option key={d} value={d}>{d}</option>)}</select></label>
+            <label>담임<select aria-label="교원 담임 필터" value={filters.homeroom} onChange={e=>setFilters({...filters,homeroom:e.target.value})}><option value="">전체</option><option value="yes">담임</option><option value="no">비담임</option></select></label>
+            <label>계정<select aria-label="교원 계정 필터" value={filters.account} onChange={e=>setFilters({...filters,account:e.target.value})}><option value="">전체</option><option value="yes">연결</option><option value="no">미연결</option></select></label>
+            <label>활성 상태<select aria-label="교원 활성 필터" value={filters.active} onChange={e=>setFilters({...filters,active:e.target.value})}><option value="">전체</option><option value="yes">활성</option><option value="no">비활성</option></select></label>
+            <Button variant="outline" onClick={()=>setFilters(emptyStaffFilters())}>초기화</Button>
+          </div>
+          <p className="staffing-result-count" role="status">{visible.length}명 / 전체 {people.length}명</p>
+          <div className="operations-scroll staffing-desktop">
+            <table className="operations-table staffing-table" aria-label="학년도별 교원 명부">
+              <thead><tr><th>성명</th><th>담당 교과</th><th>부서·업무</th><th>담임</th><th>계정 연결</th>{manager&&<><th>재직·근무 형태</th><th>가용 시수</th><th>실제 배정</th></>}{c.role==="admin"&&<th>관리</th>}</tr></thead>
+              <tbody>{visible.map(person=>{
+                const item=staff.find(x=>x.id===person.id);
+                const home=c.classes.find(x=>x.id===person.homeroom_class_id);
+                const primary=person.primary_subject_id?subjectNames.get(person.primary_subject_id)??"보관 과목":null;
+                const others=person.subject_ids.filter(id=>id!==person.primary_subject_id).map(id=>subjectNames.get(id)??"보관 과목");
+                const table=c.operations?.timetable?.document;
+                const assigned=table?table.weekly.filter(x=>x.teacherId===person.id||!!person.user_id&&x.teacherId===person.user_id).length:null;
+                const capacity=item?item.target_hours-item.reduction_hours:null;
+                return <tr key={person.id}>
+                  <th scope="row">{person.display_name}{!person.active&&<small>비활성</small>}</th>
+                  <td><strong>{primary??"주 담당 미지정"}</strong>{others.length>0&&<small>{others.join(", ")}</small>}</td>
+                  <td>{person.department||"—"}{person.duties&&<small>{person.duties}</small>}</td>
+                  <td>{home?`${home.grade}-${home.class_number}`:person.homeroom_class_id?"확인 필요":"—"}</td>
+                  <td><span className="staffing-account" data-linked={!!person.user_id}>{person.user_id?"연결됨":"미연결"}</span></td>
+                  {manager&&<><td>{item?.status} · {item?.employment}</td><td>{capacity===null?"—":capacity+"시간"}{item&&<small>목표 {item.target_hours} · 경감 {item.reduction_hours}</small>}</td><td>{assigned===null?"미편성":assigned+"시간"}{assigned!==null&&capacity!==null&&assigned>capacity&&<small className="operations-warning">목표 초과</small>}</td></>}
+                  {c.role==="admin"&&<td><Button variant="outline" size="sm" disabled={!item} onClick={()=>item&&setEdit(item)} aria-label={`${person.display_name} 교원 수정`}>수정</Button></td>}
+                </tr>;
+              })}</tbody>
             </table>
           </div>
-          {!directory.length && (
-            <p>
-              등록된 교원이 없습니다. 임시 이름과 근무 형태 ‘미정’으로 사전
-              편성을 시작할 수 있습니다.
-            </p>
-          )}
+          <div className="staffing-mobile no-print">
+            {visible.map(person=>{
+              const item=staff.find(x=>x.id===person.id),home=c.classes.find(x=>x.id===person.homeroom_class_id);
+              const primary=person.primary_subject_id?subjectNames.get(person.primary_subject_id)??"보관 과목":null;
+              const others=person.subject_ids.filter(id=>id!==person.primary_subject_id).map(id=>subjectNames.get(id)??"보관 과목");
+              const table=c.operations?.timetable?.document;
+              const assigned=table?table.weekly.filter(x=>x.teacherId===person.id||!!person.user_id&&x.teacherId===person.user_id).length:null;
+              return <article className="staffing-person" key={person.id}>
+                <div className="staffing-person-head"><strong>{person.display_name}</strong><span className="staffing-account" data-linked={!!person.user_id}>{person.user_id?"연결됨":"미연결"}</span>{!person.active&&<small>비활성</small>}{c.role==="admin"&&<Button variant="outline" size="sm" disabled={!item} onClick={()=>item&&setEdit(item)} aria-label={`${person.display_name} 교원 수정`}>수정</Button>}</div>
+                <dl><div><dt>교과</dt><dd>{primary??"주 담당 미지정"}{others.length>0&&<small>{others.join(", ")}</small>}</dd></div><div><dt>부서·업무</dt><dd>{person.department||"—"}{person.duties&&<small>{person.duties}</small>}</dd></div><div><dt>담임</dt><dd>{home?`${home.grade}학년 ${home.class_number}반`:person.homeroom_class_id?"확인 필요":"비담임"}</dd></div>{manager&&item&&<><div><dt>근무</dt><dd>{item.status} · {item.employment}</dd></div><div><dt>주당 시수</dt><dd>배정 {assigned===null?"미편성":assigned+"시간"} / 가용 {item.target_hours-item.reduction_hours}시간<small>목표 {item.target_hours} · 경감 {item.reduction_hours}</small>{assigned!==null&&assigned>item.target_hours-item.reduction_hours&&<small className="operations-warning">목표 초과</small>}</dd></div></>}</dl>
+              </article>;
+            })}
+          </div>
+          {visible.length===0&&<p className="operations-empty">{people.length?"조건에 맞는 교원이 없습니다.":"등록된 교원이 없습니다. 임시 교원명으로 사전 편성을 시작할 수 있습니다."}</p>}
         </section>
       ) : (
         <>
@@ -687,6 +644,7 @@ export function Staffing({
         }}
         title={edit ? "교원 정보 수정" : "교원 등록"}
         description="교원 등록은 계정을 만들거나 접근 권한을 부여하지 않습니다."
+        wide
       >
         {edit !== undefined && (
           <StaffForm
@@ -735,7 +693,7 @@ function StaffForm({
   );
   return (
     <form
-      className="form-stack operations-form"
+      className="form-stack operations-form staffing-form"
       onSubmit={async (e) => {
         e.preventDefault();
         const parsed = staffInputSchema.safeParse(v);

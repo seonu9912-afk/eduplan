@@ -80,3 +80,16 @@
   margin-top: 8px;
   padding-inline-start: 1.3em;
 }
+
+@media screen {
+ .timetable-module { gap: 12px; }
+ .timetable-module .tt-workspace-actions { padding: 12px; gap: 10px; border-radius: var(--ui-panel-radius,11px); }
+ .timetable-module .tt-primary-actions { gap: 8px; min-width: 0; }
+ .timetable-module .tt-status-row { gap: 6px 10px; }
+ .timetable-module .academic-wrap { max-width: 100%; overscroll-behavior-inline: contain; }
+}
+@media screen and (max-width:767px) {
+ .timetable-module .tt-workspace-actions { padding: 10px; }
+ .timetable-module .tt-primary-actions { width: 100%; justify-content: flex-start; }
+ .timetable-module .tt-primary-actions > [data-slot="button"] { white-space: normal; min-width: 0; }
+}
