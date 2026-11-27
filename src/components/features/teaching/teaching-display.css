@@ -1,0 +1,68 @@
+/* Screen-only presentation; do not override print documents or data validation. */
+@media screen {
+ .teaching-module .teaching-filters{gap:8px 12px;padding:12px 14px}
+ .teaching-module .teaching-filters label{gap:4px;min-width:0}
+ .teaching-module .teaching-tabs{margin:12px 0;gap:3px;padding:3px;border:0;background:var(--surface-muted);border-radius:8px}
+ .teaching-module .teaching-tabs button{padding:8px 12px;border:0;border-radius:5px;min-height:40px;line-height:1.35}
+ .teaching-module .teaching-tabs button[aria-pressed=true]{background:var(--card);color:var(--schedule-accent);box-shadow:inset 0 0 0 1px var(--border)}
+ .teaching-module .course-cards{gap:12px}
+ .teaching-module .course-card{display:grid;align-content:start;gap:6px;padding:14px;border-radius:var(--ui-panel-radius,11px)}
+ .teaching-module .course-card h3{font-size:19px;margin:0;font-weight:700}
+ .teaching-module .course-card-meta{flex-wrap:wrap;gap:4px;color:var(--text-secondary)}
+ .teaching-module .course-teacher,.teaching-module .course-class-list{margin:0;color:var(--text-secondary)}
+ .teaching-module .course-hours{margin:4px 0;padding:8px}
+ .teaching-module .course-card dl{margin:4px 0;gap:6px}
+ .teaching-module .course-card dl>div{align-items:center;padding:6px 0;border-top:1px solid var(--border)}
+ .teaching-module .course-card dd{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:4px 7px;margin:0}
+ .course-plan-state{font-size:11px;font-weight:650;color:#53667b;background:#eef1f5;padding:2px 6px;border-radius:4px;white-space:nowrap}
+ .course-plan-state[data-status="확정"]{color:#24694d;background:#e8f3ec}
+ .course-plan-state[data-status="검토 중"]{color:#80541b;background:#faf1e2}
+ .teaching-module .course-card dd small{font-size:11px;color:var(--text-secondary);font-weight:400}
+ .teaching-module .plan-savebar{gap:8px;padding:12px;border-radius:var(--ui-panel-radius,11px)}
+ .teaching-module .teaching-section{padding:16px;border-radius:var(--ui-panel-radius,11px)}
+ .teaching-module .teaching-grid-scroll,.teaching-module .rubric-element .table-scroll{min-width:0;max-width:100%;overflow:auto;overscroll-behavior-inline:contain}
+ .teaching-module .teaching-week-grid :is(th,td){padding:6px}
+ .teaching-module .teaching-week-grid thead th{background:#edf2f8;z-index:2}
+ .teaching-module .teaching-week-grid textarea{margin-bottom:3px;padding:6px;line-height:1.55}
+ .teaching-module .assessment-mode{gap:10px;margin-bottom:12px}
+ .teaching-module .assessment-card{margin-bottom:12px;border-radius:8px}
+ .teaching-module .assessment-card-heading{padding:10px 12px;gap:8px;flex-wrap:wrap;background:#f7f9fb}
+ .assessment-title-block{min-width:0;flex:1 1 160px}
+ .assessment-title-block p{font-size:12px;color:var(--text-secondary);margin-top:2px;overflow-wrap:anywhere}
+ .teaching-module .assessment-fields{padding:12px;gap:10px}
+ .teaching-module .assessment-fields label,.teaching-module .rubric-element label{gap:4px;min-width:0}
+ .teaching-module .rubric-editor{padding:12px;min-width:0}
+ .teaching-module .rubric-element{padding:10px;margin:8px 0;min-width:0}
+ .teaching-module .rubric-table :is(th,td){padding:5px}
+ .teaching-module .rubric-table th{background:#edf2f8}
+ .teaching-module .rubric-table textarea{line-height:1.5}
+ .teaching-read-value{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--foreground);font-weight:400;padding:6px 0;border-bottom:1px solid var(--border)}
+}
+@media screen and (max-width:767px) {
+ .teaching-module .teaching-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px}
+ .teaching-module .teaching-tabs{flex-wrap:wrap;overflow:visible}
+ .teaching-module .teaching-tabs button{flex:1 1 auto;white-space:normal;padding:7px;font-size:12px;min-height:44px}
+ .teaching-module .course-cards{grid-template-columns:minmax(0,1fr);gap:8px}
+ .teaching-module .course-card{padding:12px}
+ .teaching-module .plan-savebar{padding:10px}
+ .teaching-module .plan-savebar .teaching-actions{width:100%;gap:6px}
+ .teaching-module .teaching-actions [data-slot=button]{white-space:normal;min-width:0}
+ .teaching-module .teaching-section{padding:10px}
+ .teaching-week-navigation{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:end;gap:4px;margin:8px 0}
+ .teaching-week-navigation label,.teaching-week-navigation select{min-width:0;width:100%}
+ .teaching-week-navigation button{padding-inline:4px}
+ .teaching-module .teaching-week-mobile-card{padding:10px;gap:9px}
+ .teaching-week-mobile-card h3{padding-bottom:6px;border-bottom:1px solid var(--border);font-size:15px}
+ .teaching-week-mobile-card label{min-width:0;font-size:13px;gap:4px}
+ .teaching-week-mobile-card textarea{line-height:1.6}
+ .teaching-module .assessment-mode label{min-width:0;flex:1 1 100%}
+ .teaching-module .assessment-fields{grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:8px}
+ .teaching-module .assessment-wide{grid-column:1/-1;min-width:0}
+ .teaching-module .assessment-fields :is(input,select,textarea){min-width:0;width:100%;max-width:100%}
+ .teaching-module .rubric-editor{padding:8px}
+ .teaching-module .rubric-element-heading{flex-wrap:wrap;gap:8px}
+ .teaching-module .rubric-element-heading label:first-child{min-width:120px}
+ .teaching-module .rubric-element .table-scroll{border:1px solid var(--border);border-radius:6px}
+ .teaching-module .assessment-card-heading .row-tools{flex-wrap:wrap;gap:4px}
+ .teaching-module .assessment-card-heading .row-tools button{min-width:44px;min-height:44px;padding:5px}
+}

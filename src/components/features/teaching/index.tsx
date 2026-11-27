@@ -1,5 +1,6 @@
 "use client";
 import { Disclosure } from "@/components/ui/disclosure";
+import "./teaching-display.css";
 import { RecoveryDraft } from "./recovery-draft";
 import { canPlan } from "@/lib/planning-completion";
 import {
@@ -428,14 +429,14 @@ export function TeachingModule({
                         <div>
                           <dt>교수학습계획</dt>
                           <dd>
-                            {doc.lesson_status} · {doc.units.length}개 수업
+                            <span className="course-plan-state" data-status={doc.lesson_status}>{doc.lesson_status}</span><small>{doc.units.length ? `${doc.units.length}개 수업` : "등록된 수업 없음"}</small>
                           </dd>
                         </div>
                         {doc.evaluations.map((ev) => (
                           <div key={ev.semester}>
                             <dt>{ev.semester}학기 평가</dt>
                             <dd>
-                              {ev.status} · {ev.items.length}항목
+                              <span className="course-plan-state" data-status={ev.status}>{ev.status}</span><small>{ev.items.length ? `${ev.items.length}항목` : "등록된 평가 없음"}</small>
                             </dd>
                           </div>
                         ))}

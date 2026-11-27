@@ -204,9 +204,10 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
             </Button>
             {!wide && mobileRow && (
               <>
-                <div className="mobile-view-toolbar">
+                <div className="mobile-view-toolbar teaching-week-navigation">
+                  <Button variant="outline" size="sm" aria-label="이전 주차" disabled={rows.indexOf(mobileRow) <= 0} onClick={() => { const previous = rows[rows.indexOf(mobileRow)-1]; if(previous) setWeekAnchor(previous.week.anchor); }}>이전</Button>
                   <label>
-                    작성할 주차
+                    {editable ? "작성할 주차" : "조회할 주차"}
                     <select
                       value={mobileRow.week.anchor}
                       onChange={(e) => setWeekAnchor(e.target.value)}
@@ -218,11 +219,12 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       ))}
                     </select>
                   </label>
+                  <Button variant="outline" size="sm" aria-label="다음 주차" disabled={rows.indexOf(mobileRow) >= rows.length-1} onClick={() => { const next = rows[rows.indexOf(mobileRow)+1]; if(next) setWeekAnchor(next.week.anchor); }}>다음</Button>
                 </div>
                 {(() => {
                   const { week, unit } = mobileRow;
                   return (
-                    <article className="mobile-edit-card">
+                    <article className="mobile-edit-card teaching-week-mobile-card">
                       <h3>{week.period}</h3>
                       {week.calendarNotes.map((note) => (
                         <p key={note}>{note}</p>
@@ -276,7 +278,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       {(Object.keys(fields) as Field[]).map((field) => (
                         <label key={field}>
                           {fields[field].label}
-                          <textarea
+                          {editable ? <textarea
                             rows={field === "title" ? 2 : 4}
                             maxLength={fields[field].max}
                             readOnly={!editable}
@@ -290,7 +292,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                                 field,
                               )
                             }
-                          />
+                          /> : <p className="teaching-read-value">{unit?.[field] || "—"}</p>}
                         </label>
                       ))}
                       <LessonLinks

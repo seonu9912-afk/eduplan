@@ -126,9 +126,9 @@ export function AssessmentEditor({
           tabIndex={-1}
         >
           <div className="assessment-card-heading">
-            <h3>
+            <div className="assessment-title-block"><h3>
               {i + 1}. {a.name || "새 평가 항목"}
-            </h3>
+            </h3><p>{[a.type,a.period,weighted && a.ratio !== null ? `${a.ratio}% 반영` : ""].filter(Boolean).join(" · ")}</p></div>
             <div className="row-tools">
               <button
                 aria-label={`${i + 1}번 평가 위로`}
