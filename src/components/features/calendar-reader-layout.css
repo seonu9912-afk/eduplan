@@ -50,3 +50,45 @@
  .calendar-reader-shell .calendar-reader-layout,.calendar-reader-shell .official-schedule-main { display:block; }
  .calendar-reader-shell .calendar-reader-sidebar,.calendar-reader-shell .calendar-reader-mobile-agenda { display:none!important; }
 }
+
+/* Stage 2: the monthly calendar uses one geometry for academic and work plans. */
+@media screen and (min-width:768px) {
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar-wrap { overflow:visible; border-radius:14px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar { table-layout:fixed; border-collapse:separate; border-spacing:0; width:100%; background:var(--card); border-radius:14px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar col { width:calc(100% / 7); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar :is(th,td) { box-sizing:border-box; border-color:var(--border); border-right:1px solid var(--border); border-left:0; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar :is(th,td):last-child { border-right:0; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar thead th { height:32px; padding:6px 0; background:var(--card); border-top:0; border-bottom:0; font-size:13px; font-weight:600; color:var(--text-secondary); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar thead th:first-child { border-radius:14px 0 0 0; color:var(--ep-fg-a64750,#a64750); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar thead th:last-child { border-radius:0 14px 0 0; color:var(--ep-fg-326198,#326198); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar .school-calendar-date-row td { height:34px; padding:1px 3px; border-top:1px solid var(--border); }
+ .calendar-reader-shell[data-calendar-view="month"] .calendar-desktop-day { min-height:30px; height:30px; }
+ .calendar-reader-shell[data-calendar-view="month"] .calendar-desktop-day time { font-size:14px; width:28px; height:28px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-date-row td:first-child time { color:var(--ep-fg-a64750,#a64750); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-date-row td:last-child time { color:var(--ep-fg-326198,#326198); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-date-row td[data-outside] time { color:var(--text-secondary); opacity:.65; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-date-row time[aria-current="date"] { opacity:1; color:white!important; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-calendar td[data-outside]:not([data-selected]) { background:color-mix(in srgb,var(--surface-muted) 44%,var(--card)); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row td { height:26px; padding:0 3px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row .school-reader-event { height:24px; min-height:24px; margin:1px 0; padding:2px 5px; gap:3px; border-radius:4px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row .school-reader-event[data-multiday] { background:color-mix(in srgb,var(--event-accent) 23%,var(--card)); }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-event[data-continues-before] { border-top-left-radius:0; border-bottom-left-radius:0; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-event[data-continues-after] { border-top-right-radius:0; border-bottom-right-radius:0; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row .schedule-department-title { display:flex; gap:3px; flex-wrap:nowrap; min-width:0; width:100%; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row .schedule-detail-trigger { flex:1; min-width:0; font-size:13px; line-height:18px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+ .calendar-reader-shell[data-calendar-view="month"] .month-event-time { font-size:11px; font-weight:500; }
+ .calendar-reader-shell[data-calendar-view="month"] .calendar-desktop-overflow td { height:24px; padding:0 5px; }
+ .calendar-reader-shell[data-calendar-view="month"] .calendar-desktop-overflow button { display:block; max-width:100%; min-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:12px; color:var(--text-secondary); text-align:left; }
+ .calendar-reader-shell[data-calendar-view="month"] .calendar-desktop-overflow button:hover { color:var(--primary); text-decoration:underline; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-week-space td { height:6px; border-bottom:0; padding:0; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-week:last-child .school-calendar-week-space td:first-child { border-bottom-left-radius:14px; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-week:last-child .school-calendar-week-space td:last-child { border-bottom-right-radius:14px; }
+}
+@media screen and (min-width:768px) and (max-width:1100px) {
+ .calendar-reader-shell[data-calendar-view="month"] .month-overflow-label { display:none; }
+}
+@media print {
+ .calendar-reader-shell[data-calendar-view="month"] .school-calendar-event-row:not([data-calendar-padding]) { display:table-row; }
+ .calendar-reader-shell[data-calendar-view="month"] .school-reader-event { height:auto; overflow:visible; }
+ .calendar-reader-shell[data-calendar-view="month"] .schedule-detail-trigger { white-space:normal; overflow:visible; }
+}

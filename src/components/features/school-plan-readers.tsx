@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { canPlan } from "@/lib/planning-completion";
 import { addDays, dateLabel, monthRange, weekRange, seoulToday } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
-import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
+import { calendarWeekLanes, compactCalendarWeek, monthlyCalendarLaneCount, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
 import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
@@ -79,6 +79,17 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const officialContext = { ...c, schoolPublications: displayed };
   const dates = view === "year" ? [] : view === "week" ? visibleWeekDates(date, weekend.showWeekends, start) : scheduleDates(date, view);
   const columns = view === "week" ? dates.length : 7;
+  const monthWeeks = view === "month" ? dates.length / 7 : 0;
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [monthRows, setMonthRows] = useState(4);
+  useEffect(() => {
+    if (!monthWeeks) return;
+    const element = calendarRef.current;
+    const update = () => setMonthRows(monthlyCalendarLaneCount(window.innerHeight, element ? element.getBoundingClientRect().top + window.scrollY : 0, monthWeeks));
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [monthWeeks, sidebarCollapsed, searchOpen, listView.isList]);
   const visibleEnd = view === "week" ? dates[dates.length - 1] : range.end;
   const days = publishedScheduleDays(officialContext, dates.filter((day) => day >= start && day <= end), work);
   const calendarDays = workWeek ? new Map([...days].map(([day, value]) => [day, { ...value, entries: value.entries.filter((entry) => !entry.operationGroup) }])) : days;
@@ -145,11 +156,11 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 aria-label={`${day} 날짜 이동`} onClick={() => selectMiniDay(day)}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
             </div>
           </section>);
-  const dayAgenda = (<div className={"school-calendar-agenda calendar-selected-agenda"} aria-label="선택한 날짜의 일정">
+  const dayAgenda = (inDialog = false) => (<div className={"school-calendar-agenda calendar-selected-agenda"} aria-label="선택한 날짜의 일정">
             {agendaDates.map((day) => {
               const schedule = days.get(day);
               const mainEntries = calendarDays.get(day)?.entries ?? [];
-              return <section key={day} id={work && listView.isList ? `selected-agenda-${day}` : `agenda-${day}`} aria-label={dateLabel(day)}
+              return <section key={day} id={inDialog ? `agenda-${day}` : `mobile-agenda-${day}`} aria-label={dateLabel(day)}
                 data-selected={day === date ? "" : undefined} data-today={day === today ? "" : undefined}>
                 <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
                   <span>{day === today ? "오늘 · " : ""}{(schedule?.entries ?? mainEntries).length}건</span></h3>
@@ -229,15 +240,18 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         </div>
         <div className="school-calendar-desktop">
           {!available ? <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p> : (
-            <div className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
-              <table className="school-reader-calendar" data-work-week={workWeek?"":undefined} aria-label="공개 일정표">
+            <div ref={calendarRef} className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
+              <table className="school-reader-calendar" data-work-week={workWeek?"":undefined} data-month-grid={view==="month"?"":undefined} data-visible-lanes={view==="month"?monthRows:3} aria-label="공개 일정표">
+                {view==="month" && <colgroup>{weekdays.map(day=><col key={day}/>)}</colgroup>}
                 {workWeek && <colgroup><col className="work-week-label-col"/>{dates.map(day=><col key={day}/>)}</colgroup>}
                 <thead><tr>{workWeek && <th scope="col" className="work-week-row-label">구분</th>}{(view === "week" ? weekLabels.slice(0, columns) : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
                 {Array.from({ length: dates.length / columns }, (_, i) => {
                   const week = dates.slice(i * columns, i * columns + columns);
-                  const lanes = calendarWeekLanes(week, calendarDays);
-                  const displayLanes = Array.from({length: Math.max(3,lanes.length)},(_,index)=>lanes[index] ?? []);
-                  const overflow = week.map((_,col)=>lanes.slice(3).flat().filter(item=>item.start<=col&&item.end>=col).length);
+                  const maxRows = view === "month" ? monthRows : 3;
+                  const compact = view === "month" ? compactCalendarWeek(week, calendarDays, maxRows) : null;
+                  const lanes = compact ? [...compact.lanes, ...compact.overflowLanes] : calendarWeekLanes(week, calendarDays);
+                  const displayLanes = Array.from({length: Math.max(maxRows,lanes.length)},(_,index)=>lanes[index] ?? []);
+                  const overflow = compact?.hidden ?? week.map((_,col)=>lanes.slice(maxRows).flat().filter(item=>item.start<=col&&item.end>=col).length);
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">
                     <tr className="school-calendar-date-row">{workWeek && <th className="work-week-row-label" aria-hidden="true"/>}{week.map((day) => (
@@ -245,18 +259,18 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                         <button type="button" className="calendar-desktop-day" aria-label={`${day} 일정 보기`} aria-pressed={day===date} disabled={day<start||day>end} onClick={()=>selectDesktopDay(day)}><time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time></button>
                       </td>
                     ))}</tr>
-                    {displayLanes.map((lane, index) => <tr className="school-calendar-event-row" data-calendar-overflow={index>=3 ? "" : undefined} data-calendar-padding={index>=lanes.length ? "" : undefined} key={index}>
+                    {displayLanes.map((lane, index) => <tr className="school-calendar-event-row" data-calendar-overflow={index>=maxRows ? "" : undefined} data-calendar-padding={lane.length===0 ? "" : undefined} key={index}>
                       {workWeek && <th className="work-week-row-label" scope={index===0?"row":undefined}>{index===0?"일정":""}</th>}
                       {week.map((day, col) => {
                         const span = lane.find((item) => item.start <= col && item.end >= col);
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
                           data-today={day === today && (!span || span.start === span.end) ? "" : undefined} data-selected={day===date && (!span || span.start===span.end) ? "" : undefined} data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
-                          {span && <DesktopCalendarEvent entry={span.entry} today={today} onOpen={showEntry} />}
+                          {span && <DesktopCalendarEvent entry={span.entry} today={today} onOpen={showEntry} month={view==="month"} continuesBefore={span.entry.date<week[span.start]} continuesAfter={span.entry.end>week[span.end]} />}
                         </td>;
                       })}
                     </tr>)}
-                    <tr className="calendar-desktop-overflow no-print">{workWeek&&<th className="work-week-row-label" aria-hidden="true"/>}{week.map((day,col)=><td key={day} data-selected={day===date?"":undefined} data-today={day===today?"":undefined} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}</button>}</td>)}</tr>
+                    <tr className="calendar-desktop-overflow no-print">{workWeek&&<th className="work-week-row-label" aria-hidden="true"/>}{week.map((day,col)=><td key={day} data-selected={day===date?"":undefined} data-today={day===today?"":undefined} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}{view==="month" && <span className="month-overflow-label">개 더보기</span>}</button>}</td>)}</tr>
                     <tr className="school-calendar-week-space" aria-hidden="true">{workWeek&&<th className="work-week-row-label"/>}{week.map((day) => (
                       <td key={day} data-today={day === today ? "" : undefined} data-selected={day===date?"":undefined} data-outside={outside(day)} />
                     ))}</tr>
@@ -276,12 +290,12 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             </div>
           )}
         </div>
-        <div className="calendar-reader-mobile-agenda no-print">{dayAgenda}</div>
+        <div className="calendar-reader-mobile-agenda no-print">{dayAgenda()}</div>
         </>}
       </>}
         </div>
       </div>
-      <Modal open={secondary==="agenda" && !detail.entry} onOpenChange={open=>{if(!open)setSecondary(null)}} title="선택 날짜 일정" description="해당 날짜에 등록된 전체 일정을 확인합니다." wide><div className="calendar-reader-agenda-dialog">{dayAgenda}</div></Modal>
+      <Modal open={secondary==="agenda" && !detail.entry} onOpenChange={open=>{if(!open)setSecondary(null)}} title="선택 날짜 일정" description="해당 날짜에 등록된 전체 일정을 확인합니다." wide><div className="calendar-reader-agenda-dialog">{dayAgenda(true)}</div></Modal>
       <ScheduleDetailDialog context={selected && !searchResult ? undefined : c} entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
       <Modal open={secondary==="history"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="공개 이력">
         <div className="calendar-history-modal">        <ul>{updates.map((item) => <li key={item.id}>
@@ -311,10 +325,10 @@ function OperationEntries({ entries, today, onOpen }: { entries: ScheduleEntry[]
   </div>)}</div>;
 }
 
-function DesktopCalendarEvent({ entry, today, onOpen }: { entry: ScheduleEntry; today: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
+function DesktopCalendarEvent({ entry, today, onOpen, month = false, continuesBefore = false, continuesAfter = false }: { entry: ScheduleEntry; today: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void; month?: boolean; continuesBefore?: boolean; continuesAfter?: boolean }) {
   const detail = entry.tone === "work" ? entry.time : "";
-  return <div className="school-reader-event" data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-    <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={onOpen} /></div>{detail && <small>{detail}</small>}
+  return <div className="school-reader-event" data-multiday={month && entry.date!==entry.end?"":undefined} data-continues-before={month && continuesBefore?"":undefined} data-continues-after={month && continuesAfter?"":undefined} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
+    <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={onOpen}>{month && entry.date===entry.end && entry.time && <span className="month-event-time">{entry.time} </span>}{entry.title}</ScheduleDetailTitle></div>{detail && !month && <small>{detail}</small>}
     <ResourceLinks value={entry.resources} compact />
   </div>;
 }

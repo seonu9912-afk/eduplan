@@ -133,10 +133,22 @@ export function compactCalendarWeek(dates: string[], days: ReadonlyMap<string, {
   const spans = calendarWeekLanes(dates, days).flat().sort((a,b) => (b.end-b.start)-(a.end-a.start) || a.start-b.start);
   const lanes: CalendarSpan[][] = Array.from({length: maxRows}, () => []);
   const hidden = dates.map(() => 0);
+  const overflowLanes: CalendarSpan[][] = [];
   for (const span of spans) {
     const lane = lanes.find(row => row.every(item => item.end < span.start || item.start > span.end));
     if (lane) lane.push(span);
-    else for (let col=span.start; col<=span.end; col++) hidden[col]++;
+    else {
+      const overflowLane = overflowLanes.find(row => row.every(item => item.end < span.start || item.start > span.end));
+      if (overflowLane) overflowLane.push(span); else overflowLanes.push([span]);
+      for (let col=span.start; col<=span.end; col++) hidden[col]++;
+    }
   }
-  return { lanes, hidden };
+  return { lanes, hidden, overflowLanes };
+}
+
+/** Keep readable event rows even on short screens; larger viewports show more. */
+export function monthlyCalendarLaneCount(viewportHeight: number, top: number, weeks: number): number {
+  const available = Math.max(0, viewportHeight - Math.max(0, top) - 24 - 32);
+  const perWeek = available / Math.max(1, weeks);
+  return Math.max(4, Math.min(6, Math.floor((perWeek - 64) / 26)));
 }
