@@ -1,33 +1,49 @@
-/* Department colors are independent of the surrounding event category. */
-.schedule-department-badge {
+/* One pastel surface per entry; department labels use the same foreground. */
+.schedule-department-badge, [data-department-color] {
   --dept-fg: #46576b;
-  --dept-bg: #e8edf2;
+  --dept-bg: #eef1f4;
+}
+.schedule-department-badge[data-color="blue"], [data-department-color="blue"] { --dept-fg: #24528e; --dept-bg: #e0ebfa; }
+.schedule-department-badge[data-color="amber"], [data-department-color="amber"] { --dept-fg: #8a4d12; --dept-bg: #f8ead5; }
+.schedule-department-badge[data-color="rose"], [data-department-color="rose"] { --dept-fg: #983b60; --dept-bg: #f8e1eb; }
+.schedule-department-badge[data-color="purple"], [data-department-color="purple"] { --dept-fg: #65418b; --dept-bg: #ede4f7; }
+.schedule-department-badge[data-color="green"], [data-department-color="green"] { --dept-fg: #24694d; --dept-bg: #dcefe4; }
+.schedule-department-badge[data-color="teal"], [data-department-color="teal"] { --dept-fg: #14676b; --dept-bg: #d8eff0; }
+.schedule-department-badge[data-color="indigo"], [data-department-color="indigo"] { --dept-fg: #4c4f93; --dept-bg: #e6e7fa; }
+[data-department-color="closure"] { --dept-fg: #963e44; --dept-bg: #f9e3e3; }
+.schedule-department-badge {
   display: inline-block;
-  align-self: start;
   flex: none;
   max-width: min(100%, 92px);
-  padding: 2px 5px;
-  border-radius: 4px;
-  background: var(--dept-bg);
   color: var(--dept-fg);
+  background: transparent;
   font-size: 11px;
-  font-weight: 700;
-  line-height: 1.35;
+  font-weight: 750;
+  line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: baseline;
 }
-.schedule-department-badge[data-color="blue"] { --dept-fg: #24528e; --dept-bg: #e0ebfa; }
-.schedule-department-badge[data-color="amber"] { --dept-fg: #8a4d12; --dept-bg: #f8ead5; }
-.schedule-department-badge[data-color="rose"] { --dept-fg: #983b60; --dept-bg: #f8e1eb; }
-.schedule-department-badge[data-color="purple"] { --dept-fg: #65418b; --dept-bg: #ede4f7; }
-.schedule-department-badge[data-color="green"] { --dept-fg: #24694d; --dept-bg: #dcefe4; }
-.schedule-department-badge[data-color="teal"] { --dept-fg: #14676b; --dept-bg: #d8eff0; }
-.schedule-department-badge[data-color="indigo"] { --dept-fg: #4c4f93; --dept-bg: #e6e7fa; }
-.schedule-department-title { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.schedule-department-title { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; min-width: 0; }
 .schedule-department-title > :last-child { min-width: 0; overflow-wrap: anywhere; }
+.school-reader-event[data-department-color],
+.home-week-event[data-department-color],
+.home-week-detail-list > li[data-department-color],
+.mobile-calendar-cell-entry[data-department-color],
+.school-calendar-agenda > section > ul > li[data-department-color] > div,
+.work-card[data-department-color] {
+  background: var(--dept-bg);
+  color: var(--dept-fg);
+}
+.school-calendar-agenda > section > ul > li[data-department-color] strong,
+.school-calendar-agenda > section > ul > li[data-department-color] .schedule-agenda-time,
+.work-card[data-department-color] .work-card-title,
+.work-card[data-department-color] strong { color: var(--dept-fg); }
+[data-department-color] .schedule-department-badge { color: inherit; }
+.work-card[data-department-color] { border: 0; border-radius: 5px; padding: 6px; margin-block: 3px; }
 .work-day-extras .schedule-department-badge { display: none; }
+.work-day-extras .work-card[data-department-color] { padding: 6px; }
 @media print {
-  .schedule-department-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  [data-department-color] { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 }

@@ -12,6 +12,7 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
 import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
+import { scheduleDepartmentColor } from "@/lib/department-badge";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -112,10 +113,10 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
                   {day === today && <span>오늘</span>}</h3>
                 {schedule?.entries.length ? <ul>{schedule.entries.map((entry) => {
-                  const detail = [work ? undefined : entry.department, entry.location].filter(Boolean).join(" · ");
-                  return <li key={entry.id} data-tone={entry.tone}>
+                  const detail = [entry.location].filter(Boolean).join(" · ");
+                  return <li key={entry.id} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
-                    <div><div className="schedule-department-title">{work && entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
+                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
                       {detail && <small>{detail}</small>}
                       <ResourceLinks value={entry.resources} />
                     </div>
@@ -148,7 +149,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
                           data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
-                          {span && <DesktopCalendarEvent entry={span.entry} showDepartment={work} />}
+                          {span && <DesktopCalendarEvent entry={span.entry} />}
                         </td>;
                       })}
                     </tr>)}
@@ -176,10 +177,10 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   );
 }
 
-function DesktopCalendarEvent({ entry, showDepartment }: { entry: ScheduleEntry; showDepartment: boolean }) {
-  const detail = entry.tone === "work" ? [entry.time, showDepartment ? undefined : entry.department].filter(Boolean).join(" · ") : "";
-  return <div className="school-reader-event" data-tone={entry.tone}>
-    <div className="schedule-department-title">{showDepartment && entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></div>{detail && <small>{detail}</small>}
+function DesktopCalendarEvent({ entry }: { entry: ScheduleEntry }) {
+  const detail = entry.tone === "work" ? entry.time : "";
+  return <div className="school-reader-event" data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
+    <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></div>{detail && <small>{detail}</small>}
     <ResourceLinks value={entry.resources} compact />
   </div>;
 }

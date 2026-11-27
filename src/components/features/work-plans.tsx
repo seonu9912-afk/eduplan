@@ -27,6 +27,7 @@ import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-da
 import { shiftScheduleDate } from "@/lib/schedule-dates";
 import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
+import { scheduleDepartmentColor } from "@/lib/department-badge";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
@@ -129,7 +130,7 @@ export function WorkPlans({
   };
   const deptTag = (department: string) => <DepartmentBadge department={department} />;
   const businessCard = (b: Business) => (
-    <article className="work-card" key={b.id}>
+    <article className="work-card" key={b.id} data-department-color={scheduleDepartmentColor(b.department)}>
       {deptTag(b.department)}
       <div>
         {editable ? (
@@ -178,7 +179,7 @@ export function WorkPlans({
                 (!departmentFilter || e.department === departmentFilter),
             )
             .map((e) => (
-              <article key={e.id} className="work-card academic-work-card">
+              <article key={e.id} className="work-card academic-work-card" data-department-color={scheduleDepartmentColor(e.department)}>
                 {deptTag(e.department)}
                 <div>
                   <strong>{e.title}</strong>
@@ -198,7 +199,7 @@ export function WorkPlans({
                 !c.events.some((e) => e.id === a.eventId),
             )
             .map((a) => (
-              <article key={a.id} className="work-card academic-work-card">
+              <article key={a.id} className="work-card academic-work-card" data-department-color={scheduleDepartmentColor(a.department)}>
                 {deptTag(a.department)}
                 <div>
                   <strong>{a.title}</strong>
@@ -560,13 +561,13 @@ export function WorkPlans({
                 const closure = plan.holidays[day] || plan.vacations.find((item) => item.start <= day && item.end >= day)?.name;
                 if (closure) entries.push({ title: closure, tone: "break" });
                 for (const event of c.events) {
-                  if (event.start_date <= day && event.end_date >= day && matchesDepartment(event.department)) entries.push({ title: event.title, tone: "event" });
+                  if (event.start_date <= day && event.end_date >= day && matchesDepartment(event.department)) entries.push({ title: event.title, tone: "event", department: event.department });
                 }
                 for (const allocation of plan.allocations) {
-                  if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) entries.push({ title: allocation.title, tone: "event" });
+                  if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) entries.push({ title: allocation.title, tone: "event", department: allocation.department });
                 }
                 for (const item of plan.business) {
-                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) entries.push({ title: item.text, tone: "work" });
+                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) entries.push({ title: item.text, tone: "work", department: item.department });
                 }
                 return entries;
               }} onNavigate={navigate} onSelect={(day) => {

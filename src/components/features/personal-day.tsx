@@ -14,6 +14,7 @@ import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type S
 import { scheduleDates } from "@/lib/schedule-dates";
 import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
+import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import "./school-operations.css";
 
@@ -178,7 +179,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
       </button>)}
       {lanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
-        <button type="button" className="home-week-event" data-tone={entry.tone}
+        <button type="button" className="home-week-event" data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
           key={`${entry.id}:${start}:${row}`}
           style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
           aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
@@ -191,7 +192,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
     <div className="home-week-detail" aria-live="polite">
       <h3>{dayTitle(selected)} 일정</h3>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
-        <li key={`${entry.id}:${index}`} data-tone={entry.tone}>
+        <li key={`${entry.id}:${index}`} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
           <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<strong>{entry.title}</strong></div>
           <small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
           <ResourceLinks value={entry.resources} compact />

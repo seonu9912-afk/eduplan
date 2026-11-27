@@ -2,10 +2,12 @@ import { useRef } from "react";
 import { dateLabel } from "@/lib/domain";
 import { scheduleDates, type CalendarPeriod } from "@/lib/schedule-dates";
 import "./mobile-calendar-dates.css";
+import { scheduleDepartmentColor } from "@/lib/department-badge";
+import "./department-badge.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
-export type CalendarCellItem = { tone: CalendarTone; title: string };
+export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string };
 
 export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate }: {
   date: string;
@@ -52,7 +54,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
             disabled={!enabled} aria-pressed={day === date} aria-current={day === today ? "date" : undefined}
             onClick={() => onSelect(day)}>
             <time dateTime={day}>{Number(day.slice(8))}</time>
-            {first && <span className="mobile-calendar-cell-entry" data-tone={first.tone} aria-hidden="true">
+            {first && <span className="mobile-calendar-cell-entry" data-tone={first.tone} data-department-color={scheduleDepartmentColor(first.department, first.tone)} aria-hidden="true">
               <span>{first.title}</span>{entries.length > 1 && <small>+{entries.length - 1}</small>}
             </span>}
           </button>;

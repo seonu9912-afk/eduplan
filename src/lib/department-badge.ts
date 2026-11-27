@@ -18,3 +18,8 @@ export function departmentBadgeInfo(department?: string) {
   for (const character of name) hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0;
   return { name, short: name, color: palette[hash % palette.length] };
 }
+
+/** A closure always takes precedence; all other entries follow their department. */
+export function scheduleDepartmentColor(department?: string, tone?: string) {
+  return tone === "break" ? "closure" : departmentBadgeInfo(department).color;
+}
