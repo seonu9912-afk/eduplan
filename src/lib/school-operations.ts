@@ -630,8 +630,8 @@ export type DailyOperationSummary = {
 };
 
 export function compareLessonBells(
-  normal: { type: string; period?: number; start: string; end: string }[],
-  special: { type: string; period?: number; start: string; end: string }[],
+  normal: { type: string; period?: number | null; start: string; end: string }[],
+  special: { type: string; period?: number | null; start: string; end: string }[],
 ): DailyOperationSummary["changes"] {
   const map = (rows: typeof normal) => new Map(rows.filter(r => r.type === "lesson" && Number.isInteger(r.period)).map(r => [r.period!, r.start + "–" + r.end]));
   const a=map(normal), b=map(special);
