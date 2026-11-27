@@ -99,8 +99,8 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
                   {remaining !== null && <small>시작까지 {remaining >= 60 ? `${Math.floor(remaining / 60)}시간 ${remaining % 60}분` : `${remaining}분`}</small>}
                 </> : <p>{allFinished ? "오늘 예정된 수업 시간이 모두 지났습니다." : allCancelled ? "오늘 운영되는 수업이 없습니다." : lessons.length ? "다음 수업 시각을 확인할 수 없습니다." : "오늘 배정된 수업이 없습니다."}</p>}
               </div>}
-              {periodCount > 0 && hasCalendar && <div className="home-period-desktop">
-                <ol className="home-period-grid" style={{"--home-period-columns": Math.min(7, periodCount)} as CSSProperties} aria-label="오늘 교시별 수업">
+              {periodCount > 0 && (hasCalendar || lessons.length > 0) && <div className="home-period-desktop">
+                <ol className="home-period-grid" style={{"--home-period-columns": Math.min(7, periodCount), "--home-period-narrow-columns": Math.min(4, periodCount)} as CSSProperties} aria-label="오늘 교시별 수업">
                   {Array.from({length:periodCount},(_,index)=>{
                     const period=index+1;
                     const assigned=lessons.filter(lesson=>lesson.period===period);

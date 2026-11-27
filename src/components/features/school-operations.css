@@ -541,7 +541,7 @@
  .home-clock-date > span { display:none; }
  .home-live-clock { padding-block:4px; }
  .personal-day .personal-day-heading h2,.home-week-and-tasks .my-tasks h3 { font-size:16px; }
- .home-lessons-widget .personal-lesson-list { display:none; }
+ .home-lessons-widget:has(.home-period-desktop) .personal-lesson-list { display:none; }
  .home-period-desktop { display:grid; gap:6px; min-width:0; }
  .home-period-grid { display:grid; grid-template-columns:repeat(var(--home-period-columns),minmax(0,1fr)); gap:4px; list-style:none; padding:0; margin:0; }
  .home-period-grid li { display:grid; gap:3px; min-width:0; text-align:center; }
@@ -579,7 +579,6 @@
  .task-dashboard-more > summary::after { display:none; }
  .task-dashboard-menu { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:6px; border:1px solid var(--border); border-radius:6px; background:var(--card); }
  .task-dashboard-body { max-height:255px; overflow:auto; scrollbar-gutter:stable; }
- .task-dashboard-body:focus-within { outline:0; }
 }
 @media screen and (min-width:1024px) and (max-width:1250px) {
  .home-today-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -587,4 +586,8 @@
  .home-today-grid > .home-lessons-widget { height:250px; }
  .home-today-grid > .school-public-widget { height:230px; }
  .home-period-grid { grid-template-columns:repeat(var(--home-period-columns),minmax(0,1fr)); }
+}
+
+@media screen and (min-width:1251px) and (max-width:1450px) {
+ .home-period-grid { grid-template-columns:repeat(var(--home-period-narrow-columns),minmax(0,1fr)); }
 }

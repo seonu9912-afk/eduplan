@@ -109,7 +109,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
     : screen?.kind === "manage" ? "배포한 업무 관리" : "할 일 상세";
   return <>
     <details id="my-tasks" className={`my-tasks no-print${compact ? " my-tasks-compact" : ""}`} open>
-      <summary><ListTodo size={16} aria-hidden="true" /><h3>나의 할 일</h3>{(pending.length > 0 || compact && data) && <span>{compact ? `미완료 ${pending.length}건` : pending.length}</span>}</summary>
+      <summary><ListTodo size={16} aria-hidden="true" /><h3>나의 할 일</h3>{(pending.length > 0 || (compact || dashboard) && data) && <span>{compact || dashboard ? `미완료 ${pending.length}건` : pending.length}</span>}</summary>
       {data ? <>
         <div className="task-actions task-widget-actions" data-dashboard={dashboard ? "" : undefined}>
           <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "personal" })}><Plus size={16} />할 일 추가</Button>
