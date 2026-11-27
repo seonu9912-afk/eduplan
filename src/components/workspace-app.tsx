@@ -71,6 +71,8 @@ const Curriculum = dynamic(
 );
 import { SchoolSettings } from "@/components/features/settings";
 import { PlanOverview } from "@/components/features/plan-overview";
+import { OperationAudit } from "@/components/features/operation-audit";
+import type { AuditCheck } from "@/lib/operation-audit";
 import type { PlanOverviewRow } from "@/lib/plan-overview";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
@@ -102,6 +104,7 @@ export function WorkspaceApp({
   management = false,
   homePublicData,
   planOverview,
+  operationAudit,
 }: {
   context: Context;
   section: string;
@@ -111,6 +114,7 @@ export function WorkspaceApp({
   management?: boolean;
   homePublicData?: ReactNode;
   planOverview?: PlanOverviewRow[];
+  operationAudit?: AuditCheck[];
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<"school" | "profile" | "menu" | "notifications" | null>(
@@ -439,12 +443,12 @@ export function WorkspaceApp({
         {section === "curriculum" && !management && <OfficialCurriculum context={c} />}
         {section === "settings" && schoolAdmin ? (
           <>
-            {planOverview && c.year && <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} />}
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
               context={c}
+              overview={c.year ? <>{planOverview && <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} />}{operationAudit && <OperationAudit rows={operationAudit} workspaceId={c.workspace.id} year={c.year.year} />}{!planOverview && !operationAudit && <p role="status">계획 수립 및 점검 자료를 불러오지 못했습니다.</p>}</> : undefined}
+              installPanel={<PwaInstallPanel />}
             />
-            <PwaInstallPanel />
           </>
         ) : null}
         {section === "teaching" && management ? (

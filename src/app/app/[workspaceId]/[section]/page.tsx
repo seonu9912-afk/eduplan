@@ -8,6 +8,7 @@ import { managementDomains } from "@/lib/school-publications";
 import { SchoolHomePublicData } from "@/components/features/school-home-public-data";
 import { schoolMealEndTimes } from "@/lib/school-operations";
 import { loadPlanOverview } from "@/lib/plan-overview.server";
+import { loadOperationAudit } from "@/lib/operation-audit.server";
 export default async function WorkspacePage({
   params,
   searchParams,
@@ -36,7 +37,7 @@ export default async function WorkspacePage({
   context.operations = await getOperationsData(context, p.section, management);
   if (p.section === "teaching" && context.year && management)
     context.teaching = await getTeachingData(p.workspaceId, context.year.id);
-  const planOverview = p.section === "settings" && context.role === "admin" ? await loadPlanOverview(context) : undefined;
+  const [planOverview,operationAudit] = p.section === "settings" && context.role === "admin" ? await Promise.all([loadPlanOverview(context),loadOperationAudit(context)]) : [undefined,undefined];
   const today = seoulToday();
   return (
     <WorkspaceApp
@@ -48,6 +49,7 @@ export default async function WorkspacePage({
       initialScheduleDate={q.date}
       management={management}
       planOverview={planOverview}
+      operationAudit={operationAudit}
       homePublicData={p.section === "home"
         ? <SchoolHomePublicData school={context.school} today={today} unavailable={context.schoolInfoError} mealEnds={schoolMealEndTimes(context, today)} />
         : undefined}
