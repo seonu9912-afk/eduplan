@@ -64,6 +64,7 @@ import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/sch
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
 import { PlanPublicationPreview } from "./plan-publication-preview";
+import { duplicateEventDraft, duplicateEventEnd } from "@/lib/schedule-duplicate";
 
 type DayEdit = {
   kind: "day";
@@ -131,6 +132,8 @@ export function AcademicCalendar({
     rows: CalendarConflict[];
   } | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [copyDate, setCopyDate] = useState<string | null>(null);
+  const [copyError, setCopyError] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [restore, setRestore] = useState<CalendarHistory | null>(null);
   const [tools, setTools] = useState(false);
@@ -976,6 +979,12 @@ export function AcademicCalendar({
               >
                 {pending ? "저장 중…" : "행사·교시 편성 저장"}
               </button>
+              {!!edit.value.event.version && <button type="button" disabled={pending || dirty} onClick={() => {
+                setCopyError("");
+                const next = addDays(edit.value.event.start_date, 1);
+                const end = duplicateEventEnd(edit.value, next);
+                setCopyDate(end < `${year+1}-03-01` ? next : edit.value.event.start_date);
+              }}>행사 복제</button>}
               {!!edit.value.event.version && (
                 <button
                   onClick={() =>
@@ -1275,6 +1284,24 @@ export function AcademicCalendar({
             </button>
           </div>
         </div>
+      </Modal>
+      <Modal open={copyDate !== null} onOpenChange={(open) => { if (!open) setCopyDate(null); }}
+        title="행사 복제" description="원본 행사와 운영 교시를 새 날짜에 복사합니다. 저장하기 전에는 원본이나 새 일정에 변경이 반영되지 않습니다.">
+        {edit?.kind === "event" && copyDate !== null && <form className="form-stack" onSubmit={event => {
+          event.preventDefault();
+          try {
+            const value = duplicateEventDraft(edit.value, copyDate, year, c.userId, crypto.randomUUID());
+            setEdit({kind:"event",value,initial:structuredClone(edit.value),base:structuredClone(plan)});
+            setDate(copyDate);setMonth(copyDate.slice(0,7));setCopyDate(null);setCopyError("");
+            setMessage({text:"복제한 행사의 날짜와 운영 교시를 검토한 뒤 저장하세요.",error:false});
+          } catch (error) { setCopyError((error as Error).message); }
+        }}>
+          <p>원본: {edit.value.event.title} · {edit.value.event.start_date} ~ {edit.value.event.end_date}</p>
+          <label className="field">새 시작일<input type="date" required min={`${year}-03-01`} max={addDays(`${year+1}-03-01`,-1)} value={copyDate} onChange={e=>{setCopyDate(e.target.value);setCopyError("");}} /></label>
+          {copyDate && <p>새 기간: {copyDate} ~ {duplicateEventEnd(edit.value,copyDate)}</p>}
+          {copyError && <p role="alert">{copyError}</p>}
+          <Button type="submit" disabled={pending || !copyDate}>복제 후 검토</Button>
+        </form>}
       </Modal>
       <Modal
         open={confirmOpen}

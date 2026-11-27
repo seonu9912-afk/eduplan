@@ -665,6 +665,7 @@ export function WorkPlans({
           }}
         >
           <form
+            key={editing.id ?? "new-work"}
             className="annual-form-grid"
             onSubmit={(e) => {
               e.preventDefault();
@@ -766,6 +767,20 @@ export function WorkPlans({
               onChange={(resources) => setEditing({ ...editing, resources })} />
             {error && <p role="alert">{error}</p>}
             <Button>{editing.id ? "수정 적용" : "업무 추가"}</Button>
+            {editing.id && (
+              <Button type="button" variant="outline" onClick={(event) => {
+                const form = event.currentTarget.form;
+                if (!form) return;
+                const f = new FormData(form), choice = String(f.get("kind"));
+                const custom = choice.startsWith("operation:") ? choice.slice("operation:".length) : undefined;
+                const kind = custom ? (editing.kind === "당직" && custom === "당직" ? "당직" : "운영업무") : choice as Business["kind"];
+                setEditing({ date: clamp(addDays(String(f.get("date") || editing.date || date), 1)),
+                  department: String(f.get("department")), kind, operationName: kind === "운영업무" ? custom : undefined,
+                  text: String(f.get("text")), time: String(f.get("time")), location: String(f.get("location")),
+                  participants: String(f.get("participants")), resources: structuredClone(editing.resources ?? []) });
+                setError("");
+              }}>복제 후 새 업무 작성</Button>
+            )}
             {editing.id && (
               <Button
                 type="button"
