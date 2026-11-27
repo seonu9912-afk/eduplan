@@ -55,3 +55,18 @@ describe("published timetable sheet", () => {
     expect(tue.cells.length).toBeGreaterThan(0);
   });
 });
+
+describe("official timetable cancellation display",()=>{
+ it("keeps known weekday lessons for a published in-term closure but not ordinary free periods",()=>{
+  const c=operationsPreviewContext();
+  const original=timetableWeek(c,"2027-03-02","basic").weekdays[1].cells;
+  expect(original.length).toBeGreaterThan(0);
+  const plan=defaultAnnual(c.grades);
+  plan.holidays["2027-03-02"]="학교 휴업";
+  c.schoolPublications=[{id:"closed",workspace_id:c.workspace.id,academic_year_id:c.year!.id,domain:"calendar",source_version:1,starts_on:"2027-03-01",published_at:"2027-03-01T00:00:00Z",published_by:c.userId,change_note:"",payload:{document:plan,semesters:c.semesters,classes:c.classes,events:[]}}] as SchoolPlanPublication[];
+  const tue=timetableWeek(c,"2027-03-02","weekly",true).weekdays[1];
+  expect(tue.teaching).toBe(false);
+  expect(tue.cells.map(cell=>cell.id)).toEqual(original.map(cell=>cell.id));
+  expect(tue.cells.every(cell=>cell.badges?.includes("미실시"))).toBe(true);
+ });
+});

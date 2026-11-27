@@ -314,3 +314,21 @@
   .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .timetable-lesson-subject { font-size: 13px; }
   .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) td[data-today]:not(.timetable-nonperiod) { background: #f7faff; }
 }
+
+/* The official reader displays only lesson identity and concise change badges. */
+.official-timetable-grid[data-change-badges] button.official-lesson { display: grid; width: 100%; border: 0; text-align: center; cursor: pointer; font: inherit; }
+.official-timetable-grid[data-change-badges] button.official-lesson:focus-visible, .timetable-day-badge:focus-visible { outline: 2px solid #24528e; outline-offset: -2px; }
+.official-timetable-grid[data-change-badges] .official-lesson[data-cancelled] { background: #f1f2f4; border: 1px dashed #b6bec9; }
+.official-timetable-grid[data-change-badges] .official-lesson[data-cancelled] :is(.timetable-lesson-subject,.timetable-lesson-secondary) { color: #677484; text-decoration: line-through; }
+.official-timetable-grid[data-change-badges] .timetable-badges { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge, .timetable-day-badge { display: inline-block; width: fit-content; max-width: 100%; padding: 1px 4px; border-radius: 4px; background: #e7edf8; color: #30598d; font-size: 10px; line-height: 1.3; font-weight: 700; white-space: nowrap; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge[data-status="단축"], .timetable-day-badge { background: #f6e8cf; color: #86591f; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge[data-status="보결"] { background: #e9e1f6; color: #634494; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge[data-status="미실시"] { background: #e2e5e9; color: #526070; }
+.official-timetable-grid[data-change-badges] .timetable-status-badge[data-status="확인 필요"] { background: #f9e2d7; color: #8e452e; white-space: normal; }
+.timetable-day-badge { display: block; margin: 2px auto 0; border: 0; cursor: pointer; }
+.timetable-lesson-detail { display: grid; grid-template-columns: 80px minmax(0,1fr); gap: 8px 12px; font-size: 14px; }
+.timetable-lesson-detail dt { color: var(--text-secondary); font-weight: 650; }
+.timetable-lesson-detail dd { margin: 0; overflow-wrap: anywhere; }
+.timetable-detail-notice { margin-top: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
+@media print { .official-timetable-grid[data-change-badges] button.official-lesson { appearance: none; } }
