@@ -13,7 +13,7 @@ import {
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
 import { publicationAt } from "@/lib/school-publications";
-import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
+import { compactCalendarWeek, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
 import { visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
@@ -30,11 +30,12 @@ const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric
 const dayTitle = (date: string) => dayLabel.format(new Date(`${date}T00:00:00+09:00`));
 const lessonStatusLabels = { cancelled: "취소", finished: "종료", current: "진행 중", upcoming: "예정", unknown: "시각 확인" };
 
-export function PersonalDay({ context: c, today, previewNow, publicData }: {
+export function PersonalDay({ context: c, today, previewNow, publicData, shortcuts }: {
   context: Context;
   today: string;
   previewNow?: string;
   publicData?: ReactNode;
+  shortcuts?: ReactNode;
 }) {
   const [now, setNow] = useState(() => previewNow ? new Date(previewNow) : null);
   const doc = useMemo(() => publishedTimetable(c), [c]);
@@ -141,7 +142,10 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
     </div>
     <div className="home-week-and-tasks">
       <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
-      <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={clock.date} dashboard />
+      <aside className="home-dashboard-side" aria-label="개인 업무 및 바로가기">
+        <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={clock.date} dashboard />
+        {shortcuts && <div className="home-shortcuts">{shortcuts}</div>}
+      </aside>
     </div>
     <Modal open={lessonPeriod!==null} onOpenChange={open=>{if(!open)setLessonPeriod(null)}} title={`${lessonPeriod??""}교시 수업`} description={dayTitle(clock.date)}>
       <ul className="home-period-detail-list">{lessons.filter(lesson=>lesson.period===lessonPeriod).map((lesson,index)=><li key={lesson.id+":"+index}>
@@ -206,20 +210,22 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       const source = published?.get(day)?.entries ?? entries.filter((entry) => entry.date <= day && entry.end >= day);
       const visible = source.filter((entry) =>
         entry.tone !== "work" || !entry.department || entry.department === department || context.role !== "viewer");
-      return [day, { entries: visible }] as const;
+      return [day, { entries: visible, available: published ? !!published.get(day)?.available : true }] as const;
     }));
   }, [context, dates, department]);
-  const lanes = useMemo(() => calendarWeekLanes(dates, days), [dates, days]);
+  const {lanes: visibleLanes, hidden: overflowByDay} = useMemo(() => compactCalendarWeek(dates, days, 3), [dates, days]);
   const detail = days.get(selected)?.entries ?? [];
-  const visibleLanes = lanes.slice(0,3);
-  const overflowByDay=dates.map((_,column)=>lanes.slice(3).flat().filter(item=>item.start<=column&&item.end>=column).length);
+  const hasEntries = visibleLanes.some(lane=>lane.length>0);
+  const available = days.get(selected)?.available;
+  const weekAvailable = [...days.values()].some(day=>day.available);
   const firstMonth = dates[0].slice(0, 7);
   const lastMonth = dates[dates.length - 1].slice(0, 7);
   const monthTitle = firstMonth === lastMonth
     ? `${Number(firstMonth.slice(5))}월`
     : `${Number(firstMonth.slice(5))}월 – ${Number(lastMonth.slice(5))}월`;
 
-  return <section className="personal-widget home-weekly-agenda" aria-label="주간 일정">
+  return <div className="home-calendar-stack">
+  <section className="personal-widget home-weekly-agenda" aria-label="주간 일정">
     <header className="personal-day-heading">
       <h2><CalendarDays aria-hidden="true" />주간 일정</h2>
       <Link className="widget-link" href={plansHref}>월중·주간계획 <ArrowUpRight aria-hidden="true" /></Link>
@@ -238,8 +244,8 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         showWeekends={weekend.showWeekends} emphasizeToday spanDays={days}
         items={day => days.get(day)?.entries ?? []} onSelect={setSelection} onNavigate={step => setSelection(addDays(selected,step*7))} />
     </div>
-    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `52px repeat(3, 36px) 24px` }}>
-      {dates.map((day, column) => <div key={day} className="home-week-column" data-today={day === today ? "" : undefined} data-selected={day === selected ? "" : undefined}
+    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `48px repeat(3, 30px) 24px` }}>
+      {dates.map((day, column) => <div key={day} className="home-week-column"
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
         data-weekend={column >= 5 ? "" : undefined} aria-current={day === today ? "date" : undefined}
@@ -248,7 +254,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
       </button>)}
       {visibleLanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
-        <button type="button" className="home-week-event" data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
+        <button type="button" className="home-week-event" data-continues-before={entry.date<dates[start]?"":undefined} data-continues-after={entry.end>dates[end]?"":undefined} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
           key={`${entry.id}:${start}:${row}`}
           style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
           aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
@@ -257,16 +263,17 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           <span className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span>
         </button>))}
       {overflowByDay.map((count,column)=>count>0&&<button type="button" className="home-week-overflow" key={dates[column]} style={{gridColumn:column+1,gridRow:5}} onClick={()=>setSelection(dates[column])} aria-label={dayTitle(dates[column])+" 추가 일정 "+count+"건"}>+{count}</button>)}
-      {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
+      {!hasEntries && <p className="home-week-empty">{weekAvailable?"이번 주 등록된 일정이 없습니다.":"공개된 학교 일정이 없습니다."}</p>}
     </div>
-    <div className="home-week-detail" aria-live="polite">
-      <h3>{dayTitle(selected)} 일정{selected === today && <span className="home-week-today-label">오늘</span>}</h3>
+  </section>
+    <section className="personal-widget home-week-detail" aria-label="선택 날짜 상세 일정" aria-live="polite">
+      <header className="personal-day-heading home-detail-heading"><h2>{selected===today?"오늘의 일정":"선택한 날짜 일정"}</h2><span className="home-detail-count">{dayTitle(selected)} · {detail.length}건</span></header>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
         <li key={`${entry.id}:${index}`} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-          <ScheduleDetailTitle className="home-week-detail-trigger" entry={entry} onOpen={scheduleDetail.show}><span className="home-week-detail-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span><small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small></ScheduleDetailTitle>
+          <ScheduleDetailTitle className="home-week-detail-trigger" entry={entry} onOpen={scheduleDetail.show}><span className="home-week-detail-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span><small>{[entry.date!==entry.end?`${dateLabel(entry.date)} – ${dateLabel(entry.end)}`:"",entry.time, entry.location, agendaTones[entry.tone],entry.participants].filter(Boolean).join(" · ")}</small></ScheduleDetailTitle>
           <ResourceLinks value={entry.resources} compact />
-        </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
-    </div>
+        </li>)}</ul> : <p className="personal-widget-note">{available?"등록된 일정이 없습니다.":"선택한 날짜에 공개된 일정이 없습니다."}</p>}
+    </section>
     <ScheduleDetailDialog context={context} entry={scheduleDetail.entry} onClose={scheduleDetail.close} onCloseAutoFocus={scheduleDetail.restoreFocus} />
-  </section>;
+  </div>;
 }

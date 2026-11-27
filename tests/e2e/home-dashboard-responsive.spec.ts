@@ -28,18 +28,19 @@ for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calen
  const home=page.locator(".personal-day");
  const agenda=home.locator(".home-weekly-agenda");
  const grid=agenda.locator(".home-week-grid");
- const detail=agenda.locator(".home-week-detail");
+ const detail=home.locator(".home-week-detail");
  await expect(grid).toBeVisible();
  const check=async()=>{
   const geometry=await grid.evaluate(el=>{
    const bounds=el.getBoundingClientRect();
-   const section=el.closest(".home-weekly-agenda")!;
+   const section=el.closest(".home-calendar-stack")!;
    const detail=section.querySelector(".home-week-detail")!.getBoundingClientRect();
    const columns=Array.from(el.querySelectorAll(".home-week-column")).map(col=>col.getBoundingClientRect().bottom);
    const events=Array.from(el.querySelectorAll(".home-week-event")).map(event=>{const title=event.querySelector(".schedule-department-title")!;return {bottom:event.getBoundingClientRect().bottom,wrap:getComputedStyle(title).flexWrap}});
    return {height:bounds.height,bottom:bounds.bottom,detailTop:detail.top,columns,events};
   });
-  expect(geometry.height).toBe(200);
+  expect(geometry.height).toBeGreaterThanOrEqual(174);
+  expect(geometry.height).toBeLessThan(210);
   expect(geometry.detailTop).toBeGreaterThanOrEqual(geometry.bottom);
   expect(geometry.columns.every(y=>y<=geometry.bottom+1)).toBe(true);
   expect(geometry.events.every(event=>event.bottom<=geometry.bottom+1&&event.wrap==="nowrap")).toBe(true);
@@ -49,7 +50,7 @@ for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calen
  await check();
  await agenda.getByRole("button",{name:"이전 주",exact:true}).click();
  await check();
- const containers=home.locator(".home-weekly-agenda,.home-week-detail-list,.home-week-and-tasks > .my-tasks,.home-week-and-tasks .task-dashboard-body,.home-today-grid > .personal-widget");
+ const containers=home.locator(".home-weekly-agenda,.home-week-detail-list,.home-dashboard-side > .my-tasks,.home-week-and-tasks .task-dashboard-body,.home-today-grid > .personal-widget");
  const measurements=await containers.evaluateAll(elements=>elements.filter(el=>el.getBoundingClientRect().height>0).map(el=>({name:el.className,overflow:getComputedStyle(el).overflowY,scroll:el.scrollHeight,client:el.clientHeight})));
  for(const metric of measurements){
   expect(["scroll","auto","hidden","clip"],String(metric.name)).not.toContain(metric.overflow);
@@ -57,8 +58,36 @@ for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calen
  }
  const last=detail.locator(".home-week-detail-list > li").last();
  if(await last.count()){
-  const sectionBox=await agenda.boundingBox();
+  const sectionBox=await detail.boundingBox();
   const lastBox=await last.boundingBox();
   expect(lastBox!.y+lastBox!.height).toBeLessThanOrEqual(sectionBox!.y+sectionBox!.height);
  }
+});
+
+test("home separates agenda, personal tasks, and shortcuts at desktop and mobile widths",async({page})=>{
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto("/recovery-preview/operations");
+ const home=page.locator(".personal-day");
+ const calendar=home.locator(".home-weekly-agenda");
+ const detail=home.locator(".home-week-detail");
+ const tasks=home.locator(".home-dashboard-side > .my-tasks");
+ const shortcuts=home.locator(".home-shortcuts");
+ await expect(calendar).toBeVisible();
+ await expect(detail).toBeVisible();
+ await expect(calendar.locator(".home-week-detail")).toHaveCount(0);
+ await expect(home.locator(".home-today-grid > .personal-widget")).toHaveCount(3);
+ await expect(shortcuts).toBeVisible();
+ const cal=await calendar.boundingBox(), day=await detail.boundingBox(), task=await tasks.boundingBox(), links=await shortcuts.boundingBox();
+ expect(day!.y).toBeGreaterThanOrEqual(cal!.y+cal!.height);
+ expect(task!.x).toBeGreaterThanOrEqual(cal!.x+cal!.width);
+ expect(links!.y).toBeGreaterThanOrEqual(task!.y+task!.height);
+ await calendar.getByRole("button",{name:"다음 주",exact:true}).click();
+ await expect(detail.getByRole("heading")).toContainText("선택한 날짜 일정");
+ await calendar.getByRole("button",{name:"오늘",exact:true}).click();
+ await expect(detail.getByRole("heading")).toContainText("오늘의 일정");
+ await page.setViewportSize({width:390,height:844});
+ await expect(home.locator(".home-week-mobile-grid")).toBeVisible();
+ const smallCal=await calendar.boundingBox(), smallDay=await detail.boundingBox(), smallTasks=await tasks.boundingBox();
+ expect(smallDay!.y).toBeGreaterThanOrEqual(smallCal!.y+smallCal!.height);
+ expect(smallTasks!.y).toBeGreaterThanOrEqual(smallDay!.y+smallDay!.height);
 });
