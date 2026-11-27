@@ -1,6 +1,5 @@
 "use client";
-import { Disclosure } from "@/components/ui/disclosure";
-import { memo, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Bell, CalendarDays, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,8 +12,6 @@ import {
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
 import { publicationAt } from "@/lib/school-publications";
-import { timetableModeForWeek, timetableWeek } from "@/lib/timetable-view";
-import { TimetableGrid } from "./timetable-grid";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import "./school-operations.css";
 
@@ -95,7 +92,6 @@ export function PersonalDay({ context: c, today, previewNow }: {
               </ol>}
             </>}
         </section>
-        {doc && teacher && <PersonalWeeklyTimetable context={c} date={clock.date} teacherIds={ids} />}
       </div>
       <div className="personal-widget-column">
         <section className="personal-widget personal-agenda">
@@ -144,20 +140,3 @@ function AgendaItems({ items, showDate = false }: { items: ScheduleItem[]; showD
     </li>)}
   </ul>;
 }
-
-const PersonalWeeklyTimetable = memo(function PersonalWeeklyTimetable({ context, date, teacherIds }: {
-  context: Context;
-  date: string;
-  teacherIds: Set<string>;
-}) {
-  const mode = timetableModeForWeek(context, date);
-  const week = timetableWeek(context, date, mode);
-  return <Disclosure compact label="이번 주 내 시간표" className="personal-week">
-    {mode === "weekly" ? <p className="muted-small">{dateLabel(week.weekdays[0].date)} ~ {dateLabel(week.weekdays[4].date)}</p>
-      : <p className="muted-small">공개 학사일정이 없어 기본 시간표를 표시합니다.</p>}
-    {week.rows > 0 ? <TimetableGrid week={week} mode={mode} audience="mine" compact today={date}
-      label={mode === "weekly" ? "이번 주 내 시간표" : "내 기본 시간표"}
-      visible={(cell) => teacherIds.has(cell.teacherId)} />
-      : <p className="personal-widget-note">이 주에 적용되는 공개 시간표가 없습니다.</p>}
-  </Disclosure>;
-});
