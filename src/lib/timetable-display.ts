@@ -19,3 +19,17 @@ export function commonPeriodTime(columns:readonly {teaching:boolean;periodCount:
  }
  return shared;
 }
+
+export type LessonBadge = "단축" | "변경" | "보결" | "미실시" | "확인 필요";
+export function periodChangeBadge(before: string, after: string): LessonBadge | undefined {
+ const minutes = (value: string) => {
+  const match = /^(\d{2}):(\d{2})[–~-](\d{2}):(\d{2})$/.exec(value);
+  if(!match) return null;
+  const [,h,m,eh,em]=match.map(Number);
+  const duration=eh*60+em-h*60-m;
+  return h<24&&eh<24&&m<60&&em<60&&duration>0?duration:null;
+ };
+ const original=minutes(before), actual=minutes(after);
+ if(original===null || actual===null || before===after) return undefined;
+ return actual<original?"단축":"변경";
+}

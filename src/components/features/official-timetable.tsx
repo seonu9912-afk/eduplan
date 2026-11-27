@@ -50,7 +50,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
   const [moreOpen, setMoreOpen] = useState(false);
   const defaultMode = timetableModeForWeek(c, date);
   const mode = selectedMode ?? defaultMode;
-  const week = useMemo(() => timetableWeek(c, date, mode), [c, date, mode]);
+  const week = useMemo(() => timetableWeek(c, date, mode, true), [c, date, mode]);
   const firstDate = week.weekdays[0].date;
   const lastDate = week.weekdays[4].date;
   const endLabel = firstDate.slice(0, 7) === lastDate.slice(0, 7)
@@ -159,7 +159,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
       ) : !available ? (
         <p className="panel official-timetable-empty">선택한 기간에 공개된 시간표가 없습니다.</p>
       ) : (
-        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} today={liveToday} currentMinutes={clock?.minutes} showFreePeriods />
+        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} today={liveToday} currentMinutes={clock?.minutes} showFreePeriods showChangeBadges />
       )}
     </section>
   );
