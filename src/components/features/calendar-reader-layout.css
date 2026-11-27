@@ -92,3 +92,45 @@
  .calendar-reader-shell[data-calendar-view="month"] .school-reader-event { height:auto; overflow:visible; }
  .calendar-reader-shell[data-calendar-view="month"] .schedule-detail-trigger { white-space:normal; overflow:visible; }
 }
+
+/* Stage 3: separate the continuous period band from full daily lists. */
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-list { min-width:0; display:grid; align-content:start; gap:0; }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event { min-width:0; padding:9px 2px; color:var(--foreground); }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event + .weekly-daily-event { border-top:1px solid var(--border); }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-title { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 5px; min-width:0; }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-title .schedule-detail-trigger { flex:1 1 76px; display:block; text-align:left; min-width:0; max-width:100%; min-height:0; padding:0; font-size:14px; line-height:1.5; color:var(--foreground); white-space:normal; overflow:visible; overflow-wrap:anywhere; font-weight:550; }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event[data-tone="break"] .schedule-detail-trigger { color:var(--closure-accent); }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event small { display:block; font-size:12px; color:var(--text-secondary); line-height:1.4; margin-top:3px; overflow-wrap:anywhere; }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-empty { padding:8px 0; text-align:center; color:var(--text-secondary); font-size:13px; }
+.calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event .resource-details { margin-top:3px; }
+@media screen and (min-width:768px) {
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar-wrap { overflow:visible; border-radius:14px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar { border-collapse:separate; border-spacing:0; background:var(--card); border-radius:14px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar :is(th,td) { border-color:var(--border); border-left:0; border-right:1px solid var(--border); box-sizing:border-box; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar :is(th,td):last-child { border-right:0; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar thead th { background:var(--card); border-top:0; border-bottom:0; padding:9px 0 3px; font-size:13px; font-weight:600; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .school-calendar-date-row td { border-top:0; height:46px; padding:0 4px 6px; }
+ .calendar-reader-shell[data-calendar-view="week"] .calendar-desktop-day { height:40px; }
+ .calendar-reader-shell[data-calendar-view="week"] .calendar-desktop-day time { width:36px; height:36px; font-size:21px; font-weight:600; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .school-calendar-event-row[data-week-period] td { height:30px; padding:0 3px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .school-calendar-event-row[data-week-period] .school-reader-event { display:flex; flex-direction:row; align-items:center; height:28px; min-height:28px; margin:1px 0; padding:3px 6px; background:color-mix(in srgb,var(--event-accent) 23%,var(--card)); }
+ .calendar-reader-shell[data-calendar-view="week"] .school-calendar-event-row[data-week-period] .schedule-detail-trigger { font-size:13px; flex:1; min-width:0; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-event[data-continues-before] { border-top-left-radius:0; border-bottom-left-radius:0; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-event[data-continues-after] { border-top-right-radius:0; border-bottom-right-radius:0; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .weekly-daily-row > :is(th,td) { border-top:1px solid var(--border); vertical-align:top; padding:4px 8px 12px; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-daily-row > td { height:260px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .weekly-daily-row > .work-week-row-label { vertical-align:middle; padding:4px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-reader-calendar .weekly-operation-row td { padding:8px; border-top:1px solid var(--border); }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-operation-entry { font-size:13px; line-height:1.45; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-operation-entry .schedule-detail-trigger { min-height:0; padding:0; font-size:13px; white-space:normal; overflow-wrap:anywhere; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-operation-entry small { font-size:12px; }
+}
+@media print {
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-daily-row > td { vertical-align:top; height:auto; padding:4px; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event { break-inside:avoid; padding:4px 0; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-daily-title .schedule-detail-trigger { font-size:11px; }
+ .calendar-reader-shell[data-calendar-view="week"] .weekly-daily-event small { font-size:10px; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-calendar-event-row[data-week-period] .school-reader-event { height:auto; overflow:visible; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-calendar-event-row[data-week-period] .schedule-detail-trigger { white-space:normal; overflow:visible; }
+ .calendar-reader-shell[data-calendar-view="week"] .school-calendar-week { break-inside:auto; }
+}
