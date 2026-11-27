@@ -59,3 +59,6 @@
   .task-check { min-height: 44px; }
   .task-edit-form { gap: 12px; }
 }
+
+.task-expand-toggle { display:block; width:100%; min-height:40px; margin-top:5px; border:1px solid var(--border); border-radius:8px; color:var(--text-secondary); font-size:13px; text-align:center; }
+.task-expand-toggle:hover,.task-expand-toggle:focus-visible { background:var(--surface-muted); color:var(--primary); }

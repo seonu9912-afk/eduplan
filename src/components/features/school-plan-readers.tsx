@@ -243,9 +243,8 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           {!available ? <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p> : (
             <div ref={calendarRef} className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
               <table className="school-reader-calendar" data-work-week={workWeek?"":undefined} data-month-grid={view==="month"?"":undefined} data-visible-lanes={view==="month"?monthRows:undefined} data-week-grid={view==="week"?"":undefined} aria-label="공개 일정표">
-                {!workWeek && <colgroup>{dates.slice(0,columns).map(day=><col key={day}/>)}</colgroup>}
-                {workWeek && <colgroup><col className="work-week-label-col"/>{dates.map(day=><col key={day}/>)}</colgroup>}
-                <thead><tr>{workWeek && <th scope="col" className="work-week-row-label">구분</th>}{dates.slice(0,columns).map(day => <th scope="col" key={day} data-weekday={dayName(day)}>{dayName(day)}</th>)}</tr></thead>
+                <colgroup>{dates.slice(0,columns).map(day=><col key={day}/>)}</colgroup>
+                <thead><tr>{dates.slice(0,columns).map(day => <th scope="col" key={day} data-weekday={dayName(day)}>{dayName(day)}</th>)}</tr></thead>
                 {Array.from({ length: dates.length / columns }, (_, i) => {
                   const week = dates.slice(i * columns, i * columns + columns);
                   const compact = view === "month" ? compactCalendarWeek(week, calendarDays, monthRows) : null;
@@ -254,13 +253,13 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                   const overflow = compact?.hidden ?? [];
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">
-                    <tr className="school-calendar-date-row">{workWeek && <th className="work-week-row-label" aria-hidden="true"/>}{week.map((day) => (
+                    <tr className="school-calendar-date-row">{week.map((day) => (
                       <td key={day} data-weekday={dayName(day)} data-outside={outside(day)}>
                         <button type="button" className="calendar-desktop-day" aria-label={`${day} 일정 보기`} aria-pressed={day===date} disabled={day<start||day>end} onClick={()=>selectDesktopDay(day)}><time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time></button>
                       </td>
                     ))}</tr>
                     {displayLanes.map((lane, index) => <tr className="school-calendar-event-row" data-calendar-overflow={view==="month" && index>=monthRows ? "" : undefined} data-calendar-padding={lane.length===0 ? "" : undefined} data-week-period={view==="week"?"":undefined} key={index}>
-                      {workWeek && <th className="work-week-row-label" scope={index===0?"row":undefined}>{index===0?(view==="week"?"기간":"일정"):""}</th>}
+                      
                       {week.map((day, col) => {
                         const span = lane.find((item) => item.start <= col && item.end >= col);
                         if (span && span.start !== col) return null;
@@ -271,24 +270,25 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                       })}
                     </tr>)}
                     {weekly && <tr className="weekly-daily-row">
-                      {workWeek && <th scope="row" className="work-week-row-label">일정</th>}
+                      
                       {week.map(day => <td key={day} data-outside={outside(day)}>
                         <div className="weekly-daily-list" data-date={day}>
                           {(weekly.daily.get(day) ?? []).map(entry => <WeeklyDailyEvent key={entry.id} entry={entry} onOpen={showEntry} />)}
-                          {!(weekly.daily.get(day)?.length) && day>=start && day<=end && <p className="weekly-daily-empty">{days.get(day)?.available?"—":"미공개"}</p>}
+                          {!(weekly.daily.get(day)?.length) && day>=start && day<=end && !days.get(day)?.available && <p className="weekly-daily-empty">미공개</p>}
                         </div>
                       </td>)}
                     </tr>}
-                    {view==="month" && <tr className="calendar-desktop-overflow no-print">{workWeek&&<th className="work-week-row-label" aria-hidden="true"/>}{week.map((day,col)=><td key={day} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}{view==="month" && <span className="month-overflow-label">개 더보기</span>}</button>}</td>)}</tr>}
-                    {view==="month" && <tr className="school-calendar-week-space" aria-hidden="true">{workWeek&&<th className="work-week-row-label"/>}{week.map((day) => (
+                    {view==="month" && <tr className="calendar-desktop-overflow no-print">{week.map((day,col)=><td key={day} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}{view==="month" && <span className="month-overflow-label">개 더보기</span>}</button>}</td>)}</tr>}
+                    {view==="month" && <tr className="school-calendar-week-space" aria-hidden="true">{week.map((day) => (
                       <td key={day} data-outside={outside(day)} />
                     ))}</tr>}
-                    {workWeek && operationGroups.map((name) => <tr key={name} className="weekly-operation-row"><th scope="row" className="work-week-row-label">{name}</th>{week.map((day) => {
+                    {workWeek && operationGroups.map((name) => <tr key={name} className="weekly-operation-row">{week.map((day) => {
                       const schedule = days.get(day);
                       const active = schedule?.operationGroups?.includes(name);
                       const entries = schedule?.entries.filter((entry) => entry.operationGroup === name) ?? [];
                       return <td key={day} data-outside={outside(day)}>
                         <div className="weekly-operation-cell">
+                          <h4>{name}</h4>
                           {entries.length ? <OperationEntries entries={entries} today={today} onOpen={showEntry} /> : !active && day>=start && day<=end ? <span className="weekly-operation-empty">미등록</span> : null}
                         </div>
                       </td>;
@@ -326,9 +326,9 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
 function OperationEntries({ entries, today, onOpen }: { entries: ScheduleEntry[]; today: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
   if (!entries.length) return <span className="weekly-operation-empty">없음</span>;
   return <div className="weekly-operation-entries">{entries.map((entry) => <div key={entry.id} className="weekly-operation-entry" data-past={entry.end < today ? "" : undefined}>
-    <ScheduleDetailTitle entry={entry} label={entry.assignmentText ?? entry.title} onOpen={onOpen} />
-    {entry.participants && <span>{entry.participants}</span>}
-    {entry.time && <small>{entry.time}</small>}
+    <ScheduleDetailTitle entry={entry} label={entry.participants || entry.assignmentText || entry.title} onOpen={onOpen} />
+    {entry.time && <small className="weekly-operation-time">{entry.time}</small>}
+    {entry.participants && entry.assignmentText && entry.assignmentText!==entry.participants && <span className="weekly-operation-description">{entry.assignmentText}</span>}
     {entry.location && <small>{entry.location}</small>}
     <ResourceLinks value={entry.resources} compact />
   </div>)}</div>;
