@@ -331,3 +331,17 @@ details.school-publication-history.edu-disclosure > .edu-disclosure-heading { pa
   .official-work-week-layout { display: block; }
   .official-work-week-sidebar { display: none !important; }
 }
+
+/* Published weekly plan: operational assignments and business trips share aligned rows. */
+.school-reader-calendar .weekly-operation-row td { border-top: 1px solid var(--border); padding: 8px 7px; }
+.weekly-operation-cell, .weekly-mobile-operation { display: grid; align-content: start; gap: 4px; min-width: 0; }
+.weekly-operation-cell h4, .weekly-mobile-operation h4 { margin: 0; font-size: 11px; font-weight: 650; color: var(--text-secondary); overflow-wrap: anywhere; }
+.weekly-operation-entries { display: grid; gap: 6px; min-width: 0; }
+.weekly-operation-entry { display: grid; gap: 2px; font-size: 12px; color: #20252b; overflow-wrap: anywhere; }
+.weekly-operation-entry + .weekly-operation-entry { border-top: 1px solid var(--border); padding-top: 5px; }
+.weekly-operation-entry strong { font-size: 12px; font-weight: 700; color: #20252b; }
+.weekly-operation-entry small { font-size: 11px; color: #5f6b7a; }
+.weekly-operation-empty { color: var(--text-secondary); font-size: 11px; }
+.weekly-mobile-operations { display: grid; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.weekly-mobile-operation + .weekly-mobile-operation { border-top: 1px solid var(--border); padding-top: 8px; }
+@media print { .weekly-operation-row { break-inside: avoid; } }

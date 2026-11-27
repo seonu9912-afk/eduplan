@@ -1,4 +1,5 @@
 import { annualSchema } from "./academic";
+import { operationName, operationNames } from "./work-operation-items";
 import type { Context } from "./models";
 import { unifiedSchedule } from "./school-operations";
 import { publicationAt, publishedSchoolContext } from "./school-publications";
@@ -13,15 +14,22 @@ export type ScheduleEntry = {
   department?: string;
   location?: string;
   resources?: unknown;
+  operationGroup?: string;
+  assignmentText?: string;
+  participants?: string;
 };
 
 export function schoolScheduleEntries(official: Context, start: string, end: string, work: boolean): ScheduleEntry[] {
+  const plan = annualSchema.safeParse(official.annual?.document);
+  const business = new Map(plan.success ? plan.data.business.map((row) => [row.id, row] as const) : []);
   const items = unifiedSchedule(official, start, end)
     .filter((item) => work || item.source !== "business")
-    .map(({ id, date, end, title, source, time, department, location, resources }): ScheduleEntry => ({
-      id, date, end, title, tone: source === "business" ? "work" : "event", time, department, location, resources,
-    }));
-  const plan = annualSchema.safeParse(official.annual?.document);
+    .map(({ id, date, end, title, source, time, department, location, resources }): ScheduleEntry => {
+      const row = source === "business" ? business.get(id) : undefined;
+      const group = row ? operationName(row) ?? (row.kind === "출장" ? "출장" : undefined) : undefined;
+      return { id, date, end, title, tone: source === "business" ? "work" : "event", time, department, location, resources,
+        ...(group && row ? { operationGroup: group, assignmentText: row.text, participants: row.participants } : {}) };
+    });
   if (!official.hasOfficialCalendar || !plan.success) return items;
   const breaks = plan.data.vacations.map((v): ScheduleEntry => ({
     id: v.start + v.name, date: v.start, end: v.end, title: v.name, tone: "break",
@@ -48,19 +56,25 @@ export function publishedScheduleDays(c: Context, dates: string[], work: boolean
   const publications = c.schoolPublications ?? [];
   const start = dates[0];
   const end = dates.at(-1) ?? start;
-  const cache = new Map<string, ScheduleEntry[]>();
+  const cache = new Map<string, { entries: ScheduleEntry[]; operationGroups: string[] }>();
   return new Map(dates.map((date) => {
     const calendar = publicationAt(publications, "calendar", date);
     const plan = work ? publicationAt(publications, "plans", date) : undefined;
     const available = Boolean(calendar || plan);
     // One calendar view can span several published versions of the same plan.
     const key = `${calendar?.id ?? ""}:${plan?.id ?? ""}`;
-    let entries = cache.get(key);
-    if (!entries) {
-      entries = available ? schoolScheduleEntries(publishedSchoolContext(c, date), start, end, work) : [];
-      cache.set(key, entries);
+    let cached = cache.get(key);
+    if (!cached) {
+      const official = available ? publishedSchoolContext(c, date) : null;
+      const parsed = annualSchema.safeParse(official?.annual?.document);
+      cached = {
+        entries: official ? schoolScheduleEntries(official, start, end, work) : [],
+        operationGroups: plan && parsed.success ? [...operationNames(parsed.data), "출장"] : [],
+      };
+      cache.set(key, cached);
     }
-    return [date, { available, entries: entries.filter((item) => item.date <= date && item.end >= date) }];
+    return [date, { available, entries: cached.entries.filter((item) => item.date <= date && item.end >= date),
+      ...(work ? { operationGroups: cached.operationGroups } : {}) }];
   }));
 }
 
@@ -97,4 +111,16 @@ export function calendarWeekLanes(
     else lanes.push([span]);
   }
   return lanes;
+}
+
+/** Keep named operation rows aligned across the week, even when releases change. */
+export function weeklyOperationGroups(dates: string[], days: ReadonlyMap<string, { entries: ScheduleEntry[]; operationGroups?: string[] }>) {
+  const names = new Set<string>();
+  for (const date of dates) {
+    const day = days.get(date);
+    for (const name of day?.operationGroups ?? []) names.add(name);
+    for (const entry of day?.entries ?? []) if (entry.operationGroup) names.add(entry.operationGroup);
+  }
+  const trip = names.delete("출장");
+  return [...names, ...(trip ? ["출장"] : [])];
 }

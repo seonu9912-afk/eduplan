@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
-import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
+import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
 import { scheduleDates, shiftScheduleDate } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
@@ -43,6 +43,8 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   const officialContext = { ...c, schoolPublications: displayed };
   const dates = view === "year" ? [] : scheduleDates(date, view);
   const days = publishedScheduleDays(officialContext, dates.filter((day) => day >= start && day <= end), work);
+  const calendarDays = workWeek ? new Map([...days].map(([day, value]) => [day, { ...value, entries: value.entries.filter((entry) => !entry.operationGroup) }])) : days;
+  const operationGroups = workWeek ? weeklyOperationGroups(dates, days) : [];
   const available = view === "year" ? !!publicationAt(displayed, "calendar", date) :
     [...days.values()].some((day) => day.available);
   const entries = view === "year" && available
@@ -135,11 +137,12 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
           <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
             {agendaDates.map((day) => {
               const schedule = days.get(day);
+              const mainEntries = calendarDays.get(day)?.entries ?? [];
               return <section key={day} id={`agenda-${day}`} aria-label={dateLabel(day)}
                 data-selected={day === date ? "" : undefined}>
                 <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
                   {day === today && <span>오늘</span>}</h3>
-                {schedule?.entries.length ? <ul>{schedule.entries.map((entry) => {
+                {mainEntries.length ? <ul>{mainEntries.map((entry) => {
                   const detail = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
@@ -149,8 +152,9 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                     </div>
                   </li>;
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
-                  {schedule?.available ? "등록된 일정이 없습니다." : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
+                  {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
                 </p>}
+                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} /></section>)}</div> : null}
               </section>;
             })}
           </div>
@@ -162,7 +166,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 <thead><tr>{(view === "week" ? weekLabels : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
                 {Array.from({ length: dates.length / 7 }, (_, i) => {
                   const week = dates.slice(i * 7, i * 7 + 7);
-                  const lanes = calendarWeekLanes(week, days);
+                  const lanes = calendarWeekLanes(week, calendarDays);
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">
                     <tr className="school-calendar-date-row">{week.map((day) => (
@@ -183,6 +187,16 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                     <tr className="school-calendar-week-space" aria-hidden="true">{week.map((day) => (
                       <td key={day} data-outside={outside(day)} />
                     ))}</tr>
+                    {workWeek && operationGroups.map((name) => <tr key={name} className="weekly-operation-row">{week.map((day) => {
+                      const schedule = days.get(day);
+                      const active = schedule?.operationGroups?.includes(name);
+                      const entries = schedule?.entries.filter((entry) => entry.operationGroup === name) ?? [];
+                      return <td key={day} data-outside={outside(day)}>
+                        <div className="weekly-operation-cell"><h4>{name}</h4>
+                          {active || entries.length ? <OperationEntries entries={entries} /> : <span className="weekly-operation-empty">—</span>}
+                        </div>
+                      </td>;
+                    })}</tr>)}
                   </tbody>;
                 })}
               </table>
@@ -204,6 +218,17 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
       </Disclosure>}
     </section>
   );
+}
+
+function OperationEntries({ entries }: { entries: ScheduleEntry[] }) {
+  if (!entries.length) return <span className="weekly-operation-empty">없음</span>;
+  return <div className="weekly-operation-entries">{entries.map((entry) => <div key={entry.id} className="weekly-operation-entry">
+    <strong>{entry.assignmentText ?? entry.title}</strong>
+    {entry.participants && <span>{entry.participants}</span>}
+    {entry.time && <small>{entry.time}</small>}
+    {entry.location && <small>{entry.location}</small>}
+    <ResourceLinks value={entry.resources} compact />
+  </div>)}</div>;
 }
 
 function DesktopCalendarEvent({ entry }: { entry: ScheduleEntry }) {

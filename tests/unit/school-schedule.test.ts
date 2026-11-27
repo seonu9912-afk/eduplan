@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { operationsPreviewContext } from "../../src/app/recovery-preview/operations-fixture";
 import { defaultAnnual } from "../../src/lib/academic";
 import { scheduleDates, shiftScheduleDate } from "../../src/lib/schedule-dates";
-import { calendarWeekLanes, publishedScheduleDays } from "../../src/lib/school-schedule";
+import { calendarWeekLanes, publishedScheduleDays, weeklyOperationGroups } from "../../src/lib/school-schedule";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
 it("preserves the selected day while moving months and trims the empty last rows", () => {
@@ -63,4 +63,20 @@ it("clips events at week edges and never merges different IDs, gaps or changed p
     { entry: changed, start: 4, end: 4 },
     { entry: separate, start: 5, end: 6 },
   ]]);
+});
+
+it("keeps the configured operation groups and trips aligned without merging them into general work", () => {
+  const context = operationsPreviewContext();
+  const date = "2027-03-03";
+  context.schoolPublications = [{ workspace_id: context.workspace.id, academic_year_id: context.year!.id, published_at: date + "T00:00:00Z", published_by: context.userId, change_note: "", id: "operations", domain: "plans", source_version: 1, starts_on: date, payload: {
+    workSettings: { dutyEnabled: false, operationNames: ["급식 지도"] }, business: [
+      { id: "d", date, department: "교무부", kind: "운영업무", operationName: "급식 지도", text: "김 교사" },
+      { id: "t", date, department: "교무부", kind: "출장", text: "협의회", participants: "이 교사" },
+      { id: "m", date, department: "교무부", kind: "업무", text: "회의" },
+    ] } }];
+  const days = publishedScheduleDays(context, [date], true);
+  expect(weeklyOperationGroups([date], days)).toEqual(["급식 지도", "출장"]);
+  expect(days.get(date)?.entries).toContainEqual(expect.objectContaining({ operationGroup: "급식 지도", assignmentText: "김 교사" }));
+  expect(days.get(date)?.entries).toContainEqual(expect.objectContaining({ operationGroup: "출장", participants: "이 교사" }));
+  expect(days.get(date)?.entries.filter((e) => !e.operationGroup).map((e) => e.title)).toEqual(["회의"]);
 });
