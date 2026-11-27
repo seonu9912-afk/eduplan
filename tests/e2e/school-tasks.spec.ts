@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 const fixture = process.env.EDUPLAN_TASK_FIXTURES;
 test.skip(!fixture, "이 검증은 격리된 Supabase의 가상 학교와 교원 계정이 필요합니다.");
 type TestAccount = { email: string; password: string };
-type Scenario = { workspace: string; year: number; sender: TestAccount; recipient: TestAccount; second: TestAccount; administrator: TestAccount; sourceId?: string };
+type Scenario = { workspace: string; year: number; sender: TestAccount; recipient: TestAccount; second: TestAccount; administrator: TestAccount; sourceId?: string; sourceTitle?: string };
 const dialog = (page: Page, name: string) => page.getByRole("dialog", { name, exact: true });
 
 async function login(page: Page, account: TestAccount) {
@@ -105,7 +105,7 @@ test("creates a linked task from a published work item and opens the exact sourc
   const base = `/app/${data.workspace}`;
   const context = await browser.newContext();
   const receiver = await context.newPage();
-  const title = "공개 업무 연결 자료";
+  const title = data.sourceTitle ?? "공개 업무 연결 자료";
   const sourceId = encodeURIComponent(data.sourceId ?? "task-browser-source");
   try {
     await login(page, data.sender);
@@ -119,7 +119,8 @@ test("creates a linked task from a published work item and opens the exact sourc
     await expect(dialog(page, "배포한 업무 관리").getByText(title, { exact: true })).toBeVisible();
     await login(receiver, data.recipient);
     await receiver.goto(`${base}/home?year=${data.year}`);
-    await receiver.locator("#my-tasks").getByRole("button", { name: new RegExp(title) }).click();
+    await receiver.locator("#my-tasks").getByRole("button")
+      .filter({ has: receiver.getByText(title, { exact: true }) }).click();
     await expect(dialog(receiver, "할 일 상세").getByText(/11월 27일.*공개 업무계획 날짜 연동/)).toBeVisible();
     await dialog(receiver, "할 일 상세").getByRole("link", { name: "원본 업무계획 보기" }).click();
     await expect(dialog(receiver, "일정 상세").getByRole("heading", { name: title })).toBeVisible();
