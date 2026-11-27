@@ -30,9 +30,9 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
     const tick = () => setClock(seoulClock(new Date()));
     const first = window.setTimeout(tick, 0);
     const timer = window.setInterval(tick, 10_000);
-    document.addEventListener("visibilitychange", tick);
+    window.document.addEventListener("visibilitychange", tick);
     window.addEventListener("focus", tick);
-    return () => { window.clearTimeout(first); window.clearInterval(timer); document.removeEventListener("visibilitychange", tick); window.removeEventListener("focus", tick); };
+    return () => { window.clearTimeout(first); window.clearInterval(timer); window.document.removeEventListener("visibilitychange", tick); window.removeEventListener("focus", tick); };
   }, []);
   const liveToday = clock?.date ?? today;
   const thisYear = liveToday >= start && liveToday <= end;

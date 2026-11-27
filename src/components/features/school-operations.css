@@ -503,3 +503,17 @@
   .home-week-mobile-day[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
   .home-week-mobile-day[aria-current="date"] time { background: #24528e; color: #fff; border-radius: 50%; }
 }
+
+.published-changes { display: grid; gap: 10px; padding-top: 8px; }
+.published-changes > h2 { font-size: 16px; font-weight: 700; }
+.published-changes > h2 small { color: var(--text-secondary); font-size: 12px; }
+.published-change { border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+.published-change header { display: grid; gap: 4px; }
+.published-change header small, .published-change li strong small { color: var(--text-secondary); font-size: 12px; }
+.published-change-mine { color: #24528e; font-size: 12px; margin-left: 5px; }
+.published-change summary { cursor: pointer; font-size: 13px; font-weight: 650; color: #24528e; }
+.published-change ul { list-style: none; display: grid; gap: 8px; padding: 8px 0 0; max-height: 320px; overflow: auto; }
+.published-change li { padding: 8px 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; font-size: 13px; }
+.published-change li p { margin: 3px 0; color: var(--foreground); }
+.published-change li p span { color: var(--text-secondary); font-size: 11px; margin-right: 4px; }
+.published-change-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useMutation, InlineNotice } from "@/components/common";
 import { markOperationRead } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
+import { PublishedChanges, type PublishedChangesState } from "./published-changes";
 import "./school-operations.css";
-export function NotificationCenter({ context: c, onNavigate }: { context: Context; onNavigate?: () => boolean }) {
+export function NotificationCenter({ context: c, onNavigate, changes }: { context: Context; onNavigate?: () => boolean; changes?: PublishedChangesState }) {
   const m = useMutation();
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const items = (c.operations?.notifications ?? []).filter((n) => !n.read_at && !confirmed.includes(n.id));
@@ -50,7 +51,8 @@ export function NotificationCenter({ context: c, onNavigate }: { context: Contex
           </li>
         ))}
       </ul>
-      {!items.length && <p className="notification-empty" role="status">
+      {changes && <PublishedChanges context={c} state={changes} onNavigate={onNavigate} />}
+      {!items.length && !changes?.items.length && <p className="notification-empty" role="status">
         <Bell size={18} aria-hidden="true" /> 확인할 새 알림이 없습니다.
       </p>}
       <InlineNotice mutation={m} />

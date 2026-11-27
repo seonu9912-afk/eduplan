@@ -9,6 +9,7 @@ import {
 } from "@/lib/device-session";
 import { beginDraftSession } from "@/lib/draft-storage";
 import { NotificationCenter } from "@/components/features/notification-center";
+import { usePublishedChanges } from "@/components/features/published-changes";
 import { ServerPush } from "@/components/features/server-push";
 import { ActivityRequests } from "@/components/features/activity-requests";
 import { LessonLedger } from "@/components/features/lesson-ledger";
@@ -112,7 +113,8 @@ export function WorkspaceApp({
     null,
   );
   const [error, setError] = useState("");
-  const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length;
+  const changes = usePublishedChanges(c);
+  const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length + changes.items.length;
   const [editorDirty, setDirty] = useState(false);
   useEditGuard("workspace-editor", editorDirty);
   const dirty = useDeviceDirty();
@@ -378,7 +380,7 @@ export function WorkspaceApp({
         ) : null}
         {section === "notifications" && (
           <>
-            <NotificationCenter context={c} />
+            <NotificationCenter context={c} changes={changes} />
             <section className="notifications-settings" aria-label="알림 설정">
               <h2>알림 설정</h2>
               <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />
@@ -454,7 +456,7 @@ export function WorkspaceApp({
 
       <Modal open={modal === "notifications"} onOpenChange={(v) => !v && setModal(null)}
         title="알림" description="새로운 학교 알림을 확인하세요.">
-        <NotificationCenter context={c} onNavigate={() => {
+        <NotificationCenter context={c} changes={changes} onNavigate={() => {
           if (!allowNavigation()) return false;
           setDirty(false);
           setModal(null);
