@@ -28,7 +28,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
           <th scope="col">교시</th>
           {columns.map((column, index) => (
             <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}><span className="timetable-weekday-label">{days[index]}</span>
-              {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}일</span></time>}
+              {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time>}
               {column.notice && <small className="timetable-day-notice">{column.notice}</small>}
             </th>
           ))}

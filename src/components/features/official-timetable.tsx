@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Ellipsis, Printer, Search } from "lucide-react";
+import { Ellipsis, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -9,6 +9,8 @@ import { myTeacherIds, seoulClock } from "@/lib/school-operations";
 import { timetableModeForWeek, timetableWeek, type TimetableAudience, type TimetableCell, type TimetableMode } from "@/lib/timetable-view";
 import { TimetableGrid } from "./timetable-grid";
 import "./official-timetable.css";
+import { ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
+import "./reader-controls.css";
 
 const audiences: Record<TimetableAudience, string> = {
   mine: "나의 시간표",
@@ -45,6 +47,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
   const [teacher, setTeacher] = useState("");
   const [classId, setClassId] = useState("");
   const [teacherQuery, setTeacherQuery] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
   const defaultMode = timetableModeForWeek(c, date);
   const mode = selectedMode ?? defaultMode;
   const week = useMemo(() => timetableWeek(c, date, mode), [c, date, mode]);
@@ -83,17 +86,37 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
   const label = audience === "teacher" ? teachers.get(selectedTeacher) :
     audience === "class" ? classes.get(selectedClass) : audiences[audience];
   return (
-    <section className="official-timetable">
+    <section className="official-timetable reader-surface">
       <div className="official-timetable-controls no-print">
-        <div className="official-timetable-tabs" role="group" aria-label="시간표 조회 대상">
-          {Object.entries(audiences).map(([id, name]) => (
-            <Button key={id} variant="ghost"
-              aria-pressed={audience === id} onClick={() => { setAudience(id as TimetableAudience); setTeacherQuery(""); }}>
-              {name}
-            </Button>
-          ))}
+        <ReaderPeriodNavigator title={mode === "weekly" ? `${dateLabel(firstDate)} – ${dateLabel(lastDate)}` : dateLabel(date)} subtitle={term ? `${term.number}학기` : undefined}
+          previousLabel="이전 주" nextLabel="다음 주"
+          previous={mode === "weekly" && addDays(firstDate, -1) >= start ? () => setDate(clamp(addDays(date, -7))) : undefined}
+          next={mode === "weekly" && addDays(firstDate, 7) <= end ? () => setDate(clamp(addDays(date, 7))) : undefined}
+          todayDisabled={!thisYear} today={() => { setDate(liveToday); setMode("weekly"); }} />
+        <div className="timetable-view-toolbar reader-timetable-view">
+          <ReaderViewSegment<TimetableMode> options={[{value:"weekly",label:"주간"},{value:"basic",label:"기본"}]} value={mode} onChange={setMode} label="시간표 보기 방식" />
+          <Button type="button" className="reader-more-toggle" variant="outline" size="icon" aria-label="시간표 더보기" aria-expanded={moreOpen} aria-controls="timetable-secondary-controls" onClick={() => setMoreOpen(open => !open)}><Ellipsis size={20} /></Button>
+          {moreOpen && <div id="timetable-secondary-controls" className="reader-secondary-controls">
+                <label>날짜 이동
+                  <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={(e) => {
+                    if (e.target.value) { setDate(clamp(e.target.value)); setMoreOpen(false); }
+                  }} />
+                </label>
+                {c.semesters.length > 0 && <label>학기 이동
+                  <select value={term?.number ?? ""} onChange={(e) => {
+                    const chosen = c.semesters.find((s) => s.number === Number(e.target.value));
+                    if (chosen) { setDate(chosen.start_date); setMoreOpen(false); }
+                  }}>
+                    {!term && <option value="" disabled>학기 선택</option>}
+                    {c.semesters.map((s) => <option key={s.number} value={s.number}>{s.number}학기</option>)}
+                  </select>
+                </label>}
+                <Button variant="outline" disabled={!available} onClick={() => window.print()}><Printer size={16} /> 인쇄·PDF 저장</Button>
+                {actions}
+          </div>}
         </div>
-        <div className="official-timetable-filters">
+        <ReaderViewSegment<TimetableAudience> className="official-timetable-tabs reader-audience" options={Object.entries(audiences).map(([value, label]) => ({ value: value as TimetableAudience, label }))} value={audience} label="시간표 조회 대상" onChange={(value) => { setAudience(value); setTeacherQuery(""); }} />
+        {(audience === "teacher" || audience === "class") && <div className="official-timetable-filters reader-target-filters">
           {audience === "teacher" && (
             <div className="timetable-teacher-picker">
               <label className="timetable-teacher-search"><Search size={16} aria-hidden="true" /><input type="search" value={teacherQuery} placeholder="교사 이름 검색" aria-label="교사 이름 검색" onChange={(e) => setTeacherQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && matchingTeachers.length === 1) { e.preventDefault(); setTeacher(matchingTeachers[0][0]); setTeacherQuery(""); } }} /></label>
@@ -113,45 +136,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
               </select>
             </label>
           )}
-          <div className="official-timetable-date" data-weekly={mode === "weekly" ? "" : undefined}>
-            {mode === "weekly" && <Button variant="ghost" size="icon" aria-label="이전 주"
-              disabled={addDays(firstDate, -1) < start} onClick={() => setDate(clamp(addDays(date, -7)))}><ChevronLeft /></Button>}
-            <div className="timetable-range" aria-live="polite">
-              <strong>{mode === "weekly" ? `${dateLabel(firstDate)} – ${endLabel}` : dateLabel(date)}</strong>
-              {term && <small>{term.number}학기</small>}
-            </div>
-            {mode === "weekly" && <Button variant="ghost" size="icon" aria-label="다음 주"
-              disabled={addDays(firstDate, 7) > end} onClick={() => setDate(clamp(addDays(date, 7)))}><ChevronRight /></Button>}
-            <Button variant="outline" className="timetable-this-week" disabled={!thisYear} onClick={() => { setDate(liveToday); setMode("weekly"); }}>이번 주</Button>
-          </div>
-          <div className="timetable-view-toolbar">
-            <div className="timetable-mode-switch" role="group" aria-label="시간표 보기 방식">
-              <Button variant="ghost" aria-pressed={mode === "weekly"} onClick={() => setMode("weekly")}>주간</Button>
-              <Button variant="ghost" aria-pressed={mode === "basic"} onClick={() => setMode("basic")}>기본</Button>
-            </div>
-            <details className="timetable-more">
-              <summary aria-label="시간표 더보기"><Ellipsis size={19} aria-hidden="true" /><span>더보기</span></summary>
-              <div className="timetable-more-panel">
-                <label>날짜 이동
-                  <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={(e) => {
-                    if (e.target.value) setDate(clamp(e.target.value));
-                  }} />
-                </label>
-                {c.semesters.length > 0 && <label>학기 이동
-                  <select value={term?.number ?? ""} onChange={(e) => {
-                    const chosen = c.semesters.find((s) => s.number === Number(e.target.value));
-                    if (chosen) setDate(chosen.start_date);
-                  }}>
-                    {!term && <option value="" disabled>학기 선택</option>}
-                    {c.semesters.map((s) => <option key={s.number} value={s.number}>{s.number}학기</option>)}
-                  </select>
-                </label>}
-                <Button variant="outline" disabled={!available} onClick={() => window.print()}><Printer size={16} /> 인쇄·PDF 저장</Button>
-                {actions}
-              </div>
-            </details>
-          </div>
-        </div>
+        </div>}
       </div>
       <header className="official-timetable-caption" data-mode={mode}>
         <h2 className="timetable-visible-title no-print">{label} · {mode === "basic" ? "기본 시간표" : "주간 시간표"}</h2>

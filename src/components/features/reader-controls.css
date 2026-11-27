@@ -1,0 +1,44 @@
+/* Shared read-only planning UI. Management, dashboard and print styles remain separate. */
+@media screen {
+  .reader-surface { --reader-control-radius: 9px; --reader-segment-radius: 6px; --reader-surface-radius: 8px; --reader-today: #24528e; --reader-control-height: 44px; }
+  .reader-surface .reader-period-nav { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .reader-surface .reader-period-title { display: grid; align-content: center; justify-items: center; min-width: 0; flex: 1; text-align: center; padding: 0 6px; }
+  .reader-surface .reader-period-title h2 { color: #243e59; font-size: 18px; line-height: 1.25; font-weight: 750; margin: 0; overflow-wrap: anywhere; }
+  .reader-surface .reader-period-title small { color: var(--text-secondary); font-size: 11px; line-height: 1.2; }
+  .reader-surface .reader-period-nav > button[data-slot="button"],
+  .reader-surface .reader-more-toggle[data-slot="button"],
+  .reader-surface .schedule-view-controls > :is(.schedule-search-toggle,.schedule-more-toggle)[data-slot="button"] { height: var(--reader-control-height); min-height: var(--reader-control-height); border: 1px solid var(--border); border-radius: var(--reader-control-radius); color: var(--foreground); font-size: 13px; font-weight: 650; }
+  .reader-surface .reader-period-nav > button[data-size="icon"],
+  .reader-surface .reader-more-toggle[data-slot="button"] { width: var(--reader-control-height); min-width: var(--reader-control-height); padding: 0; background: var(--card); }
+  .reader-surface .reader-period-nav > button.reader-today,
+  .reader-surface .reader-more-toggle[data-slot="button"],
+  .reader-surface .schedule-view-controls > :is(.schedule-search-toggle,.schedule-more-toggle)[data-slot="button"] { background: var(--surface-muted); }
+  .reader-surface .reader-period-nav > button.reader-today { padding: 0 8px; }
+  .reader-surface .reader-period-nav svg, .reader-surface .reader-more-toggle svg, .reader-surface .schedule-more-toggle svg, .reader-surface .schedule-search-toggle svg { width: 19px; height: 19px; }
+  .reader-surface .reader-segments { display: flex; min-width: 0; gap: 2px; padding: 2px; border: 0; border-radius: var(--reader-control-radius); background: var(--surface-muted); margin: 0; }
+  .reader-surface .reader-segments > button { flex: 1; min-width: 0; min-height: 40px; height: 40px; padding: 2px 7px; border: 0; border-radius: var(--reader-segment-radius); background: transparent; color: var(--text-secondary); font-size: 13px; font-weight: 650; line-height: 1.25; white-space: normal; cursor: pointer; }
+  .reader-surface .reader-segments > button[aria-pressed="true"] { color: var(--reader-today); background: var(--card); box-shadow: inset 0 0 0 1px var(--border); }
+  .reader-surface .reader-segments > button:focus-visible { outline: 2px solid var(--reader-today); outline-offset: -2px; }
+  .reader-surface .reader-timetable-view { display: grid; grid-template-columns: minmax(0,1fr) 44px; gap: 5px; align-items: center; width: 100%; }
+  .reader-surface .reader-audience { width: 100%; }
+  .reader-surface .reader-secondary-controls { grid-column: 1/-1; display: flex; align-items: flex-end; flex-wrap: wrap; gap: 6px; min-width: 0; padding: 7px; border: 1px solid var(--border); border-radius: var(--reader-surface-radius); background: var(--card); }
+  .reader-surface .reader-secondary-controls label { display: grid; gap: 3px; font-size: 12px; min-width: 0; flex: 1 1 130px; }
+  .reader-surface .reader-secondary-controls :is(input,select) { min-width: 0; width: 100%; font-size: 16px; min-height: 44px; }
+  .reader-surface .reader-secondary-controls button { min-height: 44px; }
+  .reader-surface.official-timetable .reader-target-filters { display: flex; flex-wrap: wrap; align-items: center; min-width: 0; gap: 6px; }
+  .reader-surface .school-reader-calendar-wrap, .reader-surface .school-calendar-agenda > section, .reader-surface > .official-timetable-scroll { border-radius: var(--reader-surface-radius); }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th { background: var(--card); color: #425a77; }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th[data-today] { background: #edf4fc; color: var(--reader-today); box-shadow: none; }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th time[aria-current="date"] { background: var(--reader-today); color: white; border-radius: 50%; }
+}
+@media screen and (max-width:767px) {
+  .reader-surface .reader-period-nav { display: grid; width: 100%; grid-template-columns: 44px minmax(0,1fr) 44px auto; gap: 3px; }
+  .reader-surface .reader-period-title { padding: 0; }
+  .reader-surface .reader-period-title h2 { font-size: 16px; letter-spacing: -.03em; }
+  .reader-surface .schedule-view-controls > .reader-segments > button, .reader-surface .reader-segments > button { min-height: 40px; height: 40px; padding: 2px 3px; font-size: 12px; }
+  .reader-surface .reader-audience > button { font-size: 12px; }
+  .reader-surface .official-timetable-controls { gap: 6px; }
+  .reader-surface .reader-secondary-controls .workspace-manage-link { max-width: 100%; min-width: 0; }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th time { width: 26px; height: 26px; padding: 0; font-size: 12px; }
+  .reader-surface > .official-timetable-scroll .timetable-date-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; display: inline; }
+}
