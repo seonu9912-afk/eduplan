@@ -28,7 +28,7 @@
   align-items: center;
   gap: 8px 12px;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--ep-bg-ffffff, #fff);
   border: 1px solid var(--border);
   border-radius: 12px;
 }
@@ -41,7 +41,7 @@
 }
 .schedule-period-nav h2 {
   min-width: 0;
-  color: #243e59;
+  color: var(--ep-fg-243e59, #243e59);
   font-size: 16px;
   font-weight: 750;
   text-align: center;
@@ -83,10 +83,10 @@
 .school-calendar-agenda > section {
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ep-bg-ffffff, #fff);
   overflow: hidden;
 }
-.school-calendar-agenda > section[data-selected] { border-color: #b9cde3; }
+.school-calendar-agenda > section[data-selected] { border-color: var(--ep-border-b9cde3, #b9cde3); }
 .school-calendar-agenda h3 {
   display: flex;
   align-items: center;
@@ -96,10 +96,10 @@
   background: var(--card);
   font-size: 14px;
   font-weight: 700;
-  color: #263f5b;
+  color: var(--ep-fg-263f5b, #263f5b);
 }
 .school-calendar-agenda h3 span {
-  color: #315e95;
+  color: var(--ep-fg-315e95, #315e95);
   font-size: 12px;
 }
 .school-calendar-agenda > section > ul { list-style: none; padding: 0 12px; }
@@ -110,7 +110,7 @@
   gap: 7px;
   padding: 10px 0;
 }
-.school-calendar-agenda > section > ul > li + li { border-top: 1px solid #e9eef4; }
+.school-calendar-agenda > section > ul > li + li { border-top: 1px solid var(--ep-border-e9eef4, #e9eef4); }
 .school-calendar-agenda li[data-tone="break"] { --agenda-color: var(--closure-accent); }
 .school-calendar-agenda li[data-tone="work"] { --agenda-color: var(--work-accent); }
 .schedule-agenda-time {
@@ -126,17 +126,17 @@
   gap: 3px;
   padding: 6px 8px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--agenda-color) 15%, white);
+  background: color-mix(in srgb, var(--agenda-color) 15%, var(--ep-bg-ffffff, white));
   overflow-wrap: anywhere;
 }
-.school-calendar-agenda strong { color: #243e59; font-size: 14px; }
+.school-calendar-agenda strong { color: var(--ep-fg-243e59, #243e59); font-size: 14px; }
 .school-calendar-agenda small { color: var(--text-secondary); font-size: 12px; }
 .schedule-agenda-empty {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 13px;
-  color: #506781;
+  color: var(--ep-fg-506781, #506781);
   font-size: 13px;
 }
 .schedule-agenda-empty svg { flex: none; }
@@ -150,7 +150,7 @@
 }
 .school-reader-list,
 .school-reader-calendar {
-  background: white;
+  background: var(--ep-bg-ffffff, white);
   border: 1px solid var(--border);
 }
 .school-reader-list :is(th, td),
@@ -193,7 +193,7 @@
   place-items: center;
   min-width: 24px;
   height: 24px;
-  color: #4b607b;
+  color: var(--ep-fg-4b607b, #4b607b);
   font-weight: 650;
 }
 .school-reader-calendar time[aria-current="date"] {
@@ -208,7 +208,7 @@
   margin-top: 5px;
   padding: 5px 7px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--event-accent) 15%, white);
+  background: color-mix(in srgb, var(--event-accent) 15%, var(--ep-bg-ffffff, white));
   color: var(--event-accent);
   font-weight: 600;
   font-size: 12px;
@@ -278,7 +278,7 @@
   border-bottom: 1px solid var(--border);
 }
 .school-dashboard-links small {
-  color: #536b88;
+  color: var(--ep-fg-536b88, #536b88);
   padding-inline-start: 6px;
 }
 
@@ -310,11 +310,11 @@ details.school-publication-history.edu-disclosure > .edu-disclosure-heading { pa
 .official-work-mini-heading button:disabled, .official-work-mini-grid button:disabled { opacity: .35; cursor: default; }
 .official-work-mini-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; row-gap: 2px; }
 .official-work-mini-grid .mini-weekday { font-size: 11px; font-weight: 650; color: var(--text-secondary); padding-bottom: 5px; }
-.official-work-mini-grid button { display: grid; place-items: center; min-width: 0; height: 29px; font-size: 12px; font-weight: 550; color: #26384e; cursor: pointer; }
-.official-work-mini-grid :is(button,span):nth-child(7n+1) { color: #a64750; }
-.official-work-mini-grid :is(button,span):nth-child(7n) { color: #326198; }
+.official-work-mini-grid button { display: grid; place-items: center; min-width: 0; height: 29px; font-size: 12px; font-weight: 550; color: var(--ep-fg-26384e, #26384e); cursor: pointer; }
+.official-work-mini-grid :is(button,span):nth-child(7n+1) { color: var(--ep-fg-a64750, #a64750); }
+.official-work-mini-grid :is(button,span):nth-child(7n) { color: var(--ep-fg-326198, #326198); }
 .official-work-mini-grid button[data-adjacent] { opacity: .5; }
-.official-work-mini-grid button[data-in-week] { background: #eaf1fa; }
+.official-work-mini-grid button[data-in-week] { background: var(--ep-bg-eaf1fa, #eaf1fa); }
 .official-work-mini-grid button time { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; }
 .official-work-mini-grid button[aria-pressed="true"] time { background: #24528e; color: white; }
 .official-work-mini-grid button[aria-current="date"]:not([aria-pressed="true"]) time { box-shadow: inset 0 0 0 1px #24528e; }
@@ -337,21 +337,43 @@ details.school-publication-history.edu-disclosure > .edu-disclosure-heading { pa
 .weekly-operation-cell, .weekly-mobile-operation { display: grid; align-content: start; gap: 4px; min-width: 0; }
 .weekly-operation-cell h4, .weekly-mobile-operation h4 { margin: 0; font-size: 11px; font-weight: 650; color: var(--text-secondary); overflow-wrap: anywhere; }
 .weekly-operation-entries { display: grid; gap: 6px; min-width: 0; }
-.weekly-operation-entry { display: grid; gap: 2px; font-size: 12px; color: #20252b; overflow-wrap: anywhere; }
+.weekly-operation-entry { display: grid; gap: 2px; font-size: 12px; color: var(--ep-fg-20252b, #20252b); overflow-wrap: anywhere; }
 .weekly-operation-entry + .weekly-operation-entry { border-top: 1px solid var(--border); padding-top: 5px; }
-.weekly-operation-entry strong { font-size: 12px; font-weight: 700; color: #20252b; }
-.weekly-operation-entry small { font-size: 11px; color: #5f6b7a; }
+.weekly-operation-entry strong { font-size: 12px; font-weight: 700; color: var(--ep-fg-20252b, #20252b); }
+.weekly-operation-entry small { font-size: 11px; color: var(--ep-fg-5f6b7a, #5f6b7a); }
 .weekly-operation-empty { color: var(--text-secondary); font-size: 11px; }
 .weekly-mobile-operations { display: grid; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
 .weekly-mobile-operation + .weekly-mobile-operation { border-top: 1px solid var(--border); padding-top: 8px; }
 @media print { .weekly-operation-row { break-inside: avoid; } }
 
 @media screen {
-  .school-reader-calendar .school-calendar-week td[data-today] { background: #edf4fc; }
+  .school-reader-calendar .school-calendar-week td[data-today] { background: var(--ep-bg-edf4fc, #edf4fc); }
   .school-reader-calendar time[aria-current="date"] { background: #24528e; color: #fff; }
-  .official-work-mini-grid button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .official-work-mini-grid button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: var(--ep-fg-315e95, #315e95); box-shadow: inset 0 0 0 1px #315e95; }
   .official-work-mini-grid button[aria-current="date"] time { background: #24528e; color: #fff; }
-  .school-calendar-agenda > section[data-today] { border-color: #b9cde3; }
-  .school-calendar-agenda > section[data-today] > h3 { background: #edf4fc; }
+  .school-calendar-agenda > section[data-today] { border-color: var(--ep-border-b9cde3, #b9cde3); }
+  .school-calendar-agenda > section[data-today] > h3 { background: var(--ep-bg-edf4fc, #edf4fc); }
   .school-reader-event[data-past], .school-calendar-agenda > section > ul > li[data-past] > div, .weekly-operation-entry[data-past] { filter: saturate(.45); }
+}
+
+/* Dark palette; light values remain unchanged and print uses the light theme. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-bg-ffffff: #1b222c;
+  --ep-fg-243e59: hsl(211 36% 85%);
+  --ep-border-b9cde3: hsl(211 19% 30%);
+  --ep-fg-263f5b: hsl(212 35% 76%);
+  --ep-fg-315e95: hsl(213 43% 76%);
+  --ep-border-e9eef4: hsl(213 15% 30%);
+  --ep-fg-506781: hsl(212 20% 76%);
+  --ep-fg-4b607b: hsl(214 21% 76%);
+  --ep-fg-536b88: hsl(213 21% 76%);
+  --ep-fg-26384e: #e4eaf2;
+  --ep-fg-a64750: hsl(354 34% 76%);
+  --ep-fg-326198: hsl(212 43% 76%);
+  --ep-bg-eaf1fa: hsl(214 34% 17%);
+  --ep-fg-20252b: #e4eaf2;
+  --ep-fg-5f6b7a: hsl(213 12% 76%);
+  --ep-bg-edf4fc: hsl(212 39% 17%);
+ }
 }

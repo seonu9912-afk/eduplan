@@ -58,6 +58,7 @@ import {
   Table2,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
+import { ThemePreferenceControl } from "@/components/theme-preference";
 import { Button } from "@/components/ui/button";
 import { Modal, Notice } from "@/components/common";
 import {
@@ -506,6 +507,7 @@ export function WorkspaceApp({
             </Link>
           ))}
         </nav>
+        <ThemePreferenceControl />
         <div className="mobile-view-toolbar">
           <Button variant="outline" onClick={() => { setSignOutError(""); setModal("profile"); }}>
             내 프로필
@@ -530,6 +532,7 @@ export function WorkspaceApp({
         description="이름과 로그인 후 기본 작업공간을 설정합니다."
       >
         <ProfileForm context={c} />
+        <ThemePreferenceControl />
         <div className="profile-actions">
             <Notice message={signOutError} error />
             <button

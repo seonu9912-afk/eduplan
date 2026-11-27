@@ -15,6 +15,7 @@ import { WorkPlans } from "@/components/features/work-plans";
 import { TimetableReference } from "@/components/features/teaching/timetable-reference";
 import { TeachingModule } from "@/components/features/teaching";
 import { Button } from "@/components/ui/button";
+import { ThemePreferenceControl } from "@/components/theme-preference";
 import { annualSchema } from "@/lib/academic";
 import { calendarChangeSchema } from "@/lib/academic-calendar";
 import {
@@ -252,6 +253,7 @@ export function OperationsPreview() {
           운영 데이터·알림 발송에 연결되지 않습니다.
         </p>
       </header>
+      <ThemePreferenceControl />
       <nav aria-label="통합 운영 실습 단계" className="operations-tabs">
         {tabs.map((name) => (
           <Button

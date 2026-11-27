@@ -14,19 +14,19 @@
  .teaching-module .course-card dl{margin:4px 0;gap:6px}
  .teaching-module .course-card dl>div{align-items:center;padding:6px 0;border-top:1px solid var(--border)}
  .teaching-module .course-card dd{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:4px 7px;margin:0}
- .course-plan-state{font-size:11px;font-weight:650;color:#53667b;background:#eef1f5;padding:2px 6px;border-radius:4px;white-space:nowrap}
- .course-plan-state[data-status="확정"]{color:#24694d;background:#e8f3ec}
- .course-plan-state[data-status="검토 중"]{color:#80541b;background:#faf1e2}
+ .course-plan-state{font-size:11px;font-weight:650;color:var(--ep-fg-53667b, #53667b);background:var(--ep-bg-eef1f5, #eef1f5);padding:2px 6px;border-radius:4px;white-space:nowrap}
+ .course-plan-state[data-status="확정"]{color:var(--ep-fg-24694d, #24694d);background:var(--ep-bg-e8f3ec, #e8f3ec)}
+ .course-plan-state[data-status="검토 중"]{color:var(--ep-fg-80541b, #80541b);background:var(--ep-bg-faf1e2, #faf1e2)}
  .teaching-module .course-card dd small{font-size:11px;color:var(--text-secondary);font-weight:400}
  .teaching-module .plan-savebar{gap:8px;padding:12px;border-radius:var(--ui-panel-radius,11px)}
  .teaching-module .teaching-section{padding:16px;border-radius:var(--ui-panel-radius,11px)}
  .teaching-module .teaching-grid-scroll,.teaching-module .rubric-element .table-scroll{min-width:0;max-width:100%;overflow:auto;overscroll-behavior-inline:contain}
  .teaching-module .teaching-week-grid :is(th,td){padding:6px}
- .teaching-module .teaching-week-grid thead th{background:#edf2f8;z-index:2}
+ .teaching-module .teaching-week-grid thead th{background:var(--ep-bg-edf2f8, #edf2f8);z-index:2}
  .teaching-module .teaching-week-grid textarea{margin-bottom:3px;padding:6px;line-height:1.55}
  .teaching-module .assessment-mode{gap:10px;margin-bottom:12px}
  .teaching-module .assessment-card{margin-bottom:12px;border-radius:8px}
- .teaching-module .assessment-card-heading{padding:10px 12px;gap:8px;flex-wrap:wrap;background:#f7f9fb}
+ .teaching-module .assessment-card-heading{padding:10px 12px;gap:8px;flex-wrap:wrap;background:var(--ep-bg-f7f9fb, #f7f9fb)}
  .assessment-title-block{min-width:0;flex:1 1 160px}
  .assessment-title-block p{font-size:12px;color:var(--text-secondary);margin-top:2px;overflow-wrap:anywhere}
  .teaching-module .assessment-fields{padding:12px;gap:10px}
@@ -34,7 +34,7 @@
  .teaching-module .rubric-editor{padding:12px;min-width:0}
  .teaching-module .rubric-element{padding:10px;margin:8px 0;min-width:0}
  .teaching-module .rubric-table :is(th,td){padding:5px}
- .teaching-module .rubric-table th{background:#edf2f8}
+ .teaching-module .rubric-table th{background:var(--ep-bg-edf2f8, #edf2f8)}
  .teaching-module .rubric-table textarea{line-height:1.5}
  .teaching-read-value{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--foreground);font-weight:400;padding:6px 0;border-bottom:1px solid var(--border)}
 }
@@ -80,3 +80,17 @@
  .assessment-card{scroll-margin-top:70px}
 }
 @media screen and (max-width:767px){.assessment-index button{min-height:44px}}
+
+/* Screen-only dark palette; original colors remain the light/print fallback. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-fg-53667b: hsl(212 17% 76%);
+  --ep-bg-eef1f5: hsl(214 14% 17%);
+  --ep-fg-24694d: hsl(156 42% 76%);
+  --ep-bg-e8f3ec: hsl(142 17% 18%);
+  --ep-fg-80541b: hsl(34 55% 76%);
+  --ep-bg-faf1e2: hsl(38 39% 18%);
+  --ep-bg-edf2f8: hsl(213 24% 17%);
+  --ep-bg-f7f9fb: hsl(210 18% 16%);
+ }
+}

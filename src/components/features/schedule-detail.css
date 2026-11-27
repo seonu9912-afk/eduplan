@@ -2,13 +2,13 @@
 .schedule-detail-trigger:hover { text-decoration: underline; }
 .schedule-detail-trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 2px; }
 .schedule-detail-content { display: grid; gap: 14px; min-width: 0; }
-.schedule-detail-category { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: #5f6b7a; }
+.schedule-detail-category { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 12px; color: var(--ep-fg-5f6b7a, #5f6b7a); }
 .schedule-detail-category .schedule-department-badge { max-width: 100%; }
-.schedule-detail-content h3 { font-size: 20px; font-weight: 750; color: #20252b; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+.schedule-detail-content h3 { font-size: 20px; font-weight: 750; color: var(--ep-fg-20252b, #20252b); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 .schedule-detail-content dl { display: grid; gap: 12px; border-block: 1px solid var(--border); padding-block: 14px; margin: 0; }
 .schedule-detail-content dl > div { display: grid; grid-template-columns: 100px minmax(0,1fr); gap: 8px; align-items: start; }
-.schedule-detail-content dt { display: flex; align-items: center; gap: 6px; color: #5f6b7a; font-size: 13px; }
-.schedule-detail-content dd { margin: 0; font-size: 14px; color: #20252b; white-space: pre-wrap; overflow-wrap: anywhere; }
+.schedule-detail-content dt { display: flex; align-items: center; gap: 6px; color: var(--ep-fg-5f6b7a, #5f6b7a); font-size: 13px; }
+.schedule-detail-content dd { margin: 0; font-size: 14px; color: var(--ep-fg-20252b, #20252b); white-space: pre-wrap; overflow-wrap: anywhere; }
 .schedule-detail-resources h4 { display: flex; gap: 6px; align-items: center; font-size: 13px; margin-bottom: 8px; }
 .schedule-detail-footer { display: flex; justify-content: flex-end; }
 @media screen and (max-width: 767px) { .workspace-content .schedule-detail-trigger:not(.home-week-detail-trigger) { min-height: 0; padding-block: 0; } .schedule-detail-content dl > div { grid-template-columns: 90px minmax(0,1fr); } }
@@ -19,11 +19,24 @@
 .event-lesson-impact > p { font-size: 12px; color: var(--text-secondary); }
 .event-lesson-impact-day { display: grid; gap: 5px; }
 .event-lesson-impact-day header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; font-size: 12px; }
-.event-lesson-impact-day header a { color: #24528e; text-decoration: underline; }
+.event-lesson-impact-day header a { color: var(--ep-fg-24528e, #24528e); text-decoration: underline; }
 .event-lesson-impact-day ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
-.event-lesson-impact-day li { display: grid; gap: 3px; background: #f3f5f8; border-radius: 6px; padding: 8px; font-size: 13px; }
+.event-lesson-impact-day li { display: grid; gap: 3px; background: var(--ep-bg-f3f5f8, #f3f5f8); border-radius: 6px; padding: 8px; font-size: 13px; }
 .event-lesson-impact-day li > div { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
 .event-lesson-impact-day li small { font-size: 11px; color: var(--text-secondary); }
-.event-lesson-impact-status { font-size: 11px; font-weight: 650; color: #24694d; }
-.event-lesson-impact-day li[data-status="affected"] .event-lesson-impact-status { color: #963e44; }
-.event-lesson-impact-day li[data-status="check"] .event-lesson-impact-status { color: #8a4d12; }
+.event-lesson-impact-status { font-size: 11px; font-weight: 650; color: var(--ep-fg-24694d, #24694d); }
+.event-lesson-impact-day li[data-status="affected"] .event-lesson-impact-status { color: var(--ep-fg-963e44, #963e44); }
+.event-lesson-impact-day li[data-status="check"] .event-lesson-impact-status { color: var(--ep-fg-8a4d12, #8a4d12); }
+
+/* Screen-only dark palette; original colors remain the light/print fallback. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-fg-5f6b7a: hsl(213 12% 76%);
+  --ep-fg-20252b: #e4eaf2;
+  --ep-fg-24528e: hsl(214 51% 76%);
+  --ep-bg-f3f5f8: hsl(216 14% 16%);
+  --ep-fg-24694d: hsl(156 42% 76%);
+  --ep-fg-963e44: hsl(356 35% 76%);
+  --ep-fg-8a4d12: hsl(29 65% 76%);
+ }
+}

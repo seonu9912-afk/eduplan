@@ -3,7 +3,7 @@
   .reader-surface { --reader-control-radius: 9px; --reader-segment-radius: 6px; --reader-surface-radius: 8px; --reader-today: #24528e; --reader-control-height: 44px; }
   .reader-surface .reader-period-nav { display: flex; align-items: center; gap: 4px; min-width: 0; }
   .reader-surface .reader-period-title { display: grid; align-content: center; justify-items: center; min-width: 0; flex: 1; text-align: center; padding: 0 6px; }
-  .reader-surface .reader-period-title h2 { color: #243e59; font-size: 18px; line-height: 1.25; font-weight: 750; margin: 0; overflow-wrap: anywhere; }
+  .reader-surface .reader-period-title h2 { color: var(--ep-fg-243e59, #243e59); font-size: 18px; line-height: 1.25; font-weight: 750; margin: 0; overflow-wrap: anywhere; }
   .reader-surface .reader-period-title small { color: var(--text-secondary); font-size: 11px; line-height: 1.2; }
   .reader-surface .reader-period-nav > button[data-slot="button"],
   .reader-surface .reader-more-toggle[data-slot="button"],
@@ -27,8 +27,8 @@
   .reader-surface .reader-secondary-controls button { min-height: 44px; }
   .reader-surface.official-timetable .reader-target-filters { display: flex; flex-wrap: wrap; align-items: center; min-width: 0; gap: 6px; }
   .reader-surface .school-reader-calendar-wrap, .reader-surface .school-calendar-agenda > section, .reader-surface > .official-timetable-scroll { border-radius: var(--reader-surface-radius); }
-  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th { background: var(--card); color: #425a77; }
-  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th[data-today] { background: #edf4fc; color: var(--reader-today); box-shadow: none; }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th { background: var(--card); color: var(--ep-fg-425a77, #425a77); }
+  .reader-surface > .official-timetable-scroll .official-timetable-grid thead th[data-today] { background: var(--ep-bg-edf4fc, #edf4fc); color: var(--reader-today); box-shadow: none; }
   .reader-surface > .official-timetable-scroll .official-timetable-grid thead th time[aria-current="date"] { background: var(--reader-today); color: white; border-radius: 50%; }
 }
 @media screen and (max-width:767px) {
@@ -41,4 +41,13 @@
   .reader-surface .reader-secondary-controls .workspace-manage-link { max-width: 100%; min-width: 0; }
   .reader-surface > .official-timetable-scroll .official-timetable-grid thead th time { width: 26px; height: 26px; padding: 0; font-size: 12px; }
   .reader-surface > .official-timetable-scroll .timetable-date-full { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; display: inline; }
+}
+
+/* Dark palette; light values remain unchanged and print uses the light theme. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-fg-243e59: hsl(211 36% 85%);
+  --ep-fg-425a77: hsl(213 24% 76%);
+  --ep-bg-edf4fc: hsl(212 39% 17%);
+ }
 }

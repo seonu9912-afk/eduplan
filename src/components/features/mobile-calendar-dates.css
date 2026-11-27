@@ -2,7 +2,7 @@
   min-width: 0;
   padding: 10px 6px 8px;
   border-block: 1px solid var(--border);
-  background: #fff;
+  background: var(--ep-bg-ffffff, #fff);
   touch-action: pan-y pinch-zoom;
 }
 .mobile-calendar-weekdays,
@@ -13,12 +13,12 @@
 }
 .mobile-calendar-weekdays {
   padding-bottom: 5px;
-  color: #506781;
+  color: var(--ep-fg-506781, #506781);
   font-size: 12px;
   font-weight: 650;
 }
-.mobile-calendar-dates [data-weekday="일"] { color: #984653; }
-.mobile-calendar-dates [data-weekday="토"] { color: #315e95; }
+.mobile-calendar-dates [data-weekday="일"] { color: var(--ep-fg-984653, #984653); }
+.mobile-calendar-dates [data-weekday="토"] { color: var(--ep-fg-315e95, #315e95); }
 .mobile-calendar-day-grid > button {
   display: grid;
   grid-template-rows: 28px 17px;
@@ -31,18 +31,18 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #273e5a;
+  color: var(--ep-fg-273e5a, #273e5a);
   font-size: 14px;
   font-weight: 650;
   cursor: pointer;
 }
 .mobile-calendar-day-grid > button[data-adjacent],
 .mobile-calendar-day-grid > button:disabled {
-  color: #687b90;
+  color: var(--ep-fg-687b90, #687b90);
   font-weight: 450;
 }
 .mobile-calendar-day-grid > button:disabled { opacity: .52; cursor: default; }
-.mobile-calendar-day-grid > button:focus-visible { outline: 2px solid #315e95; outline-offset: -2px; }
+.mobile-calendar-day-grid > button:focus-visible { outline: 2px solid var(--ep-border-315e95, #315e95); outline-offset: -2px; }
 .mobile-calendar-day-grid time {
   display: grid;
   place-items: center;
@@ -54,7 +54,7 @@
 }
 .mobile-calendar-day-grid > button[aria-current="date"] time {
   box-shadow: inset 0 0 0 1px #315e95;
-  color: #214b7e;
+  color: var(--ep-fg-214b7e, #214b7e);
 }
 .mobile-calendar-day-grid > button[aria-pressed="true"] time {
   background: #214b7e;
@@ -69,7 +69,7 @@
   min-width: 0;
   padding-inline: 2px;
   border-radius: 3px;
-  background: color-mix(in srgb, var(--cell-color) 15%, white);
+  background: color-mix(in srgb, var(--cell-color) 15%, var(--ep-bg-ffffff, white));
   color: var(--cell-color);
   font-size: 10px;
   font-weight: 650;
@@ -99,7 +99,7 @@
   }
   .mobile-calendar-management-actions label { flex: 1 1 125px; min-width: 0; }
   .mobile-calendar-management-actions input { width: 100%; }
-  .mobile-calendar-management .mobile-edit-card[data-selected] { border-color: #b9cde3; }
+  .mobile-calendar-management .mobile-edit-card[data-selected] { border-color: var(--ep-border-b9cde3, #b9cde3); }
   .work-mobile-date-picker { margin-block: 12px; }
   .work-layout .work-mini-calendar { display: none; }
   .work-plan-table.work-month-board .work-day:not([data-selected]) { display: none; }
@@ -108,8 +108,8 @@
 .mobile-calendar-dates[data-weekdays-only] :is(.mobile-calendar-weekdays, .mobile-calendar-day-grid) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 @media screen {
-  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] { background: #edf4fc; }
-  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] { background: var(--ep-bg-edf4fc, #edf4fc); }
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: var(--ep-fg-315e95, #315e95); box-shadow: inset 0 0 0 1px #315e95; }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] time { background: #24528e; color: #fff; }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-cell-entry[data-past] { filter: saturate(.45); }
 }
@@ -117,17 +117,17 @@
 /* Shared compact published-calendar lanes. The day buttons underneath the bars remain the tap targets. */
 .mobile-calendar-span-grid { display: grid; gap: 3px; }
 .mobile-calendar-span-week { display: grid; grid-template-rows: 34px 17px 17px 13px; gap: 2px; min-width: 0; position: relative; isolation: isolate; }
-.mobile-calendar-span-day { display: grid; align-content: start; justify-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 5px; color: #273e5a; background: #f5f7f9; font-size: 14px; font-weight: 650; cursor: pointer; }
-.mobile-calendar-span-day[data-adjacent], .mobile-calendar-span-day:disabled { color: #687b90; font-weight: 450; }
+.mobile-calendar-span-day { display: grid; align-content: start; justify-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 5px; color: var(--ep-fg-273e5a, #273e5a); background: var(--ep-bg-f5f7f9, #f5f7f9); font-size: 14px; font-weight: 650; cursor: pointer; }
+.mobile-calendar-span-day[data-adjacent], .mobile-calendar-span-day:disabled { color: var(--ep-fg-687b90, #687b90); font-weight: 450; }
 .mobile-calendar-span-day:disabled { opacity: .52; cursor: default; }
 .mobile-calendar-span-day time { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-variant-numeric: tabular-nums; }
-.mobile-calendar-span-day[aria-pressed="true"] { background: #e6ebf2; }
-.mobile-calendar-span-day[aria-pressed="true"]:not([aria-current="date"]) time { color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
-.mobile-calendar-span-day[aria-current="date"] { background: #edf4fc; }
+.mobile-calendar-span-day[aria-pressed="true"] { background: var(--ep-bg-e6ebf2, #e6ebf2); }
+.mobile-calendar-span-day[aria-pressed="true"]:not([aria-current="date"]) time { color: var(--ep-fg-315e95, #315e95); box-shadow: inset 0 0 0 1px #315e95; }
+.mobile-calendar-span-day[aria-current="date"] { background: var(--ep-bg-edf4fc, #edf4fc); }
 .mobile-calendar-span-day[aria-current="date"] time { background: #24528e; color: #fff; }
-.mobile-calendar-span-day:focus-visible { outline: 2px solid #315e95; outline-offset: -2px; }
+.mobile-calendar-span-day:focus-visible { outline: 2px solid var(--ep-border-315e95, #315e95); outline-offset: -2px; }
 .mobile-calendar-span-event { z-index: 1; pointer-events: none; align-self: stretch; width: auto; margin-inline: 1px; padding-inline: 3px; font-size: 10px; white-space: nowrap; overflow: hidden; }
-.mobile-calendar-span-more { z-index: 1; pointer-events: none; text-align: center; font-size: 10px; line-height: 13px; color: #526379; font-weight: 650; }
+.mobile-calendar-span-more { z-index: 1; pointer-events: none; text-align: center; font-size: 10px; line-height: 13px; color: var(--ep-fg-526379, #526379); font-weight: 650; }
 .home-week-mobile-grid > .mobile-calendar-dates { grid-column: 1 / -1; border: 0; padding: 2px 0; }
 
 /* Date buttons span the entire week cell; their own padding must not move the date into the event lanes. */
@@ -136,4 +136,23 @@
   .workspace-content .mobile-calendar-dates .mobile-calendar-day-grid > button { padding: 2px 0; min-height: 53px; }
   .mobile-calendar-span-day time { line-height: 1; }
   .mobile-calendar-span-event { min-height: 0; }
+}
+
+/* Dark palette; light values remain unchanged and print uses the light theme. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-bg-ffffff: #1b222c;
+  --ep-fg-506781: hsl(212 20% 76%);
+  --ep-fg-984653: hsl(350 31% 76%);
+  --ep-fg-315e95: hsl(213 43% 76%);
+  --ep-fg-273e5a: hsl(213 34% 76%);
+  --ep-fg-687b90: hsl(212 14% 76%);
+  --ep-border-315e95: hsl(213 40% 56%);
+  --ep-fg-214b7e: hsl(213 50% 76%);
+  --ep-border-b9cde3: hsl(211 19% 30%);
+  --ep-bg-edf4fc: hsl(212 39% 17%);
+  --ep-bg-f5f7f9: hsl(210 14% 16%);
+  --ep-bg-e6ebf2: hsl(215 17% 18%);
+  --ep-fg-526379: hsl(214 16% 76%);
+ }
 }

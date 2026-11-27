@@ -1,13 +1,25 @@
 .schedule-period-list { display:grid; gap:10px; min-width:0; }
 .schedule-period-list-day { display:grid; grid-template-columns:126px minmax(0,1fr); gap:12px; border:1px solid var(--border); border-radius:8px; padding:12px; background:var(--card); }
 .schedule-period-list-day > h3 { margin:0; font-size:14px; font-weight:700; display:flex; flex-wrap:wrap; align-content:start; gap:5px; }
-.schedule-period-list-day > h3 small { color:#24528e; font-size:11px; }
+.schedule-period-list-day > h3 small { color:var(--ep-fg-24528e, #24528e); font-size:11px; }
 .schedule-period-list-day ul { list-style:none; margin:0; padding:0; display:grid; gap:6px; min-width:0; }
-.schedule-period-list-day li { display:grid; grid-template-columns:90px minmax(0,1fr); gap:8px; padding:8px 10px; background:var(--dept-bg,#f2f4f7); border-radius:5px; min-width:0; color:#20252b; }
+.schedule-period-list-day li { display:grid; grid-template-columns:90px minmax(0,1fr); gap:8px; padding:8px 10px; background:var(--dept-bg,var(--ep-bg-f2f4f7, #f2f4f7)); border-radius:5px; min-width:0; color:var(--ep-fg-20252b, #20252b); }
 .schedule-period-list-type,.schedule-period-list-info { display:grid; gap:3px; min-width:0; align-content:start; }
-.schedule-period-list-type { color:#526379; font-size:12px; font-weight:650; }
-.schedule-period-list-info small,.schedule-period-list-type small { color:#526379; font-size:12px; overflow-wrap:anywhere; }
+.schedule-period-list-type { color:var(--ep-fg-526379, #526379); font-size:12px; font-weight:650; }
+.schedule-period-list-info small,.schedule-period-list-type small { color:var(--ep-fg-526379, #526379); font-size:12px; overflow-wrap:anywhere; }
 .schedule-period-list-info .schedule-department-title { flex-wrap:wrap; }
-@media screen { .schedule-period-list-day[data-today] { background:#edf4fc; border-color:#b9cde3; } .schedule-period-list-day li[data-past] { filter:saturate(.45); } }
+@media screen { .schedule-period-list-day[data-today] { background:var(--ep-bg-edf4fc, #edf4fc); border-color:var(--ep-border-b9cde3, #b9cde3); } .schedule-period-list-day li[data-past] { filter:saturate(.45); } }
 @media screen and (max-width:767px) { .schedule-period-list-day { grid-template-columns:minmax(0,1fr); gap:7px; padding:9px; } .schedule-period-list-day li { grid-template-columns:72px minmax(0,1fr); padding:7px; } }
 @media print { .schedule-period-list-day { break-inside:avoid; } }
+
+/* Screen-only dark palette; original colors remain the light/print fallback. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-fg-24528e: hsl(214 51% 76%);
+  --ep-bg-f2f4f7: hsl(216 13% 17%);
+  --ep-fg-20252b: #e4eaf2;
+  --ep-fg-526379: hsl(214 16% 76%);
+  --ep-bg-edf4fc: hsl(212 39% 17%);
+  --ep-border-b9cde3: hsl(211 19% 30%);
+ }
+}

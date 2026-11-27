@@ -134,20 +134,20 @@
  .schedule-surface:not([data-work-plan]) .official-schedule-main { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; align-items:start; }
  .schedule-surface:not([data-work-plan]) .school-reader-calendar { width:100%; min-width:0; border:0; border-collapse:collapse; }
  .schedule-surface:not([data-work-plan]) .school-reader-calendar thead th { text-align:center; background:var(--surface-muted); font-size:13px; padding:8px 0; }
- .schedule-surface:not([data-work-plan]) .school-reader-calendar :is(th,td) { border-color:color-mix(in srgb,var(--border) 72%,white); }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar :is(th,td) { border-color:color-mix(in srgb,var(--border) 72%,var(--ep-border-ffffff, white)); }
  .schedule-surface:not([data-work-plan]) .school-reader-calendar thead th:first-child,
- .schedule-surface:not([data-work-plan]) .school-reader-calendar[data-view="month"] .school-calendar-date-row td:first-child time { color:#a64750; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar[data-view="month"] .school-calendar-date-row td:first-child time { color:var(--ep-fg-a64750, #a64750); }
  .schedule-surface:not([data-work-plan])[data-calendar-view="week"] .school-reader-calendar thead th:first-child { color:inherit; }
  .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-reader-calendar thead th:last-child,
- .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:last-child time { color:#326198; }
- .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:first-child time { color:#a64750; }
+ .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:last-child time { color:var(--ep-fg-326198, #326198); }
+ .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:first-child time { color:var(--ep-fg-a64750, #a64750); }
  .schedule-surface:not([data-work-plan]) .school-reader-calendar time[aria-current="date"] { color:white!important; }
  .schedule-surface:not([data-work-plan]) .school-calendar-date-row td { height:34px; padding:0 4px; }
  .calendar-desktop-day { display:flex; width:100%; min-height:32px; align-items:center; text-align:left; cursor:pointer; padding:1px 4px; }
  .calendar-desktop-day time { font-size:14px; }
- .calendar-desktop-day[aria-pressed=true] time:not([aria-current=date]) { border-radius:50%; box-shadow:inset 0 0 0 1px #315e95; color:#315e95; }
+ .calendar-desktop-day[aria-pressed=true] time:not([aria-current=date]) { border-radius:50%; box-shadow:inset 0 0 0 1px #315e95; color:var(--ep-fg-315e95, #315e95); }
  .calendar-desktop-day:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
- .schedule-surface:not([data-work-plan]) .school-reader-calendar td[data-selected] { background:#edf4fc; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar td[data-selected] { background:var(--ep-bg-edf4fc, #edf4fc); }
  .schedule-surface:not([data-work-plan]) .school-reader-calendar tr[data-calendar-overflow] { display:none; }
  .schedule-surface:not([data-work-plan]) .school-calendar-event-row td { height:25px; padding:0 3px; }
  .schedule-surface:not([data-work-plan]) .school-calendar-event-row .school-reader-event { box-sizing:border-box; height:23px; min-height:23px; margin:1px 0; padding:2px 5px; display:flex; align-items:center; overflow:hidden; }
@@ -158,7 +158,7 @@
  .calendar-desktop-overflow td { height:22px; padding:0 5px; }
  .calendar-desktop-overflow button { font-size:12px; font-weight:650; min-height:20px; color:var(--schedule-accent); cursor:pointer; }
  .calendar-selected-agenda > section { min-height:220px; }
- .calendar-selected-agenda h3 { background:#edf4fc; }
+ .calendar-selected-agenda h3 { background:var(--ep-bg-edf4fc, #edf4fc); }
  .calendar-selected-agenda .schedule-detail-trigger { overflow-wrap:anywhere; }
  .calendar-selected-agenda > section > ul { max-height:570px; overflow:auto; }
 }
@@ -196,17 +196,17 @@
  .schedule-surface[data-work-plan] .schedule-secondary-controls .schedule-jump { flex:1 1 150px; min-width:0; }
  .schedule-surface[data-work-plan] .school-reader-calendar { width:100%; min-width:0; border:0; border-collapse:collapse; }
  .schedule-surface[data-work-plan] .school-reader-calendar thead th { text-align:center; background:var(--surface-muted); font-size:13px; padding:8px 0; }
- .schedule-surface[data-work-plan] .school-reader-calendar :is(th,td) { border-color:color-mix(in srgb,var(--border) 72%,white); }
+ .schedule-surface[data-work-plan] .school-reader-calendar :is(th,td) { border-color:color-mix(in srgb,var(--border) 72%,var(--ep-border-ffffff, white)); }
  .schedule-surface[data-work-plan][data-calendar-view="month"] .school-reader-calendar thead th:first-child,
  .schedule-surface[data-work-plan][data-calendar-view="month"] .school-calendar-date-row td:first-child time,
  .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) thead th:last-child,
- .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) .school-calendar-date-row td:last-child time { color:#a64750; }
+ .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) .school-calendar-date-row td:last-child time { color:var(--ep-fg-a64750, #a64750); }
  .schedule-surface[data-work-plan][data-calendar-view="month"] .school-reader-calendar thead th:last-child,
  .schedule-surface[data-work-plan][data-calendar-view="month"] .school-calendar-date-row td:last-child time,
  .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) thead th:nth-last-child(2),
- .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) .school-calendar-date-row td:nth-last-child(2) time { color:#326198; }
+ .schedule-surface[data-work-plan][data-calendar-view="week"] .school-reader-calendar:has(col:nth-child(8)) .school-calendar-date-row td:nth-last-child(2) time { color:var(--ep-fg-326198, #326198); }
  .schedule-surface[data-work-plan] .school-reader-calendar time[aria-current=date] { color:white!important; }
- .schedule-surface[data-work-plan] .school-reader-calendar td[data-selected] { background:#edf4fc; }
+ .schedule-surface[data-work-plan] .school-reader-calendar td[data-selected] { background:var(--ep-bg-edf4fc, #edf4fc); }
  .schedule-surface[data-work-plan] .school-calendar-date-row td { height:34px; padding:0 4px; }
  .schedule-surface[data-work-plan] .school-reader-calendar tr[data-calendar-overflow] { display:none; }
  .schedule-surface[data-work-plan] .school-calendar-event-row td { height:25px; padding:0 3px; }
@@ -219,7 +219,7 @@
  .schedule-surface[data-work-plan][data-calendar-view=week] .school-calendar-event-row .school-reader-event { height:41px; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:2px; }
  .schedule-surface[data-work-plan] .school-calendar-week-space td { height:8px; }
  .school-reader-calendar[data-work-week] .work-week-label-col { width:60px; }
- .school-reader-calendar[data-work-week] .work-week-row-label { background:var(--surface-muted); color:#425a77; text-align:center; vertical-align:middle; font-size:12px; font-weight:650; padding:5px 3px; }
+ .school-reader-calendar[data-work-week] .work-week-row-label { background:var(--surface-muted); color:var(--ep-fg-425a77, #425a77); text-align:center; vertical-align:middle; font-size:12px; font-weight:650; padding:5px 3px; }
  .school-reader-calendar[data-work-week] :is(.school-calendar-date-row,.school-calendar-event-row,.calendar-desktop-overflow,.school-calendar-week-space) > .work-week-row-label { border-block:0; }
  .school-reader-calendar[data-work-week] .weekly-operation-row .work-week-row-label { border-top:1px solid var(--border); }
  .school-reader-calendar[data-work-week] .weekly-operation-row td { min-height:42px; padding:6px; }
@@ -245,4 +245,16 @@
 @media screen and (max-width:767px){
  .schedule-surface[data-work-plan] .schedule-secondary-controls .schedule-view-extra[data-open=true] { padding:0; border:0; }
  .official-work-plan-sidebar .task-dashboard-body { max-height:none; }
+}
+
+/* Dark palette; light values remain unchanged and print uses the light theme. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-border-ffffff: hsl(220 12% 30%);
+  --ep-fg-a64750: hsl(354 34% 76%);
+  --ep-fg-326198: hsl(212 43% 76%);
+  --ep-fg-315e95: hsl(213 43% 76%);
+  --ep-bg-edf4fc: hsl(212 39% 17%);
+  --ep-fg-425a77: hsl(213 24% 76%);
+ }
 }
