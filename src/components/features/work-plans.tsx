@@ -27,6 +27,7 @@ import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-da
 import { shiftScheduleDate } from "@/lib/schedule-dates";
 import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
+import { PlanPublicationPreview } from "./plan-publication-preview";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { operationNames, operationName, visibleWorkItem, workItemChoice } from "@/lib/work-operation-items";
 type Business = AnnualPlan["business"][number];
@@ -357,12 +358,9 @@ export function WorkPlans({
             publication.refresh();
           });
         }}>
-          <label className="field">적용 시작일
-            <input type="date" name="startsOn" min={start} max={end} defaultValue={clamp(today)} required />
-          </label>
-          <label className="field">변경 내용 <textarea name="note" maxLength={500} rows={2} /></label>
-          <InlineNotice mutation={publication} />
-          <Button type="submit" disabled={publication.pending || dirty}>확정·공개</Button>
+          <PlanPublicationPreview context={c} domain="plans" savedPlan={savedPlan} version={version} start={start} end={end} initialDate={clamp(today)} disabled={publication.pending || dirty || versionConflict || needsSync}>
+            <InlineNotice mutation={publication} />
+          </PlanPublicationPreview>
         </form>
       </Modal>
       {editable && (

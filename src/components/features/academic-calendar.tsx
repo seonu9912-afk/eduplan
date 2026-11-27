@@ -63,6 +63,7 @@ import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/schedule-dates";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
+import { PlanPublicationPreview } from "./plan-publication-preview";
 
 type DayEdit = {
   kind: "day";
@@ -1306,13 +1307,10 @@ export function AcademicCalendar({
             편성 경고 {report.warnings.length}건 ·{" "}
             {summer ? "학기 경계 설정됨" : "학기 경계 미확정"}
           </p>
-          <label className="field">적용 시작일
-            <input type="date" name="startsOn" min={`${year}-03-01`}
-              max={addDays(`${year + 1}-03-01`, -1)}
-              defaultValue={today >= `${year}-03-01` && today < `${year + 1}-03-01` ? today : `${year}-03-01`} required />
-          </label>
-          <label className="field">변경 내용 <textarea name="note" maxLength={500} rows={2} /></label>
-          <Button type="submit" disabled={pending || dirty}>확정·공개</Button>
+          <PlanPublicationPreview context={c} domain="calendar" savedPlan={plan} version={c.annual?.version ?? 0}
+            start={`${year}-03-01`} end={addDays(`${year + 1}-03-01`, -1)}
+            initialDate={today >= `${year}-03-01` && today < `${year + 1}-03-01` ? today : `${year}-03-01`}
+            disabled={pending || dirty || !parsed.success} />
         </form>
       </Modal>
       <Modal
