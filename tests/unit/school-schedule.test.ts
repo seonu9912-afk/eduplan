@@ -89,7 +89,7 @@ it("hides weekend columns without moving the selected week, retaining academic-y
   expect(visibleWeekDates("2025-03-01", false, "2025-03-01")).toHaveLength(7);
 });
 
-import { compactCalendarWeek } from "../../src/lib/school-schedule";
+import { compactCalendarWeek, monthlyCalendarLaneCount } from "../../src/lib/school-schedule";
 it("keeps a multi-day event connected in the compact calendar despite crowded days", () => {
   const dates=["2026-11-25","2026-11-26","2026-11-27"];
   const reading = {id:"reading",date:dates[0],end:dates[2],title:"가을 독서 주간",tone:"event" as const};
@@ -97,4 +97,31 @@ it("keeps a multi-day event connected in the compact calendar despite crowded da
   const preview = compactCalendarWeek(dates,days);
   expect(preview.lanes.flat().filter(span=>span.entry.id==="reading")).toEqual([{entry:reading,start:0,end:2}]);
   expect(preview.hidden).toEqual([1,1,1]);
+});
+
+it("monthly calendar adapts readable row capacity to height and week count",()=>{
+ expect(monthlyCalendarLaneCount(720,150,6)).toBe(4);
+ expect(monthlyCalendarLaneCount(1200,130,5)).toBe(5);
+ expect(monthlyCalendarLaneCount(1600,130,4)).toBe(6);
+ expect(monthlyCalendarLaneCount(1200,130,6)).toBe(4);
+});
+it("preserves dense multi-day intervals and exact overflow, including all printed spans",()=>{
+ const dates=scheduleDates("2027-03-03","month");
+ const long={id:"long",title:"학년도 경계를 넘는 교육활동",tone:"event" as const,date:"2027-02-25",end:"2027-03-12"};
+ const second={id:"second",title:"중첩되는 기간형 활동",tone:"event" as const,date:"2027-03-03",end:"2027-03-17"};
+ const days=new Map(dates.map(day=>[day,{entries:[...([long,second].filter(event=>event.date<=day&&event.end>=day)),...Array.from({length:12},(_,i)=>({id:day+"-"+i,title:"길이가 긴 업무계획 제목 "+i,date:day,end:day,tone:"work" as const}))]}]));
+ for(const count of [4,5,6]) for(let offset=0;offset<dates.length;offset+=7){
+  const week=dates.slice(offset,offset+7);
+  const preview=compactCalendarWeek(week,days,count);
+  expect(preview.lanes).toHaveLength(count);
+  expect([...preview.lanes,...preview.overflowLanes].flat()).toHaveLength(calendarWeekLanes(week,days).flat().length);
+  for(let col=0;col<week.length;col++){
+   const shown=preview.lanes.flat().filter(span=>span.start<=col&&span.end>=col).length;
+   expect(shown+preview.hidden[col]).toBe(days.get(week[col])!.entries.length);
+  }
+  for(const event of [long,second]){
+   const original=calendarWeekLanes(week,days).flat().find(span=>span.entry.id===event.id);
+   if(original)expect(preview.lanes.flat()).toContainEqual(original);
+  }
+ }
 });
