@@ -19,6 +19,7 @@ import { LessonReminderSettings } from "./lesson-reminder-settings";
 import { MyTasks } from "./my-tasks";
 import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
 import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
+import { useHomeRefresh } from "./home-auto-refresh";
 import "./school-operations.css";
 
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
@@ -36,6 +37,8 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
   const resolver = useMemo(() => doc ? createLessonResolver(c, doc) : null, [c, doc]);
   const ids = useMemo(() => myTeacherIds(c), [c]);
   const clock = seoulClock(now ?? new Date(`${today}T00:00:00+09:00`));
+  useHomeRefresh(today, !!publicData && !previewNow);
+  const publicDataDateChanged = !!publicData && !previewNow && clock.date !== today;
   const lessons = resolver?.(clock.date).filter((lesson) => ids.has(lesson.teacherId)) ?? [];
   const operationNotice = dailyOperationNotice(c, clock.date);
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
@@ -99,7 +102,10 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
               </ol>}
             </>}
         </section>
-      {publicData}
+      {publicDataDateChanged ? <>
+        <section className="personal-widget school-public-widget" aria-busy="true"><header className="personal-day-heading"><h2>날씨</h2></header><p className="personal-widget-note" role="status">새 날짜의 날씨를 확인하는 중…</p></section>
+        <section className="personal-widget school-public-widget" aria-busy="true"><header className="personal-day-heading"><h2>오늘의 급식</h2></header><p className="personal-widget-note" role="status">새 날짜의 급식 정보를 확인하는 중…</p></section>
+      </> : publicData}
     </div>
     <div className="home-week-and-tasks">
       <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
