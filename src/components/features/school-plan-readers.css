@@ -22,11 +22,123 @@
   flex-wrap: wrap;
 }
 .schedule-reader-toolbar {
-  padding: 10px 12px;
-  background: #f7f9fc;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  background: #fff;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
 }
+.schedule-period-nav,
+.schedule-view-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.schedule-period-nav h2 {
+  min-width: 0;
+  color: #243e59;
+  font-size: 16px;
+  font-weight: 750;
+  text-align: center;
+}
+.schedule-segments {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: #edf2f7;
+  color: #465e78;
+}
+.schedule-segments button {
+  min-height: 32px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.schedule-segments button[aria-pressed="true"] {
+  background: #fff;
+  color: #214b7e;
+  box-shadow: 0 1px 3px #16314b22;
+}
+.schedule-jump input {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding-inline: 7px;
+}
+.schedule-print-title,
+.school-calendar-mobile { display: none; }
+.school-calendar-desktop { min-width: 0; }
+.school-calendar-agenda {
+  display: grid;
+  gap: 10px;
+}
+.school-calendar-agenda > section {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.school-calendar-agenda > section[data-selected] { border-color: #b9cde3; }
+.school-calendar-agenda h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 13px;
+  border-bottom: 1px solid #e6edf5;
+  background: #f7f9fc;
+  font-size: 14px;
+  font-weight: 700;
+  color: #263f5b;
+}
+.school-calendar-agenda h3 span {
+  color: #315e95;
+  font-size: 12px;
+}
+.school-calendar-agenda ul { list-style: none; padding: 0 12px; }
+.school-calendar-agenda li {
+  --agenda-color: #4b74a5;
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  gap: 7px;
+  padding: 10px 0;
+}
+.school-calendar-agenda li + li { border-top: 1px solid #e9eef4; }
+.school-calendar-agenda li[data-tone="break"] { --agenda-color: #9b5e40; }
+.school-calendar-agenda li[data-tone="work"] { --agenda-color: #427863; }
+.schedule-agenda-time {
+  align-self: start;
+  color: #465e78;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.school-calendar-agenda li > div {
+  display: grid;
+  gap: 3px;
+  padding-inline-start: 8px;
+  border-inline-start: 3px solid var(--agenda-color);
+  overflow-wrap: anywhere;
+}
+.school-calendar-agenda strong { color: #243e59; font-size: 14px; }
+.school-calendar-agenda small { color: #506781; font-size: 12px; }
+.schedule-agenda-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px;
+  color: #506781;
+  font-size: 13px;
+}
+.schedule-agenda-empty svg { flex: none; }
 .school-reader-empty {
   padding: 16px;
 }
@@ -106,8 +218,21 @@
   .school-entry {
     grid-template-columns: minmax(0,1fr);
   }
+  .schedule-reader-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); padding: 7px 8px 9px; }
+  .schedule-period-nav { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto; }
+  .schedule-period-nav h2 { font-size: 18px; }
+  .schedule-view-controls { flex-wrap: wrap; gap: 5px; }
+  .schedule-segments { margin-inline-end: auto; }
+  .schedule-segments button { min-height: 44px; padding-inline: 7px; }
+  .schedule-reader-toolbar :is(button, input) { min-height: 44px; }
+  .schedule-reader-toolbar button[data-size="icon"] { min-width: 44px; }
+  .schedule-jump { flex: 0 1 8rem; }
+  .school-calendar-desktop { display: none; }
+  .school-calendar-mobile { display: grid; gap: 12px; min-width: 0; }
 }
 @media print {
+  .school-calendar-mobile { display: none; }
+  .school-calendar-desktop, .schedule-print-title { display: block; }
   .school-reader-calendar,.school-curriculum-sheet {
     min-width: 0;
   }

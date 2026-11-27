@@ -406,7 +406,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "calendar" && !management && <>
-          <OfficialSchedule context={c} today={today} />
+          <OfficialSchedule key={c.year?.id} context={c} today={today} />
           <ActivityRequests context={c} today={today} />
         </>}
         {section === "timetable" && management ? (
@@ -430,7 +430,7 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "plans" && !management && <OfficialSchedule context={c} today={today} work />}
+        {section === "plans" && !management && <OfficialSchedule key={c.year?.id} context={c} today={today} work />}
         {section === "curriculum" && management ? (
           <Curriculum
             context={c}

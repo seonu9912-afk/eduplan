@@ -100,8 +100,9 @@ test("school-only onboarding and independently granted calendar publication", as
     await editDate("검증 미공개 수정");
     await reader.reload();
     await reader.getByLabel("기준일").fill(eventDate);
-    await expect(reader.getByText("검증 공개 휴업", { exact: true })).toBeVisible();
-    await expect(reader.getByText("검증 미공개 수정", { exact: true })).toHaveCount(0);
+    const table = reader.getByRole("table", { name: "공개 일정표" });
+    await expect(table.getByText("검증 공개 휴업", { exact: true })).toBeVisible();
+    await expect(table.getByText("검증 미공개 수정", { exact: true })).toHaveCount(0);
   } finally {
     await nextContext.close();
   }

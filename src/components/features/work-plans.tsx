@@ -20,10 +20,11 @@ import {
   calendarDays,
   weekRange,
   monthRange,
-  moveMonth,
 } from "@/lib/domain";
 import { previousWorkPlan, publishWorkPlan, saveAnnual } from "@/app/actions";
 import type { Context } from "@/lib/models";
+import { MobileCalendarDates, type CalendarTone } from "./mobile-calendar-dates";
+import { shiftScheduleDate } from "@/lib/schedule-dates";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
@@ -120,14 +121,10 @@ export function WorkPlans({
     setError("");
     setEditing({ date: clamp(d), kind });
   };
-  const navigate = (direction: number) =>
-    setDate(
-      clamp(
-        view === "week"
-          ? addDays(date, direction * 7)
-          : `${moveMonth(date.slice(0, 7), direction)}-01`,
-      ),
-    );
+  const navigate = (direction: number) => {
+    if (direction < 0 ? range.start <= start : range.end >= end) return;
+    setDate(clamp(shiftScheduleDate(date, view, direction)));
+  };
   const deptTag = (department: string) => (
     <span
       className={`department-chip dept-${Math.max(0, plan.departments.indexOf(department)) % 6}`}
@@ -557,6 +554,27 @@ export function WorkPlans({
               ? `${range.start} ~ ${range.end} 주간계획`
               : `${Number(date.slice(5, 7))}월 월중계획`}
           </h2>
+          {!(view === "month" && monthList) && <div className="mobile-only work-mobile-date-picker no-print">
+            <MobileCalendarDates date={date} today={today} start={start} end={end} period={view}
+              indicators={(day) => {
+                const matchesDepartment = (department: string) => !departmentFilter || departmentFilter === department;
+                const tones: CalendarTone[] = [];
+                if (plan.holidays[day] || plan.vacations.some((item) => item.start <= day && item.end >= day)) tones.push("break");
+                for (const event of c.events) {
+                  if (event.start_date <= day && event.end_date >= day && matchesDepartment(event.department)) tones.push("event");
+                }
+                for (const allocation of plan.allocations) {
+                  if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) tones.push("event");
+                }
+                for (const item of plan.business) {
+                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) tones.push("work");
+                }
+                return tones;
+              }} onNavigate={navigate} onSelect={(day) => {
+                setDate(day);
+                if (view === "week") requestAnimationFrame(() => document.getElementById(`work-day-${day}`)?.scrollIntoView({ block: "nearest" }));
+              }} />
+          </div>}
           <div
             className="work-board-scroll"
             tabIndex={0}
@@ -583,6 +601,8 @@ export function WorkPlans({
                 .map((d) => (
                   <section
                     key={d}
+                    id={`work-day-${d}`}
+                    data-selected={d === date ? "" : undefined}
                     className={`work-day ${weekday(d) === 0 || weekday(d) === 6 ? "work-weekend" : ""} ${view === "month" && !d.startsWith(date.slice(0, 7)) ? "outside-month" : ""} ${d === today ? "work-today" : ""}`}
                   >
                     <h3>
@@ -602,12 +622,6 @@ export function WorkPlans({
                 ))}
             </div>
           </div>
-          {view === "week" && (
-            <p className="muted work-footnote">
-              주간표는 월~토요일입니다. 일요일 일정은 월중계획에서 확인할 수
-              있습니다.
-            </p>
-          )}
         </section>
       </div>
       {editable && (

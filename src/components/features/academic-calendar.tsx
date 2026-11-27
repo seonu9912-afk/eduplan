@@ -58,7 +58,10 @@ import { DateFields, EventFields } from "./academic-calendar-editors";
 import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
 import { Button } from "@/components/ui/button";
-import { addDays } from "@/lib/domain";
+import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
+import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/schedule-dates";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { MobileCalendarDates, type CalendarTone } from "./mobile-calendar-dates";
 
 type DayEdit = {
   kind: "day";
@@ -137,7 +140,7 @@ export function AcademicCalendar({
       ? today
       : `${context.year?.year ?? 2027}-03-01`,
   );
-  const [mobileRange, setMobileRange] = useState("month");
+  const [mobileRange, setMobileRange] = useState<CalendarPeriod>("month");
   const [wideMobile, setWideMobile] = useState(false);
   const [month, setMonth] = useState(date.slice(0, 7));
   const [semester, setSemester] = useState(0);
@@ -550,6 +553,19 @@ export function AcademicCalendar({
       : report;
   const changedDays =
     projectedReport.days.filter(isTeachingDay).length - counts.total;
+  const firstDate = `${year}-03-01`;
+  const lastDate = addDays(`${year + 1}-03-01`, -1);
+  const mobilePeriod = mobileRange === "week" ? weekRange(date) : monthRange(date.slice(0, 7));
+  const selectMobileDate = (day: string) => move(() => {
+    setDate(day);
+    setMonth(day.slice(0, 7));
+  });
+  const navigateMobile = (step: number) => {
+    if (step < 0 ? mobilePeriod.start <= firstDate : mobilePeriod.end >= lastDate) return;
+    const day = shiftScheduleDate(date, mobileRange, step);
+    selectMobileDate(day < firstDate ? firstDate : day > lastDate ? lastDate : day);
+  };
+
   const calendarView = !tools ? (
     <div className="ar">
       <Notice message={message.text} error={message.error} />
@@ -654,82 +670,65 @@ export function AcademicCalendar({
             </p>
           )}
           <div className="mobile-only no-print">
-            <div className="mobile-view-toolbar">
-              <label>
-                조회 범위
-                <select
-                  value={mobileRange}
-                  onChange={(e) => setMobileRange(e.target.value)}
-                >
-                  <option value="month">월간 목록</option>
-                  <option value="week">선택일부터 7일</option>
-                  <option value="day">일일 상세</option>
-                </select>
-              </label>
-              <label>
-                기준 날짜
-                <input
-                  type="date"
-                  min={`${year}-03-01`}
-                  max={report.days.at(-1)?.date}
-                  value={date}
-                  onChange={(e) =>
-                    e.target.value &&
-                    move(() => {
-                      setDate(e.target.value);
-                      setMonth(e.target.value.slice(0, 7));
-                    })
-                  }
-                />
-              </label>
-            </div>
-            <div className="ar-tools">
-              <button onClick={() => openDate(date)}>이 날짜 운영 편집</button>
-              <button onClick={() => setWideMobile(!wideMobile)}>
-                {wideMobile ? "연간 표 접기" : "연간 전체 표"}
-              </button>
-            </div>
-            <div className="mobile-card-list">
-              {report.days
-                .filter((d) =>
-                  mobileRange === "month"
-                    ? d.date.startsWith(month)
-                    : mobileRange === "day"
-                      ? d.date === date
-                      : d.date >= date &&
-                        d.date <
-                          new Date(
-                            Date.parse(date + "T00:00:00Z") + 7 * 86400000,
-                          )
-                            .toISOString()
-                            .slice(0, 10),
-                )
-                .map((d) => (
-                  <article className="mobile-edit-card" key={d.date}>
-                    <h3>
-                      {d.date} (
-                      {weekdays[new Date(d.date + "T12:00:00Z").getUTCDay()]})
-                    </h3>
+            <div className="mobile-calendar-management">
+              <div className="mobile-calendar-management-nav">
+                <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={mobilePeriod.start <= firstDate}
+                  onClick={() => navigateMobile(-1)}><ChevronLeft /></Button>
+                <h3>{mobileRange === "week" ? `${dateLabel(mobilePeriod.start)} – ${dateLabel(mobilePeriod.end)}`
+                  : `${date.slice(0, 4)}년 ${Number(date.slice(5, 7))}월`}</h3>
+                <Button variant="ghost" size="icon" aria-label="다음 기간" disabled={mobilePeriod.end >= lastDate}
+                  onClick={() => navigateMobile(1)}><ChevronRight /></Button>
+                <Button variant="outline" size="sm" disabled={today < firstDate || today > lastDate}
+                  onClick={() => selectMobileDate(today)}>오늘</Button>
+              </div>
+              <div className="mobile-calendar-management-actions">
+                <Button variant={mobileRange === "month" ? "secondary" : "ghost"} aria-pressed={mobileRange === "month"}
+                  onClick={() => setMobileRange("month")}>월간</Button>
+                <Button variant={mobileRange === "week" ? "secondary" : "ghost"} aria-pressed={mobileRange === "week"}
+                  onClick={() => setMobileRange("week")}>주간</Button>
+                <label><span className="sr-only">기준 날짜</span>
+                  <input type="date" min={firstDate} max={lastDate} value={date}
+                    onChange={(e) => {
+                      const day = e.target.value;
+                      if (day >= firstDate && day <= lastDate) selectMobileDate(day);
+                    }} />
+                </label>
+              </div>
+              <MobileCalendarDates date={date} today={today} start={firstDate} end={lastDate} period={mobileRange}
+                indicators={(day) => {
+                  const operation = days.get(day);
+                  const tones: CalendarTone[] = (eventTitlesByDate.get(day) ?? []).map(() => "event");
+                  if (operation && ["holiday", "vacation", "discretionary"].includes(operation.type))
+                    tones.unshift("break");
+                  if (operation?.type === "swap") tones.unshift("event");
+                  return tones;
+                }}
+                onSelect={selectMobileDate} onNavigate={navigateMobile} />
+              <div className="mobile-card-list">
+                {(mobileRange === "month" ? [date] : scheduleDates(date, "week")).map((day) => {
+                  const d = days.get(day);
+                  if (!d) return null;
+                  return <article className="mobile-edit-card" key={d.date} data-selected={d.date === date ? "" : undefined}>
+                    <h3>{dateLabel(d.date)} {weekdays[new Date(d.date + "T00:00:00Z").getUTCDay()]}요일</h3>
                     <p>
                       {dayTypes[d.type]}
                       {d.name && ` · ${d.name}`}
-                      {d.type === "swap" &&
-                        ` · ${weekdays[d.weekday]}요일 시간표 적용`}
+                      {d.type === "swap" && ` · ${weekdays[d.weekday]}요일 시간표 적용`}
                       {!d.enabled && " · 수업 없음"}
                     </p>
-                    {(eventTitlesByDate.get(d.date) ?? []).map((title) => (
-                      <p key={title}>{title}</p>
-                    ))}
-                    <button onClick={() => openDate(d.date)}>
-                      {editable ? "수업일·휴업·대체 요일 편집" : "운영 상세"}
-                    </button>
-                    {editable && (
-                      <button onClick={() => openEvent(undefined, d.date)}>
-                        행사 등록
-                      </button>
-                    )}
-                  </article>
-                ))}
+                    {(eventTitlesByDate.get(d.date) ?? []).map((title) => <p key={title}>{title}</p>)}
+                    <div className="ar-tools">
+                      <button onClick={() => openDate(d.date)}>{editable ? "운영 편집" : "운영 상세"}</button>
+                      {editable && <button onClick={() => openEvent(undefined, d.date)}>행사 등록</button>}
+                    </div>
+                  </article>;
+                })}
+              </div>
+              <div className="ar-tools">
+                <button aria-expanded={wideMobile} onClick={() => setWideMobile(!wideMobile)}>
+                  {wideMobile ? "연간 표 접기" : "연간 전체 표"}
+                </button>
+              </div>
             </div>
           </div>
           <div className={`ar-scroll ${wideMobile ? "" : "desktop-only"}`}>

@@ -1,0 +1,97 @@
+.mobile-calendar-dates {
+  min-width: 0;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  touch-action: pan-y pinch-zoom;
+}
+.mobile-calendar-weekdays,
+.mobile-calendar-day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+}
+.mobile-calendar-weekdays {
+  padding-bottom: 5px;
+  color: #506781;
+  font-size: 12px;
+  font-weight: 650;
+}
+.mobile-calendar-dates [data-weekday="일"] { color: #984653; }
+.mobile-calendar-dates [data-weekday="토"] { color: #315e95; }
+.mobile-calendar-day-grid > button {
+  display: grid;
+  grid-template-rows: 30px 6px;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 45px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #273e5a;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.mobile-calendar-day-grid > button[data-adjacent],
+.mobile-calendar-day-grid > button:disabled {
+  color: #687b90;
+  font-weight: 450;
+}
+.mobile-calendar-day-grid > button:disabled { opacity: .52; cursor: default; }
+.mobile-calendar-day-grid > button:focus-visible { outline: 2px solid #315e95; outline-offset: -2px; }
+.mobile-calendar-day-grid time {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.mobile-calendar-day-grid > button[aria-current="date"] time {
+  box-shadow: inset 0 0 0 1px #315e95;
+  color: #214b7e;
+}
+.mobile-calendar-day-grid > button[aria-pressed="true"] time {
+  background: #214b7e;
+  color: #fff;
+}
+.mobile-calendar-markers { display: flex; justify-content: center; gap: 3px; }
+.mobile-calendar-markers i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4b74a5;
+}
+.mobile-calendar-markers i[data-tone="work"] { background: #427863; }
+.mobile-calendar-markers i[data-tone="break"] { background: #9b5e40; }
+
+@media screen and (max-width: 767px) {
+  .mobile-calendar-management { display: grid; gap: 10px; margin-top: 12px; }
+  .mobile-calendar-management-nav {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px auto;
+    align-items: center;
+    gap: 4px;
+  }
+  .mobile-calendar-management-nav h3 { margin: 0; text-align: center; font-size: 16px; }
+  .mobile-calendar-management-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .mobile-calendar-management :is(button, input) { min-height: 44px; }
+  .ar .mobile-calendar-dates button,
+  .ar .mobile-calendar-dates button[aria-pressed="true"] {
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+  }
+  .mobile-calendar-management-actions label { flex: 1 1 125px; min-width: 0; }
+  .mobile-calendar-management-actions input { width: 100%; }
+  .mobile-calendar-management .mobile-edit-card[data-selected] { border-color: #b9cde3; }
+  .work-mobile-date-picker { margin-block: 12px; }
+  .work-layout .work-mini-calendar { display: none; }
+  .work-plan-table.work-month-board .work-day:not([data-selected]) { display: none; }
+}
