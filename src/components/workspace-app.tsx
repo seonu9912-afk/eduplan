@@ -333,6 +333,39 @@ export function WorkspaceApp({
           )}
         </div>
       </nav>
+      <nav className="mobile-top-nav no-print" aria-label="모바일 주요 메뉴">
+        {[
+          { id: "home", label: "홈", icon: House },
+          { id: "calendar", label: "일정", icon: CalendarDays },
+          { id: "timetable", label: "시간표", icon: Table2 },
+          { id: "notifications", label: "알림", icon: Bell },
+        ].map(({ id, label, icon: Icon }) => (
+          <Link
+            data-guarded-navigation
+            key={id}
+            href={`${base}/${id}${suffix}`}
+            aria-current={section === id ? "page" : undefined}
+            onClick={(e) => {
+              if (!allowNavigation()) e.preventDefault();
+              else setDirty(false);
+            }}
+          >
+            <Icon />
+            <span>{label}</span>
+            {id === "notifications" &&
+              c.operations?.notifications.some((n) => !n.read_at) && (
+                <span className="nav-unread" role="img" aria-label="읽지 않은 알림" />
+              )}
+          </Link>
+        ))}
+        <button
+          onClick={() => setModal("menu")}
+          aria-expanded={modal === "menu"}
+        >
+          <Menu />
+          <span>전체 메뉴</span>
+        </button>
+      </nav>
       <main id="main-content" className="workspace-content"
         data-surface={section === "settings" ? "form" : "wide"} data-section={section}>
         <Notice message={error} error />
@@ -422,39 +455,7 @@ export function WorkspaceApp({
           />
         ) : null}
       </main>
-      <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
-        {[
-          { id: "home", label: "홈", icon: House },
-          { id: "calendar", label: "일정", icon: CalendarDays },
-          { id: "timetable", label: "시간표", icon: Table2 },
-          { id: "notifications", label: "알림", icon: Bell },
-        ].map(({ id, label, icon: Icon }) => (
-          <Link
-            data-guarded-navigation
-            key={id}
-            href={`${base}/${id}${suffix}`}
-            aria-current={section === id ? "page" : undefined}
-            onClick={(e) => {
-              if (!allowNavigation()) e.preventDefault();
-              else setDirty(false);
-            }}
-          >
-            <Icon />
-            <span>{label}</span>
-            {id === "notifications" &&
-              c.operations?.notifications.some((n) => !n.read_at) && (
-                <span className="nav-unread" role="img" aria-label="읽지 않은 알림" />
-              )}
-          </Link>
-        ))}
-        <button
-          onClick={() => setModal("menu")}
-          aria-expanded={modal === "menu"}
-        >
-          <Menu />
-          <span>전체 메뉴</span>
-        </button>
-      </nav>
+
       <Modal
         open={modal === "menu"}
         onOpenChange={(v) => !v && setModal(null)}

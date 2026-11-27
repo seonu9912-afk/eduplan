@@ -44,7 +44,7 @@ select {
 .update-banner {
   color: var(--schedule-accent);
 }
-.mobile-bottom-nav {
+.mobile-top-nav {
   display: none;
 }
 .mobile-menu-grid {
@@ -134,52 +134,22 @@ select {
 @media screen and (min-width: 1200px) {
   .app-shell {
     min-height: 100dvh;
-    display: grid;
-    grid-template-columns: 188px minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
-  }
-  .app-shell > .app-header {
-    grid-column: 1 / -1;
   }
   .app-shell > .main-nav {
-    grid-area: 2 / 1;
-    position: sticky;
-    top: 0;
-    align-self: start;
-    min-height: calc(100dvh - 65px);
-    max-height: 100dvh;
-    overflow: auto;
     background: #fff;
-    border-right: 1px solid var(--border);
   }
   .app-shell > .main-nav .nav-inner {
-    flex-direction: column;
-    gap: 4px;
-    padding: 16px 10px;
+    max-width: none;
+    gap: clamp(12px, 2vw, 30px);
+    padding-inline: clamp(18px, 2.5vw, 42px);
   }
   .app-shell > .main-nav .nav-item {
-    justify-content: flex-start;
-    min-height: 44px;
-    padding: 10px 12px;
-    font-size: 14px;
-    font-weight: 550;
-    border: 1px solid transparent;
-    border-radius: 8px;
-  }
-  .app-shell > .main-nav .nav-item:hover {
-    background: var(--surface-muted);
-  }
-  .app-shell > .main-nav .nav-item.active {
-    background: var(--card);
-    border-color: transparent;
-    box-shadow: inset 3px 0 var(--primary);
+    flex: 0 0 auto;
+    min-height: 48px;
   }
   .app-shell > .workspace-content {
-    grid-column: 2;
     width: 100%;
-  }
-  .app-shell > .workspace-content {
-    padding-inline: clamp(18px, 1.7vw, 32px);
+    padding-inline: clamp(18px, 2.5vw, 42px);
   }
 }
 @media (max-width: 1199px) {
@@ -220,11 +190,8 @@ select {
   }
 }
 @media screen and (max-width: 767px) {
-  :root {
-    --bottom-nav-height: calc(64px + env(safe-area-inset-bottom));
-  }
   .app-shell {
-    padding-bottom: var(--bottom-nav-height);
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .app-header {
     position: relative;
@@ -270,23 +237,16 @@ select {
       max(16px, env(safe-area-inset-left));
     min-width: 0;
   }
-  .mobile-bottom-nav {
+  .mobile-top-nav {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 45;
     background: #fff;
-    border-top: 1px solid #dbe3ee;
+    border-bottom: 1px solid #dbe3ee;
     padding: 5px max(5px, env(safe-area-inset-right))
-      calc(5px + env(safe-area-inset-bottom))
-      max(5px, env(safe-area-inset-left));
-    box-shadow: 0 -4px 20px #1632540a;
+      5px max(5px, env(safe-area-inset-left));
   }
-  .mobile-bottom-nav a,
-  .mobile-bottom-nav button {
+  .mobile-top-nav a,
+  .mobile-top-nav button {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -302,20 +262,20 @@ select {
     font: inherit;
     font-size: 11px;
   }
-  .mobile-bottom-nav [aria-current="page"] {
+  .mobile-top-nav [aria-current="page"] {
     color: var(--primary);
     font-weight: 750;
   }
-  .mobile-bottom-nav [aria-current="page"]::before {
+  .mobile-top-nav [aria-current="page"]::before {
     position: absolute;
-    inset-block-start: 0;
+    inset-block-end: 0;
     width: 18px;
     height: 2px;
     border-radius: 2px;
     background: currentColor;
     content: "";
   }
-  .mobile-bottom-nav svg {
+  .mobile-top-nav svg {
     width: 21px;
     height: 21px;
   }
@@ -492,26 +452,17 @@ select {
   }
 }
 @media screen and (max-width: 767px) and (orientation: landscape) {
-  .mobile-bottom-nav a,
-  .mobile-bottom-nav button {
+  .mobile-top-nav a,
+  .mobile-top-nav button {
     flex-direction: row;
     min-height: 42px;
   }
-  .mobile-bottom-nav {
+  .mobile-top-nav {
     padding-top: 2px;
   }
-  :root {
-    --bottom-nav-height: calc(48px + env(safe-area-inset-bottom));
-  }
-}
-html[data-keyboard="true"] .mobile-bottom-nav {
-  display: none;
-}
-html[data-keyboard="true"] {
-  --bottom-nav-height: 0px;
 }
 @media print {
-  .mobile-bottom-nav,
+  .mobile-top-nav,
   .connection-banner,
   .update-banner,
   .mobile-only,
