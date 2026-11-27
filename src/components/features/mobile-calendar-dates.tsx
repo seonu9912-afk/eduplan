@@ -10,7 +10,7 @@ const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
 export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string; end?: string };
 
-export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true, emphasizeToday = false, spanDays }: {
+export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true, emphasizeToday = false, compactRows = false, spanDays }: {
   date: string;
   today: string;
   start: string;
@@ -18,6 +18,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
   period: CalendarPeriod;
   showWeekends?: boolean;
   emphasizeToday?: boolean;
+  compactRows?: boolean;
   spanDays?: ReadonlyMap<string, { entries: ScheduleEntry[] }>;
   items: (day: string) => CalendarCellItem[];
   onSelect: (day: string) => void;
@@ -29,7 +30,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
   const month = date.slice(0, 7);
   const labels = period === "week" ? [...weekdays.slice(1), weekdays[0]].slice(0, weekdaysOnly ? 5 : 7) : weekdays;
   return (
-    <div className="mobile-calendar-dates" data-emphasize-today={emphasizeToday ? "" : undefined} data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
+    <div className="mobile-calendar-dates" data-emphasize-today={emphasizeToday ? "" : undefined} data-compact-rows={compactRows ? "" : undefined} data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
       onTouchStart={(event) => {
         const touch = event.touches[0];
         touchStart.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
@@ -51,7 +52,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
         {Array.from({length: days.length / labels.length}, (_, index) => {
           const week = days.slice(index * labels.length, (index + 1) * labels.length);
           const { lanes, hidden } = compactCalendarWeek(week, spanDays);
-          return <div className="mobile-calendar-span-week" key={week[0]} style={{gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))`}}>
+          return <div className="mobile-calendar-span-week" key={week[0]} data-lanes={lanes.filter(lane=>lane.length>0).length} data-overflow={hidden.some(count=>count>0) ? "" : undefined} style={{gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))`}}>
             {week.map((day, col) => {
               const enabled = day >= start && day <= end;
               const entries = enabled ? spanDays.get(day)?.entries ?? [] : [];
