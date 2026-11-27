@@ -419,8 +419,8 @@ export function TeachingModule({
                       <p className="course-class-list">{classNames(p.id)}</p>
                       <div className="course-hours">
                         <b>
-                          {doc.units.reduce((n, u) => n + (u.lessons ?? 0), 0)}
-                          <small>차시 계획</small>
+                          {doc.units.length}
+                          <small>등록된 수업계획</small>
                         </b>
                         <span>
                           기준 {p.expected_hours ?? "미설정"}
@@ -717,13 +717,6 @@ function CourseEditor({
       section: "수업 설정",
       level: "확인 필요",
       message: "담당 학급이 연결되지 않았습니다.",
-    });
-  if (course.expected_hours === null)
-    issues.push({
-      section: "수업 설정",
-      level: "확인 필요",
-      message:
-        "편성·수동 기준 차시가 없습니다. 차시 합계를 비교할 수 없습니다.",
     });
   const save = (publication?: { startsOn: string; note: string }) => {
     if (autoInFlight.current) return;

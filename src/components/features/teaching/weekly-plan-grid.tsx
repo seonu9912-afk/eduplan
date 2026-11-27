@@ -248,41 +248,6 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       {week.calendarNotes.map((note) => (
                         <p key={note}>{note}</p>
                       ))}
-                      <label>
-                        계획 차시
-                        <input
-                          type="number"
-                          min="0"
-                          max="10000"
-                          step="0.5"
-                          disabled={!editable}
-                          value={unit?.lessons ?? ""}
-                          onChange={(e) =>
-                            update(week, unit, {
-                              lessons:
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        수업 구분
-                        <select
-                          disabled={!editable}
-                          value={unit?.kind ?? "lesson"}
-                          onChange={(e) =>
-                            update(week, unit, {
-                              kind: e.target.value as TeachingUnit["kind"],
-                            })
-                          }
-                        >
-                          <option value="lesson">교과 수업</option>
-                          <option value="activity">학교 교육활동</option>
-                          <option value="reflection">학기 성찰</option>
-                        </select>
-                      </label>
                       <StandardPicker
                         context={context}
                         value={unit?.standard_ids ?? []}
@@ -382,46 +347,6 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                     <td>{week.week}</td>
                     <td>
                       <span className="teaching-week-date">{week.day.split("~").map((part,i,parts)=><span key={i}>{part}{i<parts.length-1?"~":""}</span>)}</span>
-                      <details className="teaching-week-options">
-                        <summary>차시·구분</summary>
-                        <label>
-                          계획 차시
-                          <input
-                            aria-label={week.period + " 계획 차시"}
-                            type="number"
-                            min="0"
-                            max="10000"
-                            step="0.5"
-                            value={unit?.lessons ?? ""}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              update(week, unit, {
-                                lessons:
-                                  event.target.value === ""
-                                    ? null
-                                    : Number(event.target.value),
-                              })
-                            }
-                          />
-                        </label>
-                        <label>
-                          수업 구분
-                          <select
-                            value={unit?.kind ?? "lesson"}
-                            disabled={!editable}
-                            onChange={(event) =>
-                              update(week, unit, {
-                                kind: event.target
-                                  .value as TeachingUnit["kind"],
-                              })
-                            }
-                          >
-                            <option value="lesson">교과 수업</option>
-                            <option value="activity">학교 교육활동</option>
-                            <option value="reflection">학기 성찰</option>
-                          </select>
-                        </label>
-                      </details>
                     </td>
                     <td>{cell(week, unit, "title", index, 0)}</td>
                     <td>

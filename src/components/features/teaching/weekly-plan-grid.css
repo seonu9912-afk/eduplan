@@ -16,25 +16,11 @@
 .teaching-report-preview table { width: 100%; border-collapse: collapse; margin-block: .5rem 1rem; }
 .teaching-report-preview th, .teaching-report-preview td { border: 1px solid var(--border); padding: .5rem; vertical-align: top; white-space: pre-wrap; }
 .teaching-report-preview th { background: var(--muted); }
-.teaching-week-options { font-size: .75rem; margin-top: .375rem; }
-.teaching-week-options > summary {
-  cursor: pointer;
-  padding-block: 4px;
-}
-.teaching-week-options[open] {
-  border: 1px solid #dce6f0;
-  border-radius: 8px;
-  padding: 6px;
-}
-.teaching-week-options label {
-  display: grid;
-  gap: 4px;
-  margin-top: 8px;
-}
-.teaching-week-options input, .teaching-week-options select {
-  width: 100%;
-  max-width: 8rem;
-}
+
+
+
+
+
 
 /* The weekly sheet has ten leaf columns. Generic teaching-grid nth-child
    widths are for a different table and mis-size the multi-row header. */
@@ -60,10 +46,10 @@
  .teaching-module .teaching-week-grid tbody td:nth-child(3){padding-inline:3px;text-align:center;font-size:12px;line-height:1.45;}
  .teaching-module .teaching-week-date{display:block;white-space:normal;overflow-wrap:normal;font-variant-numeric:tabular-nums;}
  .teaching-module .teaching-week-date span{display:block;}
- .teaching-module .teaching-week-options>summary{font-size:10px;white-space:normal;overflow-wrap:anywhere;}
- .teaching-module .teaching-week-options[open]{padding:3px;}
- .teaching-module .teaching-week-options label{min-width:0;text-align:left;font-size:10px;}
- .teaching-module .teaching-week-options :is(input,select){min-width:0;max-width:100%;padding-inline:2px;font-size:11px;}
+ .teaching-module 
+ .teaching-module 
+ .teaching-module 
+ .teaching-module 
  .teaching-module .teaching-week-cell { display:grid; grid-template-columns:minmax(0,1fr); gap:2px; min-width:0; }
  .teaching-module .teaching-cell-fit { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; }
  .teaching-module .teaching-cell-fit > :is(textarea,.teaching-cell-mirror) { grid-area:1/1; box-sizing:border-box; width:100%; min-width:0; min-height:56px; margin:0; padding:7px 8px; font-family:inherit; font-size:13px; font-weight:400; line-height:1.55; letter-spacing:normal; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; border:1px solid transparent; }

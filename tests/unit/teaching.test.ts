@@ -145,16 +145,16 @@ describe("teaching review preserves drafts while identifying real planning gaps"
       true,
     );
   });
-  it("checks missing standard links, school-type mismatch and expected versus planned lessons", () => {
+  it("checks standard links and school-type mismatch without requiring manual lesson counts", () => {
     const doc = complete();
     doc.units[0].standard_ids = [];
     doc.units[0].lessons = 30;
     expect(check(doc).some((i) => i.message.includes("성취기준을 연결"))).toBe(
       true,
     );
-    expect(
-      check(doc).some((i) => i.message.includes("30차시 / 기준 34차시")),
-    ).toBe(true);
+    expect(check(doc).some((i) => i.message.includes("차시"))).toBe(false);
+    doc.units[0].lessons = null;
+    expect(check(doc).some((i) => i.message.includes("차시"))).toBe(false);
     doc.units[0].standard_ids = [standards[0].id];
     expect(
       reviewTeaching(

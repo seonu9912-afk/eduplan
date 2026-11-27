@@ -4,7 +4,7 @@ for(const width of [320,375,390,430,1440]){
   await page.setViewportSize({width,height:900});
   await page.goto("/recovery-preview/operations");
   await page.getByRole("button",{name:"수업 연계",exact:true}).click();
-  const teaching=page.locator(".teaching-teaching");
+  const teaching=page.locator(".teaching-module");
   await expect(teaching).toBeVisible();
   await teaching.getByRole("button",{name:"수업 현황",exact:true}).click();
   await expect(teaching.locator(".course-cards")).toBeVisible();
@@ -37,6 +37,8 @@ test("weekly sheet keeps content and connection buttons inside their cells",asyn
  await expect(grid).toBeVisible();
  const row=grid.locator("tbody tr").first();
  await expect(row.locator("td")).toHaveCount(10);
+ await expect(grid.getByText("차시·구분",{exact:true})).toHaveCount(0);
+ await expect(grid.getByLabel(/계획 차시/)).toHaveCount(0);
  const geometry=await row.evaluate(el=>{
   const cells=Array.from(el.querySelectorAll("td"));
   const rects=cells.map(c=>c.getBoundingClientRect());
