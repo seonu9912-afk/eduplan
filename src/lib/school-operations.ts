@@ -331,14 +331,24 @@ export function seoulClock(now: Date) {
 }
 export const clockMinutes = (time: string | null) =>
   time ? Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)) : null;
+export type DailyLessonStatus = "cancelled" | "finished" | "current" | "upcoming" | "unknown";
+
+/** A timetable status is inferred from its published time, not attendance. */
+export function dailyLessonStatus(lesson: Pick<DatedLesson, "blockedBy" | "start" | "end">, minutes: number | null): DailyLessonStatus {
+  if (lesson.blockedBy.length) return "cancelled";
+  const start = clockMinutes(lesson.start), end = clockMinutes(lesson.end);
+  if (minutes === null || !Number.isFinite(minutes) || start === null || end === null ||
+      !Number.isFinite(start) || !Number.isFinite(end) || end <= start) return "unknown";
+  if (minutes >= end) return "finished";
+  if (minutes >= start) return "current";
+  return "upcoming";
+}
+
 export function currentAndNext(lessons: DatedLesson[], minutes: number) {
-  const active = lessons.filter((x) => !x.blockedBy.length && x.start && x.end);
-  const current = active.filter(
-    (x) => clockMinutes(x.start)! <= minutes && minutes < clockMinutes(x.end)!,
-  );
+  const current = lessons.filter((x) => dailyLessonStatus(x, minutes) === "current");
   const next =
-    active
-      .filter((x) => clockMinutes(x.start)! > minutes)
+    lessons
+      .filter((x) => dailyLessonStatus(x, minutes) === "upcoming")
       .sort((a, b) => clockMinutes(a.start)! - clockMinutes(b.start)!)[0] ??
     null;
   return {

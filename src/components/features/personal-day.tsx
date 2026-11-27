@@ -5,7 +5,7 @@ import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "l
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import {
-  dailyOperationNotice, createLessonResolver, currentAndNext,
+  dailyOperationNotice, createLessonResolver, currentAndNext, dailyLessonStatus,
   myTeacherIds, publishedTimetable, seoulClock,
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
@@ -23,6 +23,7 @@ import "./school-operations.css";
 
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
 const dayTitle = (date: string) => dayLabel.format(new Date(`${date}T00:00:00+09:00`));
+const lessonStatusLabels = { cancelled: "취소", finished: "종료", current: "진행 중", upcoming: "예정", unknown: "시각 확인" };
 
 export function PersonalDay({ context: c, today, previewNow, publicData }: {
   context: Context;
@@ -38,6 +39,9 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
   const lessons = resolver?.(clock.date).filter((lesson) => ids.has(lesson.teacherId)) ?? [];
   const operationNotice = dailyOperationNotice(c, clock.date);
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
+  const statuses = lessons.map((lesson) => dailyLessonStatus(lesson, now ? clock.minutes : null));
+  const allFinished = statuses.includes("finished") && statuses.every((status) => status === "finished" || status === "cancelled");
+  const allCancelled = statuses.length > 0 && statuses.every((status) => status === "cancelled");
   const teacher = c.operations?.directory.find((item) => item.user_id === c.userId && item.active);
   const hasCalendar = c.schoolPublications ? !!publicationAt(c.schoolPublications, "calendar", clock.date) : !!c.annual;
   const base = `/app/${c.workspace.id}`;
@@ -66,23 +70,27 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
           {!doc ? <p className="personal-widget-note">시간표가 확정되면 담당 수업이 표시됩니다.</p>
             : !teacher ? <p className="personal-widget-note">교원 명부에 연결되지 않았습니다. 관리자에게 계정 연결을 요청하세요.</p>
             : <>
-              {now && (hasCalendar || lessons.length > 0) && <div className="next-lesson" role="group" aria-label="다음 수업" aria-live="polite">
-                {next ? <>
+              {now && (hasCalendar || lessons.length > 0) && <div className="next-lesson" data-lesson-summary={current.length ? "current" : next ? "upcoming" : "idle"} role="group" aria-label="수업 현황" aria-live="polite">
+                {current.length > 0 ? <>
+                  <span className="next-lesson-label">진행 중인 수업</span>
+                  <strong>{current.map((item) => `${item.period}교시 · ${item.classes} ${item.subject}`).join(" / ")}</strong>
+                  <small>{current.map((item) => `${item.end} 종료 예정`).join(" · ")}</small>
+                  {next && <small className="lesson-summary-next">다음 · {next.start} {next.period}교시 {next.classes} {next.subject}</small>}
+                </> : next ? <>
                   <span className="next-lesson-label">다음 수업</span>
                   <time className="next-lesson-clock" dateTime={next.start ?? undefined}>{next.start}</time>
                   <strong>{next.period}교시 · {next.classes} {next.subject}</strong>
                   {remaining !== null && <small>시작까지 {remaining >= 60 ? `${Math.floor(remaining / 60)}시간 ${remaining % 60}분` : `${remaining}분`}</small>}
-                </> : <p>{lessons.length ? "다음 수업이 없습니다." : "오늘 배정된 수업이 없습니다."}</p>}
-                {current.length > 0 && <small>진행 중 · {current.map((item) => `${item.period}교시 ${item.subject}`).join(" · ")}</small>}
+                </> : <p>{allFinished ? "오늘 예정된 수업 시간이 모두 지났습니다." : allCancelled ? "오늘 운영되는 수업이 없습니다." : lessons.length ? "다음 수업 시각을 확인할 수 없습니다." : "오늘 배정된 수업이 없습니다."}</p>}
               </div>}
               {lessons.length > 0 && <ol className="personal-lesson-list">
-                {lessons.map((lesson, index) => <li key={`${lesson.id}:${index}`} className={`daily-lesson${lesson.blockedBy.length ? " cancelled" : ""}`}>
+                {lessons.map((lesson, index) => <li key={`${lesson.id}:${index}`} data-lesson-status={statuses[index]} className={`daily-lesson${lesson.blockedBy.length ? " cancelled" : ""}`}>
                   <div>
                     <b>{lesson.period}교시</b>
                     <small className="daily-lesson-time">{lesson.start && lesson.end ? `${lesson.start}–${lesson.end}` : "시각 미설정"}</small>
                   </div>
                   <div>
-                    <strong>{lesson.subject}</strong>
+                    <div className="daily-lesson-subject"><strong>{lesson.subject}</strong><span className="daily-lesson-status">{statuses[index] === "upcoming" && lesson === next && now ? "다음" : lessonStatusLabels[statuses[index]]}</span></div>
                     <small>{[lesson.classes, lesson.room].filter(Boolean).join(" · ")}</small>
                     {lesson.changed && <small>변경·교환·보결 수업</small>}
                     {!!lesson.blockedBy.length && <small>{lesson.blockedBy.join(" · ")}</small>}

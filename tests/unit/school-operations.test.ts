@@ -5,6 +5,7 @@ import {
   calendarImpact,
   createLessonResolver,
   currentAndNext,
+  dailyLessonStatus,
   myTeacherIds,
   publishedTimetable,
   seoulClock,
@@ -178,4 +179,16 @@ it("maps approved account aliases consistently without mutating saved timetable 
   expect(merged.teachers.filter((x) => x.id === teacher.id)).toHaveLength(1);
   expect(merged.teachers.find((x) => x.id === teacher.id)!.custom).toBe("보존");
   expect(JSON.stringify(doc)).toBe(original);
+});
+
+it("classifies scheduled lesson times at exact boundaries, without claiming attendance or treating cancellations as completed", () => {
+  const lesson = { start: "09:00", end: "09:45", blockedBy: [] };
+  expect(dailyLessonStatus(lesson, 539.99)).toBe("upcoming");
+  expect(dailyLessonStatus(lesson, 540)).toBe("current");
+  expect(dailyLessonStatus(lesson, 584.99)).toBe("current");
+  expect(dailyLessonStatus(lesson, 585)).toBe("finished");
+  expect(dailyLessonStatus({ ...lesson, blockedBy: ["휴업"] }, 585)).toBe("cancelled");
+  expect(dailyLessonStatus({ ...lesson, start: null }, 540)).toBe("unknown");
+  expect(dailyLessonStatus({ ...lesson, end: "08:00" }, 540)).toBe("unknown");
+  expect(dailyLessonStatus(lesson, null)).toBe("unknown");
 });

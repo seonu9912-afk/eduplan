@@ -473,3 +473,18 @@
 }
 
 @media screen and (max-width: 767px) { .home-week-mobile-grid[data-weekdays-only] { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* Daily lesson states use the published bell schedule; labels stay readable without color. */
+.personal-lesson-list .daily-lesson { grid-template-columns: minmax(72px, 88px) minmax(0, 1fr); gap: 8px; padding: 8px 6px; border-radius: 5px; }
+.personal-lesson-list .daily-lesson[data-lesson-status="finished"] { color: #64748b; }
+.personal-lesson-list .daily-lesson[data-lesson-status="finished"] strong { color: #64748b; }
+.personal-lesson-list .daily-lesson[data-lesson-status="current"] { background: #eaf2fd; box-shadow: inset 3px 0 #24528e; }
+.daily-lesson-subject { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; flex-wrap: wrap; min-width: 0; }
+.daily-lesson-subject strong { overflow-wrap: anywhere; min-width: 0; }
+.daily-lesson-status { display: inline-block; flex: none; font-size: 10px; font-weight: 650; line-height: 1.5; white-space: nowrap; padding: 1px 5px; border-radius: 4px; color: #475569; background: #edf0f4; }
+[data-lesson-status="current"] .daily-lesson-status { background: #24528e; color: #fff; }
+[data-lesson-status="upcoming"] .daily-lesson-status { color: #315e95; background: #eaf1fa; }
+[data-lesson-status="cancelled"] .daily-lesson-status { color: #963e44; background: #fae9e9; }
+.personal-day .next-lesson[data-lesson-summary="current"] { background: #eaf2fd; }
+.next-lesson[data-lesson-summary="current"] .next-lesson-label { font-weight: 700; color: #24528e; }
+.lesson-summary-next { border-top: 1px solid #cbdcf1; padding-top: 6px; margin-top: 4px; }
