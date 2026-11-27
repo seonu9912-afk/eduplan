@@ -76,7 +76,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   }
   function completeTask(task: SchoolTask, completed: boolean) {
     m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed }),
-      undefined, "");
+      undefined, completed ? "완료한 할 일로 이동했습니다." : "미완료 할 일로 되돌렸습니다.");
   }
   function confirmChange(task: SchoolTask, change: Confirmation) {
     m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, ...change }), () => {

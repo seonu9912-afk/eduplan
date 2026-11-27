@@ -6,7 +6,7 @@ import { taskCommandSchema, taskSaveSchema } from "@/lib/school-tasks";
 import type { Result } from "@/lib/models";
 
 function refreshTasks(workspace: string) {
-  for (const section of ["home", "plans", "notifications"]) revalidatePath(`/app/${workspace}/${section}`);
+  for (const section of ["home", "plans", "calendar", "notifications"]) revalidatePath(`/app/${workspace}/${section}`);
 }
 
 function taskError(error: { code?: string; message: string }) {

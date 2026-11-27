@@ -37,6 +37,13 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await field(page).fill(privateTask);
     await dialog(page, "개인 할 일 추가").getByRole("button", { name: "저장", exact: true }).click();
     await expect(scope(page).getByText(privateTask, { exact: true })).toBeVisible();
+    await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).check();
+    await expect(scope(page).getByText(/^완료한 할 일 \(\d+\)$/)).toBeVisible();
+    await page.reload();
+    await scope(page).getByText(/^완료한 할 일 \(\d+\)$/).click();
+    await expect(scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true})).toBeChecked();
+    await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).uncheck();
+    await expect(scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true})).not.toBeChecked();
     await schoolAdmin.goto(home);
     await expect(scope(schoolAdmin).getByText(privateTask, { exact: true })).toHaveCount(0);
     await expect(scope(schoolAdmin).getByRole("button", { name: "업무 배포", exact: true })).toHaveCount(0);

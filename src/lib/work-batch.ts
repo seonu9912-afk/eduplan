@@ -1,3 +1,4 @@
+import type { Workbook as ExcelWorkbook } from "exceljs";
 import {annualSchema,type AnnualPlan} from "./academic";
 import {operationNames,workItemChoice} from "./work-operation-items";
 export const WORK_FIELDS=["date","department","text","time","location","participants","kind"] as const;
@@ -54,10 +55,11 @@ export function reviewWorkBatch(input:WorkInput[],plan:AnnualPlan,start:string,e
 export async function workExcelTemplate(){
  const {Workbook}=await import("exceljs");const book=new Workbook(),sheet=book.addWorksheet("업무계획");
  sheet.addRow([...WORK_HEADERS]);sheet.getRow(1).font={bold:true};sheet.views=[{state:"frozen",ySplit:1}];sheet.columns.forEach((col,i)=>{col.width=i===2?55:20;col.numFmt="@";});
- return Uint8Array.from(await book.xlsx.writeBuffer()).buffer as ArrayBuffer;
+ const bytes=new Uint8Array(await book.xlsx.writeBuffer());
+ return Uint8Array.from(bytes).buffer as ArrayBuffer;
 }
 export async function readWorkExcel(file:ArrayBuffer){
- const {Workbook}=await import("exceljs");const book=new Workbook();await book.xlsx.load(new Uint8Array(file) as unknown as Parameters<Workbook["xlsx"]["load"]>[0]);
+ const {Workbook}=await import("exceljs");const book=new Workbook();await book.xlsx.load(new Uint8Array(file) as unknown as Parameters<ExcelWorkbook["xlsx"]["load"]>[0]);
  const sheet=book.getWorksheet("업무계획");if(!sheet||sheet.rowCount>301||sheet.columnCount>7)throw Error("업무계획 양식 및 최대 300행을 확인하세요.");
  const matrix=Array.from({length:sheet.rowCount},(_,i)=>WORK_FIELDS.map((_,j)=>{const cell=sheet.getRow(i+1).getCell(j+1),v=cell.value;if(v instanceof Date)return v.toISOString().slice(0,10);if(j===3&&typeof v==="number"&&v>=0&&v<1){const minutes=Math.floor(v*1440+0.00001);return String(Math.floor(minutes/60)).padStart(2,"0")+":"+String(minutes%60).padStart(2,"0");}return cell.text;}));
  if(matrix[0]?.join("\t")!==WORK_HEADERS.join("\t"))throw Error("양식의 제목 행을 유지하세요.");
