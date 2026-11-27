@@ -1,17 +1,20 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Bell, CalendarDays, Clock3 } from "lucide-react";
+import { ArrowUpRight, Bell, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { markOperationRead } from "@/app/operations-actions";
 import { useMutation, InlineNotice } from "@/components/common";
 import { addDays, dateLabel } from "@/lib/domain";
 import {
   dailyOperationNotice, createLessonResolver, currentAndNext,
-  myTeacherIds, publishedTimetable, seoulClock, unifiedSchedule, type ScheduleItem,
+  myTeacherIds, publishedTimetable, seoulClock,
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
 import { publicationAt } from "@/lib/school-publications";
+import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
+import { scheduleDates } from "@/lib/schedule-dates";
+import { ResourceLinks } from "./resource-links";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import "./school-operations.css";
 
@@ -36,11 +39,6 @@ export function PersonalDay({ context: c, today, previewNow }: {
   const teacher = c.operations?.directory.find((item) => item.user_id === c.userId && item.active);
   const hasCalendar = c.schoolPublications ? !!publicationAt(c.schoolPublications, "calendar", clock.date) : !!c.annual;
   const unread = (c.operations?.notifications ?? []).filter((item) => !item.read_at && !read.includes(item.id));
-  const schedule = unifiedSchedule(c, clock.date, addDays(clock.date, 6)).filter((item) =>
-    !item.department || item.department === teacher?.department || item.source !== "business" || c.role !== "viewer",
-  );
-  const todayItems = schedule.filter((item) => item.date <= clock.date);
-  const upcoming = schedule.filter((item) => item.date > clock.date);
   const base = `/app/${c.workspace.id}`;
   const suffix = c.year ? `?year=${c.year.year}` : "";
   useEffect(() => {
@@ -56,6 +54,7 @@ export function PersonalDay({ context: c, today, previewNow }: {
   }, [previewNow]);
 
   return <section className="operations-module personal-day" aria-label="나의 학교 생활">
+    <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
     <div className="personal-widgets">
       <div className="personal-widget-column">
         <section className="personal-widget">
@@ -94,17 +93,6 @@ export function PersonalDay({ context: c, today, previewNow }: {
         </section>
       </div>
       <div className="personal-widget-column">
-        <section className="personal-widget personal-agenda">
-          <header className="personal-day-heading">
-            <h2><CalendarDays aria-hidden="true" />오늘 일정</h2>
-            <Link className="widget-link" href={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`}>
-              월중·주간계획 <ArrowUpRight aria-hidden="true" />
-            </Link>
-          </header>
-          {todayItems.length ? <AgendaItems items={todayItems} /> : <p className="personal-widget-note">오늘 등록된 일정이 없습니다.</p>}
-          <h3>다가오는 일정</h3>
-          {upcoming.length ? <AgendaItems items={upcoming} showDate /> : <p className="personal-widget-note">예정된 학교·부서 일정이 없습니다.</p>}
-        </section>
         <section className="personal-widget">
           <header className="personal-day-heading">
             <h2><Bell aria-hidden="true" />알림</h2>
@@ -129,14 +117,75 @@ export function PersonalDay({ context: c, today, previewNow }: {
   </section>;
 }
 
-function AgendaItems({ items, showDate = false }: { items: ScheduleItem[]; showDate?: boolean }) {
-  return <ul className="personal-schedule-list">
-    {items.map((item) => <li key={`${item.source}:${item.id}`} data-source={item.source}>
-      {showDate && <time dateTime={item.date}>{dayTitle(item.date)}</time>}
-      <div>
-        <strong>{item.title}</strong>
-        <small>{[item.time, item.location, item.department, item.kind].filter(Boolean).join(" · ")}</small>
+const weekdayNames = ["월", "화", "수", "목", "금", "토", "일"];
+const agendaTones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
+
+function HomeWeeklyAgenda({ context, today, department, plansHref }: {
+  context: Context; today: string; department?: string; plansHref: string;
+}) {
+  const [selection, setSelection] = useState<string | null>(null);
+  const selected = selection ?? today;
+  const dates = useMemo(() => scheduleDates(selected, "week"), [selected]);
+  const days = useMemo(() => {
+    const first = dates[0], last = dates[6];
+    const entries = context.schoolPublications ? [] : schoolScheduleEntries(context, first, last, true);
+    const published = context.schoolPublications ? publishedScheduleDays(context, dates, true) : null;
+    return new Map(dates.map((day) => {
+      const source = published?.get(day)?.entries ?? entries.filter((entry) => entry.date <= day && entry.end >= day);
+      const visible = source.filter((entry) =>
+        entry.tone !== "work" || !entry.department || entry.department === department || context.role !== "viewer");
+      return [day, { entries: visible }] as const;
+    }));
+  }, [context, dates, department]);
+  const lanes = useMemo(() => calendarWeekLanes(dates, days), [dates, days]);
+  const detail = days.get(selected)?.entries ?? [];
+  const firstMonth = dates[0].slice(0, 7);
+  const lastMonth = dates[6].slice(0, 7);
+  const monthTitle = firstMonth === lastMonth
+    ? `${Number(firstMonth.slice(5))}월`
+    : `${Number(firstMonth.slice(5))}월 – ${Number(lastMonth.slice(5))}월`;
+
+  return <section className="personal-widget home-weekly-agenda" aria-label="주간 일정">
+    <header className="personal-day-heading">
+      <h2><CalendarDays aria-hidden="true" />주간 일정</h2>
+      <Link className="widget-link" href={plansHref}>월중·주간계획 <ArrowUpRight aria-hidden="true" /></Link>
+    </header>
+    <div className="home-week-toolbar">
+      <h3>{monthTitle} <small>{dateLabel(dates[0])} – {dateLabel(dates[6])}</small></h3>
+      <div className="home-week-navigation">
+        <Button variant="ghost" size="icon" aria-label="이전 주" onClick={() => setSelection(addDays(selected, -7))}><ChevronLeft /></Button>
+        <Button variant="outline" size="sm" onClick={() => setSelection(null)}>오늘</Button>
+        <Button variant="ghost" size="icon" aria-label="다음 주" onClick={() => setSelection(addDays(selected, 7))}><ChevronRight /></Button>
       </div>
-    </li>)}
-  </ul>;
+    </div>
+    <div className="home-week-grid" style={{ gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
+      {dates.map((day, column) => <div key={day} className="home-week-column" data-selected={day === selected ? "" : undefined}
+        style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
+      {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
+        data-weekend={column >= 5 ? "" : undefined} aria-current={day === today ? "date" : undefined}
+        aria-pressed={day === selected} aria-label={dayTitle(day)}
+        style={{ gridColumn: column + 1, gridRow: 1 }} onClick={() => setSelection(day)}>
+        <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
+      </button>)}
+      {lanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
+        <button type="button" className="home-week-event" data-tone={entry.tone}
+          key={`${entry.id}:${start}:${row}`}
+          style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
+          aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
+          title={entry.title}
+          onClick={() => setSelection(dates.includes(selected) && selected >= dates[start] && selected <= dates[end] ? selected : dates[start])}>
+          {entry.title}
+        </button>))}
+      {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
+    </div>
+    <div className="home-week-detail" aria-live="polite">
+      <h3>{dayTitle(selected)} 일정</h3>
+      {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
+        <li key={`${entry.id}:${index}`} data-tone={entry.tone}>
+          <strong>{entry.title}</strong>
+          <small>{[entry.time, entry.department, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
+          <ResourceLinks value={entry.resources} compact />
+        </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
+    </div>
+  </section>;
 }
