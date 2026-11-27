@@ -153,6 +153,8 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
     column: number,
   ) => (
     <div className="teaching-week-cell">
+      <div className="teaching-cell-fit">
+        <div className="teaching-cell-mirror" aria-hidden="true">{unit?.[field] ?? ""}{"\u200b"}</div>
       <textarea
         aria-label={`${week.period} ${fields[field].label}`}
         data-row={row}
@@ -167,6 +169,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
           update(week, unit, { [field]: event.target.value }, field)
         }
       />
+      </div>
       {editable && (
         <button
           type="button"
@@ -334,13 +337,16 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               </>
             )}
           </div>
+          <p className={`teaching-grid-hint no-print ${wide ? "" : "desktop-only"}`}>표를 좌우로 움직여 전체 항목을 확인할 수 있습니다. 입력 내용에 맞춰 셀 높이가 늘어납니다.</p>
           <div
             className={`table-scroll teaching-grid-scroll ${wide ? "" : "desktop-only"}`}
+            role="region" aria-label="교수학습계획 표 가로 스크롤" tabIndex={0}
           >
             <table
               className="teaching-grid teaching-week-grid"
               aria-label="주차별 교수학습계획"
             >
+              <colgroup>{["month","week","date","title","standard","content","method","assessment","alignment","note"].map(name => <col key={name} className={`teaching-col-${name}`} />)}</colgroup>
               <thead>
                 <tr>
                   {["월", "주", "일", "단원명", "성취기준"].map((label) => (

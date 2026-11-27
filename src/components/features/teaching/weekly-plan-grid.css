@@ -35,3 +35,44 @@
   width: 100%;
   max-width: 8rem;
 }
+
+/* The weekly sheet has ten leaf columns. Generic teaching-grid nth-child
+   widths are for a different table and mis-size the multi-row header. */
+.teaching-cell-mirror { display: none; }
+@media screen {
+ .teaching-module .teaching-grid-scroll { width:100%; max-width:100%; min-width:0; overflow-x:auto; }
+ .teaching-module table.teaching-week-grid { table-layout:fixed; width:100%; min-width:1616px; border-collapse:separate; border-spacing:0; }
+ .teaching-module .teaching-week-grid :is(th,td) { width:auto; min-width:0; max-width:none; padding:6px; box-sizing:border-box; }
+ .teaching-module .teaching-week-grid col.teaching-col-month,
+ .teaching-module .teaching-week-grid col.teaching-col-week { width:42px; }
+ .teaching-module .teaching-week-grid col.teaching-col-date { width:112px; }
+ .teaching-module .teaching-week-grid col.teaching-col-title { width:190px; }
+ .teaching-module .teaching-week-grid col.teaching-col-standard { width:160px; }
+ .teaching-module .teaching-week-grid col.teaching-col-content { width:250px; }
+ .teaching-module .teaching-week-grid col.teaching-col-method { width:210px; }
+ .teaching-module .teaching-week-grid col.teaching-col-assessment { width:190px; }
+ .teaching-module .teaching-week-grid col.teaching-col-alignment { width:245px; }
+ .teaching-module .teaching-week-grid col.teaching-col-note { width:175px; }
+ .teaching-module .teaching-week-grid thead th { white-space:normal; overflow-wrap:anywhere; }
+ .teaching-module .teaching-week-grid tbody td { white-space:normal; overflow-wrap:anywhere; }
+ .teaching-module .teaching-week-grid tbody td:nth-child(-n+2) { text-align:center; }
+ .teaching-module .teaching-week-cell { display:grid; grid-template-columns:minmax(0,1fr); gap:2px; min-width:0; }
+ .teaching-module .teaching-cell-fit { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; }
+ .teaching-module .teaching-cell-fit > :is(textarea,.teaching-cell-mirror) { grid-area:1/1; box-sizing:border-box; width:100%; min-width:0; min-height:56px; margin:0; padding:7px 8px; font-family:inherit; font-size:13px; font-weight:400; line-height:1.55; letter-spacing:normal; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; border:1px solid transparent; }
+ .teaching-module .teaching-cell-fit > .teaching-cell-mirror { display:block; visibility:hidden; pointer-events:none; }
+ .teaching-module .teaching-cell-fit > textarea { height:100%; resize:none; overflow:auto; background:#fff; border-color:#dce4ee; border-radius:5px; }
+ .teaching-module .teaching-cell-fit > textarea:focus { border-color:#7296bf; outline:2px solid #acc7e7; outline-offset:-2px; }
+ .teaching-module .teaching-week-cell .teaching-cell-expand { justify-self:end; min-height:24px; padding:2px 4px; margin:0; font-size:11px; }
+ .teaching-module .teaching-week-grid .standard-control { grid-template-columns:minmax(0,1fr); gap:5px; }
+ .teaching-module .teaching-week-grid :is(.standard-control,.standard-chips,.lesson-assessment-links) { min-width:0; max-width:100%; }
+ .teaching-module .teaching-week-grid :is(.standard-control,.lesson-assessment-links)>button { box-sizing:border-box; width:100%; max-width:100%; min-width:0; white-space:normal; overflow-wrap:anywhere; height:auto; min-height:30px; padding:5px 6px; font-size:11px; line-height:1.35; }
+ .teaching-module .teaching-week-grid .standard-control>button svg { flex:none; }
+ .teaching-module .teaching-week-grid .standard-chips span { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+ .teaching-module .teaching-week-grid .lesson-assessment-links { margin-top:4px; }
+ .teaching-module .teaching-grid-hint { font-size:11px; color:var(--text-secondary); margin:6px 0; }
+}
+@media screen and (max-width:767px) {
+ .teaching-module .teaching-cell-fit > :is(textarea,.teaching-cell-mirror) { font-size:16px; }
+ .teaching-module .teaching-week-grid :is(.standard-control,.lesson-assessment-links)>button,
+ .teaching-module .teaching-week-cell .teaching-cell-expand { min-height:44px; }
+}

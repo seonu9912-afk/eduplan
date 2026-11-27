@@ -28,3 +28,21 @@ for(const width of [320,375,390,430,1440]){
   }
  });
 }
+
+test("weekly sheet keeps content and connection buttons inside their cells",async({page})=>{
+ await page.setViewportSize({width:1280,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"수업 연계",exact:true}).click();
+ const grid=page.getByRole("table",{name:"주차별 교수학습계획"});
+ await expect(grid).toBeVisible();
+ const row=grid.locator("tbody tr").first();
+ await expect(row.locator("td")).toHaveCount(10);
+ const geometry=await row.evaluate(el=>{
+  const cells=Array.from(el.querySelectorAll("td"));
+  const rects=cells.map(c=>c.getBoundingClientRect());
+  return {widths:rects.map(r=>r.width),overflow:cells.flatMap((c,i)=>Array.from(c.querySelectorAll("textarea,.standard-control > button,.lesson-assessment-links > button")).filter(x=>x.getBoundingClientRect().right>rects[i].right+1).map(x=>x.textContent))};
+ });
+ expect(geometry.widths[4]).toBeGreaterThanOrEqual(155);
+ expect(geometry.widths[5]).toBeGreaterThanOrEqual(245);
+ expect(geometry.overflow).toEqual([]);
+});
