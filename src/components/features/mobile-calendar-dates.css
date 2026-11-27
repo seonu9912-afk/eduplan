@@ -108,7 +108,6 @@
 .mobile-calendar-dates[data-weekdays-only] :is(.mobile-calendar-weekdays, .mobile-calendar-day-grid) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 
 @media screen {
-  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] { background: var(--ep-bg-edf4fc, #edf4fc); }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: var(--ep-fg-315e95, #315e95); box-shadow: inset 0 0 0 1px #315e95; }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] time { background: #24528e; color: #fff; }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-cell-entry[data-past] { filter: saturate(.45); }
@@ -121,9 +120,7 @@
 .mobile-calendar-span-day[data-adjacent], .mobile-calendar-span-day:disabled { color: var(--ep-fg-687b90, #687b90); font-weight: 450; }
 .mobile-calendar-span-day:disabled { opacity: .52; cursor: default; }
 .mobile-calendar-span-day time { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-variant-numeric: tabular-nums; }
-.mobile-calendar-span-day[aria-pressed="true"] { background: var(--ep-bg-e6ebf2, #e6ebf2); }
 .mobile-calendar-span-day[aria-pressed="true"]:not([aria-current="date"]) time { color: var(--ep-fg-315e95, #315e95); box-shadow: inset 0 0 0 1px #315e95; }
-.mobile-calendar-span-day[aria-current="date"] { background: var(--ep-bg-edf4fc, #edf4fc); }
 .mobile-calendar-span-day[aria-current="date"] time { background: #24528e; color: #fff; }
 .mobile-calendar-span-day:focus-visible { outline: 2px solid var(--ep-border-315e95, #315e95); outline-offset: -2px; }
 .mobile-calendar-span-event { z-index: 1; pointer-events: none; align-self: stretch; width: auto; margin-inline: 1px; padding-inline: 3px; font-size: 10px; white-space: nowrap; overflow: hidden; }

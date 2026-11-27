@@ -31,7 +31,7 @@ import "./reader-controls.css";
 import "./calendar-reader-layout.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-const weekLabels = [...weekdays.slice(1), weekdays[0]];
+const dayName = (date: string) => weekdays[new Date(`${date}T00:00:00Z`).getUTCDay()];
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
@@ -161,7 +161,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
               const schedule = days.get(day);
               const mainEntries = calendarDays.get(day)?.entries ?? [];
               return <section key={day} id={inDialog ? `agenda-${day}` : `mobile-agenda-${day}`} aria-label={dateLabel(day)}
-                data-selected={day === date ? "" : undefined} data-today={day === today ? "" : undefined}>
+                >
                 <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
                   <span>{day === today ? "오늘 · " : ""}{(schedule?.entries ?? mainEntries).length}건</span></h3>
                 {mainEntries.length ? <ul>{mainEntries.map((entry) => {
@@ -244,7 +244,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
               <table className="school-reader-calendar" data-work-week={workWeek?"":undefined} data-month-grid={view==="month"?"":undefined} data-visible-lanes={view==="month"?monthRows:undefined} data-week-grid={view==="week"?"":undefined} aria-label="공개 일정표">
                 {!workWeek && <colgroup>{dates.slice(0,columns).map(day=><col key={day}/>)}</colgroup>}
                 {workWeek && <colgroup><col className="work-week-label-col"/>{dates.map(day=><col key={day}/>)}</colgroup>}
-                <thead><tr>{workWeek && <th scope="col" className="work-week-row-label">구분</th>}{(view === "week" ? weekLabels.slice(0, columns) : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
+                <thead><tr>{workWeek && <th scope="col" className="work-week-row-label">구분</th>}{dates.slice(0,columns).map(day => <th scope="col" key={day} data-weekday={dayName(day)}>{dayName(day)}</th>)}</tr></thead>
                 {Array.from({ length: dates.length / columns }, (_, i) => {
                   const week = dates.slice(i * columns, i * columns + columns);
                   const compact = view === "month" ? compactCalendarWeek(week, calendarDays, monthRows) : null;
@@ -254,7 +254,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">
                     <tr className="school-calendar-date-row">{workWeek && <th className="work-week-row-label" aria-hidden="true"/>}{week.map((day) => (
-                      <td key={day} data-today={day === today ? "" : undefined} data-selected={day === date ? "" : undefined} data-outside={outside(day)}>
+                      <td key={day} data-weekday={dayName(day)} data-outside={outside(day)}>
                         <button type="button" className="calendar-desktop-day" aria-label={`${day} 일정 보기`} aria-pressed={day===date} disabled={day<start||day>end} onClick={()=>selectDesktopDay(day)}><time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time></button>
                       </td>
                     ))}</tr>
@@ -264,29 +264,29 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                         const span = lane.find((item) => item.start <= col && item.end >= col);
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
-                          data-today={day === today && (!span || span.start === span.end) ? "" : undefined} data-selected={day===date && (!span || span.start===span.end) ? "" : undefined} data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
+                          data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
                           {span && <DesktopCalendarEvent entry={span.entry} today={today} onOpen={showEntry} month={view==="month"} weeklyPeriod={view==="week"} continuesBefore={span.entry.date<week[span.start]} continuesAfter={span.entry.end>week[span.end]} />}
                         </td>;
                       })}
                     </tr>)}
                     {weekly && <tr className="weekly-daily-row">
                       {workWeek && <th scope="row" className="work-week-row-label">일정</th>}
-                      {week.map(day => <td key={day} data-today={day===today?"":undefined} data-selected={day===date?"":undefined} data-outside={outside(day)}>
+                      {week.map(day => <td key={day} data-outside={outside(day)}>
                         <div className="weekly-daily-list" data-date={day}>
                           {(weekly.daily.get(day) ?? []).map(entry => <WeeklyDailyEvent key={entry.id} entry={entry} onOpen={showEntry} />)}
                           {!(weekly.daily.get(day)?.length) && day>=start && day<=end && <p className="weekly-daily-empty">{days.get(day)?.available?"—":"미공개"}</p>}
                         </div>
                       </td>)}
                     </tr>}
-                    {view==="month" && <tr className="calendar-desktop-overflow no-print">{workWeek&&<th className="work-week-row-label" aria-hidden="true"/>}{week.map((day,col)=><td key={day} data-selected={day===date?"":undefined} data-today={day===today?"":undefined} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}{view==="month" && <span className="month-overflow-label">개 더보기</span>}</button>}</td>)}</tr>}
+                    {view==="month" && <tr className="calendar-desktop-overflow no-print">{workWeek&&<th className="work-week-row-label" aria-hidden="true"/>}{week.map((day,col)=><td key={day} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDesktopDay(day)}>+{overflow[col]}{view==="month" && <span className="month-overflow-label">개 더보기</span>}</button>}</td>)}</tr>}
                     {view==="month" && <tr className="school-calendar-week-space" aria-hidden="true">{workWeek&&<th className="work-week-row-label"/>}{week.map((day) => (
-                      <td key={day} data-today={day === today ? "" : undefined} data-selected={day===date?"":undefined} data-outside={outside(day)} />
+                      <td key={day} data-outside={outside(day)} />
                     ))}</tr>}
                     {workWeek && operationGroups.map((name) => <tr key={name} className="weekly-operation-row"><th scope="row" className="work-week-row-label">{name}</th>{week.map((day) => {
                       const schedule = days.get(day);
                       const active = schedule?.operationGroups?.includes(name);
                       const entries = schedule?.entries.filter((entry) => entry.operationGroup === name) ?? [];
-                      return <td key={day} data-today={day === today ? "" : undefined} data-selected={day===date?"":undefined} data-outside={outside(day)}>
+                      return <td key={day} data-outside={outside(day)}>
                         <div className="weekly-operation-cell">
                           {entries.length ? <OperationEntries entries={entries} today={today} onOpen={showEntry} /> : !active && day>=start && day<=end ? <span className="weekly-operation-empty">미등록</span> : null}
                         </div>
