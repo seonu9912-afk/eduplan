@@ -24,6 +24,8 @@ import { CalendarFeedSettings } from "./calendar-feed-settings";
 import "./school-plan-readers.css";
 import "./schedule-surfaces.css";
 import "./curriculum-display.css";
+import { ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
+import "./reader-controls.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekLabels = [...weekdays.slice(1), weekdays[0]];
@@ -115,19 +117,12 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const updates = publications.filter((p) => p.domain === (work ? "plans" : "calendar"))
     .sort((a, b) => b.published_at.localeCompare(a.published_at));
   return (
-    <section className="school-plan-reader schedule-surface" data-calendar-view={view} data-work-plan={work ? "" : undefined}>
+    <section className="school-plan-reader schedule-surface reader-surface" data-calendar-view={view} data-work-plan={work ? "" : undefined}>
       <div className="schedule-reader-toolbar no-print">
-        <div className="schedule-period-nav">
-          <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={!canPrevious} onClick={() => navigate(-1)}><ChevronLeft /></Button>
-          <h2 aria-live="polite">{title}</h2>
-          <Button variant="ghost" size="icon" aria-label="다음 기간" disabled={!canNext} onClick={() => navigate(1)}><ChevronRight /></Button>
-          <Button variant="outline" size="sm" disabled={today < start || today > end} onClick={() => { setMiniMonthOverride(null); setDate(today); }}>오늘</Button>
-        </div>
+        <ReaderPeriodNavigator title={title} previous={canPrevious ? () => navigate(-1) : undefined} next={canNext ? () => navigate(1) : undefined}
+          todayDisabled={today < start || today > end} today={() => { setMiniMonthOverride(null); setDate(today); }} />
         <div className="schedule-view-controls">
-          <div className="schedule-segments" role="group" aria-label="보기 전환">
-            {options.map(({ value, label }) => <button key={value} type="button" aria-pressed={view === value}
-              onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
-          </div>
+          <ReaderViewSegment options={options} value={view} label="보기 전환" onChange={(value) => { setMiniMonthOverride(null); setView(value); }} />
           <div className="schedule-view-extra" data-open={moreOpen}>
           {work && view !== "year" && <div className="schedule-segments" role="group" aria-label="일정 표시 방식">
             <button type="button" aria-pressed={!listView.isList} onClick={() => listView.setIsList(false)}>달력</button>
