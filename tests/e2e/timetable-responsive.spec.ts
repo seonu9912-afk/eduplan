@@ -14,8 +14,13 @@ for(const width of [320,375,390,430,1440]){
   const tabs=sheet.locator(".official-timetable-tabs");
   const geometry=await tabs.evaluate(el=>({scroll:el.scrollWidth,width:el.clientWidth}));
   expect(geometry.scroll).toBeLessThanOrEqual(geometry.width+1);
-  await sheet.getByRole("button",{name:"전체 시간표",exact:true}).click();
-  await expect(table).toHaveAttribute("data-audience","all");
+  await expect(sheet.getByRole("button",{name:"전체 시간표",exact:true})).toHaveCount(0);
+  await expect(table.locator("[data-cancelled]")).toHaveCount(0);
+  await sheet.getByRole("button",{name:"교사별",exact:true}).click();
+  await expect(table).toHaveAttribute("data-audience","teacher");
+  await sheet.getByRole("button",{name:"기본",exact:true}).click();
+  await expect(sheet.locator(".official-timetable-caption")).toBeHidden();
+  if(width>=768) { const period=table.locator("thead th").first(); expect((await period.boundingBox())!.width).toBeLessThanOrEqual(80); }
   await expect(sheet.locator(".official-timetable-scroll")).toBeVisible();
  });
 }

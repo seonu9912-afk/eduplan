@@ -6,7 +6,7 @@ import { createLessonResolver, dailyOperationSummary, publishedTimetable } from 
 import { timetableDocumentSchema, type TimetableDocument } from "./timetable-bridge";
 import { periodChangeBadge, type LessonBadge } from "./timetable-display";
 
-export type TimetableAudience = "mine" | "teacher" | "class" | "all";
+export type TimetableAudience = "mine" | "teacher" | "class";
 export type TimetableMode = "basic" | "weekly";
 export type TimetableCell = {
   id: string;
@@ -24,6 +24,10 @@ export type TimetableCell = {
   end?: string | null;
   room?: string;
 };
+export function visibleTimetableCell(cell: TimetableCell, audience: TimetableAudience): boolean {
+  return audience !== "class" || !cell.badges?.includes("미실시") || cell.badges.includes("확인 필요");
+}
+
 type TimetableColumn = {
   date: string;
   periodCount: number;

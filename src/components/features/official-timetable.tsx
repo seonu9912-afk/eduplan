@@ -16,7 +16,6 @@ const audiences: Record<TimetableAudience, string> = {
   mine: "나의 시간표",
   teacher: "교사별",
   class: "학급별",
-  all: "전체 시간표",
 };
 
 export function OfficialTimetable({ context: c, today, actions, initialDate }: { context: Context; today: string; actions?: ReactNode; initialDate?: string }) {
@@ -79,7 +78,6 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
       case "mine": return myIds.has(cell.teacherId);
       case "teacher": return cell.teacherId === selectedTeacher;
       case "class": return cell.classIds.includes(selectedClass);
-      default: return true;
     }
   };
   const available = week.rows > 0;
@@ -112,6 +110,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
                   </select>
                 </label>}
                 <Button variant="outline" disabled={!available} onClick={() => window.print()}><Printer size={16} /> 인쇄·PDF 저장</Button>
+                {mode === "basic" && (week.schedule.startsOn || week.schedule.publishedAt) && <details className="timetable-publication-info"><summary>시간표 정보</summary><dl>{week.schedule.startsOn && <><dt>적용 기간</dt><dd>{week.schedule.startsOn} ~ {week.schedule.endsOn}</dd></>}{week.schedule.publishedAt && <><dt>공개일</dt><dd>{week.schedule.publishedAt.slice(0,10)}</dd></>}</dl></details>}
                 {actions}
           </div>}
         </div>
@@ -138,8 +137,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
           )}
         </div>}
       </div>
-      <header className="official-timetable-caption" data-mode={mode}>
-        <h2 className="timetable-visible-title no-print">{label} · {mode === "basic" ? "기본 시간표" : "주간 시간표"}</h2>
+      <header className="official-timetable-caption timetable-print-only" data-mode={mode}>
         <strong className="timetable-print-title">{label}</strong>
         {mode === "weekly" && <p>{dateLabel(firstDate)} – {endLabel}</p>}
         {mode === "basic" && week.schedule.startsOn && (

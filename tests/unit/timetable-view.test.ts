@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { operationsPreviewContext } from "../../src/app/recovery-preview/operations-fixture";
-import { timetableAt, timetableModeForWeek, timetableWeek } from "../../src/lib/timetable-view";
+import { timetableAt, timetableModeForWeek, timetableWeek, visibleTimetableCell, type TimetableCell } from "../../src/lib/timetable-view";
 import { defaultAnnual } from "../../src/lib/academic";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
@@ -69,4 +69,15 @@ describe("official timetable cancellation display",()=>{
   expect(tue.cells.map(cell=>cell.id)).toEqual(original.map(cell=>cell.id));
   expect(tue.cells.every(cell=>cell.badges?.includes("미실시"))).toBe(true);
  });
+});
+
+it("filters only confirmed cancellations in the class timetable and retains warnings",()=>{
+ const lesson:TimetableCell={id:"one",period:1,subject:"체육",kind:"subject",teacher:"교사",teacherId:"t",classes:"1-1",classIds:["c"]};
+ const cancelled:TimetableCell={...lesson,blocked:"보결 배정",badges:["미실시"]};
+ const substitute:TimetableCell={...lesson,id:"two",teacherId:"t2",badges:["보결"]};
+ const unresolved:TimetableCell={...lesson,blocked:"충돌",badges:["확인 필요"]};
+ expect([cancelled,substitute,unresolved].filter(cell=>visibleTimetableCell(cell,"class"))).toEqual([substitute,unresolved]);
+ expect(visibleTimetableCell(cancelled,"teacher")).toBe(true);
+ expect(visibleTimetableCell(cancelled,"mine")).toBe(true);
+ expect(visibleTimetableCell(lesson,"class")).toBe(true);
 });
