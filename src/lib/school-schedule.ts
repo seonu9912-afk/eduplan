@@ -152,3 +152,11 @@ export function monthlyCalendarLaneCount(viewportHeight: number, top: number, we
   const perWeek = available / Math.max(1, weeks);
   return Math.max(4, Math.min(6, Math.floor((perWeek - 64) / 26)));
 }
+
+/** Weekly readers show every single-day entry and keep multi-day events in separate lanes. */
+export function weeklyCalendarSections(dates: string[], days: ReadonlyMap<string, { entries: ScheduleEntry[] }>) {
+  const general = new Map(dates.map(date => [date, { entries: (days.get(date)?.entries ?? []).filter(entry => !entry.operationGroup) }]));
+  const periods = new Map(dates.map(date => [date, { entries: general.get(date)!.entries.filter(entry => entry.date !== entry.end) }]));
+  const daily = new Map(dates.map(date => [date, general.get(date)!.entries.filter(entry => entry.date === entry.end)]));
+  return { periodLanes: calendarWeekLanes(dates, periods), daily };
+}

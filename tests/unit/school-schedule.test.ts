@@ -89,7 +89,7 @@ it("hides weekend columns without moving the selected week, retaining academic-y
   expect(visibleWeekDates("2025-03-01", false, "2025-03-01")).toHaveLength(7);
 });
 
-import { compactCalendarWeek, monthlyCalendarLaneCount } from "../../src/lib/school-schedule";
+import { compactCalendarWeek, monthlyCalendarLaneCount, weeklyCalendarSections } from "../../src/lib/school-schedule";
 it("keeps a multi-day event connected in the compact calendar despite crowded days", () => {
   const dates=["2026-11-25","2026-11-26","2026-11-27"];
   const reading = {id:"reading",date:dates[0],end:dates[2],title:"가을 독서 주간",tone:"event" as const};
@@ -123,5 +123,23 @@ it("preserves dense multi-day intervals and exact overflow, including all printe
    const original=calendarWeekLanes(week,days).flat().find(span=>span.entry.id===event.id);
    if(original)expect(preview.lanes.flat()).toContainEqual(original);
   }
+ }
+});
+
+it("weekly calendar separates all daily tasks, period lanes and operations without losing entries",()=>{
+ const dates=scheduleDates("2026-11-25","week");
+ const vacation={id:"vacation",title:"방학",tone:"break" as const,date:"2026-11-20",end:"2026-12-02"};
+ const overlapping={id:"reading",title:"독서 주간",tone:"event" as const,date:dates[1],end:dates[4]};
+ const edge={id:"edge",title:"다음 주에도 이어지는 일정",tone:"event" as const,date:dates[6],end:"2026-12-02"};
+ const days=new Map(dates.map((date,i)=>[date,{entries:[vacation,...(i>=1&&i<=4?[overlapping]:[]),...(i===6?[edge]:[]),...Array.from({length:i===2?12:0},(_,j)=>({id:date+j,title:"긴 업무계획 "+j,date,end:date,tone:"work" as const})),{id:"duty"+date,title:"당직",date,end:date,tone:"work" as const,operationGroup:"당직"}]}]));
+ const result=weeklyCalendarSections(dates,days);
+ expect(result.periodLanes.flat()).toHaveLength(3);
+ expect(result.periodLanes.flat()).toContainEqual({entry:edge,start:6,end:6});
+ expect(result.periodLanes.flat()).toContainEqual({entry:vacation,start:0,end:6});
+ expect(result.daily.get(dates[2])).toHaveLength(12);
+ expect(result.daily.get(dates[0])).toEqual([]);
+ for(let col=0;col<dates.length;col++){
+  const period=result.periodLanes.flat().filter(span=>span.start<=col&&span.end>=col).length;
+  expect(period+result.daily.get(dates[col])!.length).toBe(days.get(dates[col])!.entries.filter(entry=>!("operationGroup" in entry)).length);
  }
 });

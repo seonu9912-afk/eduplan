@@ -5,6 +5,7 @@ import { z } from "zod";
 import { operationsPreviewContext } from "./operations-fixture";
 import { Staffing, type StaffingActions } from "@/components/features/staffing";
 import { PersonalDay } from "@/components/features/personal-day";
+import { SchoolShortcuts } from "@/components/features/school-links";
 import { OfficialTimetable } from "@/components/features/official-timetable";
 import { OfficialSchedule } from "@/components/features/school-plan-readers";
 import {
@@ -307,6 +308,8 @@ export function OperationsPreview() {
           context={c}
           today="2027-03-02"
           previewNow="2027-03-02T08:57:00+09:00"
+          shortcuts={<SchoolShortcuts context={c}/>}
+          publicData={<><section className="personal-widget school-public-widget"><header className="personal-day-heading"><h2>날씨</h2></header><p className="personal-widget-note">실습용 날씨 · 12°</p><p>맑음 · 강수확률 10%</p></section><section className="personal-widget school-public-widget"><header className="personal-day-heading"><h2>오늘의 급식</h2></header><p className="school-meal-menu">실습용 메뉴 · 잡곡밥, 된장국, 채소볶음, 생선구이, 김치</p></section></>}
         />
       )}
       {tab === "교원·수급" && (
