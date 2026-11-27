@@ -63,3 +63,38 @@ export function publishedScheduleDays(c: Context, dates: string[], work: boolean
     return [date, { available, entries: entries.filter((item) => item.date <= date && item.end >= date) }];
   }));
 }
+
+/** Place contiguous occurrences of the same published entry on one weekly lane. */
+export type CalendarSpan = { entry: ScheduleEntry; start: number; end: number };
+
+export function calendarWeekLanes(
+  dates: string[],
+  days: ReadonlyMap<string, { entries: ScheduleEntry[] }>,
+): CalendarSpan[][] {
+  const spans: CalendarSpan[] = [];
+  const latest = new Map<string, CalendarSpan>();
+  dates.forEach((day, column) => {
+    for (const entry of days.get(day)?.entries ?? []) {
+      // Include the visible metadata so publication changes are never hidden.
+      const key = JSON.stringify([entry.id, entry.tone, entry.date, entry.end,
+        entry.title, entry.time, entry.department, entry.location, entry.resources]);
+      const previous = latest.get(key);
+      if (previous?.end === column) continue;
+      if (previous?.end === column - 1) {
+        previous.end = column;
+      } else {
+        const span = { entry, start: column, end: column };
+        spans.push(span);
+        latest.set(key, span);
+      }
+    }
+  });
+  spans.sort((a, b) => a.start - b.start || b.end - a.end);
+  const lanes: CalendarSpan[][] = [];
+  for (const span of spans) {
+    const lane = lanes.find((items) => items[items.length - 1].end < span.start);
+    if (lane) lane.push(span);
+    else lanes.push([span]);
+  }
+  return lanes;
+}

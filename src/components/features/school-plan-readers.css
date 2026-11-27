@@ -165,8 +165,28 @@
 .school-reader-calendar :is(th, td) {
   vertical-align: top;
 }
-.school-reader-calendar td {
-  height: 90px;
+.school-reader-calendar .school-calendar-week td {
+  border-block: 0;
+}
+.school-reader-calendar .school-calendar-date-row td {
+  height: 30px;
+  padding: 4px 8px 0;
+  border-top: 1px solid var(--border);
+}
+.school-reader-calendar .school-calendar-event-row td {
+  height: auto;
+  padding: 0 3px;
+}
+.school-reader-calendar .school-calendar-event-row .school-reader-event {
+  margin-top: 3px;
+}
+.school-reader-calendar .school-calendar-week-space td {
+  height: 46px;
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+.school-reader-calendar .school-calendar-week {
+  break-inside: avoid;
 }
 .school-reader-calendar time {
   display: inline-grid;

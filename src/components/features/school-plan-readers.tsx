@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
-import { publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
+import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
 import { scheduleDates, shiftScheduleDate } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
@@ -131,14 +131,31 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
             <div className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
               <table className="school-reader-calendar" aria-label="공개 일정표">
                 <thead><tr>{(view === "week" ? weekLabels : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
-                <tbody>{Array.from({ length: dates.length / 7 }, (_, i) => (
-                  <tr key={dates[i * 7]}>{dates.slice(i * 7, i * 7 + 7).map((day) => (
-                    <td key={day} data-outside={day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined}>
-                      <time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time>
-                      {days.get(day)?.entries.map((entry) => <DesktopCalendarEvent key={entry.id} entry={entry} />)}
-                    </td>
-                  ))}</tr>
-                ))}</tbody>
+                {Array.from({ length: dates.length / 7 }, (_, i) => {
+                  const week = dates.slice(i * 7, i * 7 + 7);
+                  const lanes = calendarWeekLanes(week, days);
+                  const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
+                  return <tbody key={week[0]} className="school-calendar-week">
+                    <tr className="school-calendar-date-row">{week.map((day) => (
+                      <td key={day} data-outside={outside(day)}>
+                        <time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time>
+                      </td>
+                    ))}</tr>
+                    {lanes.map((lane, index) => <tr className="school-calendar-event-row" key={index}>
+                      {week.map((day, col) => {
+                        const span = lane.find((item) => item.start <= col && item.end >= col);
+                        if (span && span.start !== col) return null;
+                        return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
+                          data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
+                          {span && <DesktopCalendarEvent entry={span.entry} />}
+                        </td>;
+                      })}
+                    </tr>)}
+                    <tr className="school-calendar-week-space" aria-hidden="true">{week.map((day) => (
+                      <td key={day} data-outside={outside(day)} />
+                    ))}</tr>
+                  </tbody>;
+                })}
               </table>
             </div>
           )}
