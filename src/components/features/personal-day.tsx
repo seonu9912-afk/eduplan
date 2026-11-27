@@ -1,9 +1,12 @@
 "use client";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode, type CSSProperties } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/common";
 import { addDays, dateLabel } from "@/lib/domain";
+import { timetableAt } from "@/lib/timetable-view";
+import { periodChangeBadge } from "@/lib/timetable-display";
 import {
   dailyOperationSummary, createLessonResolver, currentAndNext, dailyLessonStatus,
   myTeacherIds, publishedTimetable, seoulClock,
@@ -42,6 +45,9 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
   const publicDataDateChanged = !!publicData && !previewNow && clock.date !== today;
   const lessons = resolver?.(clock.date).filter((lesson) => ids.has(lesson.teacherId)) ?? [];
   const operation = dailyOperationSummary(c, clock.date, lessons);
+  const effective = timetableAt(c, clock.date).document;
+  const periodCount = Math.max(0, ...Object.values(effective?.timetableConfig?.periods ?? {}), ...(effective?.weekly ?? []).map(slot => slot.period), ...lessons.map(lesson => lesson.period));
+  const [lessonPeriod, setLessonPeriod] = useState<number | null>(null);
   const hasOperationNotice = operation.notices.length > 0 || operation.changed > 0 || operation.cancelled > 0;
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
   const statuses = lessons.map((lesson) => dailyLessonStatus(lesson, now ? clock.minutes : null));
@@ -66,7 +72,7 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
   return <section className="operations-module personal-day" aria-label="나의 학교 생활">
     <HomeLiveClock today={clock.date} previewNow={previewNow} />
     <div className={`home-today-grid${publicData ? "" : " home-today-grid-single"}`}>
-        <section className="personal-widget">
+        <section className="personal-widget home-lessons-widget">
           <header className="personal-day-heading">
             <h2><Clock3 aria-hidden="true" />오늘 수업</h2>
             <time className="daily-clock" dateTime={clock.date}>{dayTitle(clock.date)}</time>
@@ -93,6 +99,25 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
                   {remaining !== null && <small>시작까지 {remaining >= 60 ? `${Math.floor(remaining / 60)}시간 ${remaining % 60}분` : `${remaining}분`}</small>}
                 </> : <p>{allFinished ? "오늘 예정된 수업 시간이 모두 지났습니다." : allCancelled ? "오늘 운영되는 수업이 없습니다." : lessons.length ? "다음 수업 시각을 확인할 수 없습니다." : "오늘 배정된 수업이 없습니다."}</p>}
               </div>}
+              {periodCount > 0 && hasCalendar && <div className="home-period-desktop">
+                <ol className="home-period-grid" style={{"--home-period-columns": Math.min(7, periodCount)} as CSSProperties} aria-label="오늘 교시별 수업">
+                  {Array.from({length:periodCount},(_,index)=>{
+                    const period=index+1;
+                    const assigned=lessons.filter(lesson=>lesson.period===period);
+                    const lesson=assigned.find(item=>!item.blockedBy.length) ?? assigned[0];
+                    const status=lesson ? dailyLessonStatus(lesson, now ? clock.minutes : null) : undefined;
+                    const shift=operation.changes.find(change=>change.period===period);
+                    const badge=lesson?.blockedBy.length ? "확인" : lesson?.changed ? "변경" : shift ? periodChangeBadge(shift.before,shift.after) : undefined;
+                    const classLabel=lesson?.classes.replace(/(\d+)학년\s*(\d+)반/g,"$1-$2");
+                    const grades=[...new Set(lesson?.classIds.map(id=>c.classes.find(cls=>cls.id===id)?.grade).filter(Boolean)??[])];
+                    return <li key={period}><span className="home-period-number">{period}교시</span>{lesson ? <button type="button" className="home-period-card" data-grade={grades.length===1?grades[0]:undefined} data-status={status} onClick={()=>setLessonPeriod(period)} aria-label={period+"교시 "+assigned.map(item=>item.classes+" "+item.subject).join(", ")+" 상세 보기"}>
+                      <span className="home-period-badge">{badge??(status==="current"?"진행 중":status==="upcoming"&&lesson===next?"다음":"")}{assigned.length>1?" +"+(assigned.length-1):""}</span>
+                      <strong>{classLabel||lesson.subject}</strong><small>{lesson.subject}</small>
+                    </button> : <div className="home-period-card home-period-empty" aria-label={period+"교시 배정 수업 없음"}>—</div>}</li>;
+                  })}
+                </ol>
+                <div className="home-period-footer"><span>배정 {new Set(lessons.filter(lesson=>!lesson.blockedBy.length).map(lesson=>lesson.period)).size}교시</span><Link href={previewNow?"/recovery-preview/operations":`${base}/timetable${suffix}`} className="widget-link">시간표 보기 <ArrowUpRight aria-hidden="true"/></Link></div>
+              </div>}
               {lessons.length > 0 && <ol className="personal-lesson-list">
                 {lessons.map((lesson, index) => <li key={`${lesson.id}:${index}`} data-lesson-status={statuses[index]} className={`daily-lesson${lesson.blockedBy.length ? " cancelled" : ""}`}>
                   <div>
@@ -116,15 +141,22 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
     </div>
     <div className="home-week-and-tasks">
       <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
-      <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={clock.date} />
+      <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={clock.date} dashboard />
     </div>
+    <Modal open={lessonPeriod!==null} onOpenChange={open=>{if(!open)setLessonPeriod(null)}} title={`${lessonPeriod??""}교시 수업`} description={dayTitle(clock.date)}>
+      <ul className="home-period-detail-list">{lessons.filter(lesson=>lesson.period===lessonPeriod).map((lesson,index)=><li key={lesson.id+":"+index}>
+        <strong>{lesson.classes} · {lesson.subject}</strong>
+        <p>{lesson.start&&lesson.end?lesson.start+"–"+lesson.end:"시각 미설정"} · {lessonStatusLabels[dailyLessonStatus(lesson, now?clock.minutes:null)]}</p>
+        {lesson.room&&<p>{lesson.room}</p>}{lesson.changed&&<p>변경·교환·보결 수업</p>}{lesson.blockedBy.map(reason=><p key={reason}>{reason}</p>)}
+      </li>)}</ul>
+    </Modal>
     {previewNow && <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />}
   </section>;
 }
 
 
 const liveClockFormat = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
+  timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
 });
 const liveDateFormat = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "long",
@@ -135,7 +167,7 @@ function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: stri
   useEffect(() => {
     const tick = () => setInstant(new Date(previewNow ?? Date.now()));
     const first = window.setTimeout(tick, 0);
-    const timer = previewNow ? undefined : window.setInterval(tick, 1000);
+    const timer = previewNow ? undefined : window.setInterval(tick, 10000);
     document.addEventListener("visibilitychange", tick);
     return () => {
       window.clearTimeout(first);
@@ -150,7 +182,7 @@ function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: stri
       <time dateTime={instant?.toISOString() ?? today}>{liveDateFormat.format(instant ?? new Date(`${today}T00:00:00+09:00`))}</time>
     </div>
     <time className="home-clock-time" aria-label="현재 시각 (한국 표준시)" dateTime={instant?.toISOString()}>
-      {instant ? liveClockFormat.format(instant) : "--:--:--"}
+      {instant ? liveClockFormat.format(instant) : "--:--"}
     </time>
   </div>;
 }
@@ -179,6 +211,8 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
   }, [context, dates, department]);
   const lanes = useMemo(() => calendarWeekLanes(dates, days), [dates, days]);
   const detail = days.get(selected)?.entries ?? [];
+  const visibleLanes = lanes.slice(0,3);
+  const overflowByDay=dates.map((_,column)=>lanes.slice(3).flat().filter(item=>item.start<=column&&item.end>=column).length);
   const firstMonth = dates[0].slice(0, 7);
   const lastMonth = dates[dates.length - 1].slice(0, 7);
   const monthTitle = firstMonth === lastMonth
@@ -204,7 +238,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         showWeekends={weekend.showWeekends} emphasizeToday spanDays={days}
         items={day => days.get(day)?.entries ?? []} onSelect={setSelection} onNavigate={step => setSelection(addDays(selected,step*7))} />
     </div>
-    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
+    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `44px repeat(3, 30px) 24px` }}>
       {dates.map((day, column) => <div key={day} className="home-week-column" data-today={day === today ? "" : undefined} data-selected={day === selected ? "" : undefined}
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
@@ -213,7 +247,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         style={{ gridColumn: column + 1, gridRow: 1 }} onClick={() => setSelection(day)}>
         <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
       </button>)}
-      {lanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
+      {visibleLanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
         <button type="button" className="home-week-event" data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
           key={`${entry.id}:${start}:${row}`}
           style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
@@ -222,6 +256,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           onClick={(event) => { setSelection(dates.includes(selected) && selected >= dates[start] && selected <= dates[end] ? selected : dates[start]); scheduleDetail.show(entry, event.currentTarget); }}>
           <span className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span>
         </button>))}
+      {overflowByDay.map((count,column)=>count>0&&<button type="button" className="home-week-overflow" key={dates[column]} style={{gridColumn:column+1,gridRow:5}} onClick={()=>setSelection(dates[column])} aria-label={dayTitle(dates[column])+" 추가 일정 "+count+"건"}>+{count}</button>)}
       {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
     </div>
     <div className="home-week-detail" aria-live="polite">

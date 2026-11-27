@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, ListTodo, Plus } from "lucide-react";
+import { ArrowUpRight, Ellipsis, ListTodo, Plus } from "lucide-react";
 import { changeSchoolTask } from "@/app/school-task-actions";
 import { InlineNotice, Modal, useMutation } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ const completedDate = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
 });
 
-export function MyTasks({ context: c, today, compact = false }: { context: Context; today: string; compact?: boolean }) {
+export function MyTasks({ context: c, today, compact = false, dashboard = false }: { context: Context; today: string; compact?: boolean; dashboard?: boolean }) {
   const data = c.myTasks;
   const roster = data?.directory ?? [];
   const sender = roster.find((teacher) => teacher.user_id === c.userId);
@@ -111,14 +111,18 @@ export function MyTasks({ context: c, today, compact = false }: { context: Conte
     <details id="my-tasks" className={`my-tasks no-print${compact ? " my-tasks-compact" : ""}`} open>
       <summary><ListTodo size={16} aria-hidden="true" /><h3>나의 할 일</h3>{(pending.length > 0 || compact && data) && <span>{compact ? `미완료 ${pending.length}건` : pending.length}</span>}</summary>
       {data ? <>
-        <div className="task-actions task-widget-actions">
+        <div className="task-actions task-widget-actions" data-dashboard={dashboard ? "" : undefined}>
           <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "personal" })}><Plus size={16} />할 일 추가</Button>
-          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
-          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}
+          <div className="task-direct-actions">          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
+          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div>
+          {dashboard&&(sender||authored.length>0)&&<details className="task-dashboard-more"><summary aria-label="할 일 더보기"><Ellipsis size={18}/></summary><div className="task-dashboard-menu">          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
+          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div></details>}
         </div>
+        <div className={dashboard?"task-dashboard-body":undefined}>
         {pending.length ? rows(pending) : <p className="task-hint">미완료 할 일이 없습니다.</p>}
         {finished.length > 0 && <Disclosure compact label={`완료한 할 일 (${finished.length})`}>{rows(finished)}</Disclosure>}
         {cancelled.length > 0 && <Disclosure compact label={`취소된 업무 (${cancelled.length})`}>{rows(cancelled)}</Disclosure>}
+        </div>
       </> : <p className="task-hint" role="status">할 일을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>}
       {!screen && <InlineNotice mutation={m} />}
     </details>
