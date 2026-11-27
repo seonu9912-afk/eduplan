@@ -439,12 +439,12 @@ export function WorkspaceApp({
         {section === "curriculum" && !management && <OfficialCurriculum context={c} />}
         {section === "settings" && schoolAdmin ? (
           <>
-            {planOverview && c.year && <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} />}
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
               context={c}
+              overview={planOverview && c.year ? <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} /> : undefined}
+              installPanel={<PwaInstallPanel />}
             />
-            <PwaInstallPanel />
           </>
         ) : null}
         {section === "teaching" && management ? (
