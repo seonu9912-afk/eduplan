@@ -7,8 +7,8 @@
 .settings-hub-nav a span{display:grid;gap:3px;min-width:0}
 .settings-hub-nav a strong{font-size:13px;font-weight:650}
 .settings-hub-nav a small{font-size:11px;color:var(--text-secondary);overflow-wrap:anywhere}
-.settings-hub-nav a[aria-current=page]{background:#eaf1fa;color:#24528e}
-.settings-hub-nav a:focus-visible,.settings-destination:focus-visible{outline:2px solid #7296bf;outline-offset:2px}
+.settings-hub-nav a[aria-current=page]{background:var(--ep-bg-eaf1fa, #eaf1fa);color:var(--ep-fg-24528e, #24528e)}
+.settings-hub-nav a:focus-visible,.settings-destination:focus-visible{outline:2px solid var(--ep-border-7296bf, #7296bf);outline-offset:2px}
 .settings-hub-content{display:grid;gap:10px;min-width:0}
 .settings-hub-heading h2{font-size:19px;margin:0}
 .settings-hub-heading p{font-size:12px;color:var(--text-secondary);margin-top:3px}
@@ -36,3 +36,12 @@
 .settings-hub-heading h2{font-size:17px}
 }
 @media print{.settings-hub-nav{display:none}.settings-hub-group[hidden]{display:none!important}}
+
+/* Screen-only dark palette; original colors remain the light/print fallback. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-bg-eaf1fa: hsl(214 34% 17%);
+  --ep-fg-24528e: hsl(214 51% 76%);
+  --ep-border-7296bf: hsl(212 30% 56%);
+ }
+}

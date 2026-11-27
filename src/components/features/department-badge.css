@@ -1,16 +1,16 @@
 /* Dark department label, a matching pale surface, and a neutral readable title. */
 .schedule-department-badge, [data-department-color] {
   --dept-fg: #46576b;
-  --dept-bg: #f0f2f5;
+  --dept-bg: var(--ep-bg-f0f2f5, #f0f2f5);
 }
-.schedule-department-badge[data-color="blue"], [data-department-color="blue"] { --dept-fg: #24528e; --dept-bg: #eaf1fa; }
-.schedule-department-badge[data-color="amber"], [data-department-color="amber"] { --dept-fg: #8a4d12; --dept-bg: #faf1e2; }
-.schedule-department-badge[data-color="rose"], [data-department-color="rose"] { --dept-fg: #983b60; --dept-bg: #faedf1; }
-.schedule-department-badge[data-color="purple"], [data-department-color="purple"] { --dept-fg: #65418b; --dept-bg: #f1ebf8; }
-.schedule-department-badge[data-color="green"], [data-department-color="green"] { --dept-fg: #24694d; --dept-bg: #e8f3ec; }
-.schedule-department-badge[data-color="teal"], [data-department-color="teal"] { --dept-fg: #14676b; --dept-bg: #e5f4f4; }
-.schedule-department-badge[data-color="indigo"], [data-department-color="indigo"] { --dept-fg: #4c4f93; --dept-bg: #eeeffa; }
-[data-department-color="closure"] { --dept-fg: #963e44; --dept-bg: #fae9e9; }
+.schedule-department-badge[data-color="blue"], [data-department-color="blue"] { --dept-fg: #24528e; --dept-bg: var(--ep-bg-eaf1fa, #eaf1fa); }
+.schedule-department-badge[data-color="amber"], [data-department-color="amber"] { --dept-fg: #8a4d12; --dept-bg: var(--ep-bg-faf1e2, #faf1e2); }
+.schedule-department-badge[data-color="rose"], [data-department-color="rose"] { --dept-fg: #983b60; --dept-bg: var(--ep-bg-faedf1, #faedf1); }
+.schedule-department-badge[data-color="purple"], [data-department-color="purple"] { --dept-fg: #65418b; --dept-bg: var(--ep-bg-f1ebf8, #f1ebf8); }
+.schedule-department-badge[data-color="green"], [data-department-color="green"] { --dept-fg: #24694d; --dept-bg: var(--ep-bg-e8f3ec, #e8f3ec); }
+.schedule-department-badge[data-color="teal"], [data-department-color="teal"] { --dept-fg: #14676b; --dept-bg: var(--ep-bg-e5f4f4, #e5f4f4); }
+.schedule-department-badge[data-color="indigo"], [data-department-color="indigo"] { --dept-fg: #4c4f93; --dept-bg: var(--ep-bg-eeeffa, #eeeffa); }
+[data-department-color="closure"] { --dept-fg: #963e44; --dept-bg: var(--ep-bg-fae9e9, #fae9e9); }
 .schedule-department-badge {
   display: inline-block;
   flex: none;
@@ -36,18 +36,18 @@
 .school-calendar-agenda > section > ul > li[data-department-color] > div,
 .work-card[data-department-color] {
   background: var(--dept-bg);
-  color: #20252b;
+  color: var(--ep-fg-20252b, #20252b);
 }
 .school-calendar-agenda > section > ul > li[data-department-color] strong,
 .work-card[data-department-color] .work-card-title,
 .work-card[data-department-color] strong,
-[data-department-color] .schedule-department-title > :not(.schedule-department-badge) { color: #20252b; }
+[data-department-color] .schedule-department-title > :not(.schedule-department-badge) { color: var(--ep-fg-20252b, #20252b); }
 .school-calendar-agenda > section > ul > li[data-department-color] .schedule-agenda-time,
 .school-reader-event[data-department-color] small,
 .home-week-detail-list > li[data-department-color] small,
 .school-calendar-agenda > section > ul > li[data-department-color] small,
 .work-card[data-department-color] small,
-.mobile-calendar-cell-entry[data-department-color] small { color: #5f6b7a; }
+.mobile-calendar-cell-entry[data-department-color] small { color: var(--ep-fg-5f6b7a, #5f6b7a); }
 [data-department-color] .schedule-department-badge { color: #fff; background: var(--dept-fg); }
 @media screen and (max-width: 767px) {
   .home-week-event .schedule-department-title { gap: 2px; }
@@ -58,4 +58,21 @@
 .work-day-extras .work-card[data-department-color] { padding: 6px; }
 @media print {
   [data-department-color], .schedule-department-badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+
+/* Dark palette; light values remain unchanged and print uses the light theme. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-bg-f0f2f5: hsl(216 12% 17%);
+  --ep-bg-eaf1fa: hsl(214 34% 17%);
+  --ep-bg-faf1e2: hsl(38 39% 18%);
+  --ep-bg-faedf1: hsl(342 31% 17%);
+  --ep-bg-f1ebf8: hsl(268 26% 17%);
+  --ep-bg-e8f3ec: hsl(142 17% 18%);
+  --ep-bg-e5f4f4: hsl(180 22% 18%);
+  --ep-bg-eeeffa: hsl(235 30% 17%);
+  --ep-bg-fae9e9: hsl(0 35% 17%);
+  --ep-fg-20252b: #e4eaf2;
+  --ep-fg-5f6b7a: hsl(213 12% 76%);
+ }
 }

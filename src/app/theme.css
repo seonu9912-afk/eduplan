@@ -1,0 +1,25 @@
+@media screen {
+ :root[data-theme="dark"] {
+  color-scheme:dark;
+  --background:#111820; --foreground:#e6edf5; --card:#1b222c;
+  --primary:#87b2ff; --surface-muted:#252e39; --text-secondary:#b0bfce;
+  --border:#36424f; --input-border:#4a596a; --schedule-accent:#9bbfff;
+  --work-accent:#8ad1b1; --closure-accent:#f1aa99; --career-accent:#c4a6ee; --warning-accent:#edc78f;
+ }
+ :root[data-theme="dark"] [data-slot="button"][data-variant="default"] { background:#315fbb; color:#fff; }
+ :root[data-theme="dark"] [data-slot="button"][data-variant="default"]:hover { background:#3d71cb; color:#fff; }
+ :root[data-theme="dark"] .reader-segments > button[aria-pressed="true"],
+ :root[data-theme="dark"] .reader-period-title h2 { color:var(--schedule-accent); }
+ :root[data-theme="dark"] .brand-plan { color:var(--primary); }
+ :root[data-theme="dark"] .home-period-empty { color:var(--text-secondary); }
+ :root[data-theme="dark"] .home-period-card strong { color:var(--foreground); }
+ :root[data-theme="dark"] .home-period-card small { color:var(--text-secondary); }
+ :root[data-theme="dark"] :is(input,textarea)::placeholder { color:#a6b5c6; }
+}
+.theme-preference { display:grid; gap:8px; padding-top:16px; margin-top:16px; border-top:1px solid var(--border); }
+.theme-preference h3 { font-size:15px; }
+.theme-preference p { color:var(--text-secondary); font-size:12px; }
+.theme-preference-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; background:var(--surface-muted); border-radius:9px; padding:4px; }
+.theme-preference-options button { display:flex; align-items:center; justify-content:center; gap:6px; min-height:44px; border:1px solid transparent; border-radius:6px; color:var(--text-secondary); font-weight:650; }
+.theme-preference-options button[aria-pressed="true"] { background:var(--card); border-color:var(--border); color:var(--primary); }
+@media print { :root { color-scheme:light; } }

@@ -8,7 +8,7 @@ details.edu-disclosure {
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--card);
-  color: #243e59;
+  color: var(--ep-fg-243e59, #243e59);
 }
 
 .workspace-content > details.edu-disclosure {
@@ -65,7 +65,7 @@ details.edu-disclosure > .edu-disclosure-heading:hover {
 }
 
 details.edu-disclosure > .edu-disclosure-heading:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--ep-border-2563eb, #2563eb);
   outline-offset: -3px;
 }
 
@@ -141,4 +141,12 @@ details.edu-disclosure > .edu-disclosure-body {
   details.edu-disclosure > .edu-disclosure-body {
     padding-block: 8px;
   }
+}
+
+/* Screen-only dark palette; original colors remain the light/print fallback. */
+@media screen {
+ :root[data-theme="dark"] {
+  --ep-fg-243e59: hsl(211 36% 85%);
+  --ep-border-2563eb: hsl(221 65% 56%);
+ }
 }
