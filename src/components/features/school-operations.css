@@ -488,3 +488,18 @@
 .personal-day .next-lesson[data-lesson-summary="current"] { background: #eaf2fd; }
 .next-lesson[data-lesson-summary="current"] .next-lesson-label { font-weight: 700; color: #24528e; }
 .lesson-summary-next { border-top: 1px solid #cbdcf1; padding-top: 6px; margin-top: 4px; }
+
+/* Today stays distinct from the selected date, with readable past events. */
+@media screen {
+  .home-week-column[data-today] { background: #edf4fc; }
+  .home-week-date time { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; }
+  .home-week-date[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .home-week-date[aria-current="date"] time { background: #24528e; color: #fff; }
+  .home-week-event[data-past], .home-week-detail-list > li[data-past], .home-week-mobile-entry[data-past] { filter: saturate(.45); }
+  .home-week-today-label { margin-inline-start: 8px; color: #24528e; font-size: 12px; font-weight: 650; }
+}
+@media screen and (max-width: 767px) {
+  .home-week-mobile-grid > .home-week-mobile-day[aria-current="date"] { background: #edf4fc; }
+  .home-week-mobile-day[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .home-week-mobile-day[aria-current="date"] time { background: #24528e; color: #fff; border-radius: 50%; }
+}

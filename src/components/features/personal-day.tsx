@@ -204,14 +204,14 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           <time dateTime={day}>{Number(day.slice(8))}</time>
           <span className="home-week-mobile-preview" aria-hidden="true">
             {entries.slice(0, 2).map((entry, index) => <span key={`${entry.id}:${index}`}
-              className="home-week-mobile-entry" data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>{entry.title}</span>)}
+              className="home-week-mobile-entry" data-past={entry.end < today ? "" : undefined} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>{entry.title}</span>)}
             {entries.length > 2 && <span className="home-week-mobile-more">+{entries.length - 2}</span>}
           </span>
         </button>;
       })}
     </div>
     <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
-      {dates.map((day, column) => <div key={day} className="home-week-column" data-selected={day === selected ? "" : undefined}
+      {dates.map((day, column) => <div key={day} className="home-week-column" data-today={day === today ? "" : undefined} data-selected={day === selected ? "" : undefined}
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
         data-weekend={column >= 5 ? "" : undefined} aria-current={day === today ? "date" : undefined}
@@ -220,7 +220,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
       </button>)}
       {lanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
-        <button type="button" className="home-week-event" data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
+        <button type="button" className="home-week-event" data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}
           key={`${entry.id}:${start}:${row}`}
           style={{ gridColumn: `${start + 1} / ${end + 2}`, gridRow: row + 2 }}
           aria-label={`${entry.title}, ${dateLabel(dates[start])}${start !== end ? `부터 ${dateLabel(dates[end])}까지` : ""}`}
@@ -231,9 +231,9 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       {!lanes.length && <p className="home-week-empty">이번 주 등록된 일정이 없습니다.</p>}
     </div>
     <div className="home-week-detail" aria-live="polite">
-      <h3>{dayTitle(selected)} 일정</h3>
+      <h3>{dayTitle(selected)} 일정{selected === today && <span className="home-week-today-label">오늘</span>}</h3>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
-        <li key={`${entry.id}:${index}`} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
+        <li key={`${entry.id}:${index}`} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
           <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={scheduleDetail.show} /></div>
           <small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
           <ResourceLinks value={entry.resources} compact />

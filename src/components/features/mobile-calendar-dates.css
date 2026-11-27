@@ -106,3 +106,10 @@
 }
 
 .mobile-calendar-dates[data-weekdays-only] :is(.mobile-calendar-weekdays, .mobile-calendar-day-grid) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+@media screen {
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] { background: #edf4fc; }
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] time { background: #24528e; color: #fff; }
+  .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-cell-entry[data-past] { filter: saturate(.45); }
+}

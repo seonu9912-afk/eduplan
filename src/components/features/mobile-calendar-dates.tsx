@@ -7,15 +7,16 @@ import "./department-badge.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
-export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string };
+export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string; end?: string };
 
-export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true }: {
+export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true, emphasizeToday = false }: {
   date: string;
   today: string;
   start: string;
   end: string;
   period: CalendarPeriod;
   showWeekends?: boolean;
+  emphasizeToday?: boolean;
   items: (day: string) => CalendarCellItem[];
   onSelect: (day: string) => void;
   onNavigate: (step: number) => void;
@@ -26,7 +27,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
   const month = date.slice(0, 7);
   const labels = period === "week" ? [...weekdays.slice(1), weekdays[0]].slice(0, weekdaysOnly ? 5 : 7) : weekdays;
   return (
-    <div className="mobile-calendar-dates" data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
+    <div className="mobile-calendar-dates" data-emphasize-today={emphasizeToday ? "" : undefined} data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
       onTouchStart={(event) => {
         const touch = event.touches[0];
         touchStart.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
@@ -56,7 +57,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
             disabled={!enabled} aria-pressed={day === date} aria-current={day === today ? "date" : undefined}
             onClick={() => onSelect(day)}>
             <time dateTime={day}>{Number(day.slice(8))}</time>
-            {first && <span className="mobile-calendar-cell-entry" data-tone={first.tone} data-department-color={scheduleDepartmentColor(first.department, first.tone)} aria-hidden="true">
+            {first && <span className="mobile-calendar-cell-entry" data-past={emphasizeToday && first.end && first.end < today ? "" : undefined} data-tone={first.tone} data-department-color={scheduleDepartmentColor(first.department, first.tone)} aria-hidden="true">
               <span>{first.title}</span>{entries.length > 1 && <small>+{entries.length - 1}</small>}
             </span>}
           </button>;

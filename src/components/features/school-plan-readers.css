@@ -345,3 +345,13 @@ details.school-publication-history.edu-disclosure > .edu-disclosure-heading { pa
 .weekly-mobile-operations { display: grid; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); }
 .weekly-mobile-operation + .weekly-mobile-operation { border-top: 1px solid var(--border); padding-top: 8px; }
 @media print { .weekly-operation-row { break-inside: avoid; } }
+
+@media screen {
+  .school-reader-calendar .school-calendar-week td[data-today] { background: #edf4fc; }
+  .school-reader-calendar time[aria-current="date"] { background: #24528e; color: #fff; }
+  .official-work-mini-grid button[aria-pressed="true"]:not([aria-current="date"]) time { background: transparent; color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+  .official-work-mini-grid button[aria-current="date"] time { background: #24528e; color: #fff; }
+  .school-calendar-agenda > section[data-today] { border-color: #b9cde3; }
+  .school-calendar-agenda > section[data-today] > h3 { background: #edf4fc; }
+  .school-reader-event[data-past], .school-calendar-agenda > section > ul > li[data-past] > div, .weekly-operation-entry[data-past] { filter: saturate(.45); }
+}
