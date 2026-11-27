@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Ellipsis, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -113,45 +113,47 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
               </select>
             </label>
           )}
-          {c.semesters.length > 0 && (
-            <label>학기
-              <select value={term?.number ?? ""} onChange={(e) => {
-                const chosen = c.semesters.find((s) => s.number === Number(e.target.value));
-                if (chosen) setDate(chosen.start_date);
-              }}>
-                {!term && <option value="" disabled>학기 선택</option>}
-                {c.semesters.map((s) => <option key={s.number} value={s.number}>{s.number}학기</option>)}
-              </select>
-            </label>
-          )}
-          <label>보기
-            <select value={mode} onChange={(e) => setMode(e.target.value === "basic" ? "basic" : "weekly")}>
-              <option value="basic">기본 시간표</option>
-              <option value="weekly">주간 시간표</option>
-            </select>
-          </label>
           <div className="official-timetable-date" data-weekly={mode === "weekly" ? "" : undefined}>
             {mode === "weekly" && <Button variant="ghost" size="icon" aria-label="이전 주"
-              disabled={addDays(week.weekdays[0].date, -1) < start} onClick={() => setDate(clamp(addDays(date, -7)))}><ChevronLeft /></Button>}
-            <label>
-              <span className="sr-only">기준 날짜</span>
-              <input type="date" value={date} min={start} max={end} onChange={(e) => {
-                if (e.target.value) setDate(clamp(e.target.value));
-              }} />
-            </label>
-            {mode === "weekly" && <>
-              <Button variant="ghost" size="icon" aria-label="다음 주"
-                disabled={addDays(week.weekdays[0].date, 7) > end} onClick={() => setDate(clamp(addDays(date, 7)))}><ChevronRight /></Button>
-              <Button variant="outline" disabled={!thisYear} onClick={() => { setDate(liveToday); setMode("weekly"); }}>이번 주</Button>
-            </>}
+              disabled={addDays(firstDate, -1) < start} onClick={() => setDate(clamp(addDays(date, -7)))}><ChevronLeft /></Button>}
+            <div className="timetable-range" aria-live="polite">
+              <strong>{mode === "weekly" ? `${dateLabel(firstDate)} – ${endLabel}` : dateLabel(date)}</strong>
+              {term && <small>{term.number}학기</small>}
+            </div>
+            {mode === "weekly" && <Button variant="ghost" size="icon" aria-label="다음 주"
+              disabled={addDays(firstDate, 7) > end} onClick={() => setDate(clamp(addDays(date, 7)))}><ChevronRight /></Button>}
+            <Button variant="outline" className="timetable-this-week" disabled={!thisYear} onClick={() => { setDate(liveToday); setMode("weekly"); }}>이번 주</Button>
           </div>
-          <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄·PDF 저장" disabled={!available} onClick={() => window.print()}>
-            <Printer />
-          </Button>
-          {actions}
+          <div className="timetable-view-toolbar">
+            <div className="timetable-mode-switch" role="group" aria-label="시간표 보기 방식">
+              <Button variant="ghost" aria-pressed={mode === "weekly"} onClick={() => setMode("weekly")}>주간</Button>
+              <Button variant="ghost" aria-pressed={mode === "basic"} onClick={() => setMode("basic")}>기본</Button>
+            </div>
+            <details className="timetable-more">
+              <summary aria-label="시간표 더보기"><Ellipsis size={19} aria-hidden="true" /><span>더보기</span></summary>
+              <div className="timetable-more-panel">
+                <label>날짜 이동
+                  <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={(e) => {
+                    if (e.target.value) setDate(clamp(e.target.value));
+                  }} />
+                </label>
+                {c.semesters.length > 0 && <label>학기 이동
+                  <select value={term?.number ?? ""} onChange={(e) => {
+                    const chosen = c.semesters.find((s) => s.number === Number(e.target.value));
+                    if (chosen) setDate(chosen.start_date);
+                  }}>
+                    {!term && <option value="" disabled>학기 선택</option>}
+                    {c.semesters.map((s) => <option key={s.number} value={s.number}>{s.number}학기</option>)}
+                  </select>
+                </label>}
+                <Button variant="outline" disabled={!available} onClick={() => window.print()}><Printer size={16} /> 인쇄·PDF 저장</Button>
+                {actions}
+              </div>
+            </details>
+          </div>
         </div>
       </div>
-      <header className="official-timetable-caption">
+      <header className="official-timetable-caption" data-mode={mode}>
         <h2 className="timetable-visible-title no-print">{label} · {mode === "basic" ? "기본 시간표" : "주간 시간표"}</h2>
         <strong className="timetable-print-title">{label}</strong>
         {mode === "weekly" && <p>{dateLabel(firstDate)} – {endLabel}</p>}
