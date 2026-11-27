@@ -259,3 +259,58 @@
   .timetable-varying-time { overflow-wrap: anywhere; }
   .timetable-free-period { min-height: 48px; }
 }
+
+/* Compact official viewer: preserve the shared grid used by the dashboard. */
+.timetable-date-short { display: none; }
+@media screen {
+  .official-timetable .official-timetable-filters { gap: 6px 10px; align-items: flex-start; }
+  .official-timetable .official-timetable-date { order: -2; flex-wrap: nowrap; }
+  .timetable-range { display: grid; justify-items: center; align-content: center; min-width: 0; padding: 2px 4px; text-align: center; line-height: 1.25; }
+  .timetable-range strong { font-size: 14px; white-space: nowrap; }
+  .timetable-range small { font-size: 11px; color: var(--text-secondary); }
+  .timetable-view-toolbar { display: flex; align-items: flex-start; gap: 6px; position: relative; }
+  .timetable-mode-switch { display: flex; gap: 2px; padding: 3px; border-radius: 8px; background: var(--surface-muted); }
+  .timetable-mode-switch button[data-slot="button"] { border: 0; border-radius: 5px; min-height: 36px; height: 36px; padding: 0 12px; font-size: 13px; }
+  .timetable-mode-switch button[aria-pressed="true"] { color: var(--schedule-accent); background: var(--card); box-shadow: inset 0 0 0 1px var(--border); }
+  .timetable-more { min-width: 0; }
+  .timetable-more summary { display: flex; align-items: center; gap: 5px; padding: 0 10px; min-height: 42px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; list-style: none; white-space: nowrap; }
+  .timetable-more summary::-webkit-details-marker { display: none; }
+  .timetable-more summary:focus-visible { outline: 2px solid var(--schedule-accent); outline-offset: 2px; }
+  .timetable-more-panel { position: absolute; top: calc(100% + 4px); right: 0; z-index: 10; display: grid; gap: 8px; width: min(280px, calc(100vw - 32px)); padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); box-shadow: 0 8px 22px #142b4420; }
+  .timetable-more-panel label { display: grid; gap: 4px; }
+  .timetable-more-panel :is(input, select) { width: 100%; min-width: 0; }
+  .timetable-more-panel button { justify-content: flex-start; }
+  .official-timetable-caption[data-mode="weekly"] { display: none; }
+  .official-timetable > .official-timetable-scroll .timetable-free-period { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="1"] { --lesson-accent: #527fca; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="2"] { --lesson-accent: #4b9977; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="3"] { --lesson-accent: #c58c4e; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="4"] { --lesson-accent: #9870bf; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="5"] { --lesson-accent: #4797a3; }
+  .official-timetable > .official-timetable-scroll .official-lesson[data-kind="subject"]:not([data-blocked])[data-grade="6"] { --lesson-accent: #ba7185; }
+}
+@media screen and (max-width: 767px) {
+  .official-timetable { gap: 6px; }
+  .official-timetable .official-timetable-tabs { padding: 2px; }
+  .official-timetable .official-timetable-tabs button[data-slot="button"] { height: 40px; min-height: 40px; font-size: 12px; }
+  .official-timetable .official-timetable-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .official-timetable .official-timetable-date[data-weekly] { grid-template-columns: 40px minmax(0,1fr) 40px auto; gap: 3px; }
+  .official-timetable .official-timetable-date > button[data-slot="button"] { min-height: 40px; height: 40px; }
+  .official-timetable .official-timetable-date > button[data-slot="button"]:not(.timetable-this-week) { width: 40px; }
+  .official-timetable .timetable-range { flex: 1; padding-inline: 0; }
+  .official-timetable .timetable-range strong { font-size: 13px; white-space: normal; }
+  .official-timetable .timetable-this-week { font-size: 12px; padding-inline: 8px; }
+  .official-timetable .timetable-view-toolbar { justify-content: space-between; width: 100%; }
+  .official-timetable .timetable-mode-switch button[data-slot="button"] { min-height: 36px; height: 36px; }
+  .official-timetable .timetable-more summary { min-height: 42px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) th:first-child { width: 42px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) :is(th, td) { border-color: color-mix(in srgb, var(--border) 65%, white); }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) thead th { padding: 4px 1px; }
+  .official-timetable > .official-timetable-scroll .timetable-date-full { display: none; }
+  .official-timetable > .official-timetable-scroll .timetable-date-short { display: inline; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) td { height: 48px; padding: 2px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .official-lesson { min-height: 41px; padding: 3px 2px; gap: 1px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .timetable-period-time { font-size: 9px; line-height: 1.2; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .timetable-lesson-subject { font-size: 13px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) td[data-today]:not(.timetable-nonperiod) { background: #f7faff; }
+}
