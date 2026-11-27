@@ -331,6 +331,7 @@ export function currentAndNext(lessons: DatedLesson[], minutes: number) {
   };
 }
 export type ScheduleItem = {
+  resources?: unknown;
   id: string;
   date: string;
   end: string;
@@ -362,6 +363,7 @@ export function unifiedSchedule(
       location: "",
       grades: e.target_grades,
       source: "event" as const,
+      resources: e.resources,
     }));
   const allocations = plan.allocations
     .filter(
@@ -397,6 +399,7 @@ export function unifiedSchedule(
       location: b.location ?? "",
       grades: [],
       source: "business" as const,
+      resources: b.resources,
     }));
   return [...events, ...allocations, ...business].sort(
     (a, b) =>

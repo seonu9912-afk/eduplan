@@ -62,3 +62,7 @@ SMTP 비밀번호·서비스 역할 키·개인 토큰은 채팅이나 소스에
 Production source commit: `2908e3a41769580212c983499927d078b59d8d14`. Deployment `dpl_MxSTE17SPTH3auguCLgACusFRkHA` is READY on `eduplan-silk.vercel.app` (unique URL: `eduplan-l5k7rbemd-seonu-lab.vercel.app`), Node 24, icn1. Server build took approximately 33 seconds. Source files were deployed through the authenticated Vercel connector to the existing EduPlan project; GitHub upload permissions remain unchanged. Optional report schema migration `20261111061248_teaching_submission_reports` was applied before releasing the app, without updating existing document content.
 
 Post-release verification: canonical-domain teaching lifecycle and curriculum/reference regression scenarios passed, including HWPX download. Runtime error/fatal scan returned no records. This verifies the exercised flows only, not ongoing monitoring or native Hancom pagination.
+
+학교 관리자는 **설정 → 학교 기본정보 연결**에서 나이스 학교를 선택하거나 기존 연결을 갱신할 수 있습니다. 급식은 이 학교 코드와 한국 날짜를 사용합니다. 기상청 격자는 전국초중등학교위치표준데이터의 학교명과 도로명주소가 일치할 때 저장됩니다. 자동 확인이 어려우면 설정의 **학교 날씨 위치**에서 격자 X·Y를 입력합니다. [공공데이터포털 학교 위치 표준데이터](https://www.data.go.kr/data/15021148/standard.do)
+
+학교 위치 자료를 갱신할 때는 공공데이터포털에서 JSON을 받아 `node scripts/build-school-weather-grid.mjs <다운로드 파일>`을 실행합니다. 생성한 인덱스는 학교명과 도로명주소의 해시 및 예보 격자만 보관합니다.

@@ -21,6 +21,8 @@ import {
 } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
+import { SchoolLinkSettings } from "./school-links";
+import { SchoolInformationSettings } from "./school-information-settings";
 export function SchoolSettings({ context: c }: { context: Context }) {
   const editable = c.role === "admin";
   if (!c.year) return null;
@@ -52,6 +54,8 @@ export function SchoolSettings({ context: c }: { context: Context }) {
             year={c.year.year}
             editable={editable}
           />
+          {editable && <SchoolLinkSettings context={c} />}
+          {editable && <SchoolInformationSettings context={c} />}
         </div>
         <aside className="settings-help panel">
           <span className="tile-icon">

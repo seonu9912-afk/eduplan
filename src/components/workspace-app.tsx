@@ -39,7 +39,7 @@ const WorkPlans = dynamic(
   { loading: () => <p role="status">화면을 불러오는 중…</p> },
 );
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -96,12 +96,14 @@ export function WorkspaceApp({
   today,
   initialCohort,
   management = false,
+  homePublicData,
 }: {
   context: Context;
   section: string;
   today: string;
   initialCohort?: string;
   management?: boolean;
+  homePublicData?: ReactNode;
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<"school" | "profile" | "menu" | null>(
@@ -356,7 +358,7 @@ export function WorkspaceApp({
             </section>
           </>
         )}
-        {section === "home" ? <Dashboard context={c} today={today} /> : null}
+        {section === "home" ? <Dashboard context={c} today={today} publicData={homePublicData} /> : null}
         {section === "calendar" && management ? (
           <AcademicCalendar
             key={`${c.workspace.id}-${c.year?.id}`}

@@ -102,15 +102,15 @@
   color: #315e95;
   font-size: 12px;
 }
-.school-calendar-agenda ul { list-style: none; padding: 0 12px; }
-.school-calendar-agenda li {
+.school-calendar-agenda > section > ul { list-style: none; padding: 0 12px; }
+.school-calendar-agenda > section > ul > li {
   --agenda-color: var(--schedule-accent);
   display: grid;
   grid-template-columns: 4.6rem minmax(0, 1fr);
   gap: 7px;
   padding: 10px 0;
 }
-.school-calendar-agenda li + li { border-top: 1px solid #e9eef4; }
+.school-calendar-agenda > section > ul > li + li { border-top: 1px solid #e9eef4; }
 .school-calendar-agenda li[data-tone="break"] { --agenda-color: var(--closure-accent); }
 .school-calendar-agenda li[data-tone="work"] { --agenda-color: var(--work-accent); }
 .schedule-agenda-time {
@@ -121,7 +121,7 @@
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
-.school-calendar-agenda li > div {
+.school-calendar-agenda > section > ul > li > div {
   display: grid;
   gap: 3px;
   padding-inline-start: 8px;

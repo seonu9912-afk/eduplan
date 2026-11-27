@@ -151,6 +151,14 @@ export function AnnualAcademic({
   const recurringForm = useRef<HTMLFormElement>(null);
   const allocationForm = useRef<HTMLFormElement>(null);
   const editable = canPlan(c,"calendar");
+  const schoolGrid = c.school?.weather_nx && c.school.weather_ny
+    ? { nx: c.school.weather_nx, ny: c.school.weather_ny } : null;
+  const forecastLocation = { ...plan.weather, ...schoolGrid };
+  const legacyWeather = defaultAnnual().weather;
+  const defaultGrid = forecastLocation.nx === legacyWeather.nx && forecastLocation.ny === legacyWeather.ny;
+  const canLoadForecast = schoolGrid !== null || !defaultGrid;
+  const includeMedium = defaultGrid || (forecastLocation.landCode !== legacyWeather.landCode &&
+    forecastLocation.tempCode !== legacyWeather.tempCode);
   const year = c.year?.year ?? 2026;
   const start = `${year}-03-01`,
     end = monthRange(`${year + 1}-02`).end;
@@ -1171,10 +1179,9 @@ export function AnnualAcademic({
             행사 일정 검토에 활용합니다. 연간 기본안의 날짜를 날씨로 자동
             변경하지 않습니다.
           </p>
-          <p className="field-hint">
-            기본 위치는 서울입니다. 학교의 기상청 격자와 중기 예보 구역 코드를
-            입력한 뒤 저장하세요.
-          </p>
+          <p className="field-hint">{schoolGrid
+            ? "학교 설정에 등록된 격자로 단기예보를 조회합니다."
+            : "학교 설정에 기상청 격자를 등록하거나 아래 격자 X·Y를 입력하세요."}</p>
           <div className="annual-form-grid">
             {(["nx", "ny", "landCode", "tempCode"] as const).map((k) => (
               <Input
@@ -1187,9 +1194,9 @@ export function AnnualAcademic({
                     tempCode: "중기 기온 구역",
                   }[k]
                 }
-                disabled={!editable}
+                disabled={!editable || (schoolGrid !== null && (k === "nx" || k === "ny"))}
                 type={k === "nx" || k === "ny" ? "number" : "text"}
-                value={plan.weather[k]}
+                value={forecastLocation[k]}
                 onChange={(e) =>
                   update({
                     ...plan,
@@ -1206,10 +1213,10 @@ export function AnnualAcademic({
             ))}
           </div>
           <Button
-            disabled={m.pending}
+            disabled={m.pending || !canLoadForecast}
             onClick={() =>
               m.execute(
-                () => previewWeather(c.workspace.id, plan.weather),
+                () => previewWeather(c.workspace.id, forecastLocation, includeMedium),
                 (data) => setWeather({ ok: true, data }),
                 "예보 응답을 확인했습니다.",
               )
@@ -1217,6 +1224,7 @@ export function AnnualAcademic({
           >
             예보 조회
           </Button>
+          {canLoadForecast && !includeMedium && <p className="field-hint">중기예보도 보려면 학교의 육상·기온 구역 코드를 입력하세요.</p>}
           {weather?.ok &&
             weather.data.map((r) => (
               <div key={r.name}>

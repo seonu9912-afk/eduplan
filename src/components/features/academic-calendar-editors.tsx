@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { areas, dayTypes, type AnnualPlan } from "@/lib/academic";
 import { availablePeriods, calendarDates, eventVisiblePeriods, sharedEventArea, type Area, type EventDraft } from "@/lib/academic-calendar";
 import type { Context } from "@/lib/models";
+import { ResourceLinkEditor } from "./resource-links";
 
 export function DateFields({ value, onChange, context, disabled }: {
   value: AnnualPlan["days"][string]; onChange: (v: AnnualPlan["days"][string]) => void; context: Context; disabled: boolean;
@@ -191,6 +192,7 @@ export function EventFields({ value, onChange, context, plan, disabled }: {
         <input type="checkbox" checked={e.target_class_ids?.includes(c.id) ?? false} onChange={(event) => patch({ target_class_ids: event.target.checked ? [...(e.target_class_ids ?? []),c.id] : e.target_class_ids?.filter((id) => id !== c.id) })}/>{c.grade}-{c.class_number}</label>)}</div>
       <label>비고<textarea value={e.description} maxLength={2000} onChange={(event) => patch({ description: event.target.value })}/></label>
     </Disclosure>
+    <ResourceLinkEditor value={e.resources ?? []} onChange={(resources) => patch({ resources })} disabled={disabled} />
     {!!overlap.length && <div className="ar-callout"><strong>기간·대상이 겹치는 행사 {overlap.length}건</strong><p>운영 교시가 겹치면 시수는 중복 합산하지 않고 확인 필요로 표시합니다. 확인한 뒤 저장할 수 있습니다.</p>
       {overlap.map((other) => <p key={other.id}>{other.title} · {other.start_date}~{other.end_date} · {other.target_grades.join(", ")}학년</p>)}</div>}
   </fieldset>;

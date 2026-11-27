@@ -12,13 +12,14 @@ export type ScheduleEntry = {
   time?: string;
   department?: string;
   location?: string;
+  resources?: unknown;
 };
 
 export function schoolScheduleEntries(official: Context, start: string, end: string, work: boolean): ScheduleEntry[] {
   const items = unifiedSchedule(official, start, end)
     .filter((item) => work || item.source !== "business")
-    .map(({ id, date, end, title, source, time, department, location }): ScheduleEntry => ({
-      id, date, end, title, tone: source === "business" ? "work" : "event", time, department, location,
+    .map(({ id, date, end, title, source, time, department, location, resources }): ScheduleEntry => ({
+      id, date, end, title, tone: source === "business" ? "work" : "event", time, department, location, resources,
     }));
   const plan = annualSchema.safeParse(official.annual?.document);
   if (!official.hasOfficialCalendar || !plan.success) return items;

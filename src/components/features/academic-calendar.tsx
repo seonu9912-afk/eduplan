@@ -2,6 +2,7 @@
 import { Disclosure } from "@/components/ui/disclosure";
 import { canPlan } from "@/lib/planning-completion";
 import { CalendarImpact, EventImpact } from "./calendar-impact";
+import { ResourceLinks } from "./resource-links";
 import {
   useEffect,
   useMemo,
@@ -187,7 +188,10 @@ export function AcademicCalendar({
   );
   const sourceChanged =
     confirmation &&
-    (!sameAnnualValue(confirmation.source.events, c.events) ||
+    (!sameAnnualValue(
+      confirmation.source.events.map((event) => ({ ...event, resources: event.resources ?? [] })),
+      c.events.map((event) => ({ ...event, resources: event.resources ?? [] })),
+    ) ||
       !sameAnnualValue(confirmation.source.classes ?? [], c.classes) ||
       !sameAnnualValue(confirmation.source.semesters, c.semesters) ||
       !sameAnnualValue(confirmation.source.hours, c.hours) ||
@@ -569,6 +573,9 @@ export function AcademicCalendar({
   const calendarView = !tools ? (
     <div className="ar">
       <Notice message={message.text} error={message.error} />
+      {c.school?.foundation_day && <p className="ar-muted no-print">
+        나이스 개교기념일 · {Number(c.school.foundation_day.slice(5, 7))}월 {Number(c.school.foundation_day.slice(8))}일
+      </p>}
       {!parsed.success && (
         <p role="alert" className="ar-callout">
           기존 자료 형식을 확인해야 합니다. 원본을 보존하고 편집을 중지했습니다.
@@ -928,6 +935,7 @@ export function AcademicCalendar({
                         {formatEventAudience(e, c.grades, c.classes)}
                       </p>
                     )}
+                    <ResourceLinks value={e.resources} compact />
                   </div>
                 ))
               ) : (

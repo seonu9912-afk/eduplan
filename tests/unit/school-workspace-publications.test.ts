@@ -136,3 +136,65 @@ it("keeps scheduled revisions out of the official views and scopes co-authors to
   await expect(query("select public.publish_teaching_from($1,3,$2::jsonb,$3,'')", courseId, doc, schedule.starts))
     .rejects.toMatchObject({ code: "42501" });
 });
+
+it("isolates school-wide links and restricts edits to school admins", async () => {
+  await act(admin);
+  const { rows: [link] } = await db.query<{ id: string }>(`insert into school_links(workspace_id,name,url,category,icon)
+    values($1,'양식 모음','https://docs.google.com/document/d/123','documents','folder') returning id`, [school]);
+  await expect(query("update school_links set url='javascript:alert(1)' where id=$1", link.id))
+    .rejects.toMatchObject({ code: "23514" });
+  await query("select public.ensure_school_year($1,2028)", school);
+  await act(teacher);
+  expect((await query("select name from school_links")).rows).toEqual([{ name: "양식 모음" }]);
+  expect((await query("update school_links set name='다른 이름' where id=$1 returning id", link.id)).rows).toEqual([]);
+  expect((await query("delete from school_links where id=$1 returning id", link.id)).rows).toEqual([]);
+  await expect(query("insert into school_links(workspace_id,name,url,category,icon) values($1,'금지','https://example.com','common','link')", school))
+    .rejects.toMatchObject({ code: "42501" });
+  await act(outsider);
+  expect((await query("select name from school_links")).rows).toEqual([]);
+  await act(admin);
+  await query("update school_links set position=2, name='공동 양식' where id=$1", link.id);
+  expect((await query("select name,position from school_links")).rows).toEqual([{ name: "공동 양식", position: 2 }]);
+  await query("delete from school_links where id=$1", link.id);
+  expect((await query("select name from school_links")).rows).toEqual([]);
+});
+
+it("publishes resource links through existing calendar and work plan versioning", async () => {
+  await act(admin);
+  await query("select public.save_planning_permission($1,$2,'calendar',true,0)", school, admin);
+  await query("select public.save_planning_permission($1,$2,'plans',true,0)", school, admin);
+  const eventId = "45000000-0000-4000-8000-000000000098";
+  const resources = [{ name: "참가 양식", url: "https://docs.google.com/spreadsheets/d/example" }];
+  const change = { kind: "event", id: eventId, version: 0, beforeAllocations: [], allocations: [],
+    value: { title: "학교 행사", start_date: "2026-08-20", end_date: "2026-08-20", event_type: "school",
+      target_grades: [1, 2], target_class_ids: [], department: "교무부", description: "", activity_area: "없음", resources } };
+  const invalid = { ...change, value: { ...change.value, resources: [{ name: "금지", url: "data:text/html,test" }] } };
+  const commit = (value: unknown) => query("select public.save_calendar_changes($1,$2,$3::jsonb,$4::jsonb) saved",
+    school, year, JSON.stringify([value]), JSON.stringify(oldDoc));
+  await expect(commit(invalid)).rejects.toMatchObject({ code: "23514" });
+  expect((await query("select id from events where id=$1", eventId)).rows).toEqual([]);
+  expect((await commit(change)).rows[0]).toMatchObject({ saved: { ok: true } });
+
+  // Legacy callers can update an event without providing resource fields.
+  const { resources: ignored, ...legacy } = change.value;
+  expect(ignored).toEqual(resources);
+  expect((await commit({ ...change, version: 1, value: { ...legacy, title: "수정한 행사" } })).rows[0])
+    .toMatchObject({ saved: { ok: true } });
+  expect((await query("select resources from events where id=$1", eventId)).rows).toEqual([{ resources }]);
+
+  const { rows: [plan] } = await db.query<{ version: number; document: typeof oldDoc }>(
+    "select version,document from annual_academic_plans where academic_year_id=$1", [year],
+  );
+  await query("select public.publish_school_plan($1,$2,'calendar',$3,'2026-08-01','행사 자료 공개')", school, year, plan.version);
+  await query("select public.save_annual_plan($1,$2,$3,$4::jsonb)", school, year, plan.version, JSON.stringify({
+    ...plan.document, business: [{ id: "task", date: "2026-08-20", department: "교무부",
+      kind: "업무", text: "자료 취합", resources }],
+  }));
+  await query("select public.publish_school_plan($1,$2,'plans',$3,'2026-08-01','업무 자료 공개')", school, year, plan.version + 1);
+  await act(teacher);
+  expect((await query("select resources from events where id=$1", eventId)).rows).toEqual([]);
+  expect((await query(`select payload->'events'->0->'resources' resources from school_plan_publications
+    where domain='calendar' and starts_on='2026-08-01'`)).rows).toEqual([{ resources }]);
+  expect((await query("select payload->'business'->0->'resources' resources from school_plan_publications where domain='plans'")).rows)
+    .toEqual([{ resources }]);
+});

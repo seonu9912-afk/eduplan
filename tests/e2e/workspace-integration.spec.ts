@@ -125,6 +125,9 @@ test("one school event update is reflected in work plans and teaching calendar",
     .filter({ hasText: "진로 체험의 날" })
     .click();
   await page.getByLabel("행사명", { exact: true }).fill("통합 연계 진로 행사");
+  await page.getByRole("button", { name: "자료 링크 추가" }).click();
+  await page.getByLabel("자료 이름").fill("진로 행사 참가 양식");
+  await page.getByLabel("자료 URL").fill("https://docs.google.com/spreadsheets/d/example");
   await page
     .getByRole("button", { name: "행사·교시 편성 저장", exact: true })
     .click();
@@ -135,6 +138,12 @@ test("one school event update is reflected in work plans and teaching calendar",
   await expect(
     page.getByRole("region", { name: "요일별 주간계획" }).getByText("통합 연계 진로 행사", { exact: true }),
   ).toHaveCount(1);
+  const event = page.getByRole("region", { name: "요일별 주간계획" }).locator(".academic-work-card")
+    .filter({ hasText: "통합 연계 진로 행사" });
+  await event.getByText("관련 자료", { exact: false }).first().click();
+  const link = event.getByRole("link", { name: "진로 행사 참가 양식 (새 창)" });
+  await expect(link).toHaveAttribute("href", "https://docs.google.com/spreadsheets/d/example");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
   await page.getByRole("button", { name: "월중계획", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "월중계획 달력" }).getByText("통합 연계 진로 행사", { exact: true }),

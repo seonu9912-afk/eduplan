@@ -10,6 +10,7 @@ import { publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from
 import { scheduleDates, shiftScheduleDate } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
+import { ResourceLinks } from "./resource-links";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -93,7 +94,8 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
       {view === "year" ? (
         available ? (
           <table className="school-reader-list"><thead><tr><th>기간</th><th>학사일정</th></tr></thead>
-            <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td><td>{item.title}</td></tr>)}</tbody>
+            <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td>
+              <td>{item.title}<ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
           </table>
         ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
       ) : <>
@@ -114,6 +116,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
                     <div><strong>{entry.title}</strong>
                       {detail && <small>{detail}</small>}
+                      <ResourceLinks value={entry.resources} />
                     </div>
                   </li>;
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
@@ -159,6 +162,7 @@ function DesktopCalendarEvent({ entry }: { entry: ScheduleEntry }) {
   const detail = entry.tone === "work" ? [entry.time, entry.department].filter(Boolean).join(" · ") : "";
   return <div className="school-reader-event" data-tone={entry.tone}>
     <span>{entry.title}</span>{detail && <small>{detail}</small>}
+    <ResourceLinks value={entry.resources} compact />
   </div>;
 }
 

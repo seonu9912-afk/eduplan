@@ -1,9 +1,11 @@
 import { PersonalDay } from "./personal-day";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import type { Context } from "@/lib/models";
 import { canPlan } from "@/lib/planning-completion";
 import { managementDomains } from "@/lib/school-publications";
+import { SchoolShortcuts } from "./school-links";
 
 const tasks = [
   { section: "calendar", name: "학사일정 관리" },
@@ -14,7 +16,7 @@ const tasks = [
   { section: "teaching", name: "수업·평가 관리" },
 ];
 
-export function Dashboard({ context: c, today }: { context: Context; today: string }) {
+export function Dashboard({ context: c, today, publicData }: { context: Context; today: string; publicData?: ReactNode }) {
   const base = `/app/${c.workspace.id}`;
   const suffix = c.year ? `?year=${c.year.year}` : "";
   const manage = suffix ? `${suffix}&view=manage` : "?view=manage";
@@ -36,6 +38,10 @@ export function Dashboard({ context: c, today }: { context: Context; today: stri
   return <>
     <h1 className="sr-only">홈</h1>
     <PersonalDay context={c} today={today} />
+    <div className="school-home-extras">
+      <SchoolShortcuts context={c} />
+      {publicData}
+    </div>
     <div className="dashboard-columns school-dashboard-plans">
       <section className="school-dashboard-section">
         <h2>최근 공개 계획</h2>

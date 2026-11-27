@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { annualSchema, academicDays, operatingPeriodRange, type AnnualPlan } from "./academic";
 import { addDays, eventSchema, monthRange, isoDate } from "./domain";
+import { readableResources, type ResourceLink } from "./external-links";
 import type { Context, Row } from "./models";
 
 export const calendarTabs = ["연간 학사력", "행사 편성", "시수 확인", "편성 점검", "Excel 출력"] as const;
@@ -76,7 +77,7 @@ export function formatEventAudience(
 
 export type CalendarEvent = Row<"events"> & { target_class_ids?: string[] };
 export type EventDraft = {
-  event: CalendarEvent;
+  event: Omit<CalendarEvent, "resources"> & { resources?: ResourceLink[] };
   // Scope -> date -> period. Class allocations override the corresponding grade hours.
   slots: Record<string, Record<string, Record<number, Area>>>;
 };
@@ -132,7 +133,7 @@ export function eventDraft(event: CalendarEvent, plan: AnnualPlan): EventDraft {
       slots[c][date] = { ...slots[`g:${grade}`]?.[date], ...slots[c][date] };
     }
   }
-  return { event: { ...event, target_class_ids: event.target_class_ids ?? [] }, slots };
+  return { event: { ...event, target_class_ids: event.target_class_ids ?? [], resources: readableResources(event.resources) }, slots };
 }
 
 export function eventAllocations(draft: EventDraft, context: Pick<Context, "year" | "grades" | "classes">,
@@ -180,7 +181,8 @@ export function eventChange(draft: EventDraft, context: Context, basePlan: Annua
   return calendarChangeSchema.parse({ kind: "event", id: e.id, version: e.version,
     value: remove ? null : { title: e.title, start_date: e.start_date, end_date: e.end_date,
       target_grades: e.target_grades, target_class_ids: e.target_class_ids ?? [],
-      department: e.department, description: e.description, event_type: e.event_type, activity_area: e.activity_area },
+      department: e.department, description: e.description, event_type: e.event_type,
+      activity_area: e.activity_area, resources: e.resources },
     beforeAllocations: basePlan.allocations.filter((row) => row.eventId === e.id),
     allocations: remove ? [] : eventAllocations(draft, context, () => crypto.randomUUID()) });
 }

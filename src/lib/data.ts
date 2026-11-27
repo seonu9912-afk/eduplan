@@ -154,7 +154,9 @@ export async function getWorkspaceContext(
       days: days.data,
     };
   }
-  const [completion, publications, curriculum, teaching, archive] = await Promise.all([
+  const showSchoolInfo = ["home", "settings", "calendar"].includes(section);
+  const showSchoolLinks = ["home", "settings"].includes(section);
+  const [completion, publications, curriculum, teaching, archive, school, schoolLinks] = await Promise.all([
     ["full", "calendar", "people"].includes(section)
       ? db.rpc("planning_completion_data", { target: workspaceId, year_id: yearId })
       : Promise.resolve({ data: undefined, error: null }),
@@ -166,10 +168,19 @@ export async function getWorkspaceContext(
       ? db.rpc("school_teaching_publications", { target: workspaceId, year_id: yearId })
       : Promise.resolve({ data: undefined, error: null }),
     db.rpc("has_personal_archive"),
+    showSchoolInfo ? db.from("schools").select("*").eq("id", workspaceId).single()
+      : Promise.resolve({ data: undefined, error: null }),
+    showSchoolLinks ? readAllRows((from, to) => db.from("school_links").select("*")
+      .eq("workspace_id", workspaceId).order("position").order("id").range(from, to))
+      : Promise.resolve({ data: undefined, error: null }),
   ]);
   if (completion.error || publications.error || curriculum.error || teaching.error || archive.error)
     throw Error("업무 자료와 공개 계획을 불러오지 못했습니다.");
   const context: Context = {
+    school: school.data,
+    schoolLinks: schoolLinks.data ?? undefined,
+    schoolLinksError: !!schoolLinks.error,
+    schoolInfoError: !!school.error,
     access,
     hasPersonalArchive: !!archive.data,
     completion: completion.data as unknown as Context["completion"],

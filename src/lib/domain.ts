@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { resourceList } from "./external-links";
 
 export const schoolTypes = ["초등학교", "중학교", "고등학교"] as const;
 export const schoolTypeSchema = z.enum(schoolTypes);
@@ -57,6 +58,7 @@ export const eventSchema = z
       ),
     department: z.string().trim().max(60),
     description: z.string().trim().max(2000),
+    resources: resourceList.optional(),
     version: z.number().int().min(1).optional(),
   })
   .refine((v) => v.end_date >= v.start_date, {

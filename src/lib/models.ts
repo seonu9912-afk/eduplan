@@ -26,6 +26,10 @@ export type TeachingData = {
   >[];
 };
 export type Context = {
+  school?: Row<"schools"> | null;
+  schoolLinks?: Row<"school_links">[];
+  schoolLinksError?: boolean;
+  schoolInfoError?: boolean;
   schoolPublications?: import("./school-publications").SchoolPlanPublication[];
   curriculumPublications?: import("./school-publications").CurriculumPublication[];
   teachingPublications?: import("./school-publications").TeachingPublication[];

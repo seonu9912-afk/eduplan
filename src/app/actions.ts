@@ -20,6 +20,9 @@ import { subjectIsUsedInDesign } from "@/lib/curriculum-subject-removal";
 import type { Result, Role } from "@/lib/models";
 import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import type { PlanningDomain } from "@/lib/planning-completion";
+import { neisSchoolCode, schoolLinkFields, weatherGrid } from "@/lib/external-links";
+import { findNeisSchools, readNeisSchool } from "@/lib/neis";
+import { schoolLocationKey } from "@/lib/school-location";
 
 function userError(error: unknown): string {
   if (error instanceof z.ZodError)
@@ -204,6 +207,81 @@ export async function createSchool(input: unknown) {
     if (error) throw error;
     refresh();
     return data;
+  });
+}
+export async function saveSchoolLink(input: unknown) {
+  return run(async () => {
+    const { workspaceId, id, ...fields } = schoolLinkFields.extend({
+      workspaceId: uuid, id: uuid.optional(),
+    }).parse(input);
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const write = id
+      ? db.from("school_links").update(fields).eq("workspace_id", workspaceId).eq("id", id)
+      : db.from("school_links").insert({ ...fields, workspace_id: workspaceId });
+    const result = await write.select("id").maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) throw Error("바로가기가 이미 변경되었거나 삭제되었습니다.");
+    refresh();
+  });
+}
+export async function deleteSchoolLink(workspaceId: string, id: string) {
+  return run(async () => {
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const result = await db.from("school_links").delete()
+      .eq("workspace_id", workspaceId).eq("id", uuid.parse(id)).select("id").maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) throw Error("바로가기가 이미 삭제되었습니다.");
+    refresh();
+  });
+}
+export async function searchNeisSchools(workspaceId: string, query: string) {
+  return run(async () => {
+    const name = z.string().trim().min(2, "학교명을 두 글자 이상 입력하세요.").max(80).parse(query);
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const { data, error } = await db.from("schools").select("school_type").eq("id", workspaceId).single();
+    if (error) throw error;
+    return findNeisSchools(name, data.school_type);
+  });
+}
+export async function connectNeisSchool(input: unknown) {
+  return run(async () => {
+    const { workspaceId, neis_office_code, neis_school_code } = neisSchoolCode.extend({ workspaceId: uuid }).parse(input);
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const { data, error } = await db.from("schools").select("*").eq("id", workspaceId).single();
+    if (error) throw error;
+    const official = await readNeisSchool(neis_office_code, neis_school_code);
+    if (!official || official.type !== data.school_type) throw Error("해당 학교급의 나이스 학교정보를 확인하지 못했습니다.");
+    let nx: number | null = null, ny: number | null = null;
+    if (official.road_address) {
+      const index: Record<string, number> = (await import("@/lib/data/school-weather-grid.json")).schools;
+      const packed = index[schoolLocationKey(official.name, official.road_address)];
+      if (packed) {
+        nx = Math.floor(packed / 256);
+        ny = packed % 256;
+      }
+    }
+    if (nx === null && data.neis_office_code === neis_office_code && data.neis_school_code === neis_school_code &&
+      data.road_address === official.road_address) {
+      nx = data.weather_nx;
+      ny = data.weather_ny;
+    }
+    const result = await db.from("schools").update({
+      neis_office_code, neis_school_code, road_address: official.road_address,
+      homepage_url: official.homepage_url, foundation_day: official.foundation_day,
+      weather_nx: nx, weather_ny: ny,
+    }).eq("id", workspaceId).eq("school_type", official.type).select("id").single();
+    if (result.error) throw result.error;
+    refresh();
+  });
+}
+export async function saveSchoolWeatherGrid(input: unknown) {
+  return run(async () => {
+    const { workspaceId, grid } = z.object({ workspaceId: uuid, grid: weatherGrid.nullable() }).parse(input);
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const result = await db.from("schools").update(grid ?? { weather_nx: null, weather_ny: null })
+      .eq("id", workspaceId).select("id").single();
+    if (result.error) throw result.error;
+    refresh();
   });
 }
 export async function saveYear(input: unknown) {
@@ -799,13 +877,13 @@ export async function previewHolidays(workspaceId: string, year: number) {
     return { ...academicHolidayImport(year, responses), responses };
   });
 }
-export async function previewWeather(workspaceId: string, settings: unknown) {
+export async function previewWeather(workspaceId: string, settings: unknown, includeMedium = true) {
   return run(async () => {
     await authorized(workspaceId, ["admin", "editor", "viewer"]);
     const { annualSchema } = await import("@/lib/academic");
     const v = annualSchema.shape.weather.parse(settings);
     const { getForecast } = await import("@/lib/public-data");
-    return await getForecast(v.nx, v.ny, v.landCode, v.tempCode);
+    return await getForecast(v.nx, v.ny, v.landCode, v.tempCode, z.boolean().parse(includeMedium));
   });
 }
 

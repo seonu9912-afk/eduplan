@@ -8,7 +8,7 @@ export type ExportData = Pick<Context, "grades" | "plans" | "hours" | "subjects"
   classes?: AcademicClass[];
   semesters: Pick<Row<"semesters">, "number" | "start_date" | "end_date">[];
   events: Pick<Row<"events">, "id" | "title" | "start_date" | "end_date" |
-    "target_grades" | "department" | "description" | "version">[];
+    "target_grades" | "department" | "description" | "version" | "resources">[];
 };
 
 export async function buildAcademicWorkbook(year: number, plan: AnnualPlan,

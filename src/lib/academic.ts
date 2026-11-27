@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { addDays, monthRange, isoDate } from "./domain";
+import { resourceList } from "./external-links";
 export const dayTypes = {
   instructional: "수업일",
   weekend: "주말",
@@ -109,6 +110,7 @@ export const annualSchema = z
           time: z.string().max(120).optional(),
           location: z.string().max(120).optional(),
           participants: z.string().max(120).optional(),
+          resources: resourceList.optional(),
         }),
       )
       .max(3000),

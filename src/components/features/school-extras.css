@@ -1,0 +1,109 @@
+.school-home-extras {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  margin-block: 16px;
+}
+
+.shortcut-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.shortcut-item:hover { background: var(--surface-muted); }
+.shortcut-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  color: var(--schedule-accent);
+  background: var(--surface-muted);
+  border-radius: 7px;
+}
+.shortcut-icon svg, .shortcut-external { width: 15px; height: 15px; }
+.shortcut-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.shortcut-external { color: var(--text-secondary); flex: none; }
+
+.school-settings-link-list, .resource-links, .school-meal-menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.school-settings-link-list > li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+  border-block-end: 1px solid var(--border);
+}
+.school-settings-link-list > li > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.school-settings-link-list small { display: block; color: var(--text-secondary); }
+.school-info-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 14px; }
+.school-info-summary dt { color: var(--text-secondary); }
+.school-info-summary dd { margin: 0; overflow-wrap: anywhere; }
+.school-info-summary a { color: var(--schedule-accent); text-decoration: underline; }
+
+.resource-editor { display: grid; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; min-width: 0; }
+.resource-editor > legend { padding-inline: 4px; font-weight: 600; }
+.resource-editor > button { justify-self: start; }
+.resource-editor-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; align-items: end; gap: 8px; }
+.resource-editor-row label { display: grid; min-width: 0; gap: 4px; }
+.resource-editor-row input { min-width: 0; width: 100%; }
+.resource-details summary, .resource-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--schedule-accent);
+  overflow-wrap: anywhere;
+  min-height: 32px;
+}
+.resource-details summary { cursor: pointer; font-size: 12px; }
+.resource-details summary > span { margin-inline-start: 2px; }
+.resource-links a { font-size: 13px; text-decoration: underline; }
+.resource-details svg, .resource-links svg { width: 13px; height: 13px; flex: none; }
+
+.public-data-address, .public-data-source, .school-meal-heading time {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+.school-weather-now { display: flex; align-items: center; gap: 12px; }
+.school-weather-now > strong { font-size: 34px; line-height: 1.2; }
+.school-weather-now small { display: block; color: var(--text-secondary); }
+.school-weather-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding-block-start: 8px;
+  border-block-start: 1px solid var(--border);
+}
+.school-weather-details dt { font-size: 12px; color: var(--text-secondary); }
+.school-weather-details dd { margin: 0; font-weight: 600; }
+.school-meal-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.school-meal-menu { display: grid; gap: 3px; overflow-wrap: anywhere; }
+
+@media screen and (max-width: 1000px) {
+  .school-home-extras { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .school-home-extras > :first-child { grid-column: 1 / -1; }
+  .shortcut-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media screen and (max-width: 620px) {
+  .school-home-extras { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-block: 12px; }
+  .shortcut-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .resource-editor-row { grid-template-columns: 1fr auto; }
+  .resource-editor-row > label:first-child { grid-column: 1 / -1; }
+  .resource-details summary, .resource-links a { min-height: 44px; }
+}

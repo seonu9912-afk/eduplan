@@ -516,6 +516,7 @@ export type Database = {
           end_date: string;
           event_type: string;
           id: string;
+          resources?: Json;
           school_id: string | null;
           start_date: string;
           target_grades: number[];
@@ -534,6 +535,7 @@ export type Database = {
           end_date: string;
           event_type: string;
           id?: string;
+          resources?: Json;
           school_id?: string | null;
           start_date: string;
           target_grades?: number[];
@@ -552,6 +554,7 @@ export type Database = {
           end_date?: string;
           event_type?: string;
           id?: string;
+          resources?: Json;
           school_id?: string | null;
           start_date?: string;
           target_grades?: number[];
@@ -650,18 +653,75 @@ export type Database = {
           },
         ];
       };
+      school_links: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          url: string;
+          category: string;
+          icon: string;
+          position: number;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          url: string;
+          category: string;
+          icon: string;
+          position?: number;
+        };
+        Update: {
+          name?: string;
+          url?: string;
+          category?: string;
+          icon?: string;
+          position?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "school_links_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "schools";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       schools: {
         Row: {
+          neis_office_code: string | null;
+          neis_school_code: string | null;
+          road_address: string | null;
+          homepage_url: string | null;
+          foundation_day: string | null;
+          weather_nx: number | null;
+          weather_ny: number | null;
           id: string;
           region: string;
           school_type: string;
         };
         Insert: {
+          neis_office_code?: string | null;
+          neis_school_code?: string | null;
+          road_address?: string | null;
+          homepage_url?: string | null;
+          foundation_day?: string | null;
+          weather_nx?: number | null;
+          weather_ny?: number | null;
           id: string;
           region?: string;
           school_type?: string;
         };
         Update: {
+          neis_office_code?: string | null;
+          neis_school_code?: string | null;
+          road_address?: string | null;
+          homepage_url?: string | null;
+          foundation_day?: string | null;
+          weather_nx?: number | null;
+          weather_ny?: number | null;
           id?: string;
           region?: string;
           school_type?: string;

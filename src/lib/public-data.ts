@@ -62,9 +62,9 @@ export async function getForecast(
   ny: number,
   landCode: string,
   tempCode: string,
+  includeMedium = true,
 ) {
-  const key = process.env.WEATHER_API_KEY || process.env.HOLIDAY_API_KEY;
-  if (!key) throw new Error("기상청 인증키 설정이 필요합니다.");
+  if (!weatherApiConfigured()) throw new Error("기상청 인증키 설정이 필요합니다.");
   const now = new Date(Date.now() + 9 * 3600000);
   const ymd = (d: Date) => d.toISOString().slice(0, 10).replaceAll("-", "");
   const hour = now.getUTCHours();
@@ -101,46 +101,59 @@ export async function getForecast(
       { regId: tempCode, tmFc: ymd(midDate) + midHour, numOfRows: "10" },
     ],
   ] as const;
-  return Promise.all(
-    requests.map(async ([name, path, params]) => {
-      const url = new URL("https://apis.data.go.kr/1360000/" + path);
-      url.search = new URLSearchParams({
-        serviceKey: key,
-        pageNo: "1",
-        dataType: "JSON",
-        ...params,
-      }).toString();
-      try {
-        const res = await fetch(url, {
-          next: { revalidate: 1800 },
-          signal: AbortSignal.timeout(15000),
-        });
-        const raw = await res.text();
-        let data;
-        try {
-          data = JSON.parse(raw);
-        } catch {
-          return {
-            name,
-            ok: false,
-            message: `HTTP ${res.status} · ${tag(raw, "returnReasonCode") || "응답 형식 오류"}`,
-            items: [],
-          };
-        }
-        const header = data.response?.header ?? {
-          resultCode:
-            data.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode,
-          resultMsg: data.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnAuthMsg,
-        };
-        return {
-          name,
-          ok: res.ok && header?.resultCode === "00",
-          message: `${header?.resultCode ?? res.status} · ${header?.resultMsg ?? "응답 오류"}`,
-          items: data.response?.body?.items?.item ?? [],
-        };
-      } catch {
-        return { name, ok: false, message: "서비스 연결 실패", items: [] };
-      }
-    }),
-  );
+  return Promise.all((includeMedium ? requests : requests.slice(0, 1))
+    .map(([name, path, params]) => readKmaForecast(name, path, params)));
+}
+
+export function weatherApiConfigured() {
+  return Boolean(process.env.WEATHER_API_KEY || process.env.HOLIDAY_API_KEY);
+}
+
+export type KmaItem = {
+  category: string;
+  fcstDate?: string;
+  fcstTime?: string;
+  fcstValue?: string;
+  obsrValue?: string;
+};
+
+export async function readKmaForecast(name: string, path: string, params: Record<string, string>, cache = true) {
+  const key = process.env.WEATHER_API_KEY || process.env.HOLIDAY_API_KEY;
+  if (!key) throw Error("기상청 인증키 설정이 필요합니다.");
+  const url = new URL("https://apis.data.go.kr/1360000/" + path);
+  url.search = new URLSearchParams({
+    serviceKey: key,
+    pageNo: "1",
+    dataType: "JSON",
+    ...params,
+  }).toString();
+  try {
+    const res = await fetch(url, {
+      ...(cache ? { next: { revalidate: 1800 } } : { cache: "no-store" }),
+      signal: AbortSignal.timeout(cache ? 15000 : 5500),
+    });
+    const raw = await res.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      const code = tag(raw, "returnReasonCode");
+      return {
+        name, ok: false,
+        message: `HTTP ${res.status} · ${/^\d{1,4}$/.test(code) ? code : "응답 형식 오류"}`,
+        items: [],
+      };
+    }
+    const status = data.response?.header?.resultCode ??
+      data.OpenAPI_ServiceResponse?.cmmMsgHeader?.returnReasonCode;
+    const ok = res.ok && status === "00";
+    const items = data.response?.body?.items?.item;
+    return {
+      name, ok,
+      message: ok ? "00 · 정상" : `${/^\d{1,4}$/.test(status) ? status : res.status} · 응답 오류`,
+      items: Array.isArray(items) ? items : [],
+    };
+  } catch {
+    return { name, ok: false, message: "서비스 연결 실패", items: [] };
+  }
 }

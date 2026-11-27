@@ -1,7 +1,7 @@
 import type { Context } from "./models";
 import type { AnnualPlan } from "./academic";
 import { areas } from "./academic";
-import { eventChange, type CalendarChange, type CalendarEvent, type EventDraft } from "./academic-calendar";
+import { eventChange, type CalendarChange, type EventDraft } from "./academic-calendar";
 import type { Workbook, Worksheet, Cell } from "exceljs";
 
 export const EVENT_SHEET = "행사 목록";
@@ -253,7 +253,7 @@ export function eventImportChanges(
 ): CalendarChange[] {
   if (!context.year || events.length > 100) throw Error("학년도 또는 행사 개수를 확인해 주세요.");
   const changes = events.map((item) => {
-    const event: CalendarEvent = {
+    const event: EventDraft["event"] = {
       id: item.id, workspace_id: context.workspace.id, academic_year_id: context.year!.id,
       school_id: null, title: item.title, start_date: item.start_date, end_date: item.end_date,
       target_grades: item.target_grades, target_class_ids: item.target_class_ids,

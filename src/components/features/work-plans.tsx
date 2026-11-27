@@ -25,6 +25,7 @@ import { previousWorkPlan, publishWorkPlan, saveAnnual } from "@/app/actions";
 import type { Context } from "@/lib/models";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
 import { shiftScheduleDate } from "@/lib/schedule-dates";
+import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
@@ -155,6 +156,7 @@ export function WorkPlans({
             {[b.time, b.location, b.participants].filter(Boolean).join(" · ")}
           </small>
         )}
+        <ResourceLinks value={b.resources} compact />
       </div>
     </article>
   );
@@ -189,6 +191,7 @@ export function WorkPlans({
                     학사일정
                     {e.activity_area !== "없음" ? ` · ${e.activity_area}` : ""}
                   </small>
+                  <ResourceLinks value={e.resources} compact />
                 </div>
               </article>
             ))}
@@ -705,6 +708,7 @@ export function WorkPlans({
                 time: String(f.get("time")),
                 location: String(f.get("location")),
                 participants: String(f.get("participants")),
+                resources: editing.resources,
               };
               const checked = annualSchema.safeParse({
                 ...plan,
@@ -787,6 +791,8 @@ export function WorkPlans({
                 rows={4}
               />
             </label>
+            <ResourceLinkEditor value={editing.resources ?? []}
+              onChange={(resources) => setEditing({ ...editing, resources })} />
             {error && <p role="alert">{error}</p>}
             <Button>{editing.id ? "수정 적용" : "업무 추가"}</Button>
             {editing.id && (
