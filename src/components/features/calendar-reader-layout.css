@@ -1,0 +1,52 @@
+/* Common desktop calendar shell. Calendar data and lane placement are unchanged. */
+.calendar-reader-navigation { min-width:0; }
+.calendar-reader-sidebar { min-width:0; }
+.calendar-reader-sidebar .task-dashboard-body { max-height:none; overflow:visible; }
+.calendar-reader-agenda-dialog .school-calendar-agenda > section { min-height:0; }
+.calendar-reader-agenda-dialog .school-calendar-agenda > section > ul { max-height:none; overflow:visible; }
+.calendar-reader-agenda-dialog .schedule-detail-trigger { white-space:normal; overflow-wrap:anywhere; }
+.calendar-reader-agenda-dialog .weekly-mobile-operations { max-height:none; overflow:visible; }
+.calendar-reader-sidebar .task-row-detail { min-width:0; overflow-wrap:anywhere; }
+@media screen and (max-width:767px) {
+ .calendar-reader-shell .calendar-sidebar-toggle,.calendar-reader-shell .calendar-sidebar-desktop-tools { display:none; }
+ .calendar-reader-shell .calendar-reader-layout { display:flex; flex-direction:column; gap:12px; min-width:0; }
+ .calendar-reader-shell .official-schedule-main { order:0; }
+ .calendar-reader-shell .calendar-reader-sidebar { order:1; }
+ .calendar-reader-shell:not([data-work-plan]) .calendar-reader-sidebar { display:none; }
+ .calendar-reader-shell .calendar-reader-sidebar > .my-tasks { padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--card); }
+}
+@media screen and (min-width:768px) {
+ .calendar-reader-shell .schedule-reader-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px 16px; align-items:center; }
+ .calendar-reader-shell .calendar-reader-navigation { display:flex; gap:8px; align-items:center; }
+ .calendar-reader-shell .reader-period-nav { width:auto; }
+ .calendar-reader-shell .reader-period-title { flex:none; padding-inline:10px; text-align:left; justify-items:start; }
+ .calendar-reader-shell .reader-period-title h2 { font-size:20px; }
+ .calendar-reader-shell .reader-period-nav > .reader-today { order:-1; margin-right:4px; }
+ .calendar-reader-shell .calendar-sidebar-toggle { color:var(--text-secondary); flex:none; min-width:40px; height:40px; }
+ .calendar-reader-shell .schedule-view-controls > .reader-segments > button { min-width:60px; padding-inline:12px; white-space:nowrap; }
+ .calendar-reader-shell .calendar-reader-layout { display:grid; grid-template-columns:clamp(204px,17vw,252px) minmax(0,1fr); align-items:start; gap:16px; min-width:0; }
+ .calendar-reader-shell[data-sidebar-collapsed] .calendar-reader-layout { grid-template-columns:minmax(0,1fr); }
+ .calendar-reader-shell[data-sidebar-collapsed] .calendar-reader-sidebar { display:none; }
+ .calendar-reader-shell .calendar-reader-sidebar { display:grid; align-content:start; gap:14px; padding:4px 8px 8px 0; }
+ .calendar-reader-shell .calendar-sidebar-desktop-tools { display:grid; gap:12px; }
+ .calendar-reader-shell .calendar-sidebar-action .workspace-manage-link { display:flex; width:100%; min-height:44px; justify-content:flex-start; padding:10px 14px; border:1px solid var(--border); border-radius:16px; background:var(--card); color:var(--foreground); box-shadow:0 2px 5px #0000000b; }
+ .calendar-reader-shell .calendar-reader-sidebar .official-work-mini { padding:0; }
+ .calendar-reader-shell .calendar-reader-sidebar .official-work-mini-grid button { height:30px; }
+ .calendar-reader-shell .calendar-reader-sidebar .official-work-mini-heading h3 { font-size:14px; }
+ .calendar-reader-shell .calendar-reader-sidebar > .my-tasks { border:0; border-top:1px solid var(--border); border-radius:0; padding:14px 0 0; background:transparent; }
+ .calendar-reader-shell .calendar-reader-sidebar .task-actions { flex-wrap:wrap; }
+ .calendar-reader-shell .calendar-reader-sidebar .task-dashboard-body { max-height:none; overflow:visible; }
+ .calendar-reader-shell.schedule-surface .official-schedule-main { display:block; min-width:0; }
+ .calendar-reader-shell.schedule-surface .school-calendar-desktop { display:block; min-width:0; }
+ .calendar-reader-shell .calendar-reader-mobile-agenda { display:none; }
+ .calendar-reader-shell .school-reader-calendar-wrap { border:1px solid var(--border); background:var(--card); border-radius:16px; min-width:0; }
+ .calendar-reader-shell .school-reader-calendar { table-layout:fixed; width:100%; min-width:0; }
+ .calendar-reader-shell .school-calendar-date-row td { vertical-align:middle; }
+ .calendar-reader-shell .school-reader-calendar .calendar-desktop-day { justify-content:center; }
+ .calendar-reader-shell .school-reader-calendar .calendar-desktop-day time { display:grid; place-items:center; min-width:26px; width:26px; height:26px; padding:0; }
+ .calendar-reader-shell .school-reader-calendar .school-calendar-event-row .schedule-department-title { flex-wrap:nowrap; }
+}
+@media print {
+ .calendar-reader-shell .calendar-reader-layout,.calendar-reader-shell .official-schedule-main { display:block; }
+ .calendar-reader-shell .calendar-reader-sidebar,.calendar-reader-shell .calendar-reader-mobile-agenda { display:none!important; }
+}

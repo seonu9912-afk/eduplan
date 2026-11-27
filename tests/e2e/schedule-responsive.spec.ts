@@ -46,14 +46,24 @@ for(const width of [320,390,430,1440])test(`public calendar compact controls at 
   await toolbar.getByRole("button",{name:"일정 더보기"}).click();
   await expect(date).toBeVisible();
   await toolbar.getByRole("button",{name:"일정 더보기"}).click();
-  const agenda=reader.locator(".calendar-selected-agenda");
-  await expect(agenda).toBeVisible();
+  const sidebar=reader.locator(".calendar-reader-sidebar");
+  await expect(sidebar).toBeVisible();
   const calendar=reader.locator(".school-calendar-desktop");
-  expect((await agenda.boundingBox())!.x).toBeGreaterThan((await calendar.boundingBox())!.x);
+  expect((await sidebar.boundingBox())!.x).toBeLessThan((await calendar.boundingBox())!.x);
+  await expect(reader.locator(".calendar-reader-mobile-agenda")).toBeHidden();
   const day=calendar.locator("button.calendar-desktop-day:not(:disabled)").first();
   await day.click();
   await expect(day).toHaveAttribute("aria-pressed","true");
-  await expect(agenda.locator("section")).toHaveAttribute("id","agenda-"+(await day.getAttribute("aria-label"))!.slice(0,10));
+  const agenda=page.getByRole("dialog",{name:"선택 날짜 일정"});
+  await expect(agenda).toBeVisible();
+  await expect(agenda.locator(".school-calendar-agenda > section")).toHaveAttribute("id","agenda-"+(await day.getAttribute("aria-label"))!.slice(0,10));
+  await agenda.getByRole("button",{name:"닫기"}).click();
+  const before=(await calendar.boundingBox())!.width;
+  await toolbar.getByRole("button",{name:"사이드바 접기"}).click();
+  await expect(sidebar).toBeHidden();
+  expect((await calendar.boundingBox())!.width).toBeGreaterThan(before);
+  await toolbar.getByRole("button",{name:"사이드바 펼치기"}).click();
+  await expect(sidebar).toBeVisible();
  }
 });
 
@@ -79,7 +89,7 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeVisible();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
  }else{
-   expect((await tasks.boundingBox())!.x).toBeGreaterThan((await main.boundingBox())!.x);
+   expect((await tasks.boundingBox())!.x).toBeLessThan((await main.boundingBox())!.x);
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
@@ -88,12 +98,15 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
      await toolbar.getByRole("button",{name:mode,exact:true}).click();
      await expect(tasks).toBeVisible();
      const calendar=reader.locator(".school-calendar-desktop");
-     const agenda=reader.locator(".work-plan-agenda");
-     expect((await agenda.boundingBox())!.x).toBeGreaterThan((await calendar.boundingBox())!.x);
+     await expect(reader.locator(".calendar-reader-sidebar .official-work-mini")).toBeVisible();
+     await expect(reader.locator(".calendar-reader-mobile-agenda")).toBeHidden();
      const day=calendar.locator("button.calendar-desktop-day:not(:disabled)").first();
      await day.click();
      await expect(day).toHaveAttribute("aria-pressed","true");
+     const agenda=page.getByRole("dialog",{name:"선택 날짜 일정"});
+     await expect(agenda).toBeVisible();
      await expect(agenda.locator(".school-calendar-agenda > section")).toHaveAttribute("id","agenda-"+(await day.getAttribute("aria-label"))!.slice(0,10));
+     await agenda.getByRole("button",{name:"닫기"}).click();
    }
    await expect(reader.locator(".weekly-operation-row > th[scope=row]").first()).toBeVisible();
    await toolbar.locator(".reader-period-picker").click();
