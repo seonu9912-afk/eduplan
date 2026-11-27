@@ -84,3 +84,30 @@
  .schedule-surface .mobile-calendar-dates[data-compact-rows] .mobile-calendar-span-event > span { min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
  .schedule-surface .mobile-calendar-dates[data-compact-rows] .mobile-calendar-span-more { line-height:12px; }
 }
+
+/* Weekly plan uses the calendar as its primary reading surface on small screens. */
+@media screen and (min-width:1024px){
+ .schedule-surface .official-work-week-layout > .official-work-week-sidebar{grid-column:1;grid-row:1;}
+ .schedule-surface .official-work-week-layout > .official-schedule-main{grid-column:2;grid-row:1;}
+}
+@media screen and (max-width:1023px){
+ .schedule-surface .official-work-week-layout{gap:10px;}
+ .schedule-surface .official-work-week-layout > .official-schedule-main{grid-row:1;}
+ .schedule-surface .official-work-week-layout > .official-work-week-sidebar{grid-row:2;}
+ .schedule-surface .my-tasks-compact{padding:6px 10px;}
+ .schedule-surface .my-tasks-compact > summary{min-height:44px;gap:6px;}
+ .schedule-surface .my-tasks-compact > summary > span{margin-left:auto;font-size:11px;white-space:nowrap;}
+ .schedule-surface .my-tasks-compact > summary::after{margin-inline-start:0;}
+ .schedule-surface .my-tasks-compact .task-widget-actions{margin:2px 0;gap:5px;}
+ .schedule-surface .my-tasks-compact .task-widget-actions > button{flex:1 1 auto;min-width:0;min-height:44px;padding:5px 7px;font-size:12px;white-space:normal;}
+ .schedule-surface .my-tasks-compact > .task-hint{margin:6px 0 4px;}
+}
+@media screen and (max-width:767px){
+ .schedule-surface[data-work-plan] .schedule-view-extra{display:none;}
+ .schedule-surface[data-work-plan] .schedule-view-extra[data-open=true]{display:flex; padding:5px 7px; border:1px solid var(--border);border-radius:8px;}
+ .schedule-surface[data-work-plan] .schedule-view-extra[data-open=true] > .schedule-segments{flex:1;justify-content:center;min-width:0;}
+ .schedule-surface[data-work-plan] .schedule-view-extra[data-open=true] > button{margin-inline-start:auto;}
+ .schedule-surface[data-work-plan] .schedule-period-nav h2{font-size:15px;letter-spacing:-.03em;}
+ .schedule-surface[data-work-plan] .school-calendar-agenda > section > ul{padding:6px 8px;}
+ .schedule-surface[data-work-plan] .school-calendar-agenda > section > ul > li > div{padding:6px 8px;}
+}

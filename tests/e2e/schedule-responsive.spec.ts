@@ -46,3 +46,32 @@ for(const width of [320,390,430,1440])test(`public calendar compact controls at 
   await expect(toolbar.getByRole("button",{name:"일정 더보기"})).toBeHidden();
  }
 });
+
+for(const width of [320,390,430,1440])test(`weekly reader controls and task placement at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"공개 주간계획",exact:true}).click();
+ const reader=page.locator(".schedule-surface[data-work-plan]");
+ const toolbar=reader.locator(".schedule-reader-toolbar");
+ const tasks=reader.locator(".my-tasks");
+ await expect(tasks).toBeVisible();
+ const main=reader.locator(".official-schedule-main");
+ if(width<768){
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
+   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeHidden();
+   await expect(toolbar.locator('input[type="date"]')).toBeHidden();
+   await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeHidden();
+   expect((await main.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
+   await toolbar.getByRole("button",{name:"일정 더보기"}).click();
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
+   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
+   await expect(toolbar.locator('input[type="date"]')).toBeVisible();
+   await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeVisible();
+   await toolbar.getByRole("button",{name:"일정 더보기"}).click();
+ }else{
+   expect((await tasks.boundingBox())!.x).toBeLessThan((await main.boundingBox())!.x);
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
+ }
+ const geometry=await toolbar.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+ expect(geometry.scroll).toBeLessThanOrEqual(geometry.client+1);
+});

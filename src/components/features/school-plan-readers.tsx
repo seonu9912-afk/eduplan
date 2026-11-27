@@ -127,7 +127,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             {options.map(({ value, label }) => <button key={value} type="button" aria-pressed={view === value}
               onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
           </div>
-          <div className="schedule-view-extra">
+          <div className="schedule-view-extra" data-open={moreOpen}>
           {work && view !== "year" && <div className="schedule-segments" role="group" aria-label="일정 표시 방식">
             <button type="button" aria-pressed={!listView.isList} onClick={() => listView.setIsList(false)}>달력</button>
             <button type="button" aria-pressed={listView.isList} onClick={() => listView.setIsList(true)}>목록</button>
@@ -161,24 +161,6 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           </table>
         ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
       ) : <div className={workWeek ? "official-work-week-layout" : "official-schedule-body"}>
-        {workWeek && <aside className="official-work-week-sidebar no-print" aria-label="주간계획 보조 영역">
-          <section className="official-work-mini" aria-label="월간 날짜 선택">
-            <div className="official-work-mini-heading">
-              <button type="button" aria-label="미니 달력 이전 달" disabled={miniRange.start <= start} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", -1).slice(0, 7))}><ChevronLeft size={16} /></button>
-              <h3>{miniMonth.slice(0, 4)}년 {Number(miniMonth.slice(5))}월</h3>
-              <button type="button" aria-label="미니 달력 다음 달" disabled={miniRange.end >= end} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", 1).slice(0, 7))}><ChevronRight size={16} /></button>
-            </div>
-            <div className="official-work-mini-grid">
-              {weekdays.map((day) => <span key={day} className="mini-weekday">{day}</span>)}
-              {miniDates.map((day) => <button type="button" key={day} disabled={day < start || day > end}
-                data-in-week={day >= range.start && day <= visibleEnd ? "" : undefined}
-                data-adjacent={!day.startsWith(miniMonth) ? "" : undefined}
-                aria-current={day === today ? "date" : undefined} aria-pressed={day === date}
-                aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
-            </div>
-          </section>
-          <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={today} />
-        </aside>}
         <div className="official-schedule-main">
         {work && listView.isList ? <ScheduleListView dates={dates.filter(day => day >= start && day <= end && (view !== "month" || day.startsWith(month)))} days={days} today={today} selectedDate={date} available={available} onOpen={showEntry} /> : <>
         <div className="school-calendar-mobile no-print">
@@ -255,6 +237,24 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         </div>
         </>}
         </div>
+        {workWeek && <aside className="official-work-week-sidebar no-print" aria-label="주간계획 보조 영역">
+          <section className="official-work-mini" aria-label="월간 날짜 선택">
+            <div className="official-work-mini-heading">
+              <button type="button" aria-label="미니 달력 이전 달" disabled={miniRange.start <= start} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", -1).slice(0, 7))}><ChevronLeft size={16} /></button>
+              <h3>{miniMonth.slice(0, 4)}년 {Number(miniMonth.slice(5))}월</h3>
+              <button type="button" aria-label="미니 달력 다음 달" disabled={miniRange.end >= end} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", 1).slice(0, 7))}><ChevronRight size={16} /></button>
+            </div>
+            <div className="official-work-mini-grid">
+              {weekdays.map((day) => <span key={day} className="mini-weekday">{day}</span>)}
+              {miniDates.map((day) => <button type="button" key={day} disabled={day < start || day > end}
+                data-in-week={day >= range.start && day <= visibleEnd ? "" : undefined}
+                data-adjacent={!day.startsWith(miniMonth) ? "" : undefined}
+                aria-current={day === today ? "date" : undefined} aria-pressed={day === date}
+                aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
+            </div>
+          </section>
+          <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={today} compact />
+        </aside>}
       </div>}
       <ScheduleDetailDialog context={selected && !searchResult ? undefined : c} entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
       {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
