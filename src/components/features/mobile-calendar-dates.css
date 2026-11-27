@@ -66,10 +66,10 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #4b74a5;
+  background: var(--schedule-accent);
 }
-.mobile-calendar-markers i[data-tone="work"] { background: #427863; }
-.mobile-calendar-markers i[data-tone="break"] { background: #9b5e40; }
+.mobile-calendar-markers i[data-tone="work"] { background: var(--work-accent); }
+.mobile-calendar-markers i[data-tone="break"] { background: var(--closure-accent); }
 
 @media screen and (max-width: 767px) {
   .mobile-calendar-management { display: grid; gap: 10px; margin-top: 12px; }

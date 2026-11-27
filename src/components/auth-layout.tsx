@@ -5,7 +5,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="auth-layout">
       <aside className="auth-story">
-        <Brand light />
+        <Brand />
         <div>
           <span className="eyebrow">FOR BETTER SCHOOL DAYS</span>
           <h2>

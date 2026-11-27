@@ -36,14 +36,14 @@ select {
   gap: 12px;
   padding: 10px max(16px, env(safe-area-inset-right)) 10px
     max(16px, env(safe-area-inset-left));
-  background: #fff3cc;
-  color: #5a4300;
+  background: var(--card);
+  border-bottom: 2px solid currentColor;
+  color: var(--warning-accent);
   font-size: 14px;
   flex-wrap: wrap;
 }
 .update-banner {
-  background: #eaf2ff;
-  color: #244471;
+  color: var(--schedule-accent);
 }
 .mobile-bottom-nav {
   display: none;
@@ -66,8 +66,8 @@ select {
   color: inherit;
 }
 .mobile-menu-grid a[aria-current="page"] {
-  background: #eaf2ff;
-  color: #1d4ed8;
+  border-inline-start: 3px solid var(--primary);
+  color: var(--primary);
 }
 .mobile-only {
   display: none;
@@ -166,11 +166,12 @@ select {
     border-radius: 8px;
   }
   .app-shell > .main-nav .nav-item:hover {
-    background: #f5f8fc;
+    background: var(--surface-muted);
   }
   .app-shell > .main-nav .nav-item.active {
-    background: #eff5ff;
-    border-color: #dce9ff;
+    background: var(--card);
+    border-color: var(--border);
+    box-shadow: inset 3px 0 var(--primary);
   }
   .app-shell > .workspace-bar,
   .app-shell > .workspace-content {
@@ -322,10 +323,17 @@ select {
     font-size: 11px;
   }
   .mobile-bottom-nav [aria-current="page"] {
-    color: #1d4ed8;
+    color: var(--primary);
     font-weight: 750;
-    background: #eff5ff;
-    border-radius: 10px;
+  }
+  .mobile-bottom-nav [aria-current="page"]::before {
+    position: absolute;
+    inset-block-start: 0;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    content: "";
   }
   .mobile-bottom-nav svg {
     width: 21px;

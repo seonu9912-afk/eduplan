@@ -53,13 +53,14 @@
   gap: 8px 14px;
   margin-bottom: 14px;
   padding: 10px 14px;
-  color: #415b78;
-  background: #f2f6fb;
+  color: var(--text-secondary);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 8px;
 }
 .official-timetable-scroll {
   overflow-x: auto;
-  border: 1px solid #c9d6e6;
+  border: 1px solid var(--border);
   border-radius: 8px;
   overscroll-behavior-inline: contain;
   background: white;
@@ -81,7 +82,7 @@
 }
 .official-timetable-grid th,
 .official-timetable-grid td {
-  border: 1px solid #d3deeb;
+  border: 1px solid var(--border);
   text-align: center;
   padding: 5px;
 }
@@ -90,7 +91,7 @@
   left: 0;
   z-index: 1;
   width: clamp(44px, 10vw, 68px);
-  background: #eff4fa;
+  background: var(--card);
 }
 .official-timetable-grid tbody tr:last-child > * {
   border-bottom: 0;
@@ -101,7 +102,7 @@
   background: white;
 }
 .official-timetable-grid td.timetable-nonperiod {
-  background: #f2f5fa;
+  background: var(--surface-muted);
 }
 .official-timetable-grid :is(th, td) small {
   display: block;
@@ -109,29 +110,29 @@
   font-weight: 500;
 }
 .official-lesson {
+  --lesson-accent: var(--schedule-accent);
   display: grid;
   gap: 1px;
   padding: 4px;
   border-radius: 4px;
-  background: #eaf2ff;
-  color: #183b6b;
+  border-inline-start: 2px solid var(--lesson-accent);
+  background: var(--card);
+  color: var(--foreground);
   overflow-wrap: anywhere;
 }
 .official-lesson + .official-lesson {
   margin-top: 4px;
 }
 .official-lesson:not([data-kind="subject"]) {
-  background: #e6f5ec;
-  color: #1c5a44;
+  --lesson-accent: var(--work-accent);
 }
 .official-lesson[data-kind="creative_career"] {
-  background: #f2ebfb;
-  color: #513073;
+  --lesson-accent: var(--career-accent);
 }
 .official-lesson[data-blocked] {
-  background: #fff4e4;
-  color: #744815;
+  --lesson-accent: var(--warning-accent);
 }
+.official-lesson :is(strong, small) { color: var(--lesson-accent); }
 .official-lesson span {
   font-size: 12px;
   word-break: keep-all;

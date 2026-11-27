@@ -5,9 +5,9 @@ details.edu-disclosure {
   min-width: 0;
   max-width: 100%;
   padding: 0;
-  border: 1px solid #dce6f0;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--card);
   color: #243e59;
 }
 
@@ -53,7 +53,7 @@ details.edu-disclosure > .edu-disclosure-heading::before {
 
 details.edu-disclosure[open] > .edu-disclosure-heading {
   border-radius: 9px 9px 0 0;
-  background: #f4f8fd;
+  background: var(--card);
 }
 
 details.edu-disclosure[open] > .edu-disclosure-heading::before {
@@ -61,7 +61,7 @@ details.edu-disclosure[open] > .edu-disclosure-heading::before {
 }
 
 details.edu-disclosure > .edu-disclosure-heading:hover {
-  background: #edf4fc;
+  background: var(--surface-muted);
 }
 
 details.edu-disclosure > .edu-disclosure-heading:focus-visible {
@@ -75,7 +75,7 @@ details.edu-disclosure > .edu-disclosure-body {
   align-items: start;
   gap: var(--disclosure-gap);
   padding: var(--disclosure-inset);
-  border-block-start: 1px solid #e4edf5;
+  border-block-start: 1px solid var(--border);
   min-width: 0;
   word-break: keep-all;
   overflow-wrap: anywhere;

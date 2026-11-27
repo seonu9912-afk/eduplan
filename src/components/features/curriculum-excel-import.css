@@ -1,4 +1,4 @@
-.cx-import{margin-bottom:12px;border:1px solid #dce7f4;background:#f9fbff;border-radius:10px;min-width:0;display:grid;gap:10px;padding:13px}
+.cx-import{margin-bottom:12px;border:1px solid #dce7f4;background:var(--card);border-radius:10px;min-width:0;display:grid;gap:10px;padding:13px}
 .cx-import-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
 .cx-import-head>div:first-child strong{display:inline-flex;align-items:center;gap:7px;color:#285581;font-size:14px}
 .cx-import-head p{margin:5px 0 0;font-size:12px;line-height:1.6;color:#607a94}
@@ -22,8 +22,8 @@
 .cx-import-table-scroll{overflow:auto;max-width:100%;max-height:320px;border:1px solid #d9e4f0;border-radius:6px}
 .cx-import-table-scroll table{border-collapse:collapse;width:100%;min-width:880px;font-size:12px}
 .cx-import-table-scroll th,.cx-import-table-scroll td{padding:7px;border-bottom:1px solid #dbe6f0;text-align:center;white-space:nowrap}
-.cx-import-table-scroll thead th{position:sticky;top:0;z-index:2;background:#e8f1fc;color:#315a82}
-.cx-import-table-scroll tbody tr:hover{background:#f0f6ff}
+.cx-import-table-scroll thead th{position:sticky;top:0;z-index:2;background:var(--card);color:#315a82}
+.cx-import-table-scroll tbody tr:hover{background:var(--surface-muted)}
 .cx-import-table-scroll input[type=text],.cx-import-table-scroll input:not([type]){width:150px;max-width:100%;padding:6px;border:1px solid #d0dbea;border-radius:5px;font-size:12px}
 .cx-import-footer{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .cx-import-footer span{font-size:11px;color:#6c8096}

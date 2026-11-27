@@ -49,8 +49,8 @@
   white-space: nowrap;
 }
 .operations-table thead {
-  background: #eef5fa;
-  color: #294b66;
+  background: var(--card);
+  color: var(--foreground);
 }
 .operations-table small {
   display: block;
@@ -102,12 +102,14 @@
 .next-lesson {
   display: grid;
   gap: 3px;
-  background: #eff6ff;
-  border: 1px solid #d9e8fb;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--schedule-accent);
   border-radius: 10px;
   padding: 12px 14px;
-  color: #24466d;
+  color: var(--foreground);
 }
+.next-lesson strong { color: var(--schedule-accent); }
 .notification-list {
   list-style: none;
   padding: 0;
@@ -143,8 +145,8 @@
   padding: 15px;
   border: 1px dashed #c9d6e6;
   border-radius: 8px;
-  background: #f7f9fc;
-  color: #415b78;
+  background: var(--card);
+  color: var(--text-secondary);
 }
 .operations-form fieldset {
   min-width: 0;
@@ -262,7 +264,8 @@
 .personal-schedule-list time {
   padding: 2px 6px;
   align-self: start;
-  background: #edf3fa;
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 4px;
 }
 .personal-day-notification-title {
