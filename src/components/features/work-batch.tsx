@@ -36,6 +36,6 @@ export function WorkBatch({plan,start,end,date,onApply,disabled,onDraftChange}:{
  {notice&&<p role="status">{notice}</p>}
  {!!review.errors.length&&<div className="work-batch-errors" role="alert">{review.errors.slice(0,20).map((e,i)=><p key={i}>{e.row?e.row+"행 · ":""}{e.message}</p>)}{review.errors.length>20&&<p>외 {review.errors.length-20}건</p>}</div>}
  {!!review.duplicates.length&&<label className="work-batch-duplicate"><input type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>동일 일정 {review.duplicates.length}건({review.duplicates.join(", ")}행)을 제외하고 추가합니다.</label>}
- <footer className="work-batch-footer"><p>초안에 추가한 뒤 상단의 업무계획 저장 및 확정·공개를 진행하세요.</p><Button disabled={disabled||busy||!review.items.length||!!review.errors.length||!!review.duplicates.length&&!ack} onClick={()=>{const count=review.items.length;onApply(review.items.map(r=>({...r,id:crypto.randomUUID()})));update(Array.from({length:8},emptyWorkInput));setNotice(count+"건을 초안에 추가했습니다.");}}>{review.items.length}건 초안에 추가</Button></footer>
+ <footer className="work-batch-footer"><p>초안에 추가한 뒤 상단의 업무계획 저장 및 확정·공개를 진행하세요.</p><Button disabled={disabled||busy||!review.items.length||!!review.errors.length||!!review.duplicates.length&&!ack} onClick={()=>{const count=review.items.length;update(Array.from({length:8},emptyWorkInput));onApply(review.items.map(r=>({...r,id:crypto.randomUUID()})));setNotice(count+"건을 초안에 추가했습니다.");}}>{review.items.length}건 초안에 추가</Button></footer>
  </section>;
 }

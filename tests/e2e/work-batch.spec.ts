@@ -1,0 +1,21 @@
+import {test,expect} from "@playwright/test";
+test("batch adds validated rows to draft and keeps existing save flow",async({page})=>{
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"업무계획",exact:true}).click();
+ await page.getByRole("button",{name:"일괄 입력",exact:true}).click();
+ const batch=page.getByRole("region",{name:"업무계획 일괄 입력"});
+ await expect(batch).toBeVisible();
+ const cell=batch.getByRole("textbox",{name:"1행 일정 내용"});
+ await cell.fill("가상 업무계획 등록 테스트");
+ await cell.press("Enter");
+ await expect(batch.getByRole("textbox",{name:"2행 일정 내용"})).toBeFocused();
+ await batch.getByRole("textbox",{name:"2행 일정 내용"}).fill("가상 업무계획 등록 테스트");
+ await expect(batch.getByText("동일 일정 1건",{exact:false})).toBeVisible();
+ await expect(batch.getByRole("button",{name:"1건 초안에 추가"})).toBeDisabled();
+ await batch.getByRole("checkbox").check();
+ await batch.getByRole("button",{name:"1건 초안에 추가"}).click();
+ await expect(batch.getByRole("status")).toContainText("1건을 초안에 추가");
+ await page.getByRole("button",{name:"업무계획 저장",exact:true}).click();
+ await page.getByRole("button",{name:"달력으로 돌아가기"}).click();
+ await expect(page.getByRole("button",{name:"가상 업무계획 등록 테스트 수정"})).toBeVisible();
+});

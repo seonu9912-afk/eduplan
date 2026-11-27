@@ -410,7 +410,7 @@ export function WorkPlans({
           최신 저장본 확인
         </Button>
       )}
-      {batch && editable && <WorkBatch plan={plan} start={start} end={end} date={date} disabled={m.pending||versionConflict} onDraftChange={v=>{setBatchDirty(v);if(v)onDirtyChange(true);}} onApply={rows=>change({...plan,business:[...plan.business,...rows]})}/>}
+      {batch && editable && <WorkBatch plan={plan} start={start} end={end} date={date} disabled={m.pending||versionConflict} onDraftChange={v=>{setBatchDirty(v);onDirtyChange(dirty||v);}} onApply={rows=>change({...plan,business:[...plan.business,...rows]})}/>}
       <div hidden={batch}>
       <div className="work-toolbar schedule-management-toolbar no-print">
         <div className="work-view-tabs">
