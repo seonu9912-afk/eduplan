@@ -238,7 +238,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         showWeekends={weekend.showWeekends} emphasizeToday spanDays={days}
         items={day => days.get(day)?.entries ?? []} onSelect={setSelection} onNavigate={step => setSelection(addDays(selected,step*7))} />
     </div>
-    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `44px repeat(3, 30px) 24px` }}>
+    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `50px repeat(3, 30px) 24px` }}>
       {dates.map((day, column) => <div key={day} className="home-week-column" data-today={day === today ? "" : undefined} data-selected={day === selected ? "" : undefined}
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
