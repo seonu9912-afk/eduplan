@@ -6,6 +6,7 @@ import { operationsPreviewContext } from "./operations-fixture";
 import { Staffing, type StaffingActions } from "@/components/features/staffing";
 import { PersonalDay } from "@/components/features/personal-day";
 import { OfficialTimetable } from "@/components/features/official-timetable";
+import { OfficialSchedule } from "@/components/features/school-plan-readers";
 import {
   AcademicCalendar,
   calendarActions,
@@ -241,7 +242,7 @@ export function OperationsPreview() {
     [dirty, setDirty] = useState(false);
   const onDirty = useCallback((v: boolean) => setDirty(v), []);
   if (!c) return <p>통합 운영 실습 자료를 불러오고 있습니다.</p>;
-  const tabs = ["오늘", "교원·수급", "학사일정", "월중·주간", "시간표 조회", "수업 연계"];
+  const tabs = ["오늘", "교원·수급", "학사일정", "월중·주간", "시간표 조회", "수업 연계", "공개 학사일정"];
   return (
     <div className="operations-module">
       <header>
@@ -330,6 +331,7 @@ export function OperationsPreview() {
           save={store.saveWork}
         />
       )}
+      {tab === "공개 학사일정" && <OfficialSchedule context={c} today="2027-03-02" initialDate="2027-03-02" actions={<Button variant="outline">학사일정 관리</Button>} />}
       {tab === "시간표 조회" && <OfficialTimetable context={c} today="2027-03-02" initialDate="2027-03-02" />}
       {tab === "수업 연계" && (
         <>
