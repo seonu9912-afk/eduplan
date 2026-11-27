@@ -471,3 +471,5 @@
   .home-week-mobile-more { grid-row: 3; color: #526379; font-size: 10px; font-weight: 650; line-height: 14px; }
   .home-week-mobile-day:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 }
+
+@media screen and (max-width: 767px) { .home-week-mobile-grid[data-weekdays-only] { grid-template-columns: repeat(5, minmax(0, 1fr)); } }

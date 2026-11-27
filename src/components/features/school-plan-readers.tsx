@@ -7,7 +7,7 @@ import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
 import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
-import { scheduleDates, shiftScheduleDate } from "@/lib/schedule-dates";
+import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
 import { ResourceLinks } from "./resource-links";
@@ -15,6 +15,7 @@ import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { MyTasks } from "./my-tasks";
 import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
+import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -26,8 +27,10 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   const year = c.year!.year;
   const start = `${year}-03-01`, end = addDays(`${year + 1}-03-01`, -1);
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
-  const [date, setDate] = useState(clamp(today));
+  const [requestedDate, setDate] = useState(clamp(today));
   const [view, setView] = useState<ScheduleView>(work ? "week" : "month");
+  const weekend = useWeekendVisibility(c.workspace.id, c.userId);
+  const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start) : requestedDate;
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const detail = useScheduleDetail();
   const month = date.slice(0, 7);
@@ -43,7 +46,9 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
     ? [selected, ...publications.filter((release) => release.domain !== selected.domain)]
     : publications;
   const officialContext = { ...c, schoolPublications: displayed };
-  const dates = view === "year" ? [] : scheduleDates(date, view);
+  const dates = view === "year" ? [] : view === "week" ? visibleWeekDates(date, weekend.showWeekends, start) : scheduleDates(date, view);
+  const columns = view === "week" ? dates.length : 7;
+  const visibleEnd = view === "week" ? dates[dates.length - 1] : range.end;
   const days = publishedScheduleDays(officialContext, dates.filter((day) => day >= start && day <= end), work);
   const calendarDays = workWeek ? new Map([...days].map(([day, value]) => [day, { ...value, entries: value.entries.filter((entry) => !entry.operationGroup) }])) : days;
   const operationGroups = workWeek ? weeklyOperationGroups(dates, days) : [];
@@ -56,7 +61,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
     ? dates.filter((day) => day === date || (days.get(day)?.entries.length ?? 0) > 0)
     : [date];
   const title = view === "year" ? `${year}학년도` : view === "week"
-    ? `${dateLabel(range.start)} – ${dateLabel(range.end)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
+    ? `${dateLabel(range.start)} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
   const options: { value: ScheduleView; label: string }[] = [
     { value: "month", label: work ? "월중계획" : "월간" },
     { value: "week", label: work ? "주간계획" : "주간" },
@@ -91,6 +96,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
             {options.map(({ value, label }) => <button key={value} type="button" aria-pressed={view === value}
               onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
           </div>
+          {view === "week" && <WeekendToggle {...weekend} />}
           <label className="schedule-jump"><span className="sr-only">기준일</span>
             <input type="date" value={date} min={start} max={end} onChange={(e) => {
               if (e.target.value) { setMiniMonthOverride(null); setDate(clamp(e.target.value)); }
@@ -123,7 +129,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
             <div className="official-work-mini-grid">
               {weekdays.map((day) => <span key={day} className="mini-weekday">{day}</span>)}
               {miniDates.map((day) => <button type="button" key={day} disabled={day < start || day > end}
-                data-in-week={day >= range.start && day <= range.end ? "" : undefined}
+                data-in-week={day >= range.start && day <= visibleEnd ? "" : undefined}
                 data-adjacent={!day.startsWith(miniMonth) ? "" : undefined}
                 aria-current={day === today ? "date" : undefined} aria-pressed={day === date}
                 aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
@@ -133,7 +139,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
         </aside>}
         <div className="official-schedule-main">
         <div className="school-calendar-mobile no-print">
-          <MobileCalendarDates date={date} today={today} start={start} end={end} period={view}
+          <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
             items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
           <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
@@ -145,11 +151,11 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
                   {day === today && <span>오늘</span>}</h3>
                 {mainEntries.length ? <ul>{mainEntries.map((entry) => {
-                  const detail = [entry.location].filter(Boolean).join(" · ");
+                  const location = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
                     <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
                     <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={detail.show} /></div>
-                      {detail && <small>{detail}</small>}
+                      {location && <small>{location}</small>}
                       <ResourceLinks value={entry.resources} />
                     </div>
                   </li>;
@@ -165,9 +171,9 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
           {!available ? <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p> : (
             <div className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
               <table className="school-reader-calendar" aria-label="공개 일정표">
-                <thead><tr>{(view === "week" ? weekLabels : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
-                {Array.from({ length: dates.length / 7 }, (_, i) => {
-                  const week = dates.slice(i * 7, i * 7 + 7);
+                <thead><tr>{(view === "week" ? weekLabels.slice(0, columns) : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
+                {Array.from({ length: dates.length / columns }, (_, i) => {
+                  const week = dates.slice(i * columns, i * columns + columns);
                   const lanes = calendarWeekLanes(week, calendarDays);
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">

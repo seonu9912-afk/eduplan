@@ -104,3 +104,5 @@
   .work-layout .work-mini-calendar { display: none; }
   .work-plan-table.work-month-board .work-day:not([data-selected]) { display: none; }
 }
+
+.mobile-calendar-dates[data-weekdays-only] :is(.mobile-calendar-weekdays, .mobile-calendar-day-grid) { grid-template-columns: repeat(5, minmax(0, 1fr)); }

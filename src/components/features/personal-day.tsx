@@ -11,13 +11,14 @@ import {
 import type { Context } from "@/lib/models";
 import { publicationAt } from "@/lib/school-publications";
 import { calendarWeekLanes, publishedScheduleDays, schoolScheduleEntries, type ScheduleEntry } from "@/lib/school-schedule";
-import { scheduleDates } from "@/lib/schedule-dates";
+import { visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
 import { MyTasks } from "./my-tasks";
 import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
+import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
 import "./school-operations.css";
 
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
@@ -141,10 +142,11 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
 }) {
   const [selection, setSelection] = useState<string | null>(null);
   const scheduleDetail = useScheduleDetail();
-  const selected = selection ?? today;
-  const dates = useMemo(() => scheduleDates(selected, "week"), [selected]);
+  const weekend = useWeekendVisibility(context.workspace.id, context.userId);
+  const selected = visibleWeekDate(selection ?? today, weekend.showWeekends);
+  const dates = useMemo(() => visibleWeekDates(selected, weekend.showWeekends), [selected, weekend.showWeekends]);
   const days = useMemo(() => {
-    const first = dates[0], last = dates[6];
+    const first = dates[0], last = dates[dates.length - 1];
     const entries = context.schoolPublications ? [] : schoolScheduleEntries(context, first, last, true);
     const published = context.schoolPublications ? publishedScheduleDays(context, dates, true) : null;
     return new Map(dates.map((day) => {
@@ -157,7 +159,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
   const lanes = useMemo(() => calendarWeekLanes(dates, days), [dates, days]);
   const detail = days.get(selected)?.entries ?? [];
   const firstMonth = dates[0].slice(0, 7);
-  const lastMonth = dates[6].slice(0, 7);
+  const lastMonth = dates[dates.length - 1].slice(0, 7);
   const monthTitle = firstMonth === lastMonth
     ? `${Number(firstMonth.slice(5))}월`
     : `${Number(firstMonth.slice(5))}월 – ${Number(lastMonth.slice(5))}월`;
@@ -168,14 +170,15 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       <Link className="widget-link" href={plansHref}>월중·주간계획 <ArrowUpRight aria-hidden="true" /></Link>
     </header>
     <div className="home-week-toolbar">
-      <h3>{monthTitle} <small>{dateLabel(dates[0])} – {dateLabel(dates[6])}</small></h3>
+      <h3>{monthTitle} <small>{dateLabel(dates[0])} – {dateLabel(dates[dates.length - 1])}</small></h3>
       <div className="home-week-navigation">
+        <WeekendToggle {...weekend} />
         <Button variant="ghost" size="icon" aria-label="이전 주" onClick={() => setSelection(addDays(selected, -7))}><ChevronLeft /></Button>
         <Button variant="outline" size="sm" onClick={() => setSelection(null)}>오늘</Button>
         <Button variant="ghost" size="icon" aria-label="다음 주" onClick={() => setSelection(addDays(selected, 7))}><ChevronRight /></Button>
       </div>
     </div>
-    <div className="home-week-mobile-grid" role="group" aria-label="주간 일정 요약">
+    <div className="home-week-mobile-grid" data-weekdays-only={dates.length === 5 ? "" : undefined} role="group" aria-label="주간 일정 요약">
       {dates.map((day, column) => {
         const entries = days.get(day)?.entries ?? [];
         return <button key={day} type="button" className="home-week-mobile-day"
@@ -193,7 +196,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         </button>;
       })}
     </div>
-    <div className="home-week-grid" style={{ gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
+    <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
       {dates.map((day, column) => <div key={day} className="home-week-column" data-selected={day === selected ? "" : undefined}
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"

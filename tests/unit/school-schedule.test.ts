@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { operationsPreviewContext } from "../../src/app/recovery-preview/operations-fixture";
 import { defaultAnnual } from "../../src/lib/academic";
-import { scheduleDates, shiftScheduleDate } from "../../src/lib/schedule-dates";
+import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "../../src/lib/schedule-dates";
 import { calendarWeekLanes, publishedScheduleDays, weeklyOperationGroups } from "../../src/lib/school-schedule";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
@@ -79,4 +79,12 @@ it("keeps the configured operation groups and trips aligned without merging them
   expect(days.get(date)?.entries).toContainEqual(expect.objectContaining({ operationGroup: "급식 지도", assignmentText: "김 교사" }));
   expect(days.get(date)?.entries).toContainEqual(expect.objectContaining({ operationGroup: "출장", participants: "이 교사" }));
   expect(days.get(date)?.entries.filter((e) => !e.operationGroup).map((e) => e.title)).toEqual(["회의"]);
+});
+
+it("hides weekend columns without moving the selected week, retaining academic-year boundary dates", () => {
+  expect(visibleWeekDate("2026-11-29", false)).toBe("2026-11-27");
+  expect(visibleWeekDates("2026-11-29", false)).toEqual(["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27"]);
+  expect(visibleWeekDates("2026-11-29", true)).toHaveLength(7);
+  expect(visibleWeekDate("2025-03-01", false, "2025-03-01")).toBe("2025-03-01");
+  expect(visibleWeekDates("2025-03-01", false, "2025-03-01")).toHaveLength(7);
 });

@@ -20,3 +20,15 @@ export function shiftScheduleDate(date: string, period: CalendarPeriod, step: nu
   const { end } = monthRange(month);
   return candidate <= end ? candidate : end;
 }
+
+/** Keep the date in the same Monday–Sunday week when weekends are hidden. */
+export function visibleWeekDate(date: string, showWeekends: boolean, start?: string) {
+  if (showWeekends) return date;
+  const friday = addDays(weekRange(date).start, 4);
+  return date > friday && (!start || friday >= start) ? friday : date;
+}
+export function visibleWeekDates(date: string, showWeekends: boolean, start?: string) {
+  const dates = scheduleDates(date, "week");
+  // If an academic year begins on a weekend, do not hide its only valid dates.
+  return showWeekends || (start && dates[4] < start) ? dates : dates.slice(0, 5);
+}

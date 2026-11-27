@@ -9,22 +9,24 @@ const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
 export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string };
 
-export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate }: {
+export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true }: {
   date: string;
   today: string;
   start: string;
   end: string;
   period: CalendarPeriod;
+  showWeekends?: boolean;
   items: (day: string) => CalendarCellItem[];
   onSelect: (day: string) => void;
   onNavigate: (step: number) => void;
 }) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const days = scheduleDates(date, period);
+  const weekdaysOnly = period === "week" && !showWeekends;
+  const days = weekdaysOnly ? scheduleDates(date, period).slice(0, 5) : scheduleDates(date, period);
   const month = date.slice(0, 7);
-  const labels = period === "week" ? [...weekdays.slice(1), weekdays[0]] : weekdays;
+  const labels = period === "week" ? [...weekdays.slice(1), weekdays[0]].slice(0, weekdaysOnly ? 5 : 7) : weekdays;
   return (
-    <div className="mobile-calendar-dates" role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
+    <div className="mobile-calendar-dates" data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
       onTouchStart={(event) => {
         const touch = event.touches[0];
         touchStart.current = event.touches.length === 1 ? { x: touch.clientX, y: touch.clientY } : null;
