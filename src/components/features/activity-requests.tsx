@@ -26,15 +26,16 @@ const labels = {
 export function ActivityRequests({
   context: c,
   today,
+  embedded = false,
 }: {
   context: Context;
   today: string;
+  embedded?: boolean;
 }) {
   const [editing, setEditing] = useState<ActivityRequest | null | undefined>(),
     [review, setReview] = useState<ActivityRequest | null>(null);
   if (!c.year) return null;
-  return (
-    <Disclosure className="secondary-disclosure no-print" label="교육활동 편성 요청 · 가능한 날짜 분석">
+  const content = <>
       <p>
         대상 학급·교원·특별실과 확정 평가 일정을 함께 확인합니다. 승인된 활동은
         학사일정에 한 번 등록되고 월중·주간계획에 연결됩니다.
@@ -97,8 +98,8 @@ export function ActivityRequests({
           onDone={() => setReview(null)}
         />
       )}
-    </Disclosure>
-  );
+    </>;
+  return embedded ? <div className="calendar-activity-modal">{content}</div> : <Disclosure className="secondary-disclosure no-print" label="교육활동 편성 요청 · 가능한 날짜 분석">{content}</Disclosure>;
 }
 function CandidateDetails({ candidate: x }: { candidate: Candidate }) {
   return (

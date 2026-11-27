@@ -4,6 +4,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/common";
+import { canPlan } from "@/lib/planning-completion";
 import { addDays, dateLabel, monthRange, weekRange, seoulToday } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
@@ -32,7 +34,7 @@ const weekLabels = [...weekdays.slice(1), weekdays[0]];
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
-export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, initialDate, initialWorkItem }: { context: Context; today: string; work?: boolean; actions?: ReactNode; initialDate?: string; initialWorkItem?: string }) {
+export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, activityTools, initialDate, initialWorkItem }: { context: Context; today: string; work?: boolean; actions?: ReactNode; activityTools?: ReactNode; initialDate?: string; initialWorkItem?: string }) {
   const [today, setToday] = useState(serverToday);
   useEffect(() => {
     const tick = () => setToday(seoulToday());
@@ -58,6 +60,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
     : null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [secondary, setSecondary] = useState<"history" | "activities" | null>(null);
   const [searchResult, setSearchResult] = useState<ScheduleSearchResult | null>(null);
   const month = date.slice(0, 7);
   const [miniMonthOverride, setMiniMonthOverride] = useState<string | null>(null);
@@ -141,6 +144,8 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄" onClick={() => window.print()} disabled={!available}><Printer /></Button>
           {c.workspace.kind === "school" && c.year && <CalendarFeedSettings workspaceId={c.workspace.id} yearId={c.year.id} year={year} />}
           {actions}
+          {!work && updates.length > 0 && <Button variant="outline" onClick={() => {setMoreOpen(false);setSecondary("history");}}>공개 이력</Button>}
+          {!work && activityTools && <Button variant="outline" onClick={() => {setMoreOpen(false);setSecondary("activities");}}>교육활동 편성 요청{canPlan(c,"calendar") && (c.completion?.requests.filter(r=>r.state==="requested").length ?? 0)>0 && <span className="calendar-pending-count">{c.completion?.requests.filter(r=>r.state==="requested").length}</span>}</Button>}
           </div>
         </div>
       </div>
@@ -164,29 +169,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
             emphasizeToday compactRows spanDays={calendarDays} items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
-          <div className="school-calendar-agenda" aria-label="선택한 날짜의 일정">
-            {agendaDates.map((day) => {
-              const schedule = days.get(day);
-              const mainEntries = calendarDays.get(day)?.entries ?? [];
-              return <section key={day} id={`agenda-${day}`} aria-label={dateLabel(day)}
-                data-selected={day === date ? "" : undefined} data-today={day === today ? "" : undefined}>
-                <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
-                  {day === today && <span>오늘</span>}</h3>
-                {mainEntries.length ? <ul>{mainEntries.map((entry) => {
-                  const location = [entry.location].filter(Boolean).join(" · ");
-                  return <li key={entry.id} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={showEntry} /></div>
-                      <small className="schedule-agenda-meta">{[entry.time, location, tones[entry.tone]].filter(Boolean).join(" · ")}</small>
-                      <ResourceLinks value={entry.resources} compact />
-                    </div>
-                  </li>;
-                })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
-                  {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
-                </p>}
-                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} today={today} onOpen={showEntry} /></section>)}</div> : null}
-              </section>;
-            })}
-          </div>
+
         </div>
         <div className="school-calendar-desktop">
           {!available ? <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p> : (
@@ -196,25 +179,28 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 {Array.from({ length: dates.length / columns }, (_, i) => {
                   const week = dates.slice(i * columns, i * columns + columns);
                   const lanes = calendarWeekLanes(week, calendarDays);
+                  const displayLanes = !work ? Array.from({length: Math.max(3,lanes.length)},(_,index)=>lanes[index] ?? []) : lanes;
+                  const overflow = week.map((_,col)=>lanes.slice(3).flat().filter(item=>item.start<=col&&item.end>=col).length);
                   const outside = (day: string) => day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined;
                   return <tbody key={week[0]} className="school-calendar-week">
                     <tr className="school-calendar-date-row">{week.map((day) => (
-                      <td key={day} data-today={day === today ? "" : undefined} data-outside={outside(day)}>
-                        <time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time>
+                      <td key={day} data-today={day === today ? "" : undefined} data-selected={day === date ? "" : undefined} data-outside={outside(day)}>
+                        {!work ? <button type="button" className="calendar-desktop-day" aria-label={`${day} 일정 보기`} aria-pressed={day===date} disabled={day<start||day>end} onClick={()=>selectDate(day)}><time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time></button> : <time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time>}
                       </td>
                     ))}</tr>
-                    {lanes.map((lane, index) => <tr className="school-calendar-event-row" key={index}>
+                    {displayLanes.map((lane, index) => <tr className="school-calendar-event-row" data-calendar-overflow={!work && index>=3 ? "" : undefined} data-calendar-padding={!work && index>=lanes.length ? "" : undefined} key={index}>
                       {week.map((day, col) => {
                         const span = lane.find((item) => item.start <= col && item.end >= col);
                         if (span && span.start !== col) return null;
                         return <td key={day} colSpan={span ? span.end - span.start + 1 : 1}
-                          data-today={day === today && (!span || span.start === span.end) ? "" : undefined} data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
+                          data-today={day === today && (!span || span.start === span.end) ? "" : undefined} data-selected={day===date && (!span || span.start===span.end) ? "" : undefined} data-outside={!span ? outside(day) : undefined} className={span ? "school-calendar-span-cell" : undefined}>
                           {span && <DesktopCalendarEvent entry={span.entry} today={today} onOpen={showEntry} />}
                         </td>;
                       })}
                     </tr>)}
+                    {!work && <tr className="calendar-desktop-overflow no-print">{week.map((day,col)=><td key={day} data-selected={day===date?"":undefined} data-today={day===today?"":undefined} data-outside={outside(day)}>{overflow[col]>0&&<button type="button" aria-label={`${day} 추가 일정 ${overflow[col]}건`} onClick={()=>selectDate(day)}>+{overflow[col]}</button>}</td>)}</tr>}
                     <tr className="school-calendar-week-space" aria-hidden="true">{week.map((day) => (
-                      <td key={day} data-today={day === today ? "" : undefined} data-outside={outside(day)} />
+                      <td key={day} data-today={day === today ? "" : undefined} data-selected={day===date?"":undefined} data-outside={outside(day)} />
                     ))}</tr>
                     {workWeek && operationGroups.map((name) => <tr key={name} className="weekly-operation-row">{week.map((day) => {
                       const schedule = days.get(day);
@@ -232,6 +218,29 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             </div>
           )}
         </div>
+        <div className={`school-calendar-agenda${work ? " calendar-agenda-mobile-only" : " calendar-selected-agenda"}`} aria-label="선택한 날짜의 일정">
+            {agendaDates.map((day) => {
+              const schedule = days.get(day);
+              const mainEntries = calendarDays.get(day)?.entries ?? [];
+              return <section key={day} id={`agenda-${day}`} aria-label={dateLabel(day)}
+                data-selected={day === date ? "" : undefined} data-today={day === today ? "" : undefined}>
+                <h3><time dateTime={day}>{dateLabel(day)} {weekdays[new Date(`${day}T00:00:00Z`).getUTCDay()]}요일</time>
+                  <span>{day === today ? "오늘 · " : ""}{mainEntries.length}건</span></h3>
+                {mainEntries.length ? <ul>{mainEntries.map((entry) => {
+                  const location = [entry.location].filter(Boolean).join(" · ");
+                  return <li key={entry.id} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
+                    <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={showEntry} /></div>
+                      <small className="schedule-agenda-meta">{[entry.date !== entry.end ? `${dateLabel(entry.date)} – ${dateLabel(entry.end)}` : "", entry.time, location, tones[entry.tone]].filter(Boolean).join(" · ")}</small>
+                      <ResourceLinks value={entry.resources} compact />
+                    </div>
+                  </li>;
+                })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
+                  {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
+                </p>}
+                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} today={today} onOpen={showEntry} /></section>)}</div> : null}
+              </section>;
+            })}
+          </div>
         </>}
         </div>
         {workWeek && <aside className="official-work-week-sidebar no-print" aria-label="주간계획 보조 영역">
@@ -254,7 +263,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         </aside>}
       </div>}
       <ScheduleDetailDialog context={selected && !searchResult ? undefined : c} entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
-      {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
+      {work && updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
           {item.change_note && <p>{item.change_note}</p>}
@@ -265,6 +274,18 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           }}>이 버전 보기</Button>
         </li>)}</ul>
       </Disclosure>}
+      {!work && <Modal open={secondary==="history"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="공개 이력">
+        <div className="calendar-history-modal">        <ul>{updates.map((item) => <li key={item.id}>
+          <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
+          {item.change_note && <p>{item.change_note}</p>}
+          <Button variant="outline" onClick={() => {
+            setSelectedRelease(item.id); setSecondary(null);
+            setMiniMonthOverride(null);
+            setDate(clamp(item.starts_on));
+          }}>이 버전 보기</Button>
+        </li>)}</ul></div>
+      </Modal>}
+      {!work && activityTools && <Modal open={secondary==="activities"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="교육활동 편성 요청 · 가능한 날짜 분석" wide>{activityTools}</Modal>}
     </section>
   );
 }

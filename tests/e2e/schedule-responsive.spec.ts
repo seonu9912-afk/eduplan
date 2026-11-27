@@ -42,8 +42,18 @@ for(const width of [320,390,430,1440])test(`public calendar compact controls at 
   await expect(emptyWeek).toBeVisible();
   expect((await emptyWeek.boundingBox())!.height).toBeLessThanOrEqual(48);
  }else{
+  await expect(date).toBeHidden();
+  await toolbar.getByRole("button",{name:"일정 더보기"}).click();
   await expect(date).toBeVisible();
-  await expect(toolbar.getByRole("button",{name:"일정 더보기"})).toBeHidden();
+  await toolbar.getByRole("button",{name:"일정 더보기"}).click();
+  const agenda=reader.locator(".calendar-selected-agenda");
+  await expect(agenda).toBeVisible();
+  const calendar=reader.locator(".school-calendar-desktop");
+  expect((await agenda.boundingBox())!.x).toBeGreaterThan((await calendar.boundingBox())!.x);
+  const day=calendar.locator("button.calendar-desktop-day:not(:disabled)").first();
+  await day.click();
+  await expect(day).toHaveAttribute("aria-pressed","true");
+  await expect(agenda.locator("section")).toHaveAttribute("id","agenda-"+(await day.getAttribute("aria-label"))!.slice(0,10));
  }
 });
 
