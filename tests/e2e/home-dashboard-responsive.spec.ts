@@ -1,5 +1,5 @@
 import {test,expect} from "@playwright/test";
-for(const width of [1280,1600]) test(`desktop home cards stay bounded at ${width}px`,async({page})=>{
+for(const width of [1280,1600]) test(`desktop home lesson cards keep equal heights at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:1000});
  await page.goto("/recovery-preview/operations");
  const home=page.locator(".personal-day");
@@ -11,7 +11,7 @@ for(const width of [1280,1600]) test(`desktop home cards stay bounded at ${width
  const cards=grid.locator(".home-period-card");
  expect(await cards.count()).toBeGreaterThan(0);
  const heights=await cards.evaluateAll(els=>els.map(el=>el.getBoundingClientRect().height));
- expect(heights.every(h=>h===64)).toBe(true);
+ expect(heights.every(h=>h===76)).toBe(true);
  await expect(home.locator(".personal-lesson-list")).toBeHidden();
  const first=grid.locator("button.home-period-card").first();
  if(await first.count()){
@@ -39,7 +39,7 @@ for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calen
    const events=Array.from(el.querySelectorAll(".home-week-event")).map(event=>{const title=event.querySelector(".schedule-department-title")!;return {bottom:event.getBoundingClientRect().bottom,wrap:getComputedStyle(title).flexWrap}});
    return {height:bounds.height,bottom:bounds.bottom,detailTop:detail.top,columns,events};
   });
-  expect(geometry.height).toBe(180);
+  expect(geometry.height).toBe(200);
   expect(geometry.detailTop).toBeGreaterThanOrEqual(geometry.bottom);
   expect(geometry.columns.every(y=>y<=geometry.bottom+1)).toBe(true);
   expect(geometry.events.every(event=>event.bottom<=geometry.bottom+1&&event.wrap==="nowrap")).toBe(true);
@@ -49,7 +49,16 @@ for (const width of [800,1024,1280,1440,1588,1600,1920]) test(`home weekly calen
  await check();
  await agenda.getByRole("button",{name:"이전 주",exact:true}).click();
  await check();
- if(width>=1024) {
-  expect(await home.locator(".home-lessons-widget").evaluate(el=>el.getBoundingClientRect().height)).toBe(224);
+ const containers=home.locator(".home-weekly-agenda,.home-week-detail-list,.home-week-and-tasks > .my-tasks,.home-week-and-tasks .task-dashboard-body,.home-today-grid > .personal-widget");
+ const measurements=await containers.evaluateAll(elements=>elements.filter(el=>el.getBoundingClientRect().height>0).map(el=>({name:el.className,overflow:getComputedStyle(el).overflowY,scroll:el.scrollHeight,client:el.clientHeight})));
+ for(const metric of measurements){
+  expect(["scroll","auto","hidden","clip"],String(metric.name)).not.toContain(metric.overflow);
+  expect(metric.scroll,String(metric.name)).toBeLessThanOrEqual(metric.client+2);
+ }
+ const last=detail.locator(".home-week-detail-list > li").last();
+ if(await last.count()){
+  const sectionBox=await agenda.boundingBox();
+  const lastBox=await last.boundingBox();
+  expect(lastBox!.y+lastBox!.height).toBeLessThanOrEqual(sectionBox!.y+sectionBox!.height);
  }
 });

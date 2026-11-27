@@ -526,7 +526,7 @@
   .workspace-content .home-week-detail-list .home-week-detail-trigger { padding: 7px 10px; min-height: 44px; }
 }
 
-/* PC dashboard: a stable footprint independent of the number of assigned lessons. */
+/* PC dashboard: stable lesson and calendar grids, content-sized outer cards. */
 .home-period-desktop,.task-dashboard-more { display:none; }
 .task-direct-actions { display:contents; }
 .home-period-detail-list { display:grid; gap:10px; list-style:none; padding:0; }
@@ -535,81 +535,90 @@
 @media screen and (min-width:1024px) {
  .home-today-grid { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.05fr); gap:16px; }
  .home-today-grid-single { grid-template-columns:minmax(0,1fr); }
- .home-today-grid > .personal-widget { box-sizing:border-box; height:224px; min-height:0; padding:14px 16px; gap:7px; overflow:auto; scrollbar-gutter:stable; }
+ .home-today-grid > .personal-widget { box-sizing:border-box; height:auto; min-height:0; padding:16px 18px; gap:10px; overflow:visible; }
  .home-today-grid > .personal-widget > * { flex-shrink:0; }
  .home-today-grid > .personal-widget > .personal-day-heading { min-height:24px; }
  .home-today-grid > .school-public-widget > .public-data-source { padding-block-start:0; }
- .home-today-grid > .school-public-widget .school-hourly-item { gap:2px; }
+ .home-today-grid > .school-public-widget .school-hourly-item { gap:4px; }
+ .home-today-grid > .school-public-widget .school-hourly-item > :is(span,small) { font-size:12px; }
+ .home-today-grid > .school-public-widget .school-hourly-item > b { font-size:15px; }
+ .home-today-grid > .school-public-widget .school-meal-menu { font-size:15px; }
+ .home-today-grid > .school-public-widget .weather-heading-address { font-size:12px; }
  .home-today-grid > .school-public-widget .school-hourly-weather { padding-top:5px; }
- .home-today-grid > .school-public-widget .school-weather-overview > div > strong { font-size:34px; }
+ .home-today-grid > .school-public-widget .school-weather-overview > div > strong { font-size:38px; }
  .home-today-grid > .school-public-widget .school-meal-menu { line-height:1.55; }
  .home-clock-time { font-size:30px; font-weight:650; }
  .home-clock-date > time { font-size:20px; }
  .home-clock-date > span { display:none; }
  .home-live-clock { padding-block:4px; }
- .personal-day .personal-day-heading h2,.home-week-and-tasks .my-tasks h3 { font-size:16px; }
+ .personal-day .personal-day-heading h2,.home-week-and-tasks .my-tasks h3 { font-size:18px; }
+ .personal-day .personal-widget-note,.personal-day .next-lesson p { font-size:15px; }
+ .personal-day .daily-clock { font-size:13px; }
  .home-lessons-widget:has(.home-period-desktop) .personal-lesson-list { display:none; }
  .home-period-desktop { display:grid; gap:6px; min-width:0; }
  .home-period-grid { display:grid; grid-template-columns:repeat(var(--home-period-columns),minmax(0,1fr)); gap:4px; list-style:none; padding:0; margin:0; }
  .home-period-grid li { display:grid; gap:3px; min-width:0; text-align:center; }
- .home-period-number { color:var(--text-secondary); font-size:11px; white-space:nowrap; }
- .home-period-card { box-sizing:border-box; width:100%; height:64px; min-height:64px; display:grid; grid-template-rows:13px 17px 14px; align-content:center; justify-items:center; gap:2px; min-width:0; border:1px solid transparent; border-radius:6px; padding:3px 1px; background:#e5ebf5; color:#24364c; }
+ .home-period-number { color:var(--text-secondary); font-size:13px; white-space:nowrap; }
+ .home-period-card { box-sizing:border-box; width:100%; height:76px; min-height:76px; display:grid; grid-template-rows:14px 21px 17px; align-content:center; justify-items:center; gap:2px; min-width:0; border:1px solid transparent; border-radius:6px; padding:3px 1px; background:#e5ebf5; color:#24364c; }
  button.home-period-card { cursor:pointer; }
  .home-period-card[data-grade="2"] { background:#e4eee9; }.home-period-card[data-grade="3"] { background:#f3ece1; }.home-period-card[data-grade="4"] { background:#ebe3f4; }.home-period-card[data-grade="5"] { background:#e0eff0; }.home-period-card[data-grade="6"] { background:#f2e2e8; }
  .home-period-card[data-status="cancelled"] { background:#f1f2f4; border:1px dashed #b6bec9; }.home-period-card[data-status="cancelled"] strong { text-decoration:line-through; }
- .home-period-card[data-status="current"] { border-color:#24528e; }.home-period-card[data-status="finished"] { opacity:.75; }
+ .home-period-card[data-status="current"] { border-color:#24528e; }.home-period-card[data-status="finished"] { opacity:1; }
  .home-period-card:focus-visible { outline:2px solid #24528e; outline-offset:1px; }
  .home-period-card strong,.home-period-card small,.home-period-badge { max-width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.2; }
- .home-period-card strong { font-size:13px; }.home-period-card small { color:#526379; font-size:11px; }.home-period-badge { font-size:10px; font-weight:650; color:#86591f; }
+ .home-period-card strong { font-size:16px; }.home-period-card small { color:#526379; font-size:13px; }.home-period-badge { font-size:11px; font-weight:650; color:#86591f; }
  .home-period-empty { display:grid; place-items:center; grid-template-rows:1fr; background:var(--surface-muted); color:var(--text-secondary); }
- .home-period-footer { display:flex; justify-content:space-between; align-items:center; gap:4px; font-size:12px; color:var(--text-secondary); }
- .home-period-footer .widget-link { min-height:24px; font-size:12px; }
+ .home-period-footer { display:flex; justify-content:space-between; align-items:center; gap:4px; font-size:13px; color:var(--text-secondary); }
+ .home-period-footer .widget-link { min-height:26px; font-size:13px; }
  .personal-day .home-lessons-widget .next-lesson { padding:8px 10px; gap:2px; }
  .home-lessons-widget .next-lesson-clock { font-size:20px; }
- .home-lessons-widget .next-lesson strong { font-size:13px; }
- .home-lessons-widget .next-lesson small,.home-lessons-widget .next-lesson-label { font-size:11px; }
+ .home-lessons-widget .next-lesson strong { font-size:15px; }
+ .home-lessons-widget .next-lesson small,.home-lessons-widget .next-lesson-label { font-size:13px; }
  .home-lessons-widget .home-operation-notice { padding:6px 8px; }
- .home-week-and-tasks { grid-template-columns:minmax(0,1fr) minmax(280px,23%); align-items:stretch; gap:16px; }
+ .home-week-and-tasks { grid-template-columns:minmax(0,1fr) minmax(280px,23%); align-items:start; gap:16px; }
  .home-week-and-tasks:not(:has(>.my-tasks)) { grid-template-columns:minmax(0,1fr); }
- .home-week-and-tasks > .personal-widget { min-width:0; height:420px; box-sizing:border-box; padding:14px 16px; }
- .home-week-and-tasks > .my-tasks { height:420px; min-width:0; box-sizing:border-box; overflow:auto; padding:14px 16px; }
+ .home-week-and-tasks > .personal-widget { min-width:0; height:auto; box-sizing:border-box; padding:16px 18px; }
+ .home-week-and-tasks > .my-tasks { height:auto; min-width:0; box-sizing:border-box; overflow:visible; padding:16px 18px; }
+ .home-week-and-tasks > .my-tasks p { font-size:14px; }
+ .home-week-and-tasks > .my-tasks small { font-size:12px; }
  .task-widget-actions[data-dashboard] .task-direct-actions { display:none; }
  .task-widget-actions[data-dashboard] .task-dashboard-more { display:block; position:relative; margin-left:auto; }
  .task-dashboard-more > summary { display:grid; place-items:center; width:32px; height:32px; min-height:32px; border:1px solid var(--border); border-radius:6px; }
  .task-dashboard-more > summary::after { display:none; }
  .task-dashboard-menu { display:flex; flex-direction:column; align-items:stretch; gap:4px; padding:6px; border:1px solid var(--border); border-radius:6px; background:var(--card); }
- .task-dashboard-body { max-height:255px; overflow:auto; scrollbar-gutter:stable; }
+ .personal-day .task-dashboard-body { max-height:none; overflow:visible; }
 }
 @media screen and (min-width:1024px) and (max-width:1250px) {
  .home-today-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
  .home-today-grid > :first-child { grid-column:1/-1; }
- .home-today-grid > .home-lessons-widget { height:224px; }
- .home-today-grid > .school-public-widget { height:212px; }
  .home-today-grid-single { grid-template-columns:minmax(0,1fr); }
  .home-period-grid { grid-template-columns:repeat(var(--home-period-columns),minmax(0,1fr)); }
 }
 
 
-/* The explicit track sum is 180px (50 + 3*30 + 24 + 4*4).
+/* The explicit track sum is 200px (52 + 3*36 + 24 + 4*4).
    Do not let a parent grid shrink the calendar below its track geometry. */
 @media screen and (min-width:768px) {
  .personal-day .home-weekly-agenda { display:flex; flex-direction:column; align-items:stretch; gap:8px; min-width:0; }
  .personal-day .home-weekly-agenda > :is(.personal-day-heading,.home-week-toolbar) { flex:0 0 auto; }
- .personal-day .home-week-grid { box-sizing:border-box; flex:0 0 180px; height:180px; min-height:180px; gap:4px; min-width:0; overflow:hidden; }
- .personal-day .home-week-grid .home-week-date { min-height:0; height:50px; padding:0; gap:1px; }
+ .personal-day .home-week-grid { box-sizing:border-box; flex:0 0 200px; height:200px; min-height:200px; gap:4px; min-width:0; overflow:hidden; }
+ .personal-day .home-week-grid .home-week-date { min-height:0; height:52px; padding:0; gap:1px; }
  .personal-day .home-week-grid .home-week-date time { width:28px; height:28px; min-width:28px; min-height:28px; }
- .personal-day .home-week-grid .home-week-event { display:flex; align-items:center; box-sizing:border-box; height:30px; min-height:0; padding:3px 5px; overflow:hidden; }
+ .personal-day .home-week-grid .home-week-event { display:flex; align-items:center; box-sizing:border-box; height:36px; min-height:0; padding:4px 6px; font-size:14px; overflow:hidden; }
  .personal-day .home-week-event .schedule-department-title { display:flex; flex:1; flex-wrap:nowrap; align-items:center; min-width:0; gap:4px; }
  .personal-day .home-week-event .schedule-department-title > :last-child { flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
- .personal-day .home-week-overflow { z-index:1; min-height:0; height:24px; padding:0; color:var(--schedule-accent); font-size:11px; font-weight:650; cursor:pointer; }
- .personal-day .home-week-detail { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:6px; padding-top:8px; }
+ .personal-day .home-week-overflow { z-index:1; min-height:0; height:24px; padding:0; color:var(--schedule-accent); font-size:12px; font-weight:650; cursor:pointer; }
+ .personal-day .home-week-detail { flex:0 0 auto; min-height:0; display:flex; flex-direction:column; gap:8px; padding-top:12px; }
  .personal-day .home-week-detail h3 { flex:none; }
- .personal-day .home-week-detail-list { min-height:0; max-height:132px; overflow:auto; scrollbar-gutter:stable; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; }
+ .personal-day .home-week-detail-list { min-height:0; max-height:none; overflow:visible; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; }
 }
 @media screen and (min-width:1024px) {
- .personal-day .home-weekly-agenda { overflow:auto; }
- .personal-day .home-week-detail { flex:1 1 auto; min-height:94px; }
- .personal-day .home-week-detail-list { flex:1 1 auto; }
+ .personal-day .home-weekly-agenda { overflow:visible; }
+ .personal-day .home-week-detail h3 { font-size:16px; }
+ .personal-day .home-week-detail-list .home-week-detail-trigger { min-height:54px; font-size:15px; padding:8px 10px; }
+ .personal-day .home-week-detail-list small { font-size:13px; }
+ .personal-day .home-week-date span { font-size:13px; }
+ .personal-day .home-week-date time { font-size:19px; }
  .personal-day .home-lessons-widget .next-lesson[data-lesson-summary="upcoming"] { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:8px; }
  .personal-day .home-lessons-widget .next-lesson[data-lesson-summary="upcoming"] .next-lesson-label { grid-column:1; grid-row:1; }
  .personal-day .home-lessons-widget .next-lesson[data-lesson-summary="upcoming"] .next-lesson-clock { grid-column:2; grid-row:1/3; }
