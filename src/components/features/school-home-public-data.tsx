@@ -8,10 +8,10 @@ import { koreanMealMinutes, type MealEndTimes } from "@/lib/school-meal-selectio
 import { MealSelector } from "./meal-selector";
 import "./school-extras.css";
 
-function PublicWidget({ kind, children }: { kind: "weather" | "meal"; children: ReactNode }) {
-  const [Icon, title] = kind === "weather" ? [CloudSun, "학교 날씨"] as const : [Utensils, "오늘의 급식"] as const;
+function PublicWidget({ kind, children, address }: { kind: "weather" | "meal"; children: ReactNode; address?: string }) {
+  const [Icon, title] = kind === "weather" ? [CloudSun, "날씨"] as const : [Utensils, "오늘의 급식"] as const;
   return <section className="personal-widget school-public-widget">
-    <header className="personal-day-heading"><h2><Icon aria-hidden="true" />{title}</h2></header>
+    <header className={`personal-day-heading${kind === "weather" ? " weather-widget-heading" : ""}`}><h2><Icon aria-hidden="true" />{title}</h2>{address && <span className="weather-heading-address" title={address}>{address}</span>}</header>
     {children}
   </section>;
 }
@@ -35,15 +35,12 @@ async function WeatherSummary({ school, unavailable }: { school?: Row<"schools">
   }[result.status]}</Availability>;
   const weather = result.value;
   return <>
-    <p className="public-data-address">{school?.road_address || school?.region || "학교에 설정된 위치"}</p>
     <div className="school-weather-now school-weather-overview">
-      <div><strong>{weather.temperature === null ? "—" : `${weather.temperature}°`}</strong>
-        <small>{weather.observedAt ? `${weather.observedAt} 관측` : "관측 기온 확인 불가"}</small></div>
+      <div><strong title={weather.observedAt ? `${weather.observedAt} 관측` : "관측 기온 확인 불가"}>{weather.temperature === null ? "—" : `${weather.temperature}°`}</strong></div>
       <div className="school-weather-status">
         <WeatherIcon condition={weather.condition} />
-        <b>{weather.condition ?? "날씨 확인 불가"}</b>
+        <b title={weather.forecastHour ? `${weather.forecastHour} 날씨 예보` : undefined}>{weather.condition ?? "날씨 확인 불가"}</b>
         <small>최고 {weather.high === null ? "—" : `${weather.high}°`} · 최저 {weather.low === null ? "—" : `${weather.low}°`}</small>
-        {weather.forecastHour && <small>{weather.forecastHour} 날씨 예보</small>}
       </div>
     </div>
     <div className="school-hourly-weather" aria-label="앞으로 6시간 날씨 예보">
@@ -79,7 +76,7 @@ export function SchoolHomePublicData({ school, today, unavailable, mealEnds = {}
   mealEnds?: MealEndTimes;
 }) {
   return <>
-    <PublicWidget kind="weather">
+    <PublicWidget kind="weather" address={school?.road_address || school?.region || undefined}>
       <Suspense fallback={<Availability>학교 날씨를 불러오는 중…</Availability>}>
         <WeatherSummary school={school} unavailable={unavailable} />
       </Suspense>

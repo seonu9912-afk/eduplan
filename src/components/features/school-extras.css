@@ -163,3 +163,12 @@
 .school-hourly-item { display: grid; justify-items: center; gap: 4px; min-width: 0; font-variant-numeric: tabular-nums; }
 .school-hourly-item > span, .school-hourly-item > small { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
 .school-hourly-item > b { font-size: 13px; white-space: nowrap; }
+
+/* Keep the weather location in the title row, without taking a separate line. */
+.personal-day-heading.weather-widget-heading { flex-wrap: nowrap; gap: 8px; }
+.weather-widget-heading h2 { flex: none; }
+.weather-heading-address { min-width: 0; flex: 1; color: var(--text-secondary); font-size: 11px; font-weight: 400; text-align: end; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.school-weather-status { grid-template-columns: auto auto; align-items: center; column-gap: 5px; }
+.school-weather-status > small { grid-column: 1 / -1; }
+.school-weather-status > .weather-icon { width: 24px; height: 24px; }
+.school-public-widget:has(.weather-widget-heading) { gap: 8px; }
