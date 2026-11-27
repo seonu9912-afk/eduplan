@@ -412,7 +412,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "timetable" && !management && <>
-          <OfficialTimetable key={c.year?.id} context={c} today={today} actions={managementLink} />
+          <OfficialTimetable key={`${c.year?.id}:timetable:${initialScheduleDate ?? ""}`} context={c} today={today} actions={managementLink} initialDate={initialScheduleDate} />
           {!canPlan(c, "timetable") && c.operations?.directory.some((staff) => staff.user_id === c.userId) &&
             <div className="workspace-related-tools"><LessonLedger context={c} today={today} /></div>}
         </>}

@@ -239,6 +239,6 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
           <ResourceLinks value={entry.resources} compact />
         </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
     </div>
-    <ScheduleDetailDialog entry={scheduleDetail.entry} onClose={scheduleDetail.close} onCloseAutoFocus={scheduleDetail.restoreFocus} />
+    <ScheduleDetailDialog context={context} entry={scheduleDetail.entry} onClose={scheduleDetail.close} onCloseAutoFocus={scheduleDetail.restoreFocus} />
   </section>;
 }

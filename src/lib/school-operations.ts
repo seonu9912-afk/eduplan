@@ -33,6 +33,9 @@ export type DatedLesson = {
   end: string | null;
   changed: boolean;
   blockedBy: string[];
+  /** Exact allocation/event identities used by the resolver, not title matching. */
+  relatedEventIds?: string[];
+  blockedByEventIds?: string[];
 };
 export function publishedTimetable(c: Context): TimetableDocument | null {
   const parsed = timetableDocumentSchema.safeParse(
@@ -178,6 +181,8 @@ export function createLessonResolver(
             : (document.groups.find((g) => g.id === slot.scopeId)?.classIds ??
               []);
         const blocked: string[] = [];
+        const relatedEventIds = new Set<string>();
+        const blockedByEventIds = new Set<string>();
         if (!annual && !parsed.success)
           blocked.push("학사일정 자료를 확인할 수 없습니다.");
         if (applications.length > 1) blocked.push("특별 시정표 적용 충돌");
@@ -226,8 +231,9 @@ export function createLessonResolver(
                 name:
                   c.events.find((e) => e.id === a.eventId)?.title ?? a.title,
                 area: a.areas[cls.grade],
+                ids: [a.id, ...(a.eventId ? [a.eventId] : [])],
               }))
-            : recurring.map((r) => ({ name: r.name, area: r.area }));
+            : recurring.map((r) => ({ name: r.name, area: r.area, ids: [] as string[] }));
           const kinds: Record<string, string[]> = {
             자율: ["creative_self"],
             "자율·자치": ["creative_self"],
@@ -239,12 +245,16 @@ export function createLessonResolver(
           const subjectKind = document.subjects.find(
             (s) => s.id === slot.subjectId,
           )?.kind;
-          for (const a of activities)
+          for (const a of activities) {
+            for (const id of a.ids) relatedEventIds.add(id);
             if (
               a.area !== "교과" &&
               !(kinds[a.area] ?? []).includes(subjectKind ?? "")
-            )
+            ) {
               blocked.push(a.name);
+              for (const id of a.ids) blockedByEventIds.add(id);
+            }
+          }
           if (activities.length > 1) blocked.push("행사·활동 교시 중복");
         }
         const time = dayBell.find(
@@ -275,6 +285,8 @@ export function createLessonResolver(
           end: time?.end ?? null,
           changed: slot.changed,
           blockedBy: [...new Set(blocked)],
+          relatedEventIds: [...relatedEventIds],
+          blockedByEventIds: [...blockedByEventIds],
         };
       })
       .sort(

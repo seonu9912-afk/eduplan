@@ -17,12 +17,12 @@ const audiences: Record<TimetableAudience, string> = {
   all: "전체 시간표",
 };
 
-export function OfficialTimetable({ context: c, today, actions }: { context: Context; today: string; actions?: ReactNode }) {
+export function OfficialTimetable({ context: c, today, actions, initialDate }: { context: Context; today: string; actions?: ReactNode; initialDate?: string }) {
   if (!c.year) return <p>학년도를 선택하세요.</p>;
-  return <TimetableSheet context={c} today={today} year={c.year.year} actions={actions} />;
+  return <TimetableSheet context={c} today={today} year={c.year.year} actions={actions} requestedDate={initialDate} />;
 }
 
-function TimetableSheet({ context: c, today, year, actions }: { context: Context; today: string; year: number; actions?: ReactNode }) {
+function TimetableSheet({ context: c, today, year, actions, requestedDate }: { context: Context; today: string; year: number; actions?: ReactNode; requestedDate?: string }) {
   const start = `${year}-03-01`;
   const end = addDays(`${year + 1}-03-01`, -1);
   const [clock, setClock] = useState<ReturnType<typeof seoulClock> | null>(null);
@@ -38,8 +38,9 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
   const thisYear = liveToday >= start && liveToday <= end;
   const initialDate = thisYear ? today : c.operations?.effectiveTimetables?.[0]?.starts_on ?? c.semesters[0]?.start_date ?? start;
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
-  const [date, setDate] = useState(initialDate);
-  const [selectedMode, setMode] = useState<TimetableMode | null>(null);
+  const validDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && !Number.isNaN(Date.parse(requestedDate));
+  const [date, setDate] = useState(validDate ? clamp(requestedDate!) : clamp(initialDate));
+  const [selectedMode, setMode] = useState<TimetableMode | null>(validDate ? "weekly" : null);
   const [audience, setAudience] = useState<TimetableAudience>("mine");
   const [teacher, setTeacher] = useState("");
   const [classId, setClassId] = useState("");

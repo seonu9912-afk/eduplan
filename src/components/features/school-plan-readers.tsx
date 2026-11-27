@@ -240,7 +240,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         </div>
         </div>
       </div>}
-      <ScheduleDetailDialog entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
+      <ScheduleDetailDialog context={selected && !searchResult ? undefined : c} entry={detail.entry} onClose={detail.close} onCloseAutoFocus={detail.restoreFocus} onJump={searchResult ? () => jumpToResult(searchResult) : undefined} />
       {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
