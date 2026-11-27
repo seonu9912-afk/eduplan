@@ -111,3 +111,63 @@
  .schedule-surface[data-work-plan] .school-calendar-agenda > section > ul{padding:6px 8px;}
  .schedule-surface[data-work-plan] .school-calendar-agenda > section > ul > li > div{padding:6px 8px;}
 }
+
+/* Public calendar only: one agenda shared across the responsive layouts. */
+.calendar-pending-count { color:var(--schedule-accent); font-weight:700; }
+.calendar-history-modal ul { display:grid; gap:12px; list-style:none; margin:0; padding:0; }
+.calendar-history-modal li { display:grid; justify-items:start; gap:6px; border-bottom:1px solid var(--border); padding:10px 0; }
+.calendar-activity-modal { display:grid; gap:12px; min-width:0; }
+.calendar-activity-modal > button { justify-self:start; }
+@media screen and (max-width:767px) {
+ .schedule-surface:not([data-work-plan]) .official-schedule-main { display:grid; gap:8px; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-mobile { display:block; }
+}
+@media screen and (min-width:768px) {
+ .calendar-agenda-mobile-only { display:none; }
+ .schedule-surface:not([data-work-plan]) .schedule-view-controls { display:flex; position:relative; flex-wrap:wrap; gap:6px; }
+ .schedule-surface:not([data-work-plan]) .schedule-more-toggle { display:inline-flex; }
+ .schedule-surface:not([data-work-plan]) .schedule-search-toggle { width:44px; min-width:44px; padding:0; }
+ .schedule-surface:not([data-work-plan]) .schedule-search-toggle span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+ .schedule-surface:not([data-work-plan]) .schedule-secondary-controls { display:none; }
+ .schedule-surface:not([data-work-plan]) .schedule-secondary-controls[data-open=true] { position:absolute; top:calc(100% + 6px); right:0; z-index:20; display:flex; flex-wrap:wrap; align-items:center; gap:8px; width:min(430px,85vw); padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--card); box-shadow:0 6px 24px #17334d20; }
+ .schedule-surface:not([data-work-plan]) .schedule-secondary-controls .schedule-jump { flex:1 1 150px; min-width:0; }
+ .schedule-surface:not([data-work-plan]) .official-schedule-main { display:grid; grid-template-columns:minmax(0,1fr); gap:14px; align-items:start; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar { width:100%; min-width:0; border:0; border-collapse:collapse; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar thead th { text-align:center; background:var(--surface-muted); font-size:13px; padding:8px 0; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar :is(th,td) { border-color:color-mix(in srgb,var(--border) 72%,white); }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar thead th:first-child,
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar[data-view="month"] .school-calendar-date-row td:first-child time { color:#a64750; }
+ .schedule-surface:not([data-work-plan])[data-calendar-view="week"] .school-reader-calendar thead th:first-child { color:inherit; }
+ .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-reader-calendar thead th:last-child,
+ .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:last-child time { color:#326198; }
+ .schedule-surface:not([data-work-plan])[data-calendar-view="month"] .school-calendar-date-row td:first-child time { color:#a64750; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar time[aria-current="date"] { color:white!important; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-date-row td { height:34px; padding:0 4px; }
+ .calendar-desktop-day { display:flex; width:100%; min-height:32px; align-items:center; text-align:left; cursor:pointer; padding:1px 4px; }
+ .calendar-desktop-day time { font-size:14px; }
+ .calendar-desktop-day[aria-pressed=true] time:not([aria-current=date]) { border-radius:50%; box-shadow:inset 0 0 0 1px #315e95; color:#315e95; }
+ .calendar-desktop-day:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar td[data-selected] { background:#edf4fc; }
+ .schedule-surface:not([data-work-plan]) .school-reader-calendar tr[data-calendar-overflow] { display:none; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-event-row td { height:25px; padding:0 3px; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-event-row .school-reader-event { box-sizing:border-box; height:23px; min-height:23px; margin:1px 0; padding:2px 5px; display:flex; align-items:center; overflow:hidden; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-event-row .schedule-department-title { min-width:0; width:100%; align-items:center; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-event-row .schedule-detail-trigger { min-height:0; padding:0; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; display:block; font-size:12px; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-event-row .resource-details { display:none; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-week-space td { height:8px; }
+ .calendar-desktop-overflow td { height:22px; padding:0 5px; }
+ .calendar-desktop-overflow button { font-size:12px; font-weight:650; min-height:20px; color:var(--schedule-accent); cursor:pointer; }
+ .calendar-selected-agenda > section { min-height:220px; }
+ .calendar-selected-agenda h3 { background:#edf4fc; }
+ .calendar-selected-agenda .schedule-detail-trigger { overflow-wrap:anywhere; }
+ .calendar-selected-agenda > section > ul { max-height:570px; overflow:auto; }
+}
+@media screen and (min-width:1024px) {
+ .schedule-surface:not([data-work-plan]) .official-schedule-main { grid-template-columns:minmax(0,1fr) minmax(260px,23%); }
+ .schedule-surface:not([data-work-plan]) .calendar-selected-agenda { grid-column:2; grid-row:1; }
+ .schedule-surface:not([data-work-plan]) .school-calendar-desktop { grid-column:1; grid-row:1; }
+}
+@media print {
+ .calendar-selected-agenda,.calendar-agenda-mobile-only,.calendar-desktop-overflow,.school-calendar-event-row[data-calendar-padding] { display:none!important; }
+ .school-calendar-event-row[data-calendar-overflow]:not([data-calendar-padding]) { display:table-row; }
+}

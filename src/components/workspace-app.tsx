@@ -410,8 +410,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "calendar" && !management && <>
-          <OfficialSchedule key={`${c.year?.id}:calendar:${initialScheduleDate ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} actions={managementLink} />
-          <ActivityRequests context={c} today={today} />
+          <OfficialSchedule key={`${c.year?.id}:calendar:${initialScheduleDate ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} actions={managementLink} activityTools={<ActivityRequests context={c} today={today} embedded />} />
         </>}
         {section === "timetable" && management ? (
           <Timetable
