@@ -54,9 +54,10 @@ describe("school public data", () => {
     const now = new Date("2026-11-27T05:20:00Z");
     const timing = weatherReleaseTimes(now);
     const forecast = [
-      { category: "PTY", fcstDate: "20261127", fcstTime: "1500", fcstValue: "0" },
-      { category: "SKY", fcstDate: "20261127", fcstTime: "1500", fcstValue: "3" },
-      { category: "POP", fcstDate: "20261127", fcstTime: "1500", fcstValue: "0" },
+      { category: "PTY", fcstDate: "20261127", fcstTime: "1600", fcstValue: "0" },
+      { category: "SKY", fcstDate: "20261127", fcstTime: "1600", fcstValue: "3" },
+      { category: "POP", fcstDate: "20261127", fcstTime: "1600", fcstValue: "0" },
+      { category: "TMX", fcstDate: "20261127", fcstTime: "1500", fcstValue: "11" },
       { category: "TMX", fcstDate: "20261128", fcstTime: "1500", fcstValue: "30" },
     ];
     const daily = [
@@ -65,7 +66,7 @@ describe("school public data", () => {
     ];
     const observation = [{ category: "T1H", obsrValue: "9.5" }];
     expect(summarizeSchoolWeather(forecast, [], daily, timing)).toMatchObject({
-      temperature: null, condition: "구름 많음", forecastHour: "15:00", low: -1, high: 11, precipitation: 0,
+      temperature: null, condition: "구름 많음", forecastHour: "16:00", low: -1, high: 11, precipitation: 0,
     });
     vi.stubEnv("WEATHER_API_KEY", "");
     vi.stubEnv("HOLIDAY_API_KEY", "portal-key");

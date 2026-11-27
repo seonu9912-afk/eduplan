@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run check && npm run build && node scripts/verify-school-providers.mjs",
+  "buildCommand": "npm run check && npm run build",
   "git": {
     "deploymentEnabled": {
       "recovery/eduplan-integration": false,

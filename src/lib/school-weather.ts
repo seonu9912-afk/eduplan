@@ -41,7 +41,9 @@ export function summarizeSchoolWeather(
   forecast: KmaItem[], observation: KmaItem[], daily: KmaItem[],
   timing: ReturnType<typeof weatherReleaseTimes>,
 ): SchoolWeather {
-  const nextHour = forecast.filter((item) => item.fcstDate === timing.day && typeof item.fcstTime === "string" && item.fcstTime >= timing.time)
+  const nextHour = forecast.filter((item) => item.fcstDate === timing.day &&
+    (item.category === "SKY" || item.category === "PTY" || item.category === "POP") &&
+    typeof item.fcstTime === "string" && item.fcstTime >= timing.time)
     .map((item) => item.fcstTime!).sort()[0];
   const hourly = (name: string) => forecast.find((item) =>
     item.category === name && item.fcstDate === timing.day && item.fcstTime === nextHour)?.fcstValue ?? "";

@@ -1221,6 +1221,7 @@ button[data-slot="button"][data-size="icon"] {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
 }
 .settings-intro {
   padding: 22px 26px;
@@ -1291,7 +1292,7 @@ button[data-slot="button"][data-size="icon"] {
 }
 .class-counts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   margin-top: 22px;
 }
@@ -2215,7 +2216,7 @@ button[data-slot="button"][data-size="icon"] {
     grid-template-columns: 1fr;
   }
   .settings-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .settings-help {
     display: none;
