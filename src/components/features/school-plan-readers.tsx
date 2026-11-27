@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, ListTodo, Printer } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -13,6 +13,7 @@ import { MobileCalendarDates } from "./mobile-calendar-dates";
 import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
+import { MyTasks } from "./my-tasks";
 import "./school-plan-readers.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -124,11 +125,7 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
                 aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
             </div>
           </section>
-          <details className="official-work-tasks" open>
-            <summary><ListTodo size={16} aria-hidden="true" /><h3>나의 할 일</h3></summary>
-            <p>할 일 기능은 아직 연결되지 않았습니다.</p>
-            <small>배포받은 업무와 개인이 추가한 할 일을 이곳에서 확인할 수 있도록 준비 중입니다.</small>
-          </details>
+          <MyTasks />
         </aside>}
         <div className="official-schedule-main">
         <div className="school-calendar-mobile no-print">

@@ -448,3 +448,8 @@
   .home-today-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .home-shortcuts { margin-block: 12px; }
 }
+
+.home-week-and-tasks { display: grid; gap: 12px; min-width: 0; align-items: start; }
+.home-week-and-tasks > .my-tasks { border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
+@media screen and (min-width: 1024px) { .home-week-and-tasks { grid-template-columns: minmax(0, 1fr) 205px; } }
+@media print { .home-week-and-tasks { display: block; } }

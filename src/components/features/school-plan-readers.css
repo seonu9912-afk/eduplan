@@ -319,20 +319,13 @@ details.school-publication-history.edu-disclosure > .edu-disclosure-heading { pa
 .official-work-mini-grid button[aria-pressed="true"] time { background: #24528e; color: white; }
 .official-work-mini-grid button[aria-current="date"]:not([aria-pressed="true"]) time { box-shadow: inset 0 0 0 1px #24528e; }
 .official-work-mini-grid button:focus-visible, .official-work-mini-heading button:focus-visible { outline: 2px solid var(--primary); outline-offset: -1px; }
-.official-work-tasks { padding: 13px 12px; border-top: 1px solid var(--border); }
-.official-work-tasks summary { display: flex; align-items: center; gap: 6px; cursor: pointer; list-style: none; }
-.official-work-tasks summary::-webkit-details-marker { display: none; }
-.official-work-tasks summary::after { content: "⌄"; margin-inline-start: auto; color: var(--text-secondary); }
-.official-work-tasks[open] summary::after { transform: rotate(180deg); }
-.official-work-tasks h3 { font-size: 14px; margin: 0; font-weight: 700; }
-.official-work-tasks p { margin: 12px 0 4px; font-size: 12px; color: var(--text-secondary); }
-.official-work-tasks small { font-size: 11px; line-height: 1.6; color: var(--text-secondary); }
+.official-work-week-sidebar > .my-tasks { border-top: 1px solid var(--border); }
 @media screen and (min-width: 1024px) {
   .official-work-week-layout { grid-template-columns: 205px minmax(0, 1fr); }
 }
 @media screen and (max-width: 1023px) {
   .official-work-mini { display: none; }
-  .official-work-tasks { border-top: 0; }
+  .official-work-week-sidebar > .my-tasks { border-top: 0; }
 }
 @media print {
   .official-work-week-layout { display: block; }

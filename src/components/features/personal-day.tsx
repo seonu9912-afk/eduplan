@@ -16,6 +16,7 @@ import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { LessonReminderSettings } from "./lesson-reminder-settings";
+import { MyTasks } from "./my-tasks";
 import "./school-operations.css";
 
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
@@ -90,7 +91,10 @@ export function PersonalDay({ context: c, today, previewNow, publicData }: {
         </section>
       {publicData}
     </div>
-    <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
+    <div className="home-week-and-tasks">
+      <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
+      <MyTasks />
+    </div>
     {previewNow && <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />}
   </section>;
 }
