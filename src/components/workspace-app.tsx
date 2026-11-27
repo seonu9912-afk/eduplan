@@ -52,7 +52,7 @@ import {
   Plus,
   Settings2,
   Users,
-  Building2,
+  ClipboardList,
   PanelTop,
   Table2,
 } from "lucide-react";
@@ -81,13 +81,13 @@ import { OfficialCurriculum, OfficialSchedule, OfficialTeaching } from "@/compon
 const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
-  calendar: "학사운영",
+  calendar: "학사일정",
+  plans: "업무계획",
   timetable: "시간표",
-  teachers: "교원 관리",
   teaching: "수업·평가",
-  plans: "월중·주간계획",
+  teachers: "교원 관리",
   notifications: "알림",
-  settings: "작업공간 설정",
+  settings: "학교 설정",
   people: "구성원 관리",
 };
 export function WorkspaceApp({
@@ -258,7 +258,7 @@ export function WorkspaceApp({
             </Button>}
             {schoolAdmin && <Button
               variant="ghost"
-              aria-label="작업공간 설정"
+              aria-label="학교 설정"
               className={section === "settings" ? "selected" : ""}
               aria-current={section === "settings" ? "page" : undefined}
               onClick={() => navigate(`${base}/settings${suffix}`)}
@@ -296,20 +296,11 @@ export function WorkspaceApp({
           {[
             { id: "home", label: "홈", icon: House },
             { id: "curriculum", label: "교육과정", icon: BookOpen },
-            { id: "calendar", label: "학사운영", icon: CalendarDays },
-            { id: "timetable", label: "시간표", icon: Table2 },
-            {
-              id: "teachers",
-              label: "교원 관리",
-              icon: Users,
-              disabled: false,
-            },
-            {
-              id: "teaching",
-              label: "수업·평가",
-              icon: PanelTop,
-            },
-            { id: "plans", label: "월중·주간계획", icon: Building2 },
+            { id: "calendar", label: sections.calendar, icon: CalendarDays },
+            { id: "plans", label: sections.plans, icon: ClipboardList },
+            { id: "timetable", label: sections.timetable, icon: Table2 },
+            { id: "teaching", label: sections.teaching, icon: PanelTop },
+            { id: "teachers", label: sections.teachers, icon: Users, disabled: false },
           ].filter(({ id }) => visibleSection(id)).map(({ id, label, icon: Icon, disabled }) =>
             disabled ? (
               <span
@@ -343,7 +334,8 @@ export function WorkspaceApp({
       <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
         {[
           { id: "home", label: "홈", icon: House },
-          { id: "calendar", label: "일정", icon: CalendarDays },
+          { id: "calendar", label: "학사일정", icon: CalendarDays },
+          { id: "plans", label: "주간계획", icon: ClipboardList },
           { id: "timetable", label: "시간표", icon: Table2 },
         ].map(({ id, label, icon: Icon }) => (
           <Link
