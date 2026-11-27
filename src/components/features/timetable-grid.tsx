@@ -5,7 +5,7 @@ import { Modal } from "@/components/common";
 import { dateLabel } from "@/lib/domain";
 import { dailyLessonStatus } from "@/lib/school-operations";
 import { commonPeriodTime, lessonTime } from "@/lib/timetable-display";
-import type { timetableWeek, TimetableAudience, TimetableCell, TimetableMode } from "@/lib/timetable-view";
+import { visibleTimetableCell, type timetableWeek, type TimetableAudience, type TimetableCell, type TimetableMode } from "@/lib/timetable-view";
 import "./official-timetable.css";
 
 const days = ["월", "화", "수", "목", "금"];
@@ -23,7 +23,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
   showChangeBadges?: boolean;
 }) {
   const [detail, setDetail] = useState<{ cell?: TimetableCell; date: string; notice?: string } | null>(null);
-  const columns = week.weekdays.map((column) => ({ ...column, allCells: column.cells, cells: column.cells.filter(visible) }));
+  const columns = week.weekdays.map((column) => ({ ...column, allCells: column.cells, cells: column.cells.filter(cell => visible(cell) && visibleTimetableCell(cell, audience)) }));
   const current = (cell: TimetableCell, date: string) => mode === "weekly" && date === today && currentMinutes !== undefined && dailyLessonStatus({ start: cell.start ?? null, end: cell.end ?? null, blockedBy: cell.blocked ? [cell.blocked] : [] }, currentMinutes) === "current";
   return (
     <>
@@ -31,6 +31,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
       tabIndex={0} role="region" aria-label={label}>
       <table className="official-timetable-grid" data-audience={audience} data-change-badges={showChangeBadges ? "" : undefined}>
         <caption className="sr-only">{label}</caption>
+        <colgroup><col className="timetable-period-col"/>{columns.map(column=><col key={column.date}/>)}</colgroup>
         <thead><tr>
           <th scope="col">교시</th>
           {columns.map((column, index) => (
@@ -49,7 +50,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
               {columns.map((column) => {
                 const cells = column.cells.filter((cell) => cell.period === period);
                 const active = column.allCells.some((cell) => cell.period === period && current(cell, column.date));
-                const free = showFreePeriods && column.teaching && period <= column.periodCount && !cells.length && (audience === "mine" || audience === "teacher" || audience === "class");
+                const free = showFreePeriods && column.teaching && period <= column.periodCount && !cells.length;
                 return <td key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}
                   data-current-period={active ? "" : undefined} className={period > column.periodCount || !column.teaching ? "timetable-nonperiod" : undefined}>
                   {free && <span className="timetable-free-period" aria-label={audience === "class" ? "수업 없음" : "공강"}>{audience === "class" ? "—" : "공강"}</span>}
@@ -63,7 +64,6 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                       <strong className="timetable-lesson-subject">{classFirst ? classLabel : cell.subject}</strong>
                       {audience === "class" ? (cell.teacher && <span className="timetable-lesson-secondary">{cell.teacher}</span>) : <>
                         <span className="timetable-lesson-secondary">{classFirst ? cell.subject : classLabel}</span>
-                        {audience === "all" && cell.teacher && <small className="timetable-lesson-meta">{cell.teacher}</small>}
                       </>}
                       {!showChangeBadges && showFreePeriods && cell.room && <small className="timetable-lesson-meta">{cell.room}</small>}
                       {!showChangeBadges && mode === "weekly" && !time && lessonTime(cell) && <small className="timetable-lesson-meta timetable-varying-time">{cell.start}~{cell.end}</small>}

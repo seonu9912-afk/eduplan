@@ -221,7 +221,6 @@
   .timetable-calendar-note { margin: 0; padding: 8px 10px; font-size: 12px; }
   .official-timetable-scroll { min-width: 0; max-width: 100%; }
   .official-timetable-grid { min-width: 0; }
-  .official-timetable-grid[data-audience="all"] { min-width: 510px; }
   .official-timetable-grid th:first-child { width: clamp(44px, 12%, 68px); }
   .official-timetable-grid thead th { padding: 5px 3px; vertical-align: top; }
   .official-timetable-grid thead th time { display: inline-grid; place-items: center; min-width: 26px; min-height: 24px; padding: 0 3px; border-radius: 6px; }
@@ -303,16 +302,16 @@
   .official-timetable .timetable-view-toolbar { justify-content: space-between; width: 100%; }
   .official-timetable .timetable-mode-switch button[data-slot="button"] { min-height: 36px; height: 36px; }
   .official-timetable .timetable-more summary { min-height: 42px; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) th:first-child { width: 42px; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) :is(th, td) { border-color: color-mix(in srgb, var(--border) 65%, white); }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) thead th { padding: 4px 1px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid th:first-child { width: 42px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid :is(th, td) { border-color: color-mix(in srgb, var(--border) 65%, white); }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid thead th { padding: 4px 1px; }
   .official-timetable > .official-timetable-scroll .timetable-date-full { display: none; }
   .official-timetable > .official-timetable-scroll .timetable-date-short { display: inline; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) td { height: 48px; padding: 2px; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .official-lesson { min-height: 41px; padding: 3px 2px; gap: 1px; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .timetable-period-time { font-size: 9px; line-height: 1.2; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) .timetable-lesson-subject { font-size: 13px; }
-  .official-timetable > .official-timetable-scroll .official-timetable-grid:not([data-audience="all"]) td[data-today]:not(.timetable-nonperiod) { background: #f7faff; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid td { height: 48px; padding: 2px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid .official-lesson { min-height: 41px; padding: 3px 2px; gap: 1px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid .timetable-period-time { font-size: 9px; line-height: 1.2; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid .timetable-lesson-subject { font-size: 13px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid td[data-today]:not(.timetable-nonperiod) { background: #f7faff; }
 }
 
 /* The official reader displays only lesson identity and concise change badges. */
@@ -336,14 +335,12 @@
 /* Reserve the same status slot in every lesson, including the basic timetable.
    Fixed card geometry prevents a single changed lesson from stretching its row. */
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] { --lesson-card-height: 60px; --lesson-status-height: 15px; }
-.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges][data-audience="all"] { --lesson-card-height: 74px; }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] tbody td { height: calc(var(--lesson-card-height) + 5px); padding: 2px; vertical-align: top; }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson {
   box-sizing: border-box; display: grid; grid-template-rows: var(--lesson-status-height) 17px 15px;
   width: 100%; min-width: 0; height: var(--lesson-card-height); min-height: var(--lesson-card-height); max-height: var(--lesson-card-height);
   align-content: start; justify-items: center; align-items: center; gap: 1px; padding: 3px 2px; border: 1px solid transparent; overflow: hidden;
 }
-.official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges][data-audience="all"] button.official-lesson { grid-template-rows: var(--lesson-status-height) 17px 15px 13px; }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson[data-cancelled] { border: 1px dashed #b6bec9; }
 .official-timetable-grid[data-change-badges] button.official-lesson > :is(.timetable-lesson-subject,.timetable-lesson-secondary,.timetable-lesson-meta) { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }
 .official-timetable-grid[data-change-badges] button.official-lesson > .timetable-lesson-subject { font-size: 13px; }
@@ -359,5 +356,38 @@
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] thead button.timetable-day-badge { min-height: 18px; height: 18px; padding: 0 4px; margin-top: 2px; }
 .timetable-date-detail:focus-visible { outline: 2px solid #24528e; outline-offset: -2px; border-radius: 4px; }
 @media screen and (max-width: 767px) {
-  .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges]:not([data-audience="all"]) { --lesson-card-height: 58px; }
+  .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] { --lesson-card-height: 58px; }
+}
+
+/* Compact desktop reader. The mobile layout remains stacked. */
+@media screen {
+ .official-timetable .timetable-print-only { display:none; }
+ .timetable-publication-info { flex:1 1 100%; border-top:1px solid var(--border); padding-top:8px; min-width:0; font-size:13px; }
+ .timetable-publication-info summary { cursor:pointer; font-weight:650; }
+ .timetable-publication-info dl { display:grid; grid-template-columns:auto minmax(0,1fr); gap:5px 10px; margin:8px 0 0; color:var(--text-secondary); }
+ .timetable-publication-info dd { margin:0; overflow-wrap:anywhere; }
+ .official-timetable > .official-timetable-scroll .official-timetable-grid .timetable-period-col { width:42px; }
+}
+@media screen and (min-width:768px) {
+ .official-timetable.reader-surface .official-timetable-controls { grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:12px; row-gap:8px; }
+ .official-timetable.reader-surface .reader-period-nav { grid-column:1; grid-row:1; justify-self:start; width:auto; }
+ .official-timetable.reader-surface .reader-period-title { flex:0 1 auto; min-width:110px; padding-inline:8px; }
+ .official-timetable.reader-surface .reader-timetable-view { grid-column:2; grid-row:1; width:auto; justify-self:end; grid-template-columns:minmax(136px,auto) 44px; }
+ .official-timetable.reader-surface .reader-timetable-view .reader-segments > button { min-width:64px; }
+ .official-timetable.reader-surface .reader-secondary-controls { position:absolute; top:calc(100% + 6px); right:0; z-index:20; width:min(420px,85vw); padding:12px; box-shadow:0 6px 24px #17334d20; }
+ .official-timetable.reader-surface .reader-audience { grid-column:1/-1; grid-row:2; width:fit-content; justify-self:start; }
+ .official-timetable.reader-surface .reader-audience > button { flex:none; min-width:88px; padding-inline:12px; white-space:nowrap; }
+ .official-timetable.reader-surface .reader-target-filters { grid-column:1/-1; grid-row:2; justify-self:start; margin-left:326px; max-width:calc(100% - 326px); }
+ .official-timetable > .official-timetable-scroll .official-timetable-grid .timetable-period-col,
+ .official-timetable > .official-timetable-scroll .official-timetable-grid th:first-child { width:72px; }
+ .official-timetable.reader-surface > .official-timetable-scroll .official-timetable-grid thead th time { width:26px; min-width:26px; height:26px; min-height:26px; padding:0; font-size:12px; }
+ .official-timetable.reader-surface > .official-timetable-scroll .timetable-date-full { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; display:inline; }
+ .official-timetable.reader-surface > .official-timetable-scroll .timetable-date-short { display:inline; }
+}
+@media screen and (min-width:768px) and (max-width:960px) {
+ .official-timetable.reader-surface .reader-target-filters { grid-row:3; margin-left:0; max-width:100%; }
+}
+@media print {
+ .official-timetable .timetable-print-only { display:block; }
+ .official-timetable-grid .timetable-period-col { width:48px; }
 }
