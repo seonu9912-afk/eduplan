@@ -1,11 +1,11 @@
 import { Suspense, type ReactNode } from "react";
 import { CloudSun, Utensils } from "lucide-react";
-import { Disclosure } from "@/components/ui/disclosure";
 import { dateLabel } from "@/lib/domain";
 import { getSchoolMeals } from "@/lib/neis";
 import { getSchoolWeather } from "@/lib/school-weather";
 import type { Row } from "@/lib/models";
-import type { SchoolMeal } from "@/lib/school-public-data-model";
+import { koreanMealMinutes, type MealEndTimes } from "@/lib/school-meal-selection";
+import { MealSelector } from "./meal-selector";
 import "./school-extras.css";
 
 function PublicWidget({ kind, children }: { kind: "weather" | "meal"; children: ReactNode }) {
@@ -48,11 +48,7 @@ async function WeatherSummary({ school, unavailable }: { school?: Row<"schools">
   </>;
 }
 
-function Dishes({ meal }: { meal: SchoolMeal }) {
-  return <ul className="school-meal-menu">{meal.dishes.map((dish, index) => <li key={index}>{dish}</li>)}</ul>;
-}
-
-async function MealSummary({ school, today, unavailable }: { school?: Row<"schools"> | null; today: string; unavailable?: boolean }) {
+async function MealSummary({ school, today, unavailable, mealEnds }: { school?: Row<"schools"> | null; today: string; unavailable?: boolean; mealEnds: MealEndTimes }) {
   const result = unavailable ? { status: "error" as const } : await getSchoolMeals(school, today);
   if (result.status !== "available") return <>
     <time dateTime={today} className="public-data-address">{dateLabel(today)}</time>
@@ -63,20 +59,14 @@ async function MealSummary({ school, today, unavailable }: { school?: Row<"schoo
       error: "나이스 급식 정보를 불러오지 못했습니다.",
     }[result.status]}</Availability>
   </>;
-  const lunch = result.value.find((meal) => meal.code === "2") ?? result.value[0];
-  const otherMeals = result.value.filter((meal) => meal !== lunch);
-  return <>
-    <div className="school-meal-heading"><strong>{lunch.name}</strong><time dateTime={today}>{dateLabel(today)}</time></div>
-    <Dishes meal={lunch} />
-    {otherMeals.map((meal) => <Disclosure compact key={meal.code} label={meal.name}><Dishes meal={meal} /></Disclosure>)}
-    <p className="public-data-source">나이스 교육정보 개방 포털</p>
-  </>;
+  return <MealSelector key={today} meals={result.value} today={today} ends={mealEnds} initialMinutes={koreanMealMinutes(new Date())} />;
 }
 
-export function SchoolHomePublicData({ school, today, unavailable }: {
+export function SchoolHomePublicData({ school, today, unavailable, mealEnds = {} }: {
   school?: Row<"schools"> | null;
   today: string;
   unavailable?: boolean;
+  mealEnds?: MealEndTimes;
 }) {
   return <>
     <PublicWidget kind="weather">
@@ -86,7 +76,7 @@ export function SchoolHomePublicData({ school, today, unavailable }: {
     </PublicWidget>
     <PublicWidget kind="meal">
       <Suspense fallback={<Availability>급식 정보를 불러오는 중…</Availability>}>
-        <MealSummary school={school} today={today} unavailable={unavailable} />
+        <MealSummary school={school} today={today} unavailable={unavailable} mealEnds={mealEnds} />
       </Suspense>
     </PublicWidget>
   </>;

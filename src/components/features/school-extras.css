@@ -120,3 +120,35 @@
   .resource-editor-row > label:first-child { grid-column: 1 / -1; }
   .resource-details summary, .resource-links a { min-height: 44px; }
 }
+
+.school-meal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 7px;
+  background: var(--surface-muted);
+}
+.school-meal-tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 650;
+  padding: 5px 9px;
+  min-height: 32px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.school-meal-tabs button[aria-pressed="true"] {
+  color: var(--schedule-accent);
+  background: var(--card);
+  box-shadow: 0 1px 3px #16325415;
+}
+.school-meal-tabs button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+.school-meal-heading { flex-wrap: wrap; }
+@media screen and (max-width: 767px) {
+  .school-meal-tabs button { min-height: 44px; }
+}

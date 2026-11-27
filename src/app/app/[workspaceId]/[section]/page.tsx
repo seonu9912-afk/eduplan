@@ -6,6 +6,7 @@ import { seoulToday } from "@/lib/domain";
 import { WorkspaceApp } from "@/components/workspace-app";
 import { managementDomains } from "@/lib/school-publications";
 import { SchoolHomePublicData } from "@/components/features/school-home-public-data";
+import { schoolMealEndTimes } from "@/lib/school-operations";
 export default async function WorkspacePage({
   params,
   searchParams,
@@ -44,7 +45,7 @@ export default async function WorkspacePage({
       initialCohort={q.cohort}
       management={management}
       homePublicData={p.section === "home"
-        ? <SchoolHomePublicData school={context.school} today={today} unavailable={context.schoolInfoError} />
+        ? <SchoolHomePublicData school={context.school} today={today} unavailable={context.schoolInfoError} mealEnds={schoolMealEndTimes(context, today)} />
         : undefined}
     />
   );

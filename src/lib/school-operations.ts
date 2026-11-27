@@ -11,6 +11,7 @@ import {
 import { addDays } from "./domain";
 import type { Context } from "./models";
 import { emptyResources, resourcesSchema } from "./planning-resources";
+import { mealEndTimesFromRows, type MealEndTimes } from "./school-meal-selection";
 import { publicationAt, publishedSchoolContext } from "./school-publications";
 import {
   timetableDocumentSchema,
@@ -48,6 +49,21 @@ const bellSchema = z.array(
     })
     .passthrough(),
 );
+/** Prefer the effective published bell schedule, including a dated special schedule. */
+export function schoolMealEndTimes(c: Context, date: string): MealEndTimes {
+  const versions = c.operations?.effectiveTimetables;
+  const version = versions ? [...versions].sort((a, b) => b.starts_on.localeCompare(a.starts_on)).find((v) => v.starts_on <= date) : undefined;
+  if (versions && !version) return {};
+  const parsed = timetableDocumentSchema.safeParse(version?.document ?? c.operations?.publication?.document);
+  if (!parsed.success) return {};
+  const resources = resourcesSchema.safeParse(parsed.data.publishedResources);
+  const availableResources = resources.success ? resources.data : c.schoolPublications ? emptyResources() : c.operations?.resources;
+  const applications = (availableResources?.applications ?? []).filter((a) => a.starts_on <= date && a.ends_on >= date);
+  const special = applications.length === 1 ? availableResources?.bells.find((bell) => bell.id === applications[0].schedule_id) : undefined;
+  if (special) return mealEndTimesFromRows(special.rows);
+  const rows = bellSchema.safeParse(parsed.data.timetableConfig?.bell);
+  return rows.success ? mealEndTimesFromRows(rows.data) : {};
+}
 export function createLessonResolver(
   c: Context,
   document: TimetableDocument,
