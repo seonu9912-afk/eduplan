@@ -88,3 +88,13 @@ it("hides weekend columns without moving the selected week, retaining academic-y
   expect(visibleWeekDate("2025-03-01", false, "2025-03-01")).toBe("2025-03-01");
   expect(visibleWeekDates("2025-03-01", false, "2025-03-01")).toHaveLength(7);
 });
+
+import { compactCalendarWeek } from "../../src/lib/school-schedule";
+it("keeps a multi-day event connected in the compact calendar despite crowded days", () => {
+  const dates=["2026-11-25","2026-11-26","2026-11-27"];
+  const reading = {id:"reading",date:dates[0],end:dates[2],title:"가을 독서 주간",tone:"event" as const};
+  const days = new Map(dates.map(date=>[date,{entries:[{id:date+"a",date,end:date,title:"회의",tone:"work" as const},{id:date+"b",date,end:date,title:"업무",tone:"work" as const},reading]}]));
+  const preview = compactCalendarWeek(dates,days);
+  expect(preview.lanes.flat().filter(span=>span.entry.id==="reading")).toEqual([{entry:reading,start:0,end:2}]);
+  expect(preview.hidden).toEqual([1,1,1]);
+});

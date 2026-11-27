@@ -127,3 +127,16 @@ export function weeklyOperationGroups(dates: string[], days: ReadonlyMap<string,
   const trip = names.delete("출장");
   return [...names, ...(trip ? ["출장"] : [])];
 }
+
+/** Compact mobile preview: prioritize continuous bars, never truncate a span to fit a lane. */
+export function compactCalendarWeek(dates: string[], days: ReadonlyMap<string, { entries: ScheduleEntry[] }>, maxRows = 2) {
+  const spans = calendarWeekLanes(dates, days).flat().sort((a,b) => (b.end-b.start)-(a.end-a.start) || a.start-b.start);
+  const lanes: CalendarSpan[][] = Array.from({length: maxRows}, () => []);
+  const hidden = dates.map(() => 0);
+  for (const span of spans) {
+    const lane = lanes.find(row => row.every(item => item.end < span.start || item.start > span.end));
+    if (lane) lane.push(span);
+    else for (let col=span.start; col<=span.end; col++) hidden[col]++;
+  }
+  return { lanes, hidden };
+}

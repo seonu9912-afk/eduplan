@@ -167,7 +167,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         <div className="official-schedule-main">
         <div className="school-calendar-mobile no-print">
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
-            emphasizeToday items={(day) => days.get(day)?.entries ?? []}
+            emphasizeToday spanDays={calendarDays} items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
           <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
             {agendaDates.map((day) => {

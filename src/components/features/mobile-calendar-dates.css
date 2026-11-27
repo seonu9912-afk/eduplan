@@ -113,3 +113,19 @@
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-day-grid > button[aria-current="date"] time { background: #24528e; color: #fff; }
   .mobile-calendar-dates[data-emphasize-today] .mobile-calendar-cell-entry[data-past] { filter: saturate(.45); }
 }
+
+/* Shared compact published-calendar lanes. The day buttons underneath the bars remain the tap targets. */
+.mobile-calendar-span-grid { display: grid; gap: 3px; }
+.mobile-calendar-span-week { display: grid; grid-template-rows: 30px 17px 17px 13px; gap: 2px; min-width: 0; position: relative; isolation: isolate; }
+.mobile-calendar-span-day { display: grid; align-content: start; justify-items: center; min-width: 0; min-height: 0; padding: 0; border: 0; border-radius: 5px; color: #273e5a; background: #f5f7f9; font-size: 14px; font-weight: 650; cursor: pointer; }
+.mobile-calendar-span-day[data-adjacent], .mobile-calendar-span-day:disabled { color: #687b90; font-weight: 450; }
+.mobile-calendar-span-day:disabled { opacity: .52; cursor: default; }
+.mobile-calendar-span-day time { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-variant-numeric: tabular-nums; }
+.mobile-calendar-span-day[aria-pressed="true"] { background: #e6ebf2; }
+.mobile-calendar-span-day[aria-pressed="true"]:not([aria-current="date"]) time { color: #315e95; box-shadow: inset 0 0 0 1px #315e95; }
+.mobile-calendar-span-day[aria-current="date"] { background: #edf4fc; }
+.mobile-calendar-span-day[aria-current="date"] time { background: #24528e; color: #fff; }
+.mobile-calendar-span-day:focus-visible { outline: 2px solid #315e95; outline-offset: -2px; }
+.mobile-calendar-span-event { z-index: 1; pointer-events: none; align-self: stretch; width: auto; margin-inline: 1px; padding-inline: 3px; font-size: 10px; white-space: nowrap; overflow: hidden; }
+.mobile-calendar-span-more { z-index: 1; pointer-events: none; text-align: center; font-size: 10px; line-height: 13px; color: #526379; font-weight: 650; }
+.home-week-mobile-grid > .mobile-calendar-dates { grid-column: 1 / -1; border: 0; padding: 2px 0; }

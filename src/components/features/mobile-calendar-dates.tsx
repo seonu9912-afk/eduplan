@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { compactCalendarWeek, type ScheduleEntry } from "@/lib/school-schedule";
 import { dateLabel } from "@/lib/domain";
 import { scheduleDates, type CalendarPeriod } from "@/lib/schedule-dates";
 import "./mobile-calendar-dates.css";
@@ -9,7 +10,7 @@ const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 export type CalendarTone = "event" | "work" | "break";
 export type CalendarCellItem = { tone: CalendarTone; title: string; department?: string; end?: string };
 
-export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true, emphasizeToday = false }: {
+export function MobileCalendarDates({ date, today, start, end, period, items, onSelect, onNavigate, showWeekends = true, emphasizeToday = false, spanDays }: {
   date: string;
   today: string;
   start: string;
@@ -17,6 +18,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
   period: CalendarPeriod;
   showWeekends?: boolean;
   emphasizeToday?: boolean;
+  spanDays?: ReadonlyMap<string, { entries: ScheduleEntry[] }>;
   items: (day: string) => CalendarCellItem[];
   onSelect: (day: string) => void;
   onNavigate: (step: number) => void;
@@ -45,7 +47,27 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
       <div className="mobile-calendar-weekdays" aria-hidden="true">
         {labels.map((day) => <span key={day} data-weekday={day}>{day}</span>)}
       </div>
-      <div className="mobile-calendar-day-grid">
+      {spanDays ? <div className="mobile-calendar-span-grid">
+        {Array.from({length: days.length / labels.length}, (_, index) => {
+          const week = days.slice(index * labels.length, (index + 1) * labels.length);
+          const { lanes, hidden } = compactCalendarWeek(week, spanDays);
+          return <div className="mobile-calendar-span-week" key={week[0]} style={{gridTemplateColumns: `repeat(${labels.length}, minmax(0, 1fr))`}}>
+            {week.map((day, col) => {
+              const enabled = day >= start && day <= end;
+              const entries = enabled ? spanDays.get(day)?.entries ?? [] : [];
+              return <button key={day} type="button" className="mobile-calendar-span-day" data-date={day} data-weekday={labels[col]}
+                data-adjacent={period === "month" && !day.startsWith(month) ? "" : undefined}
+                aria-label={`${Number(day.slice(0,4))}년 ${dateLabel(day)} ${labels[col]}요일, 일정 ${entries.length}건`}
+                disabled={!enabled} aria-pressed={day === date} aria-current={day === today ? "date" : undefined}
+                style={{gridColumn: col+1, gridRow: "1 / -1"}} onClick={() => onSelect(day)}><time dateTime={day}>{Number(day.slice(8))}</time></button>;
+            })}
+            {lanes.flatMap((lane, row) => lane.map(({entry,start: first,end: last}) => <span key={`${entry.id}:${first}:${row}`} className="mobile-calendar-span-event mobile-calendar-cell-entry"
+              data-tone={entry.tone} data-past={entry.end < today ? "" : undefined} data-department-color={scheduleDepartmentColor(entry.department,entry.tone)}
+              style={{gridColumn: `${first+1} / ${last+2}`, gridRow: row+2}} aria-hidden="true"><span>{entry.title}</span></span>))}
+            {hidden.map((count,col) => count > 0 ? <small key={col} className="mobile-calendar-span-more" style={{gridColumn:col+1,gridRow:4}} aria-hidden="true">+{count}</small> : null)}
+          </div>;
+        })}
+      </div> : <div className="mobile-calendar-day-grid">
         {days.map((day, index) => {
           const enabled = day >= start && day <= end;
           const entries = enabled ? items(day) : [];
@@ -62,7 +84,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
             </span>}
           </button>;
         })}
-      </div>
+      </div>}
     </div>
   );
 }
