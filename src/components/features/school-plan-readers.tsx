@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ListTodo, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import type { Context } from "@/lib/models";
@@ -28,6 +28,11 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   const [view, setView] = useState<ScheduleView>(work ? "week" : "month");
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const month = date.slice(0, 7);
+  const [miniMonthOverride, setMiniMonthOverride] = useState<string | null>(null);
+  const miniMonth = miniMonthOverride ?? month;
+  const miniRange = monthRange(miniMonth);
+  const miniDates = scheduleDates(`${miniMonth}-01`, "month");
+  const workWeek = work && view === "week";
   const range = view === "year" ? { start, end } : view === "week" ? weekRange(date) : monthRange(month);
   const publications = c.schoolPublications ?? [];
   const selected = publications.find((release) => release.id === selectedRelease);
@@ -56,9 +61,11 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
   const canNext = view !== "year" && range.end < end;
   function navigate(step: number) {
     if (view === "year" || (step < 0 ? !canPrevious : !canNext)) return;
+    setMiniMonthOverride(null);
     setDate(clamp(shiftScheduleDate(date, view, step)));
   }
   function selectDate(day: string) {
+    setMiniMonthOverride(null);
     setDate(day);
     if (view === "week")
       requestAnimationFrame(() => document.getElementById(`agenda-${day}`)?.scrollIntoView({ block: "nearest" }));
@@ -72,16 +79,16 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
           <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={!canPrevious} onClick={() => navigate(-1)}><ChevronLeft /></Button>
           <h2 aria-live="polite">{title}</h2>
           <Button variant="ghost" size="icon" aria-label="다음 기간" disabled={!canNext} onClick={() => navigate(1)}><ChevronRight /></Button>
-          <Button variant="outline" size="sm" disabled={today < start || today > end} onClick={() => setDate(today)}>오늘</Button>
+          <Button variant="outline" size="sm" disabled={today < start || today > end} onClick={() => { setMiniMonthOverride(null); setDate(today); }}>오늘</Button>
         </div>
         <div className="schedule-view-controls">
           <div className="schedule-segments" role="group" aria-label="보기 전환">
             {options.map(({ value, label }) => <button key={value} type="button" aria-pressed={view === value}
-              onClick={() => setView(value)}>{label}</button>)}
+              onClick={() => { setMiniMonthOverride(null); setView(value); }}>{label}</button>)}
           </div>
           <label className="schedule-jump"><span className="sr-only">기준일</span>
             <input type="date" value={date} min={start} max={end} onChange={(e) => {
-              if (e.target.value) setDate(clamp(e.target.value));
+              if (e.target.value) { setMiniMonthOverride(null); setDate(clamp(e.target.value)); }
             }} />
           </label>
           <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄" onClick={() => window.print()} disabled={!available}><Printer /></Button>
@@ -100,7 +107,30 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
               <td>{item.title}<ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
           </table>
         ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
-      ) : <>
+      ) : <div className={workWeek ? "official-work-week-layout" : "official-schedule-body"}>
+        {workWeek && <aside className="official-work-week-sidebar no-print" aria-label="주간계획 보조 영역">
+          <section className="official-work-mini" aria-label="월간 날짜 선택">
+            <div className="official-work-mini-heading">
+              <button type="button" aria-label="미니 달력 이전 달" disabled={miniRange.start <= start} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", -1).slice(0, 7))}><ChevronLeft size={16} /></button>
+              <h3>{miniMonth.slice(0, 4)}년 {Number(miniMonth.slice(5))}월</h3>
+              <button type="button" aria-label="미니 달력 다음 달" disabled={miniRange.end >= end} onClick={() => setMiniMonthOverride(shiftScheduleDate(`${miniMonth}-01`, "month", 1).slice(0, 7))}><ChevronRight size={16} /></button>
+            </div>
+            <div className="official-work-mini-grid">
+              {weekdays.map((day) => <span key={day} className="mini-weekday">{day}</span>)}
+              {miniDates.map((day) => <button type="button" key={day} disabled={day < start || day > end}
+                data-in-week={day >= range.start && day <= range.end ? "" : undefined}
+                data-adjacent={!day.startsWith(miniMonth) ? "" : undefined}
+                aria-current={day === today ? "date" : undefined} aria-pressed={day === date}
+                aria-label={`${day} 주간계획 보기`} onClick={() => { setDate(day); setMiniMonthOverride(null); }}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}
+            </div>
+          </section>
+          <details className="official-work-tasks" open>
+            <summary><ListTodo size={16} aria-hidden="true" /><h3>나의 할 일</h3></summary>
+            <p>할 일 기능은 아직 연결되지 않았습니다.</p>
+            <small>배포받은 업무와 개인이 추가한 할 일을 이곳에서 확인할 수 있도록 준비 중입니다.</small>
+          </details>
+        </aside>}
+        <div className="official-schedule-main">
         <div className="school-calendar-mobile no-print">
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view}
             items={(day) => days.get(day)?.entries ?? []}
@@ -162,13 +192,15 @@ export function OfficialSchedule({ context: c, today, work = false, actions }: {
             </div>
           )}
         </div>
-      </>}
+        </div>
+      </div>}
       {updates.length > 0 && <Disclosure label="공개 이력" className="school-publication-history no-print">
         <ul>{updates.map((item) => <li key={item.id}>
           <strong>{item.starts_on} 적용 · {item.published_at.slice(0, 10)} 공개</strong>
           {item.change_note && <p>{item.change_note}</p>}
           <Button variant="outline" onClick={() => {
             setSelectedRelease(item.id);
+            setMiniMonthOverride(null);
             setDate(clamp(item.starts_on));
           }}>이 버전 보기</Button>
         </li>)}</ul>
