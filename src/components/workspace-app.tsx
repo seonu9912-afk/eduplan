@@ -340,7 +340,7 @@ export function WorkspaceApp({
           )}
         </div>
       </nav>
-      <nav className="mobile-top-nav no-print" aria-label="모바일 주요 메뉴">
+      <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
         {[
           { id: "home", label: "홈", icon: House },
           { id: "calendar", label: "일정", icon: CalendarDays },
