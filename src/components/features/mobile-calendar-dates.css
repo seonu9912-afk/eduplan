@@ -68,7 +68,8 @@
   width: 100%;
   min-width: 0;
   padding-inline: 2px;
-  border-inline-start: 2px solid currentColor;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--cell-color) 15%, white);
   color: var(--cell-color);
   font-size: 10px;
   font-weight: 650;

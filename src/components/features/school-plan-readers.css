@@ -124,8 +124,9 @@
 .school-calendar-agenda > section > ul > li > div {
   display: grid;
   gap: 3px;
-  padding-inline-start: 8px;
-  border-inline-start: 3px solid var(--agenda-color);
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--agenda-color) 15%, white);
   overflow-wrap: anywhere;
 }
 .school-calendar-agenda strong { color: #243e59; font-size: 14px; }
@@ -186,9 +187,8 @@
   gap: 3px;
   margin-top: 5px;
   padding: 5px 7px;
-  border-inline-start: 2px solid var(--event-accent);
   border-radius: 4px;
-  background: var(--card);
+  background: color-mix(in srgb, var(--event-accent) 15%, white);
   color: var(--event-accent);
   font-weight: 600;
   font-size: 12px;
