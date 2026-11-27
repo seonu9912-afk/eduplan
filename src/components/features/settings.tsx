@@ -23,6 +23,7 @@ import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
 import { SchoolLinkSettings } from "./school-links";
 import { SchoolInformationSettings } from "./school-information-settings";
+import { YearTransfer } from "./year-transfer";
 export function SchoolSettings({ context: c }: { context: Context }) {
   const editable = c.role === "admin";
   if (!c.year) return null;
@@ -54,6 +55,7 @@ export function SchoolSettings({ context: c }: { context: Context }) {
             year={c.year.year}
             editable={editable}
           />
+          {editable && <YearTransfer key={c.year.id} context={c} />}
           {editable && <SchoolLinkSettings context={c} />}
           {editable && <SchoolInformationSettings context={c} />}
         </div>
