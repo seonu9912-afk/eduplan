@@ -21,8 +21,19 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+.schedule-reader-toolbar {
+  padding: 10px 12px;
+  background: #f7f9fc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
 .school-reader-empty {
   padding: 16px;
+}
+.school-reader-calendar-wrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overscroll-behavior-inline: contain;
 }
 .school-reader-list,
 .school-reader-calendar {
@@ -42,15 +53,45 @@
   vertical-align: top;
 }
 .school-reader-calendar td {
-  height: 78px;
+  height: 90px;
 }
 .school-reader-calendar time {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
   color: #4b607b;
   font-weight: 650;
 }
-.school-reader-calendar p {
-  margin-top: 4px;
+.school-reader-calendar time[aria-current="date"] {
+  background: #1e4e88;
+  color: white;
+  border-radius: 50%;
+}
+.school-reader-event {
+  display: grid;
+  gap: 3px;
+  margin-top: 5px;
+  padding: 5px 7px;
+  border-inline-start: 2px solid #829cc0;
+  border-radius: 4px;
+  background: #edf3fa;
   color: #243e59;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.school-reader-event[data-tone="work"] {
+  background: #edf6f1;
+  border-color: #6e9b82;
+}
+.school-reader-event[data-tone="break"] {
+  background: #f4f1ed;
+  border-color: #a79782;
+}
+.school-reader-event small {
+  color: #435b71;
+  font-size: 11px;
 }
 .school-reader-calendar [data-outside] {
   background: #f5f7fa;

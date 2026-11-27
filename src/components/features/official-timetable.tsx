@@ -5,10 +5,11 @@ import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-import { timetableWeek, type TimetableAudience, type TimetableCell } from "@/lib/timetable-view";
+import { myTeacherIds } from "@/lib/school-operations";
+import { timetableModeForWeek, timetableWeek, type TimetableAudience, type TimetableCell, type TimetableMode } from "@/lib/timetable-view";
+import { TimetableGrid } from "./timetable-grid";
 import "./official-timetable.css";
 
-const days = ["월", "화", "수", "목", "금"];
 const audiences: Record<TimetableAudience, string> = {
   mine: "나의 시간표",
   teacher: "교사별",
@@ -25,13 +26,15 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
   const start = `${year}-03-01`;
   const end = addDays(`${year + 1}-03-01`, -1);
   const thisYear = today >= start && today <= end;
-  const initialDate = thisYear ? today : c.semesters[0]?.start_date ?? c.operations?.effectiveTimetables?.[0]?.starts_on ?? start;
+  const initialDate = thisYear ? today : c.operations?.effectiveTimetables?.[0]?.starts_on ?? c.semesters[0]?.start_date ?? start;
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
   const [date, setDate] = useState(initialDate);
-  const [mode, setMode] = useState<"basic" | "weekly">(c.annual ? "weekly" : "basic");
+  const [selectedMode, setMode] = useState<TimetableMode | null>(null);
   const [audience, setAudience] = useState<TimetableAudience>("mine");
   const [teacher, setTeacher] = useState("");
   const [classId, setClassId] = useState("");
+  const defaultMode = timetableModeForWeek(c, date);
+  const mode = selectedMode ?? defaultMode;
   const week = useMemo(() => timetableWeek(c, date, mode), [c, date, mode]);
   const document = week.schedule.document;
   const teachers = new Map([
@@ -43,12 +46,13 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
     ...(document?.classes ?? []).map((cls) => [cls.id, cls.label] as const),
   ]);
   const mine = c.operations?.directory.find((t) => t.user_id === c.userId && t.active);
+  const myIds = myTeacherIds(c);
   const selectedTeacher = teachers.has(teacher) ? teacher : teachers.keys().next().value ?? "";
   const selectedClass = classes.has(classId) ? classId : classes.keys().next().value ?? "";
   const term = c.semesters.find((s) => date >= s.start_date && date <= s.end_date);
   const visible = (cell: TimetableCell) => {
     switch (audience) {
-      case "mine": return cell.teacherId === mine?.id || (!!mine && cell.teacherId === c.userId);
+      case "mine": return myIds.has(cell.teacherId);
       case "teacher": return cell.teacherId === selectedTeacher;
       case "class": return cell.classIds.includes(selectedClass);
       default: return true;
@@ -129,51 +133,18 @@ function TimetableSheet({ context: c, today, year }: { context: Context; today: 
           </p>
         )}
       </header>
+      {defaultMode === "basic" && week.schedule.document && (audience !== "mine" || mine) && (
+        <div className="timetable-calendar-note">
+          <p>이 주에 적용되는 공개 학사일정이 없습니다. {mode === "basic" && "기본 시간표를 표시합니다."}</p>
+          {mode === "weekly" && <Button variant="outline" onClick={() => setMode("basic")}>기본 시간표 보기</Button>}
+        </div>
+      )}
       {audience === "mine" && !mine ? (
         <p className="panel official-timetable-empty">교원 명부에 계정이 연결되면 나의 시간표를 볼 수 있습니다. 학교 관리자에게 연결을 요청하세요.</p>
       ) : !available ? (
-        <p className="panel official-timetable-empty">
-          {mode === "weekly" && !c.annual ? "주간 시간표에는 공개 학사일정이 필요합니다. 기본 시간표를 확인해 주세요." : "선택한 기간에 공개된 시간표가 없습니다."}
-        </p>
+        <p className="panel official-timetable-empty">선택한 기간에 공개된 시간표가 없습니다.</p>
       ) : (
-        <div className="official-timetable-scroll" tabIndex={0} role="region" aria-label="요일별 시간표">
-          <table className="official-timetable-grid" aria-label={label}>
-            <thead><tr>
-              <th scope="col">교시</th>
-              {week.weekdays.map((column, ix) => (
-                <th scope="col" key={column.date}>{days[ix]}
-                  {mode === "weekly" && <small>{dateLabel(column.date)}</small>}
-                  {column.notice && <small className="timetable-day-notice">{column.notice}</small>}
-                </th>
-              ))}
-            </tr></thead>
-            <tbody>
-              {Array.from({ length: week.rows }, (_, index) => (
-                <tr key={index}>
-                  <th scope="row">{index + 1}교시</th>
-                  {week.weekdays.map((column) => (
-                    <td key={column.date} className={index + 1 > column.periodCount ? "timetable-nonperiod" : undefined}>
-                      {column.cells.filter((cell) => cell.period === index + 1 && visible(cell)).map((cell) => (
-                        <div className="official-lesson" data-kind={cell.kind}
-                          data-blocked={cell.blocked ? "" : undefined} key={cell.id}>
-                          {audience === "class" ? <>
-                            <strong>{cell.subject}</strong>
-                            <span>{cell.teacher}</span>
-                          </> : <>
-                            <strong>{cell.classes.replace(/(\d+)학년\s+(\d+)반/g, "$1-$2")}</strong>
-                            <span>{cell.subject}</span>
-                            {audience === "all" && cell.teacher && <small>{cell.teacher}</small>}
-                          </>}
-                          {(cell.blocked || cell.changed) && <small>{cell.blocked || "변경 수업"}</small>}
-                        </div>
-                      ))}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} />
       )}
     </section>
   );

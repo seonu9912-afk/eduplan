@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { operationsPreviewContext } from "../../src/app/recovery-preview/operations-fixture";
-import { timetableAt, timetableWeek } from "../../src/lib/timetable-view";
+import { timetableAt, timetableModeForWeek, timetableWeek } from "../../src/lib/timetable-view";
 import { defaultAnnual } from "../../src/lib/academic";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
 describe("published timetable sheet", () => {
+  it("shows known assignments in basic mode when the calendar has a draft but no release", () => {
+    const c = operationsPreviewContext();
+    const date = "2027-03-04";
+    c.schoolPublications = [];
+    c.operations!.effectiveTimetables = [{ starts_on: "2027-03-01", id: "spring", document: c.operations!.publication!.document }];
+    const mode = timetableModeForWeek(c, date);
+    expect(mode).toBe("basic");
+    expect(timetableWeek(c, date, mode).weekdays.some((day) => day.cells.length > 0)).toBe(true);
+    expect(timetableWeek(c, date, "weekly").weekdays.every((day) => day.cells.length === 0)).toBe(true);
+  });
+
   it("shows only effective releases and uses the school's own period count", () => {
     const c = operationsPreviewContext();
     const document = c.operations!.publication!.document as Record<string, unknown>;
@@ -38,6 +49,7 @@ describe("published timetable sheet", () => {
       change_note: "",
       payload: { document: plan, semesters: c.semesters, classes: c.classes, events: [] },
     }] as SchoolPlanPublication[];
+    expect(timetableModeForWeek(c, "2027-03-02")).toBe("weekly");
     const tue = timetableWeek(c, "2027-03-02", "weekly").weekdays[1];
     expect(tue.notice).not.toContain("미공개 휴업");
     expect(tue.cells.length).toBeGreaterThan(0);

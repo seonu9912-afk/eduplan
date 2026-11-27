@@ -1,10 +1,12 @@
 "use client";
 import { Disclosure } from "@/components/ui/disclosure";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Bell, CalendarDays, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { markOperationRead } from "@/app/operations-actions";
-import { addDays, dateLabel, weekRange } from "@/lib/domain";
+import { useMutation, InlineNotice } from "@/components/common";
+import { addDays, dateLabel } from "@/lib/domain";
 import {
   dailyOperationNotice,
   createLessonResolver,
@@ -15,6 +17,9 @@ import {
   unifiedSchedule,
 } from "@/lib/school-operations";
 import type { Context } from "@/lib/models";
+import { publicationAt } from "@/lib/school-publications";
+import { timetableModeForWeek, timetableWeek } from "@/lib/timetable-view";
+import { TimetableGrid } from "./timetable-grid";
 import "./school-operations.css";
 export function PersonalDay({
   context: c,
@@ -31,7 +36,8 @@ export function PersonalDay({
   const [lead, setLead] = useState(5),
     [permission, setPermission] = useState("내부 안내 사용"),
     [read, setRead] = useState<string[]>([]),
-    [error, setError] = useState("");
+    [reminderError, setReminderError] = useState("");
+  const readMutation = useMutation();
   const doc = useMemo(() => publishedTimetable(c), [c]);
   const resolver = useMemo(
     () => (doc ? createLessonResolver(c, doc) : null),
@@ -43,7 +49,10 @@ export function PersonalDay({
   const hhmm = clock.time.slice(0, 5);
   const operationNotice = dailyOperationNotice(c, clock.date);
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
-  const teacher = c.operations?.directory.find((x) => x.user_id === c.userId);
+  const teacher = c.operations?.directory.find((x) => x.user_id === c.userId && x.active);
+  const hasCalendar = c.schoolPublications
+    ? !!publicationAt(c.schoolPublications, "calendar", clock.date) : !!c.annual;
+  const unread = (c.operations?.notifications ?? []).filter((n) => !n.read_at && !read.includes(n.id));
   const items = unifiedSchedule(c, clock.date, addDays(clock.date, 6));
   const mine = items.filter(
     (x) =>
@@ -79,7 +88,7 @@ export function PersonalDay({
       <div className="dashboard-columns">
         <section className="panel">
           <div className="personal-day-heading">
-            <h2>오늘 수업</h2>
+            <h2><Clock3 aria-hidden="true" />오늘 수업</h2>
             <time className="daily-clock" dateTime={`${clock.date}T${hhmm}+09:00`}>
               {dateLabel(clock.date)} <strong>{hhmm}</strong>
             </time>
@@ -90,12 +99,12 @@ export function PersonalDay({
             </p>
           )}
           {!doc ? (
-            <p>
-              시간표가 확정되면 담당 수업이 표시됩니다.
-            </p>
+            <p className="operations-empty">시간표가 확정되면 담당 수업이 표시됩니다.</p>
+          ) : !teacher ? (
+            <p className="operations-empty">교원 명부에 연결되지 않았습니다. 관리자에게 계정 연결을 요청하세요.</p>
           ) : (
             <>
-              <div className="next-lesson" aria-live="polite">
+              {(hasCalendar || lessons.length > 0) && <div className="next-lesson" aria-live="polite">
                 {current.length > 0 && (
                   <p>진행 중 · {current.map((x) => `${x.period}교시 ${x.subject}`).join(" · ")}</p>
                 )}
@@ -107,12 +116,7 @@ export function PersonalDay({
                 ) : (
                   <p>{lessons.length ? "다음 수업이 없습니다." : "오늘 배정된 수업이 없습니다."}</p>
                 )}
-              </div>
-              {!teacher && (
-                <p className="operations-warning">
-                  교원 명부에 연결되지 않았습니다. 관리자에게 계정 연결을 요청하세요.
-                </p>
-              )}
+              </div>}
               {lessons.map((lesson, index) => (
                 <article
                   key={`${lesson.id}:${index}`}
@@ -138,25 +142,7 @@ export function PersonalDay({
                   </div>
                 </article>
               ))}
-              <Disclosure compact label="이번 주 내 시간표">
-                {Array.from({ length: 7 }, (_, i) =>
-                  addDays(weekRange(clock.date).start, i),
-                ).map((date) => (
-                  <div key={date}>
-                    <h3>{date}</h3>
-                    <p>
-                      {resolver!(date)
-                        .filter(
-                          (x) => ids.has(x.teacherId) && !x.blockedBy.length,
-                        )
-                        .map(
-                          (x) => `${x.period}교시 ${x.subject}(${x.classes})`,
-                        )
-                        .join(" · ") || "배정 수업 없음"}
-                    </p>
-                  </div>
-                ))}
-              </Disclosure>
+              <PersonalWeeklyTimetable context={c} date={clock.date} teacherIds={ids} />
             </>
           )}
           <div className="operations-controls personal-reminder-controls no-print">
@@ -174,7 +160,7 @@ export function PersonalDay({
                       new Event("eduplan-reminder-settings"),
                     );
                   } catch {
-                    setError("이 브라우저에 알림 설정을 저장할 수 없습니다.");
+                    setReminderError("이 브라우저에 알림 설정을 저장할 수 없습니다.");
                   }
                 }}
               >
@@ -208,10 +194,11 @@ export function PersonalDay({
             </Button>
           </div>
           <p className="muted-small">{permission} · 화면을 열어 둔 동안 알림을 받습니다.</p>
+          {reminderError && <p role="alert" className="operations-warning">{reminderError}</p>}
         </section>
         <section className="panel">
           <div className="personal-day-heading">
-            <h2>앞으로 7일 일정</h2>
+            <h2><CalendarDays aria-hidden="true" />앞으로 7일 일정</h2>
             <Button asChild variant="outline">
               <Link
                 href={
@@ -237,47 +224,44 @@ export function PersonalDay({
               ))}
             </ul>
           ) : (
-            <p>예정된 학교·부서 일정이 없습니다.</p>
+            <p className="operations-empty">예정된 학교·부서 일정이 없습니다.</p>
           )}
-          <h2 className="personal-day-notification-title">내 알림함</h2>
-          <ul className="notification-list">
-            {(c.operations?.notifications ?? []).map((n) => (
+          <h2 className="personal-day-notification-title"><Bell aria-hidden="true" />내 알림함</h2>
+          {unread.length ? <ul className="notification-list">
+            {unread.map((n) => (
               <li key={n.id}>
-                <strong>{n.title}</strong>
-                <p>{n.body}</p>
-                <small>{n.created_at.slice(0, 10)}</small>
-                {!n.read_at && !read.includes(n.id) && (
-                  <Button
-                    variant="ghost"
-                    onClick={async () => {
-                      if (previewNow) {
-                        setRead((old) => [...old, n.id]);
-                        return;
-                      }
-                      try {
-                        const result = await markOperationRead({
-                          workspaceId: c.workspace.id,
-                          id: n.id,
-                        });
-                        if (result.ok) setRead((old) => [...old, n.id]);
-                        else setError(result.error);
-                      } catch {
-                        setError("읽음 상태를 저장하지 못했습니다.");
-                      }
-                    }}
-                  >
-                    읽음
-                  </Button>
-                )}
+                <div><strong>{n.title}</strong><p>{n.body}</p>
+                  <time dateTime={n.created_at}>{dateLabel(n.created_at.slice(0, 10))}</time></div>
+                <Button variant="outline" disabled={readMutation.pending} onClick={() => {
+                  const remove = () => setRead((current) => [...current, n.id]);
+                  if (previewNow) remove();
+                  else readMutation.execute(() => markOperationRead({ workspaceId: c.workspace.id, id: n.id }), remove, "");
+                }}>확인<span className="sr-only"> · {n.title}</span></Button>
               </li>
             ))}
-          </ul>
-          {!c.operations?.notifications.length && (
-            <p>새로운 시간표 변경 알림이 없습니다.</p>
-          )}
-          {error && <p role="alert">{error}</p>}
+          </ul> : <p className="operations-empty" role="status">확인할 새 알림이 없습니다.</p>}
+          <InlineNotice mutation={readMutation} />
         </section>
       </div>
     </section>
   );
 }
+
+const PersonalWeeklyTimetable = memo(function PersonalWeeklyTimetable({ context, date, teacherIds }: {
+  context: Context;
+  date: string;
+  teacherIds: Set<string>;
+}) {
+  const mode = timetableModeForWeek(context, date);
+  const week = timetableWeek(context, date, mode);
+  return (
+    <Disclosure compact label="이번 주 내 시간표" className="personal-week">
+      {mode === "weekly" ? <p className="muted-small">{dateLabel(week.weekdays[0].date)} ~ {dateLabel(week.weekdays[4].date)}</p>
+        : <p className="muted-small">공개 학사일정이 없어 기본 시간표를 표시합니다.</p>}
+      {week.rows > 0 ? <TimetableGrid week={week} mode={mode} audience="mine" compact
+        label={mode === "weekly" ? "이번 주 내 시간표" : "내 기본 시간표"}
+        visible={(cell) => teacherIds.has(cell.teacherId)} />
+        : <p className="operations-empty">이 주에 적용되는 공개 시간표가 없습니다.</p>}
+    </Disclosure>
+  );
+});

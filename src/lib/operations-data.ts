@@ -77,6 +77,7 @@ export async function getOperationsData(
       .eq("workspace_id", workspaceId)
       .eq("academic_year_id", yearId)
       .eq("user_id", c.userId)
+      .is("read_at", null)
       .order("created_at", { ascending: false })
       .limit(30),
     db.rpc("planning_resources", { target: workspaceId, year_id: yearId }),

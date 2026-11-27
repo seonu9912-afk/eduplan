@@ -1,12 +1,16 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, InlineNotice } from "@/components/common";
 import { markOperationRead } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
+import "./school-operations.css";
 export function NotificationCenter({ context: c }: { context: Context }) {
-  const m = useMutation(),
-    items = c.operations?.notifications ?? [];
+  const m = useMutation();
+  const [confirmed, setConfirmed] = useState<string[]>([]);
+  const items = (c.operations?.notifications ?? []).filter((n) => !n.read_at && !confirmed.includes(n.id));
   return (
     <section className="notification-center">
       <header className="page-heading">
@@ -36,28 +40,17 @@ export function NotificationCenter({ context: c }: { context: Context }) {
                   {n.request_id ? "학사일정 열기" : "시간표 열기"}
                 </Link>
               </Button>
-              {!n.read_at && (
-                <Button
-                  variant="ghost"
-                  disabled={m.pending}
-                  onClick={() =>
-                    m.execute(
-                      () =>
-                        markOperationRead({
-                          workspaceId: c.workspace.id,
-                          id: n.id,
-                        }),
-                      m.refresh,
-                    )
-                  }
-                >
-                  읽음으로 표시
-                </Button>
-              )}
+              <Button variant="secondary" disabled={m.pending} onClick={() => m.execute(
+                () => markOperationRead({ workspaceId: c.workspace.id, id: n.id }),
+                () => setConfirmed((old) => [...old, n.id]),
+                "",
+              )}>확인<span className="sr-only"> · {n.title}</span></Button>
             </div>
           </article>
         ))}
-        {!items.length && <p className="panel notification-card">받은 알림이 없습니다.</p>}
+        {!items.length && <p className="operations-empty notification-empty" role="status">
+          <Bell size={18} aria-hidden="true" /> 확인할 새 알림이 없습니다.
+        </p>}
       </div>
       <InlineNotice mutation={m} />
     </section>

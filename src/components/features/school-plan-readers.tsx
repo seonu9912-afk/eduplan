@@ -31,19 +31,22 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
   const official = publishedSchoolContext({ ...c, schoolPublications: displayed }, date);
   const plan = annualSchema.safeParse(official.annual?.document);
   const items = unifiedSchedule(official, range.start, range.end)
-    .filter((item) => work || item.source !== "business");
+    .filter((item) => work || item.source !== "business")
+    .map((item) => ({ ...item, tone: item.source === "business" ? "work" : "event",
+      detail: item.source === "business" ? [item.time, item.department].filter(Boolean).join(" · ") : "" }));
   const available = !!calendar || (work && !!workPlan);
   const breaks = plan.success && calendar ? plan.data.vacations.map((v) => ({
-    id: v.start + v.name, date: v.start, end: v.end, title: v.name,
+    id: v.start + v.name, date: v.start, end: v.end, title: v.name, tone: "break", detail: "",
   })) : [];
   const terms = calendar ? official.semesters.flatMap((s) => [
-    { id: s.start_date + s.number, date: s.start_date, end: s.start_date, title: `${s.number}학기 시작` },
-    { id: s.end_date + s.number, date: s.end_date, end: s.end_date, title: `${s.number}학기 종료` },
+    { id: s.start_date + s.number, date: s.start_date, end: s.start_date, title: `${s.number}학기 시작`, tone: "event", detail: "" },
+    { id: s.end_date + s.number, date: s.end_date, end: s.end_date, title: `${s.number}학기 종료`, tone: "event", detail: "" },
   ]) : [];
   const closures = plan.success && calendar ? [
-    ...Object.entries(plan.data.holidays).map(([day, title]) => ({ id: day, date: day, end: day, title })),
+    ...Object.entries(plan.data.holidays).map(([day, title]) => ({ id: day, date: day, end: day, title, tone: "break", detail: "" })),
     ...Object.entries(plan.data.days).flatMap(([day, rule]) => rule.type === "discretionary" || rule.type === "swap"
-      ? [{ id: day + rule.type, date: day, end: day, title: rule.name || (rule.type === "swap" ? "대체 요일 운영" : "재량휴업일") }] : []),
+      ? [{ id: day + rule.type, date: day, end: day, title: rule.name || (rule.type === "swap" ? "대체 요일 운영" : "재량휴업일"),
+        tone: rule.type === "swap" ? "event" : "break", detail: "" }] : []),
   ] : [];
   const entries = [...items, ...breaks, ...terms, ...closures].filter((item) =>
     item.date <= range.end && item.end >= range.start && item.date <= end && item.end >= start,
@@ -61,10 +64,10 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
     .sort((a, b) => b.published_at.localeCompare(a.published_at));
   return (
     <section className="school-plan-reader">
-      <div className="school-reader-toolbar no-print">
-        <Button variant={view === "month" ? "secondary" : "outline"} onClick={() => setView("month")}>월간</Button>
-        {work ? <Button variant={view === "week" ? "secondary" : "outline"} onClick={() => setView("week")}>주간</Button>
-          : <Button variant={view === "year" ? "secondary" : "outline"} onClick={() => setView("year")}>연간</Button>}
+      <div className="school-reader-toolbar schedule-reader-toolbar no-print">
+        <Button variant={view === "month" ? "secondary" : "outline"} aria-pressed={view === "month"} onClick={() => setView("month")}>월간</Button>
+        {work ? <Button variant={view === "week" ? "secondary" : "outline"} aria-pressed={view === "week"} onClick={() => setView("week")}>주간</Button>
+          : <Button variant={view === "year" ? "secondary" : "outline"} aria-pressed={view === "year"} onClick={() => setView("year")}>연간</Button>}
         <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={date === start || view === "year"} onClick={() => navigate(-1)}><ChevronLeft /></Button>
         <label><span className="sr-only">기준일</span><input type="date" value={date} min={start} max={end} onChange={(e) => {
           if (e.target.value) setDate(clamp(e.target.value));
@@ -84,15 +87,17 @@ export function OfficialSchedule({ context: c, today, work = false }: { context:
             <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td><td>{item.title}</td></tr>)}</tbody>
           </table>
         ) : (
-          <div className="table-scroll">
+          <div className="table-scroll school-reader-calendar-wrap" role="region" aria-label="공개 일정" tabIndex={0}>
             <table className="school-reader-calendar" aria-label="공개 일정표">
               <thead><tr>{(view === "week" ? [...weekdays.slice(1), "일"] : weekdays).map((d) => <th scope="col" key={d}>{d}</th>)}</tr></thead>
               <tbody>{Array.from({ length: dates.length / 7 }, (_, i) => (
                 <tr key={dates[i * 7]}>{dates.slice(i * 7, i * 7 + 7).map((day) => (
                   <td key={day} data-outside={day < start || day > end || (view === "month" && !day.startsWith(month)) ? "" : undefined}>
-                    <time dateTime={day}>{Number(day.slice(8))}</time>
+                    <time dateTime={day} aria-current={day === today ? "date" : undefined}>{Number(day.slice(8))}</time>
                     {entries.filter((entry) => entry.date <= day && entry.end >= day).map((entry) => (
-                      <p key={entry.id}>{entry.title}</p>
+                      <div className="school-reader-event" data-tone={entry.tone} key={entry.id}>
+                        <span>{entry.title}</span>{entry.detail && <small>{entry.detail}</small>}
+                      </div>
                     ))}
                   </td>
                 ))}</tr>

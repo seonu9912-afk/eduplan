@@ -151,6 +151,12 @@ export function operationsPreviewContext(): Context {
     published_at: "2027-02-20T00:00:00Z",
     document: structuredClone(table),
   };
+  operations.notifications = [
+    { id: id(501), workspace_id: c.workspace.id, academic_year_id: c.year!.id, user_id: c.userId,
+      title: "수업 변경 안내", body: "목요일 2교시 시간표를 확인해 주세요.", created_at: "2027-03-02T00:00:00Z", read_at: null },
+    { id: id(502), workspace_id: c.workspace.id, academic_year_id: c.year!.id, user_id: c.userId,
+      title: "지난 수업 안내", body: "확인한 알림입니다.", created_at: "2027-03-01T00:00:00Z", read_at: "2027-03-01T01:00:00Z" },
+  ];
   if (c.teaching) {
     c.teaching.courses = c.teaching.courses.map((course) => ({
       ...course,

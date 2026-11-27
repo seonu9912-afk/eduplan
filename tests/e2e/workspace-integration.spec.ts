@@ -164,4 +164,15 @@ test("mobile personal day and persisted notification preference stay usable", as
   await expect(
     page.getByText(/다음 수업 · .*국어/),
   ).toBeVisible();
+  await page.locator("summary").filter({ hasText: "이번 주 내 시간표" }).click();
+  const timetable = page.getByRole("table", { name: "이번 주 내 시간표" });
+  await expect(timetable.getByRole("columnheader", { name: /^월(?:\s|$)/ })).toBeVisible();
+  await expect(timetable.getByRole("rowheader", { name: "1교시" })).toBeVisible();
+  expect(await timetable.getByText("국어", { exact: true }).count()).toBeGreaterThan(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await expect(page.getByText("지난 수업 안내", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("수업 변경 안내", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: /확인.*수업 변경 안내/ }).click();
+  await expect(page.getByText("수업 변경 안내", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("확인할 새 알림이 없습니다.")).toBeVisible();
 });

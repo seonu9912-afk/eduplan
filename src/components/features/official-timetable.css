@@ -46,6 +46,17 @@
 .official-timetable-empty {
   padding: 18px;
 }
+.timetable-calendar-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  color: #415b78;
+  background: #f2f6fb;
+  border-radius: 8px;
+}
 .official-timetable-scroll {
   overflow-x: auto;
   border: 1px solid #c9d6e6;
@@ -54,9 +65,19 @@
   background: white;
 }
 .official-timetable-grid {
+  width: 100%;
   min-width: 335px;
   table-layout: fixed;
   text-align: center;
+}
+.timetable-compact .official-timetable-grid {
+  min-width: 300px;
+}
+.timetable-compact .official-timetable-grid td {
+  height: 44px;
+}
+.timetable-compact .official-timetable-grid th:first-child {
+  width: 46px;
 }
 .official-timetable-grid th,
 .official-timetable-grid td {

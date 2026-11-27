@@ -113,8 +113,38 @@
   padding: 0;
 }
 .notification-list li {
-  padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.notification-list li + li {
+  margin-top: 8px;
+}
+.notification-list li > div {
+  display: grid;
+  gap: 4px;
+}
+.notification-list time {
+  color: #506885;
+  font-size: 12px;
+}
+.notification-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.operations-empty {
+  width: 100%;
+  padding: 15px;
+  border: 1px dashed #c9d6e6;
+  border-radius: 8px;
+  background: #f7f9fc;
+  color: #415b78;
 }
 .operations-form fieldset {
   min-width: 0;
@@ -166,7 +196,7 @@
 .personal-day .panel {
   display: grid;
   justify-items: start;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
 }
 .personal-day-heading {
@@ -179,8 +209,20 @@
 }
 .personal-day-heading h2,
 .personal-day-notification-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 16px;
   font-weight: 700;
+}
+.personal-day h2 > svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+  color: #43688c;
+}
+.personal-week {
+  min-width: 0;
 }
 .personal-day .daily-lesson,
 .personal-day .next-lesson,
@@ -204,7 +246,7 @@
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 8px 12px;
-  padding-block: 8px;
+  padding-block: 10px;
 }
 .personal-schedule-list > li + li {
   border-top: 1px solid var(--border);
@@ -216,6 +258,12 @@
 }
 .personal-schedule-list small {
   display: block;
+}
+.personal-schedule-list time {
+  padding: 2px 6px;
+  align-self: start;
+  background: #edf3fa;
+  border-radius: 4px;
 }
 .personal-day-notification-title {
   border-top: 1px solid var(--border);

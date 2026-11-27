@@ -165,7 +165,8 @@ export async function markOperationRead(
       .update({ read_at: new Date().toISOString() })
       .eq("id", v.id)
       .eq("workspace_id", v.workspaceId)
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .is("read_at", null);
     if (result.error) throw result.error;
     return undefined;
   });
