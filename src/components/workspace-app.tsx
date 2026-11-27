@@ -70,6 +70,8 @@ const Curriculum = dynamic(
   { loading: () => <p role="status">화면을 불러오는 중…</p> },
 );
 import { SchoolSettings } from "@/components/features/settings";
+import { PlanOverview } from "@/components/features/plan-overview";
+import type { PlanOverviewRow } from "@/lib/plan-overview";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
 import { logout } from "@/app/actions";
@@ -99,6 +101,7 @@ export function WorkspaceApp({
   initialScheduleDate,
   management = false,
   homePublicData,
+  planOverview,
 }: {
   context: Context;
   section: string;
@@ -107,6 +110,7 @@ export function WorkspaceApp({
   initialScheduleDate?: string;
   management?: boolean;
   homePublicData?: ReactNode;
+  planOverview?: PlanOverviewRow[];
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<"school" | "profile" | "menu" | "notifications" | null>(
@@ -435,6 +439,7 @@ export function WorkspaceApp({
         {section === "curriculum" && !management && <OfficialCurriculum context={c} />}
         {section === "settings" && schoolAdmin ? (
           <>
+            {planOverview && c.year && <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} />}
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
               context={c}

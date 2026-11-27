@@ -7,6 +7,7 @@ import { WorkspaceApp } from "@/components/workspace-app";
 import { managementDomains } from "@/lib/school-publications";
 import { SchoolHomePublicData } from "@/components/features/school-home-public-data";
 import { schoolMealEndTimes } from "@/lib/school-operations";
+import { loadPlanOverview } from "@/lib/plan-overview.server";
 export default async function WorkspacePage({
   params,
   searchParams,
@@ -35,6 +36,7 @@ export default async function WorkspacePage({
   context.operations = await getOperationsData(context, p.section, management);
   if (p.section === "teaching" && context.year && management)
     context.teaching = await getTeachingData(p.workspaceId, context.year.id);
+  const planOverview = p.section === "settings" && context.role === "admin" ? await loadPlanOverview(context) : undefined;
   const today = seoulToday();
   return (
     <WorkspaceApp
@@ -45,6 +47,7 @@ export default async function WorkspacePage({
       initialCohort={q.cohort}
       initialScheduleDate={q.date}
       management={management}
+      planOverview={planOverview}
       homePublicData={p.section === "home"
         ? <SchoolHomePublicData school={context.school} today={today} unavailable={context.schoolInfoError} mealEnds={schoolMealEndTimes(context, today)} />
         : undefined}
