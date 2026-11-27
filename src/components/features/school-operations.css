@@ -453,3 +453,21 @@
 .home-week-and-tasks > .my-tasks { border: 1px solid var(--border); border-radius: 8px; background: var(--card); }
 @media screen and (min-width: 1024px) { .home-week-and-tasks { grid-template-columns: minmax(0, 1fr) 205px; } }
 @media print { .home-week-and-tasks { display: block; } }
+
+/* Mobile calendar is a compact date selector, not a second full agenda. */
+.home-week-mobile-grid { display: none; }
+@media screen and (max-width: 767px) {
+  .home-weekly-agenda .home-week-grid { display: none; }
+  .home-week-mobile-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; min-width: 0; }
+  .home-week-mobile-grid > .home-week-mobile-day { display: grid; grid-template-rows: 15px 28px 56px; align-content: start; justify-items: center; gap: 3px; min-width: 0; min-height: 0; padding: 6px 2px; border: 0; border-radius: 6px; background: #f5f7f9; color: #20252b; text-align: center; cursor: pointer; }
+  .home-week-mobile-day[aria-pressed="true"] { background: #e6ebf2; }
+  .home-week-mobile-weekday { font-size: 11px; color: var(--text-secondary); }
+  .home-week-mobile-day[data-weekend] .home-week-mobile-weekday { color: #87432f; }
+  .home-week-mobile-day time { display: grid; place-items: center; width: 28px; height: 28px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .home-week-mobile-day[aria-current="date"] time { color: var(--primary); }
+  .home-week-mobile-day[aria-pressed="true"] time { border-radius: 50%; background: #315e95; color: #fff; }
+  .home-week-mobile-preview { display: grid; grid-template-rows: repeat(2, 18px) 14px; align-content: start; gap: 2px; width: 100%; min-width: 0; }
+  .home-week-mobile-entry { display: block; min-width: 0; max-width: 100%; padding: 1px 3px; border-radius: 3px; background: var(--dept-bg, #eef1f4); color: #20252b; font-size: 10px; font-weight: 600; line-height: 16px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home-week-mobile-more { grid-row: 3; color: #526379; font-size: 10px; font-weight: 650; line-height: 14px; }
+  .home-week-mobile-day:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+}

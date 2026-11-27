@@ -173,6 +173,24 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
         <Button variant="ghost" size="icon" aria-label="다음 주" onClick={() => setSelection(addDays(selected, 7))}><ChevronRight /></Button>
       </div>
     </div>
+    <div className="home-week-mobile-grid" role="group" aria-label="주간 일정 요약">
+      {dates.map((day, column) => {
+        const entries = days.get(day)?.entries ?? [];
+        return <button key={day} type="button" className="home-week-mobile-day"
+          data-weekend={column >= 5 ? "" : undefined}
+          aria-current={day === today ? "date" : undefined}
+          aria-pressed={day === selected} aria-label={`${dayTitle(day)}, 일정 ${entries.length}건`}
+          onClick={() => setSelection(day)}>
+          <span className="home-week-mobile-weekday">{weekdayNames[column]}</span>
+          <time dateTime={day}>{Number(day.slice(8))}</time>
+          <span className="home-week-mobile-preview" aria-hidden="true">
+            {entries.slice(0, 2).map((entry, index) => <span key={`${entry.id}:${index}`}
+              className="home-week-mobile-entry" data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>{entry.title}</span>)}
+            {entries.length > 2 && <span className="home-week-mobile-more">+{entries.length - 2}</span>}
+          </span>
+        </button>;
+      })}
+    </div>
     <div className="home-week-grid" style={{ gridTemplateRows: `auto repeat(${Math.max(1, lanes.length)}, minmax(34px, auto)) minmax(18px, 1fr)` }}>
       {dates.map((day, column) => <div key={day} className="home-week-column" data-selected={day === selected ? "" : undefined}
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
