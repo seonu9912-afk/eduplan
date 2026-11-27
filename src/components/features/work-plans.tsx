@@ -1,5 +1,6 @@
 "use client";
 import { Disclosure } from "@/components/ui/disclosure";
+import "./schedule-surfaces.css";
 import { useEditGuard } from "@/lib/device-session";
 import { canPlan } from "@/lib/planning-completion";
 import { useMemo, useRef, useState } from "react";
@@ -259,7 +260,7 @@ export function WorkPlans({
   );
   return (
     <>
-      <div className="page-heading">
+      <div className="page-heading schedule-management-heading">
         <div>
           <h1>월중·주간 업무계획</h1>
         </div>
@@ -400,7 +401,7 @@ export function WorkPlans({
           최신 저장본 확인
         </Button>
       )}
-      <div className="work-toolbar no-print">
+      <div className="work-toolbar schedule-management-toolbar no-print">
         <div className="work-view-tabs">
           {(["week", "month"] as const).map((v) => (
             <button

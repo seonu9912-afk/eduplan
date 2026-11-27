@@ -21,6 +21,7 @@ import { ScheduleSearch } from "./schedule-search";
 import type { ScheduleSearchResult } from "@/lib/schedule-search";
 import { ScheduleListView, useScheduleListView } from "./schedule-list-view";
 import "./school-plan-readers.css";
+import "./schedule-surfaces.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekLabels = [...weekdays.slice(1), weekdays[0]];
@@ -74,9 +75,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const entries = view === "year" && available
     ? schoolScheduleEntries(publishedSchoolContext(officialContext, date), start, end, false)
     : [];
-  const agendaDates = view === "week"
-    ? dates.filter((day) => day === date || (days.get(day)?.entries.length ?? 0) > 0)
-    : [date];
+  const agendaDates = [date];
   const title = view === "year" ? `${year}학년도` : view === "week"
     ? `${dateLabel(range.start)} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
   const options: { value: ScheduleView; label: string }[] = [
@@ -94,7 +93,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   function selectDate(day: string) {
     setMiniMonthOverride(null);
     setDate(day);
-    if (view === "week")
+    if (view === "week" && work && listView.isList)
       requestAnimationFrame(() => document.getElementById(`agenda-${day}`)?.scrollIntoView({ block: "nearest" }));
   }
   function showEntry(entry: ScheduleEntry, trigger: HTMLElement) { setSearchResult(null); detail.show(entry, trigger); }
@@ -110,7 +109,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const updates = publications.filter((p) => p.domain === (work ? "plans" : "calendar"))
     .sort((a, b) => b.published_at.localeCompare(a.published_at));
   return (
-    <section className="school-plan-reader">
+    <section className="school-plan-reader schedule-surface">
       <div className="schedule-reader-toolbar no-print">
         <div className="schedule-period-nav">
           <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={!canPrevious} onClick={() => navigate(-1)}><ChevronLeft /></Button>
@@ -176,7 +175,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
             emphasizeToday spanDays={calendarDays} items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
-          <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
+          <div className="school-calendar-agenda" aria-label="선택한 날짜의 일정">
             {agendaDates.map((day) => {
               const schedule = days.get(day);
               const mainEntries = calendarDays.get(day)?.entries ?? [];
@@ -187,10 +186,9 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 {mainEntries.length ? <ul>{mainEntries.map((entry) => {
                   const location = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-                    <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
                     <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={showEntry} /></div>
-                      {location && <small>{location}</small>}
-                      <ResourceLinks value={entry.resources} />
+                      <small className="schedule-agenda-meta">{[entry.time, location, tones[entry.tone]].filter(Boolean).join(" · ")}</small>
+                      <ResourceLinks value={entry.resources} compact />
                     </div>
                   </li>;
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
