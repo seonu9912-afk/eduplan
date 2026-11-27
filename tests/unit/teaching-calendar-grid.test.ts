@@ -54,3 +54,29 @@ describe("teaching grid calendar linkage", () => {
     expect(formatProjectedUnits(weeks,[a,b,c,d],true)).toHaveLength(5);
   });
 });
+
+describe("weeks without instruction", () => {
+  it("omits a full vacation week, retaining partial weeks and calendar week numbering", () => {
+    const days = [
+      ...Array.from({length:5},(_,i)=>day(date(i+1),"vacation","방학")),
+      day(date(6),"weekend"),day(date(7),"weekend"),
+      day(date(8),"vacation","방학"),day(date(9),"vacation","방학"),day(date(10)),
+      day(date(11)),day(date(12)),day(date(13),"weekend"),day(date(14),"weekend"),
+    ];
+    const weeks=buildTeachingCalendarGrid(days,[],1,2);
+    expect(weeks.map(w=>w.anchor)).toEqual([date(8)]);
+    expect(weeks[0].period).toBe("3월 2주");
+    expect(weeks[0].calendarNotes).toContain("방학(3.8.)");
+    expect(formatProjectedUnits(weeks,[],true)).toHaveLength(1);
+    const saved=unit(date(2),"saved-vacation");
+    expect(bindTeachingCalendarGrid(weeks,[saved]).unattached).toEqual([saved]);
+    expect(buildTeachingCalendarGrid(days.slice(0,7),[],1,2)).toEqual([]);
+  });
+  it("skips weeks of holidays, closed days and disabled instructional days",()=>{
+    const days=[day(date(1),"holiday","공휴일"),day(date(2),"discretionary","휴업일"),
+      day(date(3),"instructional","",false),day(date(4),"vacation","방학"),
+      day(date(5),"instructional","",false),day(date(6),"weekend"),day(date(7),"weekend")];
+    expect(buildTeachingCalendarGrid(days,[],1,2)).toEqual([]);
+    expect(buildTeachingCalendarGrid([...days.slice(0,5),day(date(6),"swap","토요일 수업")],[],1,2)).toHaveLength(1);
+  });
+});

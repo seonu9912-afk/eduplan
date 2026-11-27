@@ -76,6 +76,18 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
   const { rows, unattached } = bindTeachingCalendarGrid(calendar.weeks, units);
   const [weekAnchor, setWeekAnchor] = useState("");
   const [wide, setWide] = useState(false);
+  const namedWeeks = rows.filter(({unit}) => !!unit?.title.trim()).length;
+  const firstUnnamed = rows.find(({unit}) => !unit?.title.trim());
+  const jumpToUnnamed = () => {
+    if (!firstUnnamed) return;
+    setWeekAnchor(firstUnnamed.week.anchor);
+    window.requestAnimationFrame(() => {
+      const mobile = window.matchMedia("(max-width: 767px)").matches && !wide;
+      const container = mobile ? document.getElementById(`teaching-mobile-week-${firstUnnamed.week.anchor}`) : document.querySelector(`[data-week-anchor="${firstUnnamed.week.anchor}"]`);
+      container?.scrollIntoView({block:"nearest"});
+      container?.querySelector<HTMLTextAreaElement>("textarea")?.focus({preventScroll:true});
+    });
+  };
   const mobileRow =
     rows.find((row) => row.week.anchor === weekAnchor) ?? rows[0];
   const [expanded, setExpanded] = useState<{
@@ -178,7 +190,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
       {rows.length > 0 && (
         <>
           <div className="section-title">
-            <p>학사일정 연동 · {rows.length}주</p>
+            <p>학사일정 연동 · 수업일이 있는 {rows.length}주</p>
             {editable && (
               <div className="teaching-actions">
                 <Button
@@ -198,15 +210,20 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               </div>
             )}
           </div>
+          <div className="teaching-week-progress no-print">
+            <div><strong>단원명 입력 {namedWeeks}/{rows.length}주</strong><span>미입력 {rows.length-namedWeeks}주 · 작성 내용의 완성도와는 별개입니다.</span><progress aria-label="단원명 입력 주차" value={namedWeeks} max={rows.length}/></div>
+            {editable && <Button variant="outline" size="sm" disabled={!firstUnnamed} onClick={jumpToUnnamed}>첫 미입력 주차</Button>}
+          </div>
           <div className="mobile-only no-print">
             <Button variant="outline" onClick={() => setWide(!wide)}>
               {wide ? "주차별 편집으로 보기" : "전체 편성표 보기"}
             </Button>
             {!wide && mobileRow && (
               <>
-                <div className="mobile-view-toolbar">
+                <div className="mobile-view-toolbar teaching-week-navigation">
+                  <Button variant="outline" size="sm" aria-label="이전 주차" disabled={rows.indexOf(mobileRow) <= 0} onClick={() => { const previous = rows[rows.indexOf(mobileRow)-1]; if(previous) setWeekAnchor(previous.week.anchor); }}>이전</Button>
                   <label>
-                    작성할 주차
+                    {editable ? "작성할 주차" : "조회할 주차"}
                     <select
                       value={mobileRow.week.anchor}
                       onChange={(e) => setWeekAnchor(e.target.value)}
@@ -218,11 +235,12 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       ))}
                     </select>
                   </label>
+                  <Button variant="outline" size="sm" aria-label="다음 주차" disabled={rows.indexOf(mobileRow) >= rows.length-1} onClick={() => { const next = rows[rows.indexOf(mobileRow)+1]; if(next) setWeekAnchor(next.week.anchor); }}>다음</Button>
                 </div>
                 {(() => {
                   const { week, unit } = mobileRow;
                   return (
-                    <article className="mobile-edit-card">
+                    <article id={`teaching-mobile-week-${week.anchor}`} className="mobile-edit-card teaching-week-mobile-card">
                       <h3>{week.period}</h3>
                       {week.calendarNotes.map((note) => (
                         <p key={note}>{note}</p>
@@ -276,7 +294,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                       {(Object.keys(fields) as Field[]).map((field) => (
                         <label key={field}>
                           {fields[field].label}
-                          <textarea
+                          {editable ? <textarea
                             rows={field === "title" ? 2 : 4}
                             maxLength={fields[field].max}
                             readOnly={!editable}
@@ -290,7 +308,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                                 field,
                               )
                             }
-                          />
+                          /> : <p className="teaching-read-value">{unit?.[field] || "—"}</p>}
                         </label>
                       ))}
                       <LessonLinks
@@ -351,6 +369,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                   <tr
                     key={week.anchor}
                     id={unit ? `lesson-${unit.id}` : undefined}
+                    data-week-anchor={week.anchor}
                     tabIndex={-1}
                   >
                     <td>{week.month}</td>
@@ -480,10 +499,11 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
           compact
           label={
             <>
-              현재 주차와 연결되지 않은 기존 수업 {unattached.length}건
+              현재 수업 주차와 연결되지 않은 기존 계획 {unattached.length}건
             </>
           }
         >
+          <p className="muted">방학·휴업일 또는 학사일정 변경으로 연결되지 않은 계획입니다. 기존 내용은 보존되며, 필요한 경우 날짜를 다시 지정해 주세요.</p>
           <LessonEditor
             {...props}
             legacyOnly

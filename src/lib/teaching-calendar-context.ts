@@ -26,5 +26,5 @@ export function linkedTeachingCalendar(
     end_date: allocation.date, target_grades: [grade],
   }));
   const weeks = buildTeachingCalendarGrid(days, [...context.events, ...additional], semester, grade);
-  return { weeks, issue: weeks.length ? null : "선택한 학기에 연동할 주차가 없습니다." };
+  return { weeks, issue: weeks.length ? null : "선택한 학기에 수업일이 있는 주차가 없습니다." };
 }

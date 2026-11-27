@@ -76,6 +76,9 @@ export function buildTeachingCalendarGrid(
     const month = String(Number(start.slice(5, 7)));
     const index = (monthRows.get(monthKey) ?? 0) + 1;
     monthRows.set(monthKey, index);
+    // Keep calendar week numbering stable, but never generate a teaching row
+    // for a week without an enabled instructional or swapped school day.
+    if (!group.some(day => day.enabled && working.has(day.type))) return [];
     const lastInWeek = group.at(-1)!.date;
     const firstInWeek = group[0].date;
     const notes = new Set<string>();
