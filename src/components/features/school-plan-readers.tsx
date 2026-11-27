@@ -20,6 +20,7 @@ import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
 import { ScheduleSearch } from "./schedule-search";
 import type { ScheduleSearchResult } from "@/lib/schedule-search";
 import { ScheduleListView, useScheduleListView } from "./schedule-list-view";
+import { CalendarFeedSettings } from "./calendar-feed-settings";
 import "./school-plan-readers.css";
 import "./schedule-surfaces.css";
 import "./curriculum-display.css";
@@ -143,6 +144,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             }} />
           </label>
           <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄" onClick={() => window.print()} disabled={!available}><Printer /></Button>
+          {c.workspace.kind === "school" && c.year && <CalendarFeedSettings workspaceId={c.workspace.id} yearId={c.year.id} year={year} />}
           {actions}
           </div>
         </div>
