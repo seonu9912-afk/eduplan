@@ -1,5 +1,6 @@
 import { dateLabel } from "@/lib/domain";
 import { dailyLessonStatus } from "@/lib/school-operations";
+import { commonPeriodTime, lessonTime } from "@/lib/timetable-display";
 import type { timetableWeek, TimetableAudience, TimetableCell, TimetableMode } from "@/lib/timetable-view";
 import "./official-timetable.css";
 
@@ -21,12 +22,12 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
   return (
     <div className={`official-timetable-scroll${compact ? " timetable-compact" : ""}`}
       tabIndex={0} role="region" aria-label={label}>
-      <table className="official-timetable-grid">
+      <table className="official-timetable-grid" data-audience={audience}>
         <caption className="sr-only">{label}</caption>
         <thead><tr>
           <th scope="col">교시</th>
           {columns.map((column, index) => (
-            <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}>{days[index]}
+            <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}><span className="timetable-weekday-label">{days[index]}</span>
               {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}>{dateLabel(column.date)}</time>}
               {column.notice && <small className="timetable-day-notice">{column.notice}</small>}
             </th>
@@ -35,29 +36,28 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
         <tbody>
           {Array.from({ length: week.rows }, (_, index) => {
             const period = index + 1;
+            const time = mode === "weekly" ? commonPeriodTime(columns, period) : null;
             return <tr key={period}>
-              <th scope="row">{period}교시</th>
+              <th scope="row"><strong>{period}교시</strong>{time && <small className="timetable-period-time" title={time.start+"~"+time.end}>{time.start}<span className="timetable-period-end">{time.end}</span></small>}</th>
               {columns.map((column) => {
                 const cells = column.cells.filter((cell) => cell.period === period);
                 const active = column.allCells.some((cell) => cell.period === period && current(cell, column.date));
                 const free = showFreePeriods && column.teaching && period <= column.periodCount && !cells.length && (audience === "mine" || audience === "teacher" || audience === "class");
                 return <td key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}
                   data-current-period={active ? "" : undefined} className={period > column.periodCount || !column.teaching ? "timetable-nonperiod" : undefined}>
-                  {free && <span className="timetable-free-period">{audience === "class" ? "수업 없음" : "공강"}</span>}
+                  {free && <span className="timetable-free-period" aria-label={audience === "class" ? "수업 없음" : "공강"}>{audience === "class" ? "—" : "공강"}</span>}
                   {cells.map((cell) => (
                     <div className="official-lesson" data-kind={cell.kind}
                       data-blocked={cell.blocked ? "" : undefined} data-current={current(cell, column.date) ? "" : undefined} key={cell.id}>
-                      {audience === "class" ? <>
-                        <strong>{cell.subject}</strong>
-                        <span>{cell.teacher}</span>
-                      </> : <>
-                        <strong>{cell.classes.replace(/(\d+)학년\s+(\d+)반/g, "$1-$2")}</strong>
-                        <span>{cell.subject}</span>
-                        {audience === "all" && cell.teacher && <small>{cell.teacher}</small>}
+                      <strong className="timetable-lesson-subject">{cell.subject}</strong>
+                      {audience === "class" ? (cell.teacher && <span className="timetable-lesson-secondary">{cell.teacher}</span>) : <>
+                        <span className="timetable-lesson-secondary">{cell.classes.replace(/(\d+)학년\s+(\d+)반/g, "$1-$2")}</span>
+                        {audience === "all" && cell.teacher && <small className="timetable-lesson-meta">{cell.teacher}</small>}
                       </>}
-                      {showFreePeriods && cell.room && <small>{cell.room}</small>}
+                      {showFreePeriods && cell.room && <small className="timetable-lesson-meta">{cell.room}</small>}
+                      {mode === "weekly" && !time && lessonTime(cell) && <small className="timetable-lesson-meta timetable-varying-time">{cell.start}~{cell.end}</small>}
                       {current(cell, column.date) && <small className="timetable-current-label">진행 중</small>}
-                      {(cell.blocked || cell.changed) && <small>{cell.blocked || "변경 수업"}</small>}
+                      {(cell.blocked || cell.changed) && <small className="timetable-lesson-state">{cell.blocked || "변경 수업"}</small>}
                     </div>
                   ))}
                 </td>;
