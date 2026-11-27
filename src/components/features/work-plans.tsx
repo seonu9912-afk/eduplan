@@ -28,6 +28,7 @@ import { shiftScheduleDate } from "@/lib/schedule-dates";
 import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
+import { operationNames, operationName, visibleWorkItem, workItemChoice } from "@/lib/work-operation-items";
 type Business = AnnualPlan["business"][number];
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekday = (d: string) => new Date(d + "T12:00:00Z").getUTCDay();
@@ -89,10 +90,8 @@ export function WorkPlans({
         description="상단에서 학년도를 선택한 뒤 업무계획을 작성합니다."
       />
     );
-  const editable = canPlan(c, "plans"),
-    duty =
-      plan.workSettings?.dutyEnabled ??
-      plan.business.some((b) => b.kind === "당직");
+  const editable = canPlan(c, "plans");
+  const operations = operationNames(plan);
   const range =
     view === "week"
       ? { start: weekRange(date).start, end: addDays(weekRange(date).start, 6) }
@@ -118,11 +117,11 @@ export function WorkPlans({
   };
   const matching = (item: Business) => plan.business.some((current) =>
     current.date === shiftedDate(item.date) && current.department === item.department &&
-    current.kind === item.kind && current.text === item.text,
+    current.kind === item.kind && operationName(current) === operationName(item) && current.text === item.text,
   );
-  const open = (d: string, kind: Business["kind"] = "업무") => {
+  const open = (d: string, kind: Business["kind"] = "업무", name?: string) => {
     setError("");
-    setEditing({ date: clamp(d), kind });
+    setEditing({ date: clamp(d), kind, operationName: name });
   };
   const navigate = (direction: number) => {
     if (direction < 0 ? range.start <= start : range.end >= end) return;
@@ -229,48 +228,23 @@ export function WorkPlans({
           )}
         </div>
         <div className="work-day-extras">
-          {(["당직", "출장"] as const)
-            .filter(
-              (k) =>
-                (k !== "당직" || duty) &&
-                (view === "week" ||
-                  plan.business.some(
-                    (b) =>
-                      b.date === d &&
-                      b.kind === k &&
-                      (!departmentFilter || b.department === departmentFilter),
-                  )),
-            )
-            .map((k) => (
-              <section key={k}>
+          {[...operations.map((name) => ({ name, kind: "운영업무" as const })),
+            { name: "출장", kind: "출장" as const }].map(({ name, kind }) => {
+              const rows = plan.business.filter((b) => b.date === d &&
+                (kind === "출장" ? b.kind === "출장" : operationName(b) === name) &&
+                (!departmentFilter || b.department === departmentFilter));
+              if (view !== "week" && !rows.length) return null;
+              return <section key={name}>
                 <div className="work-extra-heading">
-                  <b>{k}</b>
-                  {editable && inYear && (
-                    <button
-                      className="no-print"
-                      aria-label={`${d} ${k} 추가`}
-                      onClick={() => open(d, k)}
-                    >
-                      + 추가
-                    </button>
-                  )}
+                  <b>{name}</b>
+                  {editable && inYear && <button className="no-print"
+                    aria-label={`${d} ${name} 추가`}
+                    onClick={() => open(d, kind, kind === "운영업무" ? name : undefined)}>+ 추가</button>}
                 </div>
-                {plan.business
-                  .filter(
-                    (b) =>
-                      b.date === d &&
-                      b.kind === k &&
-                      (!departmentFilter || b.department === departmentFilter),
-                  )
-                  .map(businessCard)}
-                {!plan.business.some(
-                  (b) =>
-                    b.date === d &&
-                    b.kind === k &&
-                    (!departmentFilter || b.department === departmentFilter),
-                ) && <small className="muted">없음</small>}
-              </section>
-            ))}
+                {rows.map(businessCard)}
+                {!rows.length && <small className="muted">없음</small>}
+              </section>;
+            })}
         </div>
       </>
     );
@@ -362,7 +336,9 @@ export function WorkPlans({
             setError("부서 또는 업무 일정 수가 허용 범위를 초과합니다. 가져올 자료를 줄여 주세요.");
             return;
           }
-          change({ ...plan, departments, business: [...plan.business,
+          const names = [...new Set([...operations, ...rows.map(operationName).filter((name): name is string => !!name)])];
+          if (names.length > 20) { setError("운영 항목은 20개 이내입니다."); return; }
+          change({ ...plan, departments, workSettings: { ...plan.workSettings, dutyEnabled: names.includes("당직"), operationNames: names }, business: [...plan.business,
             ...rows.map((item) => ({ ...item, id: crypto.randomUUID(), date: shiftedDate(item.date) })),
           ] });
           setPrevious(null);
@@ -567,7 +543,7 @@ export function WorkPlans({
                   if (allocation.date === day && matchesDepartment(allocation.department) && !c.events.some((e) => e.id === allocation.eventId)) entries.push({ title: allocation.title, tone: "event", department: allocation.department });
                 }
                 for (const item of plan.business) {
-                  if (item.date === day && matchesDepartment(item.department) && (item.kind !== "당직" || duty)) entries.push({ title: item.text, tone: "work", department: item.department });
+                  if (item.date === day && matchesDepartment(item.department) && visibleWorkItem(plan, item)) entries.push({ title: item.text, tone: "work", department: item.department });
                 }
                 return entries;
               }} onNavigate={navigate} onSelect={(day) => {
@@ -626,23 +602,23 @@ export function WorkPlans({
       </div>
       {editable && (
         <Disclosure className="panel work-options no-print" label="업무계획 설정">
-          <label className="duty-option">
-            <input
-              type="checkbox"
-              checked={duty}
-              onChange={(e) =>
-                change({
-                  ...plan,
-                  workSettings: { dutyEnabled: e.target.checked },
-                })
-              }
-            />
-            당직 사용
-          </label>
-          <p className="muted">
-            당직을 사용하지 않으면 입력과 표시를 숨깁니다. 기존 기록은
-            보존됩니다. 변경 후 업무계획을 저장하세요.
-          </p>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const names = [...new Set(String(new FormData(e.currentTarget).get("operationNames") ?? "").split("\n").map((name) => name.trim()).filter(Boolean))];
+            const checked = annualSchema.safeParse({ ...plan, workSettings: {
+              ...plan.workSettings, dutyEnabled: names.includes("당직"), operationNames: names,
+            } });
+            if (!checked.success) { setError(checked.error.issues[0].message); return; }
+            change(checked.data);
+            setError("");
+          }}>
+            <label>학교 운영 항목 (한 줄에 하나)
+              <textarea key={operations.join("\n")} name="operationNames" defaultValue={operations.join("\n")} rows={4}
+                placeholder={"등교 지도\n급식 지도\n기숙사 당직"} />
+            </label>
+            <p className="muted">학교에 필요한 항목만 등록하세요. 항목을 목록에서 제거해도 기존 배정 기록은 보존되며, 같은 이름을 다시 등록하면 표시됩니다. 출장은 항상 제공됩니다.</p>
+            <Button variant="outline">운영 항목 적용</Button>
+          </form>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -695,11 +671,14 @@ export function WorkPlans({
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
+              const choice = String(f.get("kind"));
+              const custom = choice.startsWith("operation:") ? choice.slice("operation:".length) : undefined;
               const row = {
                 id: editing.id ?? crypto.randomUUID(),
                 date: String(f.get("date")),
                 department: String(f.get("department")),
-                kind: String(f.get("kind")),
+                kind: custom ? (editing.kind === "당직" && custom === "당직" ? "당직" : "운영업무") : choice,
+                operationName: custom && !(editing.kind === "당직" && custom === "당직") ? custom : undefined,
                 text: String(f.get("text")).trim(),
                 time: String(f.get("time")),
                 location: String(f.get("location")),
@@ -744,12 +723,10 @@ export function WorkPlans({
             </label>
             <label>
               업무 구분
-              <select name="kind" defaultValue={editing.kind ?? "업무"}>
-                {["업무", "출장", ...(duty ? ["당직"] : []), "협의사항"].map(
-                  (k) => (
-                    <option key={k}>{k}</option>
-                  ),
-                )}
+              <select name="kind" defaultValue={workItemChoice(editing)}>
+                {["업무", "출장", "협의사항"].map((k) => <option key={k}>{k}</option>)}
+                {[...new Set([...operations, ...(editing.kind === "당직" ? ["당직"] : editing.operationName ? [editing.operationName] : [])])].map((name) =>
+                  <option key={name} value={`operation:${name}`}>{name}</option>)}
               </select>
             </label>
             <label>
@@ -778,7 +755,7 @@ export function WorkPlans({
               />
             </label>
             <label className="annual-wide">
-              내용
+              {editing.kind === "운영업무" || editing.kind === "당직" ? "담당자·배정 내용" : "내용"}
               <textarea
                 name="text"
                 defaultValue={editing.text}

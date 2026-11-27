@@ -98,14 +98,15 @@ export const annualSchema = z
       )
       .max(1500),
     departments: z.array(z.string().min(1).max(60)).min(1).max(20),
-    workSettings: z.object({ dutyEnabled: z.boolean() }).optional(),
+    workSettings: z.object({ dutyEnabled: z.boolean(), operationNames: z.array(z.string().min(1).max(40)).max(20).optional() }).optional(),
     business: z
       .array(
         z.object({
           id: z.string().max(80),
           date: isoDate,
           department: z.string().max(60),
-          kind: z.enum(["업무", "출장", "당직", "협의사항"]),
+          kind: z.enum(["업무", "출장", "당직", "협의사항", "운영업무"]),
+          operationName: z.string().min(1).max(40).optional(),
           text: z.string().min(1).max(2000),
           time: z.string().max(120).optional(),
           location: z.string().max(120).optional(),
@@ -122,6 +123,11 @@ export const annualSchema = z
     }),
   })
   .superRefine((v, ctx) => {
+    const names = v.workSettings?.operationNames;
+    if (names && (new Set(names).size !== names.length || names.some((name) => name !== name.trim() || ["업무", "출장", "협의사항", "운영업무"].includes(name))))
+      ctx.addIssue({ code: "custom", message: "운영 항목명은 중복되거나 기본 업무 구분과 같을 수 없습니다." });
+    if (v.business.some((row) => row.kind === "운영업무" && !row.operationName))
+      ctx.addIssue({ code: "custom", message: "운영 업무의 항목명을 지정하세요." });
     if (Object.keys(v.days).length > 366)
       ctx.addIssue({ code: "custom", message: "학사일은 366일 이내입니다." });
     const keys = v.timetable.map((x) => `${x.grade}-${x.weekday}`);

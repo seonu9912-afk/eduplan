@@ -1,3 +1,4 @@
+import { visibleWorkItem, workItemTitle } from "./work-operation-items";
 import { z } from "zod";
 import {
   academicDays,
@@ -403,12 +404,12 @@ export function unifiedSchedule(
       source: "allocation" as const,
     }));
   const business = plan.business
-    .filter((b) => b.date >= start && b.date <= end)
+    .filter((b) => b.date >= start && b.date <= end && visibleWorkItem(plan, b))
     .map((b) => ({
       id: b.id,
       date: b.date,
       end: b.date,
-      title: b.text,
+      title: workItemTitle(b),
       department: b.department,
       kind: b.kind,
       time: b.time ?? "",
