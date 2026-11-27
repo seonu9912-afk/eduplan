@@ -1232,6 +1232,8 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      calendar_feed_manage: { Args: { target: string; year_id: string; op: string; hash_value: string; calendar: boolean; plans: boolean }; Returns: Json };
+      calendar_feed_read: { Args: { token: string }; Returns: Json };
       ensure_school_year: { Args: { target: string; school_year: number }; Returns: string };
       personal_archive: { Args: never; Returns: Json };
       has_personal_archive: { Args: never; Returns: boolean };
