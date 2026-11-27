@@ -322,7 +322,18 @@ select {
     gap: 8px;
   }
   .panel {
-    padding: 16px;
+    padding: var(--ui-mobile-card-padding);
+  }
+  :where(.workspace-content) :where(.panel > .panel-heading) {
+    padding: 0 0 12px;
+  }
+  .workspace-content .page-heading {
+    margin-block: 12px 16px;
+  }
+  .heading-actions > [data-slot="button"] {
+    white-space: normal;
+    text-align: center;
+    min-width: 0;
   }
   .form-two,
   .form-three,
@@ -338,25 +349,35 @@ select {
   fieldset {
     min-width: 0;
   }
-  .workspace-content button,
-  .workspace-content [role="button"],
+  /* Generic touch sizing is deliberately low-specificity. Dense calendar and
+     timetable controls own their geometry; they must not inherit padding. */
+  :where(.workspace-content) :where(button, [role="button"]) {
+    min-height: var(--ui-mobile-touch);
+  }
+  :where(.workspace-content, .edu-dialog) [data-slot="button"] {
+    min-height: var(--ui-mobile-touch);
+    height: auto;
+    padding-block: 7px;
+    max-width: 100%;
+  }
+  :where(.workspace-content, .edu-dialog) [data-slot="button"][data-size^="icon"] {
+    min-width: var(--ui-mobile-touch);
+    min-height: var(--ui-mobile-touch);
+    padding: 0;
+  }
   .workspace-content select,
   .workspace-content input:not([type="checkbox"]):not([type="radio"]),
   .header-right button,
   .mobile-menu-grid a {
-    min-height: 44px;
-  }
-  .workspace-content button:not(.teaching-cell-expand) {
-    padding-block: 9px;
+    min-height: var(--ui-mobile-touch);
   }
   .workspace-content input:not([type="checkbox"]):not([type="radio"]),
   .workspace-content select,
   .workspace-content textarea {
     font-size: 16px;
   }
-  .workspace-content label:has(input[type="checkbox"]),
-  .workspace-content label:has(input[type="radio"]) {
-    min-height: 44px;
+  :where(.workspace-content) :where(label:has(input[type="checkbox"]), label:has(input[type="radio"])) {
+    min-height: var(--ui-mobile-touch);
     align-items: center;
   }
   .workspace-content input[type="checkbox"],
@@ -572,4 +593,12 @@ select {
 
 .pwa-install-panel {
   margin-block: 14px;
+}
+
+@media screen and (max-width: 374px) {
+  .app-header .header-inner, .workspace-content { padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+  .workspace-content .page-heading h1 { font-size: 22px; }
+  .home-week-navigation { flex-wrap: wrap; }
+  .personal-day-heading h2 { font-size: 16px; }
+  .mobile-bottom-nav a, .mobile-bottom-nav button { font-size: 10px; }
 }

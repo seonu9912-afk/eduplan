@@ -222,8 +222,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       <h3>{dayTitle(selected)} 일정{selected === today && <span className="home-week-today-label">오늘</span>}</h3>
       {detail.length ? <ul className="home-week-detail-list">{detail.map((entry: ScheduleEntry, index) =>
         <li key={`${entry.id}:${index}`} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-          <div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={scheduleDetail.show} /></div>
-          <small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small>
+          <ScheduleDetailTitle className="home-week-detail-trigger" entry={entry} onOpen={scheduleDetail.show}><span className="home-week-detail-title">{entry.department && <DepartmentBadge department={entry.department} />}<span>{entry.title}</span></span><small>{[entry.time, entry.location, agendaTones[entry.tone]].filter(Boolean).join(" · ")}</small></ScheduleDetailTitle>
           <ResourceLinks value={entry.resources} compact />
         </li>)}</ul> : <p className="personal-widget-note">등록된 일정이 없습니다.</p>}
     </div>

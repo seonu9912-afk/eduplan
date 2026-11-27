@@ -11,7 +11,7 @@
 .schedule-detail-content dd { margin: 0; font-size: 14px; color: #20252b; white-space: pre-wrap; overflow-wrap: anywhere; }
 .schedule-detail-resources h4 { display: flex; gap: 6px; align-items: center; font-size: 13px; margin-bottom: 8px; }
 .schedule-detail-footer { display: flex; justify-content: flex-end; }
-@media screen and (max-width: 767px) { .workspace-content .schedule-detail-trigger { min-height: 0; padding-block: 0; } .schedule-detail-content dl > div { grid-template-columns: 90px minmax(0,1fr); } }
+@media screen and (max-width: 767px) { .workspace-content .schedule-detail-trigger:not(.home-week-detail-trigger) { min-height: 0; padding-block: 0; } .schedule-detail-content dl > div { grid-template-columns: 90px minmax(0,1fr); } }
 @media print { .schedule-detail-trigger { color: inherit; text-decoration: none; } }
 
 .event-lesson-impact { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 8px; }

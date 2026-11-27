@@ -30,8 +30,8 @@ export function useScheduleDetail(initial: () => ScheduleEntry | null = () => nu
   };
 }
 
-export function ScheduleDetailTitle({ entry, label, onOpen }: { entry: ScheduleEntry; label?: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
-  return <button type="button" className="schedule-detail-trigger" aria-haspopup="dialog" aria-label={`${entry.title} 상세 보기`} onClick={(event) => onOpen(entry, event.currentTarget)}>{label ?? entry.title}</button>;
+export function ScheduleDetailTitle({ entry, label, onOpen, children, className }: { entry: ScheduleEntry; label?: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void; children?: React.ReactNode; className?: string }) {
+  return <button type="button" className={["schedule-detail-trigger", className].filter(Boolean).join(" ")} aria-haspopup="dialog" aria-label={`${entry.title} 상세 보기`} onClick={(event) => onOpen(entry, event.currentTarget)}>{children ?? label ?? entry.title}</button>;
 }
 
 export function ScheduleDetailDialog({ entry, onClose, onCloseAutoFocus, onJump, context }: { entry: ScheduleEntry | null; onClose: () => void; onCloseAutoFocus: (event: Event) => void; onJump?: () => void; context?: Context }) {
