@@ -1,7 +1,7 @@
 import {test,expect} from "@playwright/test";
 test("batch adds validated rows to draft and keeps existing save flow",async({page})=>{
  await page.goto("/recovery-preview/operations");
- await page.getByRole("button",{name:"업무계획",exact:true}).click();
+ await page.getByRole("button",{name:"월중·주간",exact:true}).click();
  await page.getByRole("button",{name:"일괄 입력",exact:true}).click();
  const batch=page.getByRole("region",{name:"업무계획 일괄 입력"});
  await expect(batch).toBeVisible();
