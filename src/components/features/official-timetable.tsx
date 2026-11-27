@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ChevronLeft, ChevronRight, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-import { myTeacherIds } from "@/lib/school-operations";
+import { myTeacherIds, seoulClock } from "@/lib/school-operations";
 import { timetableModeForWeek, timetableWeek, type TimetableAudience, type TimetableCell, type TimetableMode } from "@/lib/timetable-view";
 import { TimetableGrid } from "./timetable-grid";
 import "./official-timetable.css";
@@ -25,7 +25,17 @@ export function OfficialTimetable({ context: c, today, actions }: { context: Con
 function TimetableSheet({ context: c, today, year, actions }: { context: Context; today: string; year: number; actions?: ReactNode }) {
   const start = `${year}-03-01`;
   const end = addDays(`${year + 1}-03-01`, -1);
-  const thisYear = today >= start && today <= end;
+  const [clock, setClock] = useState<ReturnType<typeof seoulClock> | null>(null);
+  useEffect(() => {
+    const tick = () => setClock(seoulClock(new Date()));
+    const first = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 10_000);
+    document.addEventListener("visibilitychange", tick);
+    window.addEventListener("focus", tick);
+    return () => { window.clearTimeout(first); window.clearInterval(timer); document.removeEventListener("visibilitychange", tick); window.removeEventListener("focus", tick); };
+  }, []);
+  const liveToday = clock?.date ?? today;
+  const thisYear = liveToday >= start && liveToday <= end;
   const initialDate = thisYear ? today : c.operations?.effectiveTimetables?.[0]?.starts_on ?? c.semesters[0]?.start_date ?? start;
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
   const [date, setDate] = useState(initialDate);
@@ -33,6 +43,7 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
   const [audience, setAudience] = useState<TimetableAudience>("mine");
   const [teacher, setTeacher] = useState("");
   const [classId, setClassId] = useState("");
+  const [teacherQuery, setTeacherQuery] = useState("");
   const defaultMode = timetableModeForWeek(c, date);
   const mode = selectedMode ?? defaultMode;
   const week = useMemo(() => timetableWeek(c, date, mode), [c, date, mode]);
@@ -41,7 +52,8 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
   const endLabel = firstDate.slice(0, 7) === lastDate.slice(0, 7)
     ? `${Number(lastDate.slice(8))}일` : dateLabel(lastDate);
   const document = week.schedule.document;
-  const teachers = new Map([
+  const teachers = new Map<string, string>([
+    ...week.weekdays.flatMap((day) => day.cells.filter((cell) => cell.teacherId && cell.teacher).map((cell) => [cell.teacherId, cell.teacher] as const)),
     ...(c.operations?.directory ?? []).filter((t) => t.active).map((t) => [t.id, t.display_name] as const),
     ...(document?.teachers ?? []).map((t) => [t.id, t.label] as const),
   ]);
@@ -53,6 +65,10 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
   const myIds = myTeacherIds(c);
   const selectedTeacher = teachers.has(teacher) ? teacher : teachers.keys().next().value ?? "";
   const selectedClass = classes.has(classId) ? classId : classes.keys().next().value ?? "";
+  const normalized = (value: string) => value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko");
+  const sortedTeachers = [...teachers].sort((a, b) => a[1].localeCompare(b[1], "ko"));
+  const matchingTeachers = sortedTeachers.filter(([, name]) => normalized(name).includes(normalized(teacherQuery)));
+  const teacherOptions = matchingTeachers.some(([id]) => id === selectedTeacher) ? matchingTeachers : [...sortedTeachers.filter(([id]) => id === selectedTeacher), ...matchingTeachers];
   const term = c.semesters.find((s) => date >= s.start_date && date <= s.end_date);
   const visible = (cell: TimetableCell) => {
     switch (audience) {
@@ -71,18 +87,23 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
         <div className="official-timetable-tabs" role="group" aria-label="시간표 조회 대상">
           {Object.entries(audiences).map(([id, name]) => (
             <Button key={id} variant="ghost"
-              aria-pressed={audience === id} onClick={() => setAudience(id as TimetableAudience)}>
+              aria-pressed={audience === id} onClick={() => { setAudience(id as TimetableAudience); setTeacherQuery(""); }}>
               {name}
             </Button>
           ))}
         </div>
         <div className="official-timetable-filters">
           {audience === "teacher" && (
-            <label>교사
-              <select value={selectedTeacher} onChange={(e) => setTeacher(e.target.value)}>
-                {[...teachers].map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-              </select>
-            </label>
+            <div className="timetable-teacher-picker">
+              <label className="timetable-teacher-search"><Search size={16} aria-hidden="true" /><input type="search" value={teacherQuery} placeholder="교사 이름 검색" aria-label="교사 이름 검색" onChange={(e) => setTeacherQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && matchingTeachers.length === 1) { e.preventDefault(); setTeacher(matchingTeachers[0][0]); setTeacherQuery(""); } }} /></label>
+              <label>교사
+                <select value={selectedTeacher} onChange={(e) => { setTeacher(e.target.value); setTeacherQuery(""); }}>
+                  {teacherOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+                </select>
+              </label>
+              {!!teacherQuery.trim() && <span className="timetable-teacher-matches" role="status">{matchingTeachers.length ? `검색 결과 ${matchingTeachers.length}명` : "일치하는 교사가 없습니다."}</span>}
+              {!!teacherQuery.trim() && matchingTeachers.length === 1 && matchingTeachers[0][0] !== selectedTeacher && <Button variant="outline" size="sm" onClick={() => { setTeacher(matchingTeachers[0][0]); setTeacherQuery(""); }}>{matchingTeachers[0][1]} 시간표 보기</Button>}
+            </div>
           )}
           {audience === "class" && (
             <label>학급
@@ -120,7 +141,7 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
             {mode === "weekly" && <>
               <Button variant="ghost" size="icon" aria-label="다음 주"
                 disabled={addDays(week.weekdays[0].date, 7) > end} onClick={() => setDate(clamp(addDays(date, 7)))}><ChevronRight /></Button>
-              <Button variant="outline" disabled={!thisYear} onClick={() => setDate(today)}>이번 주</Button>
+              <Button variant="outline" disabled={!thisYear} onClick={() => { setDate(liveToday); setMode("weekly"); }}>이번 주</Button>
             </>}
           </div>
           <Button variant="ghost" size="icon" title="인쇄·PDF 저장" aria-label="인쇄·PDF 저장" disabled={!available} onClick={() => window.print()}>
@@ -130,7 +151,7 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
         </div>
       </div>
       <header className="official-timetable-caption">
-        <h2 className="sr-only">{label} · {mode === "basic" ? "기본" : "주간"}</h2>
+        <h2 className="timetable-visible-title no-print">{label} · {mode === "basic" ? "기본 시간표" : "주간 시간표"}</h2>
         <strong className="timetable-print-title">{label}</strong>
         {mode === "weekly" && <p>{dateLabel(firstDate)} – {endLabel}</p>}
         {mode === "basic" && week.schedule.startsOn && (
@@ -150,7 +171,7 @@ function TimetableSheet({ context: c, today, year, actions }: { context: Context
       ) : !available ? (
         <p className="panel official-timetable-empty">선택한 기간에 공개된 시간표가 없습니다.</p>
       ) : (
-        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} today={today} />
+        <TimetableGrid week={week} mode={mode} audience={audience} label={label ?? "요일별 시간표"} visible={visible} today={liveToday} currentMinutes={clock?.minutes} showFreePeriods />
       )}
     </section>
   );

@@ -1,10 +1,11 @@
 import { dateLabel } from "@/lib/domain";
+import { dailyLessonStatus } from "@/lib/school-operations";
 import type { timetableWeek, TimetableAudience, TimetableCell, TimetableMode } from "@/lib/timetable-view";
 import "./official-timetable.css";
 
 const days = ["월", "화", "수", "목", "금"];
 
-export function TimetableGrid({ week, mode, audience, label, visible, compact = false, today }: {
+export function TimetableGrid({ week, mode, audience, label, visible, compact = false, today, currentMinutes, showFreePeriods = false }: {
   week: ReturnType<typeof timetableWeek>;
   mode: TimetableMode;
   audience: TimetableAudience;
@@ -12,8 +13,11 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
   visible: (cell: TimetableCell) => boolean;
   compact?: boolean;
   today?: string;
+  currentMinutes?: number;
+  showFreePeriods?: boolean;
 }) {
-  const columns = week.weekdays.map((column) => ({ ...column, cells: column.cells.filter(visible) }));
+  const columns = week.weekdays.map((column) => ({ ...column, allCells: column.cells, cells: column.cells.filter(visible) }));
+  const current = (cell: TimetableCell, date: string) => mode === "weekly" && date === today && currentMinutes !== undefined && dailyLessonStatus({ start: cell.start ?? null, end: cell.end ?? null, blockedBy: cell.blocked ? [cell.blocked] : [] }, currentMinutes) === "current";
   return (
     <div className={`official-timetable-scroll${compact ? " timetable-compact" : ""}`}
       tabIndex={0} role="region" aria-label={label}>
@@ -22,7 +26,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
         <thead><tr>
           <th scope="col">교시</th>
           {columns.map((column, index) => (
-            <th scope="col" key={column.date} data-today={column.date === today ? "" : undefined}>{days[index]}
+            <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}>{days[index]}
               {mode === "weekly" && <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}>{dateLabel(column.date)}</time>}
               {column.notice && <small className="timetable-day-notice">{column.notice}</small>}
             </th>
@@ -33,11 +37,16 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
             const period = index + 1;
             return <tr key={period}>
               <th scope="row">{period}교시</th>
-              {columns.map((column) => (
-                <td key={column.date} className={period > column.periodCount ? "timetable-nonperiod" : undefined}>
-                  {column.cells.filter((cell) => cell.period === period).map((cell) => (
+              {columns.map((column) => {
+                const cells = column.cells.filter((cell) => cell.period === period);
+                const active = column.allCells.some((cell) => cell.period === period && current(cell, column.date));
+                const free = showFreePeriods && column.teaching && period <= column.periodCount && !cells.length && (audience === "mine" || audience === "teacher" || audience === "class");
+                return <td key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}
+                  data-current-period={active ? "" : undefined} className={period > column.periodCount || !column.teaching ? "timetable-nonperiod" : undefined}>
+                  {free && <span className="timetable-free-period">{audience === "class" ? "수업 없음" : "공강"}</span>}
+                  {cells.map((cell) => (
                     <div className="official-lesson" data-kind={cell.kind}
-                      data-blocked={cell.blocked ? "" : undefined} key={cell.id}>
+                      data-blocked={cell.blocked ? "" : undefined} data-current={current(cell, column.date) ? "" : undefined} key={cell.id}>
                       {audience === "class" ? <>
                         <strong>{cell.subject}</strong>
                         <span>{cell.teacher}</span>
@@ -46,11 +55,13 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                         <span>{cell.subject}</span>
                         {audience === "all" && cell.teacher && <small>{cell.teacher}</small>}
                       </>}
+                      {showFreePeriods && cell.room && <small>{cell.room}</small>}
+                      {current(cell, column.date) && <small className="timetable-current-label">진행 중</small>}
                       {(cell.blocked || cell.changed) && <small>{cell.blocked || "변경 수업"}</small>}
                     </div>
                   ))}
-                </td>
-              ))}
+                </td>;
+              })}
             </tr>;
           })}
         </tbody>

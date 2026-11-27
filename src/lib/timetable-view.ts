@@ -18,10 +18,14 @@ export type TimetableCell = {
   classIds: string[];
   changed?: boolean;
   blocked?: string;
+  start?: string | null;
+  end?: string | null;
+  room?: string;
 };
 type TimetableColumn = {
   date: string;
   periodCount: number;
+  teaching: boolean;
   notice: string;
   cells: TimetableCell[];
 };
@@ -79,6 +83,7 @@ export function timetableWeek(c: Context, date: string, mode: TimetableMode) {
     let appliedWeekday = weekday;
     let cells: TimetableCell[] = [];
     let notice = "";
+    let teaching = mode === "basic" && !!applicable;
     if (applicable && mode === "basic") cells = basicCells(applicable, weekday);
     if (mode === "weekly") {
       const official = publishedSchoolContext(c, dayDate);
@@ -92,23 +97,25 @@ export function timetableWeek(c: Context, date: string, mode: TimetableMode) {
       else if (!schoolDay || !isTeachingDay(schoolDay)) notice = schoolDay?.name || "수업일 아님";
       else {
         notice = dailyOperationNotice(c, dayDate);
+        teaching = !!resolve;
         cells = (resolve?.(dayDate) ?? []).map((lesson) => ({
           id: lesson.id,
           period: lesson.period,
           subject: lesson.subject,
           kind: applicable.subjects.find((s) => s.id === lesson.subjectId)?.kind ?? "subject",
           teacherId: lesson.teacherId,
-          teacher: applicable.teachers.find((t) => t.id === lesson.teacherId)?.label ?? "",
+          teacher: applicable.teachers.find((t) => t.id === lesson.teacherId)?.label ?? c.operations?.directory.find((t) => t.id === lesson.teacherId)?.display_name ?? "",
           classes: lesson.classes,
           classIds: lesson.classIds,
           changed: lesson.changed,
+          start: lesson.start, end: lesson.end, room: lesson.room,
           blocked: lesson.blockedBy.join(" · "),
         }));
       }
     }
     const periodCount = Math.max(applicable?.timetableConfig?.periods[String(appliedWeekday)] ?? 0,
       ...cells.map((cell) => cell.period));
-    return { date: dayDate, periodCount, notice, cells };
+    return { date: dayDate, periodCount, notice, cells, teaching };
   });
   return { weekdays, schedule, rows: Math.max(...weekdays.map((column) => column.periodCount)) };
 }

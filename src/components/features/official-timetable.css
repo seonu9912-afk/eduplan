@@ -189,3 +189,18 @@
   .official-lesson strong { font-size: 13px; }
   .official-lesson span { font-size: 12px; }
 }
+
+.timetable-visible-title { font-size: 16px; font-weight: 700; margin-top: 5px; }
+.timetable-teacher-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.official-timetable-filters .timetable-teacher-search { border: 1px solid var(--border); border-radius: 6px; padding-inline: 8px; gap: 5px; }
+.timetable-teacher-search input { border: 0; background: transparent; width: 128px; min-width: 0; }
+.timetable-teacher-matches { font-size: 12px; color: var(--text-secondary); }
+.timetable-free-period { color: #64748b; font-size: 12px; }
+@media screen {
+  .official-timetable-grid thead th[data-today], .official-timetable-grid td[data-today]:not(.timetable-nonperiod) { background: #edf4fc; }
+  .official-timetable-grid td[data-current-period] { box-shadow: inset 0 0 0 2px #668fc0; }
+  .official-lesson[data-current] { box-shadow: inset 0 0 0 1px #24528e; }
+  .official-lesson .timetable-current-label { color: #24528e; font-weight: 700; }
+}
+@media screen and (max-width: 767px) { .timetable-teacher-picker { width: 100%; } .timetable-teacher-search { flex: 1; } .timetable-teacher-search input { width: 100%; } }
+@media print { .timetable-current-label { display: none !important; } }
