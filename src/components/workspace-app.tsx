@@ -106,10 +106,11 @@ export function WorkspaceApp({
   homePublicData?: ReactNode;
 }) {
   const router = useRouter();
-  const [modal, setModal] = useState<"school" | "profile" | "menu" | null>(
+  const [modal, setModal] = useState<"school" | "profile" | "menu" | "notifications" | null>(
     null,
   );
   const [error, setError] = useState("");
+  const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length;
   const [editorDirty, setDirty] = useState(false);
   useEditGuard("workspace-editor", editorDirty);
   const dirty = useDeviceDirty();
@@ -267,6 +268,13 @@ export function WorkspaceApp({
             </Button>}
           </div>
           <div className="header-right">
+            <Button variant="ghost" size="icon" className="header-notification-trigger"
+              aria-label={unreadCount ? `알림 (${unreadCount}개 읽지 않음)` : "알림"}
+              aria-haspopup="dialog" aria-expanded={modal === "notifications"}
+              onClick={() => setModal("notifications")}>
+              <Bell aria-hidden="true" />
+              {unreadCount > 0 && <span className="header-notification-count" aria-hidden="true">{unreadCount > 99 ? "99+" : unreadCount}</span>}
+            </Button>
             <button
               className="profile-trigger"
               aria-label="내 프로필"
@@ -302,7 +310,6 @@ export function WorkspaceApp({
               icon: PanelTop,
             },
             { id: "plans", label: "월중·주간계획", icon: Building2 },
-            { id: "notifications", label: "알림", icon: Bell },
           ].filter(({ id }) => visibleSection(id)).map(({ id, label, icon: Icon, disabled }) =>
             disabled ? (
               <span
@@ -338,7 +345,6 @@ export function WorkspaceApp({
           { id: "home", label: "홈", icon: House },
           { id: "calendar", label: "일정", icon: CalendarDays },
           { id: "timetable", label: "시간표", icon: Table2 },
-          { id: "notifications", label: "알림", icon: Bell },
         ].map(({ id, label, icon: Icon }) => (
           <Link
             data-guarded-navigation
@@ -352,10 +358,6 @@ export function WorkspaceApp({
           >
             <Icon />
             <span>{label}</span>
-            {id === "notifications" &&
-              c.operations?.notifications.some((n) => !n.read_at) && (
-                <span className="nav-unread" role="img" aria-label="읽지 않은 알림" />
-              )}
           </Link>
         ))}
         <button
@@ -456,6 +458,22 @@ export function WorkspaceApp({
         ) : null}
       </main>
 
+      <Modal open={modal === "notifications"} onOpenChange={(v) => !v && setModal(null)}
+        title="알림" description="새로운 학교 알림을 확인하세요.">
+        <NotificationCenter context={c} onNavigate={() => {
+          if (!allowNavigation()) return false;
+          setDirty(false);
+          setModal(null);
+          return true;
+        }} />
+        <div className="notification-popup-footer">
+          <Button variant="outline" onClick={() => {
+            if (!allowNavigation()) return;
+            setModal(null);
+            navigate(`${base}/notifications${suffix}`);
+          }}>알림 설정</Button>
+        </div>
+      </Modal>
       <Modal
         open={modal === "menu"}
         onOpenChange={(v) => !v && setModal(null)}

@@ -406,3 +406,31 @@
   .home-live-clock { gap: 6px 12px; }
   .home-clock-time { font-size: clamp(30px, 8vw, 40px); }
 }
+
+/* Today's essentials come first; the weekly calendar and shortcuts use full width. */
+.home-today-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+.home-today-grid-single { grid-template-columns: minmax(0, 1fr); }
+.home-shortcuts { margin-block: 20px; }
+.home-shortcuts .shortcut-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); }
+.header-notification-trigger { position: relative; flex: none; }
+.header-notification-trigger .header-notification-count {
+  position: absolute; inset-block-start: 0; inset-inline-end: 0;
+  min-width: 17px; min-height: 17px; padding: 0 3px; border-radius: 99px;
+  background: #c03642; color: #fff; border: 1px solid #fff;
+  font-size: 10px; font-weight: 700; line-height: 15px; text-align: center;
+}
+.notification-popup-footer { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--border); }
+@media screen and (max-width: 1000px) {
+  .home-today-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home-today-grid > :first-child { grid-column: 1 / -1; }
+}
+@media screen and (max-width: 620px) {
+  .home-today-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .home-shortcuts { margin-block: 12px; }
+}

@@ -1,10 +1,8 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Bell, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
+import { ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { markOperationRead } from "@/app/operations-actions";
-import { useMutation, InlineNotice } from "@/components/common";
 import { addDays, dateLabel } from "@/lib/domain";
 import {
   dailyOperationNotice, createLessonResolver, currentAndNext,
@@ -21,14 +19,13 @@ import "./school-operations.css";
 const dayLabel = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "short", timeZone: "Asia/Seoul" });
 const dayTitle = (date: string) => dayLabel.format(new Date(`${date}T00:00:00+09:00`));
 
-export function PersonalDay({ context: c, today, previewNow }: {
+export function PersonalDay({ context: c, today, previewNow, publicData }: {
   context: Context;
   today: string;
   previewNow?: string;
+  publicData?: ReactNode;
 }) {
   const [now, setNow] = useState(() => previewNow ? new Date(previewNow) : null);
-  const [read, setRead] = useState<string[]>([]);
-  const readMutation = useMutation();
   const doc = useMemo(() => publishedTimetable(c), [c]);
   const resolver = useMemo(() => doc ? createLessonResolver(c, doc) : null, [c, doc]);
   const ids = useMemo(() => myTeacherIds(c), [c]);
@@ -38,7 +35,6 @@ export function PersonalDay({ context: c, today, previewNow }: {
   const { current, next, remaining } = currentAndNext(lessons, clock.minutes);
   const teacher = c.operations?.directory.find((item) => item.user_id === c.userId && item.active);
   const hasCalendar = c.schoolPublications ? !!publicationAt(c.schoolPublications, "calendar", clock.date) : !!c.annual;
-  const unread = (c.operations?.notifications ?? []).filter((item) => !item.read_at && !read.includes(item.id));
   const base = `/app/${c.workspace.id}`;
   const suffix = c.year ? `?year=${c.year.year}` : "";
   useEffect(() => {
@@ -55,9 +51,7 @@ export function PersonalDay({ context: c, today, previewNow }: {
 
   return <section className="operations-module personal-day" aria-label="나의 학교 생활">
     <HomeLiveClock today={clock.date} previewNow={previewNow} />
-    <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
-    <div className="personal-widgets">
-      <div className="personal-widget-column">
+    <div className={`home-today-grid${publicData ? "" : " home-today-grid-single"}`}>
         <section className="personal-widget">
           <header className="personal-day-heading">
             <h2><Clock3 aria-hidden="true" />오늘 수업</h2>
@@ -92,28 +86,9 @@ export function PersonalDay({ context: c, today, previewNow }: {
               </ol>}
             </>}
         </section>
-      </div>
-      <div className="personal-widget-column">
-        <section className="personal-widget">
-          <header className="personal-day-heading">
-            <h2><Bell aria-hidden="true" />알림</h2>
-            {!previewNow && <Link className="widget-link" href={`${base}/notifications${suffix}`}>알림함 <ArrowUpRight aria-hidden="true" /></Link>}
-          </header>
-          {unread.length ? <ul className="notification-list">
-            {unread.map((item) => <li key={item.id}>
-              <div><strong>{item.title}</strong><p>{item.body}</p>
-                <time dateTime={item.created_at}>{dateLabel(item.created_at.slice(0, 10))}</time></div>
-              <Button variant="ghost" disabled={readMutation.pending} onClick={() => {
-                const remove = () => setRead((previous) => [...previous, item.id]);
-                if (previewNow) remove();
-                else readMutation.execute(() => markOperationRead({ workspaceId: c.workspace.id, id: item.id }), remove, "");
-              }}>확인<span className="sr-only"> · {item.title}</span></Button>
-            </li>)}
-          </ul> : <p className="personal-widget-note" role="status">확인할 새 알림이 없습니다.</p>}
-          <InlineNotice mutation={readMutation} />
-        </section>
-      </div>
+      {publicData}
     </div>
+    <HomeWeeklyAgenda context={c} today={clock.date} department={teacher?.department} plansHref={previewNow ? "/recovery-preview/operations" : `${base}/plans${suffix}`} />
     {previewNow && <LessonReminderSettings workspaceId={c.workspace.id} userId={c.userId} />}
   </section>;
 }

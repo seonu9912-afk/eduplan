@@ -239,7 +239,7 @@ select {
   }
   .mobile-top-nav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     background: #fff;
     border-bottom: 1px solid #dbe3ee;
     padding: 5px max(5px, env(safe-area-inset-right))

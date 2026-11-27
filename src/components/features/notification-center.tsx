@@ -7,7 +7,7 @@ import { useMutation, InlineNotice } from "@/components/common";
 import { markOperationRead } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
 import "./school-operations.css";
-export function NotificationCenter({ context: c }: { context: Context }) {
+export function NotificationCenter({ context: c, onNavigate }: { context: Context; onNavigate?: () => boolean }) {
   const m = useMutation();
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const items = (c.operations?.notifications ?? []).filter((n) => !n.read_at && !confirmed.includes(n.id));
@@ -36,6 +36,7 @@ export function NotificationCenter({ context: c }: { context: Context }) {
               <Button asChild variant="ghost">
                 <Link
                   href={`/app/${c.workspace.id}/${n.request_id ? "calendar" : "timetable"}?year=${c.year?.year}`}
+                  onClick={(event) => { if (onNavigate && !onNavigate()) event.preventDefault(); }}
                 >
                   {n.request_id ? "학사일정 열기" : "시간표 열기"}
                 </Link>
