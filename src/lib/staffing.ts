@@ -119,6 +119,8 @@ export type TimetablePublication = {
   document: unknown;
 };
 export type OperationNotification = {
+  task_id?: string | null;
+  task_version?: number | null;
   request_id?: string | null;
   request_version?: number | null;
   id: string;
