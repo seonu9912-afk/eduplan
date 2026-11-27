@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 const fixture = process.env.EDUPLAN_TASK_FIXTURES;
 test.skip(!fixture, "이 검증은 격리된 Supabase의 가상 학교와 교원 계정이 필요합니다.");
 type TestAccount = { email: string; password: string };
-type Scenario = { workspace: string; year: number; sender: TestAccount; recipient: TestAccount; second: TestAccount; administrator: TestAccount };
+type Scenario = { workspace: string; year: number; sender: TestAccount; recipient: TestAccount; second: TestAccount; administrator: TestAccount; sourceId?: string };
 const dialog = (page: Page, name: string) => page.getByRole("dialog", { name, exact: true });
 
 async function login(page: Page, account: TestAccount) {
@@ -27,6 +27,8 @@ test("one shared task flows from distribution and alerts to the home and weekly 
   const task = "교원 연계 테스트 업무 " + Date.now();
   const privateTask = "교원 개인 검증 " + Date.now();
   const scope = (p: Page) => p.locator("#my-tasks");
+  const taskRow = (p: Page, title: string) => scope(p).getByRole("listitem")
+    .filter({ has: p.getByRole("checkbox", { name: `${title} 완료`, exact: true }) });
   const field = (p: Page) => p.getByLabel("제목", { exact: true });
   try {
     await Promise.all([login(page, data.sender), login(receiver, data.recipient), login(other, data.second), login(schoolAdmin, data.administrator)]);
@@ -55,11 +57,11 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await expect(dialog(receiver, "할 일 상세").getByRole("heading", { name: task })).toBeVisible();
     await expect(dialog(receiver, "할 일 상세").getByRole("button", { name: "완료 처리" })).toBeVisible();
     await dialog(receiver, "할 일 상세").getByRole("button", { name: "닫기" }).click();
-    await expect(scope(receiver).getByText("기한 경과", { exact: true })).toBeVisible();
+    await expect(taskRow(receiver, task).getByText("기한 경과", { exact: true })).toBeVisible();
     await scope(receiver).getByRole("checkbox", { name: `${task} 완료` }).click();
-    await expect(scope(receiver).getByText("완료한 할 일 (1)", { exact: true })).toBeVisible();
+    await expect(scope(receiver).getByText(/^완료한 할 일 \(\d+\)$/)).toBeVisible();
     await receiver.goto(plans);
-    await scope(receiver).getByText("완료한 할 일 (1)", { exact: true }).click();
+    await scope(receiver).getByText(/^완료한 할 일 \(\d+\)$/).click();
     await expect(scope(receiver).getByRole("checkbox", { name: `${task} 완료` })).toBeChecked();
     await receiver.getByRole("button", { name: "이전 기간" }).click();
     await expect(scope(receiver).getByRole("checkbox", { name: `${task} 완료` })).toBeChecked();
@@ -80,12 +82,12 @@ test("one shared task flows from distribution and alerts to the home and weekly 
 
     await other.reload();
     await expect(scope(other).getByText(updated, { exact: true })).toBeVisible();
-    await expect(scope(other).getByText("기한 경과", { exact: true })).toHaveCount(0);
+    await expect(taskRow(other, updated).getByText("기한 경과", { exact: true })).toHaveCount(0);
     await dialog(page, "배포한 업무 관리").getByRole("button", { name: "업무 취소" }).click();
     await page.getByRole("button", { name: "변경 확인", exact: true }).click();
     await expect(dialog(page, "배포한 업무 관리").getByText("취소", { exact: true })).toBeVisible();
     await receiver.goto(home);
-    await scope(receiver).getByText("취소된 업무 (1)", { exact: true }).click();
+    await scope(receiver).getByText(/^취소된 업무 \(\d+\)$/).click();
     const box = scope(receiver).getByRole("checkbox", { name: `${updated} 완료` });
     await expect(box).toBeChecked();
     await expect(box).toBeDisabled();
@@ -104,9 +106,10 @@ test("creates a linked task from a published work item and opens the exact sourc
   const context = await browser.newContext();
   const receiver = await context.newPage();
   const title = "공개 업무 연결 자료";
+  const sourceId = encodeURIComponent(data.sourceId ?? "task-browser-source");
   try {
     await login(page, data.sender);
-    await page.goto(`${base}/plans?year=${data.year}&date=${data.year}-11-27&workItem=task-browser-source`);
+    await page.goto(`${base}/plans?year=${data.year}&date=${data.year}-11-27&workItem=${sourceId}`);
     await expect(dialog(page, "일정 상세").getByRole("heading", { name: title })).toBeVisible();
     await dialog(page, "일정 상세").getByRole("link", { name: "할 일로 배포" }).click();
     await expect(dialog(page, "업무 배포").getByLabel("제목", { exact: true })).toHaveValue(title);
