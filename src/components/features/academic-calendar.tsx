@@ -58,6 +58,7 @@ import { AcademicWorkbookPanel } from "./academic-workbook-panel";
 import { DateFields, EventFields } from "./academic-calendar-editors";
 import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
+import "./schedule-surfaces.css";
 import { Button } from "@/components/ui/button";
 import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
 import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/schedule-dates";
@@ -575,7 +576,7 @@ export function AcademicCalendar({
   };
 
   const calendarView = !tools ? (
-    <div className="ar">
+    <div className="ar schedule-surface schedule-management">
       <Notice message={message.text} error={message.error} />
       {c.school?.foundation_day && <p className="ar-muted no-print">
         나이스 개교기념일 · {Number(c.school.foundation_day.slice(5, 7))}월 {Number(c.school.foundation_day.slice(8))}일
@@ -1435,7 +1436,7 @@ export function AcademicCalendar({
   return (
     <>
       {!tools && (
-        <header className="page-heading">
+        <header className="page-heading schedule-management-heading">
           <div>
             <h1>{year}학년도 학사일정</h1>
             <p>

@@ -21,6 +21,8 @@ import { ScheduleSearch } from "./schedule-search";
 import type { ScheduleSearchResult } from "@/lib/schedule-search";
 import { ScheduleListView, useScheduleListView } from "./schedule-list-view";
 import "./school-plan-readers.css";
+import "./schedule-surfaces.css";
+import "./curriculum-display.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekLabels = [...weekdays.slice(1), weekdays[0]];
@@ -74,9 +76,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const entries = view === "year" && available
     ? schoolScheduleEntries(publishedSchoolContext(officialContext, date), start, end, false)
     : [];
-  const agendaDates = view === "week"
-    ? dates.filter((day) => day === date || (days.get(day)?.entries.length ?? 0) > 0)
-    : [date];
+  const agendaDates = [date];
   const title = view === "year" ? `${year}학년도` : view === "week"
     ? `${dateLabel(range.start)} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
   const options: { value: ScheduleView; label: string }[] = [
@@ -94,7 +94,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   function selectDate(day: string) {
     setMiniMonthOverride(null);
     setDate(day);
-    if (view === "week")
+    if (view === "week" && work && listView.isList)
       requestAnimationFrame(() => document.getElementById(`agenda-${day}`)?.scrollIntoView({ block: "nearest" }));
   }
   function showEntry(entry: ScheduleEntry, trigger: HTMLElement) { setSearchResult(null); detail.show(entry, trigger); }
@@ -110,7 +110,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const updates = publications.filter((p) => p.domain === (work ? "plans" : "calendar"))
     .sort((a, b) => b.published_at.localeCompare(a.published_at));
   return (
-    <section className="school-plan-reader">
+    <section className="school-plan-reader schedule-surface">
       <div className="schedule-reader-toolbar no-print">
         <div className="schedule-period-nav">
           <Button variant="ghost" size="icon" aria-label="이전 기간" disabled={!canPrevious} onClick={() => navigate(-1)}><ChevronLeft /></Button>
@@ -176,7 +176,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <MobileCalendarDates date={date} today={today} start={start} end={end} period={view} showWeekends={columns === 7}
             emphasizeToday spanDays={calendarDays} items={(day) => days.get(day)?.entries ?? []}
             onSelect={selectDate} onNavigate={navigate} />
-          <div className="school-calendar-agenda" aria-label={view === "week" ? "이번 주 일정" : "선택한 날짜의 일정"}>
+          <div className="school-calendar-agenda" aria-label="선택한 날짜의 일정">
             {agendaDates.map((day) => {
               const schedule = days.get(day);
               const mainEntries = calendarDays.get(day)?.entries ?? [];
@@ -187,10 +187,9 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 {mainEntries.length ? <ul>{mainEntries.map((entry) => {
                   const location = [entry.location].filter(Boolean).join(" · ");
                   return <li key={entry.id} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}>
-                    <span className="schedule-agenda-time">{entry.time || tones[entry.tone]}</span>
                     <div><div className="schedule-department-title">{entry.department && <DepartmentBadge department={entry.department} />}<ScheduleDetailTitle entry={entry} onOpen={showEntry} /></div>
-                      {location && <small>{location}</small>}
-                      <ResourceLinks value={entry.resources} />
+                      <small className="schedule-agenda-meta">{[entry.time, location, tones[entry.tone]].filter(Boolean).join(" · ")}</small>
+                      <ResourceLinks value={entry.resources} compact />
                     </div>
                   </li>;
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
@@ -290,6 +289,7 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
   const byYear = plans.filter((p) => !p.starts_on || p.starts_on <= end);
   const cohorts = [...new Set(byYear.map((p) => p.cohort_year))];
   const [selection, setSelection] = useState<{ cohort: number; id?: string } | null>(null);
+  const [mobileGrade, setMobileGrade] = useState(c.grades[0] ?? 1);
   const preferred = selection?.cohort ?? year;
   const cohort = cohorts.includes(preferred) ? preferred : cohorts.find((value) => value <= year) ?? cohorts[0];
   const history = byYear.filter((p) => p.cohort_year === cohort);
@@ -303,7 +303,7 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
     name: plan.subject_names?.[id] ?? c.subjects.find((s) => s.id === id)?.name ?? "이전 교과목",
     values: terms.map((t) => hours.get(`${id}:${t.grade}:${t.semester}`)),
   }));
-  return <section className="school-plan-reader">
+  return <section className="school-plan-reader official-curriculum-display">
     <div className="school-reader-toolbar">
       <label>입학년도 <select value={plan.cohort_year} onChange={(e) => setSelection({ cohort: Number(e.target.value) })}>
         {cohorts.map((value) => <option key={value} value={value}>{value}학년도 입학생</option>)}
@@ -317,7 +317,11 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
     </div>
     <p className="muted">{plan.starts_on && `${plan.starts_on} 적용 · `}{plan.confirmed_at.slice(0, 10)} 공개</p>
     {plan.change_note && <p>{plan.change_note}</p>}
-    <div className="table-scroll">
+    <div className="official-curriculum-mobile no-print">
+      <label>조회 학년 <select value={mobileGrade} onChange={e=>setMobileGrade(Number(e.target.value))}>{c.grades.map(g=><option key={g} value={g}>{g}학년</option>)}</select></label>
+      <table aria-label={`${mobileGrade}학년 공개 교육과정 편성표`}><thead><tr><th scope="col">교과목</th><th scope="col">1학기</th><th scope="col">2학기</th><th scope="col">합계</th></tr></thead><tbody>{rows.map(r=>{const a=r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===1)],b=r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===2)];return <tr key={r.id}><th scope="row">{r.name}</th><td>{a??"—"}</td><td>{b??"—"}</td><td>{a===undefined&&b===undefined?"—":(a??0)+(b??0)}</td></tr>;})}</tbody><tfoot><tr><th scope="row">학년 합계</th>{[1,2].map(s=><td key={s}>{rows.reduce((sum,r)=>sum+(r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===s)]??0),0)}</td>)}<td>{rows.reduce((sum,r)=>sum+[1,2].reduce((n,s)=>n+(r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===s)]??0),0),0)}</td></tr></tfoot></table>
+    </div>
+    <div className="table-scroll official-curriculum-full">
       <table className="school-reader-list school-curriculum-sheet" aria-label="공개 교육과정 편성표">
         <thead><tr><th rowSpan={2} scope="col">교과목</th>{c.grades.map((g) => <th key={g} colSpan={2} scope="colgroup">{g}학년</th>)}<th rowSpan={2} scope="col">합계</th></tr>
           <tr>{terms.map((t) => <th key={`${t.grade}:${t.semester}`} scope="col">{t.semester}학기</th>)}</tr></thead>

@@ -1,0 +1,48 @@
+/* Shared schedule surfaces. Keep print layouts, event colours, data and editing rules unchanged. */
+@media screen {
+  .schedule-surface { --schedule-gap: 8px; --schedule-card-radius: 8px; --schedule-date-size: 28px; }
+  .schedule-surface .schedule-reader-toolbar { gap: 8px 12px; padding: 0 0 8px; align-items: center; }
+  .schedule-surface .schedule-period-nav, .schedule-surface .schedule-view-controls { gap: 6px; }
+  .schedule-surface .schedule-period-nav h2 { font-size: 20px; line-height: 1.4; }
+  .schedule-surface .schedule-segments, .schedule-management-toolbar .work-view-tabs { padding: 3px; border-radius: 8px; background: var(--surface-muted); gap: 3px; }
+  .schedule-surface .schedule-segments button, .schedule-management-toolbar .work-view-tabs button { padding: 4px 9px; min-height: 32px; border: 0; border-radius: 5px; font-size: 13px; font-weight: 650; background: transparent; white-space: nowrap; }
+  .schedule-surface .schedule-segments button[aria-pressed=true], .schedule-management-toolbar .work-view-tabs button[aria-pressed=true] { background: var(--card); color: var(--schedule-accent); box-shadow: inset 0 0 0 1px var(--border); }
+  .schedule-surface .school-reader-calendar-wrap { border-radius: var(--schedule-card-radius); }
+  .schedule-surface .school-reader-calendar time { width: var(--schedule-date-size); height: var(--schedule-date-size); }
+  .schedule-surface .school-reader-calendar .school-calendar-date-row td { height: 36px; padding-top: 4px; }
+  .schedule-surface .school-reader-event { gap: 3px; padding: 5px 7px; min-height: 26px; border-radius: 5px; line-height: 1.4; }
+  .schedule-surface .school-calendar-agenda > section { border-radius: var(--schedule-card-radius); }
+  .schedule-surface .school-calendar-agenda > section > ul { display: grid; gap: 5px; padding: 8px 10px; margin: 0; }
+  .schedule-surface .school-calendar-agenda > section > ul > li { display: block; padding: 0; border: 0; }
+  .schedule-surface .school-calendar-agenda > section > ul > li > div { padding: 7px 10px; gap: 3px; border-radius: 6px; }
+  .schedule-surface .schedule-agenda-meta { font-size: 12px; line-height: 1.35; }
+  .schedule-surface .school-calendar-agenda .schedule-department-title { align-items: baseline; gap: 4px; }
+  .schedule-surface .school-calendar-agenda .schedule-department-title .schedule-detail-trigger { flex: 1; font-size: 13px; line-height: 1.4; }
+  .schedule-surface .school-calendar-agenda .resource-details { margin: 0; }
+  .schedule-management-heading .heading-actions { gap: 8px; align-items: center; }
+  .schedule-management-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+  .schedule-management-toolbar .work-date-controls { order: -1; gap: 6px; min-width: 0; }
+  .schedule-management .ar-tabs { gap: 3px; padding: 3px; border-radius: 8px; background: var(--surface-muted); border-color: var(--border); }
+  .schedule-management .ar-tabs button { border: 0; border-radius: 5px; padding: 6px 10px; }
+  .schedule-management .ar-tabs button[aria-current=page] { box-shadow: inset 0 0 0 1px var(--border); color: var(--schedule-accent); }
+}
+@media screen and (max-width: 767px) {
+  .schedule-surface .schedule-reader-toolbar { gap: 6px; }
+  .schedule-surface .schedule-period-nav, .schedule-management .mobile-calendar-management-nav { grid-template-columns: 44px minmax(0,1fr) 44px auto; gap: 4px; }
+  .schedule-surface .schedule-period-nav h2, .schedule-management .mobile-calendar-management-nav h3 { font-size: 17px; text-align: center; }
+  .schedule-surface .schedule-view-controls { flex-wrap: wrap; gap: 5px; }
+  .schedule-surface .schedule-segments button, .schedule-management-toolbar .work-view-tabs button { min-height: 44px; padding: 4px 7px; }
+  .schedule-surface .schedule-jump { min-width: 110px; flex: 1 1 110px; }
+  .schedule-surface .schedule-jump input { min-height: 44px; }
+  .schedule-surface .school-calendar-mobile { gap: 8px; }
+  .schedule-surface .school-calendar-agenda h3 { padding: 8px 10px; }
+  .workspace-content .schedule-surface .school-calendar-agenda .schedule-detail-trigger { min-height: 0; padding: 2px 0; }
+  .schedule-management-toolbar .work-date-controls { width: 100%; display: grid; grid-template-columns: 44px minmax(0,1fr) 44px auto; }
+  .schedule-management-toolbar .work-date-controls label, .schedule-management-toolbar .work-date-controls input { min-width: 0; width: 100%; }
+  .schedule-management-toolbar .work-department-filter { flex-wrap: wrap; min-width: 0; }
+  .schedule-management-heading .heading-actions { flex-wrap: wrap; }
+  .schedule-management .ar-tabs button { min-height: 44px; }
+  .work-layout .work-day-events { min-height: 0; }
+  .work-layout .work-day-events:empty { padding: 4px; }
+  .workspace-content .work-layout .work-card-title { min-height: 0; padding: 2px 0; }
+}

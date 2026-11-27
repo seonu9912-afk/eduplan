@@ -504,6 +504,14 @@
 .published-change li p span { color: var(--text-secondary); font-size: 11px; margin-right: 4px; }
 .published-change-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
 
+.home-operation-notice{display:grid;gap:5px;padding:10px 12px;border:1px solid #e6d5b1;border-radius:8px;background:#fff8e9;color:#684b22;font-size:12px;min-width:0}
+.home-operation-title{display:flex;align-items:center;gap:6px;font-size:13px}
+.home-operation-notice p{margin:0;overflow-wrap:anywhere}
+.home-operation-notice[data-warning]{background:#fff0ed;border-color:#ebc3bc;color:#8a3c32}
+.home-operation-notice summary{cursor:pointer;font-weight:650}
+.home-operation-notice ul{list-style:none;padding:0;margin:5px 0 0;display:grid;gap:3px}
+.home-operation-notice li{display:flex;flex-wrap:wrap;gap:4px 8px;font-variant-numeric:tabular-nums}
+
 /* A whole two-line agenda entry is the touch target, rather than a padded title button plus a separate metadata row. */
 .home-week-detail-list > li { padding: 0; align-content: start; gap: 0; }
 .workspace-content .home-week-detail-list .home-week-detail-trigger { display: grid; gap: 3px; width: 100%; min-height: 44px; padding: 7px 10px; align-content: center; line-height: 1.35; }

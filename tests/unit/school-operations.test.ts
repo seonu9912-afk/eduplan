@@ -3,6 +3,8 @@ import { operationsPreviewContext } from "../../src/app/recovery-preview/operati
 import { annualSchema } from "../../src/lib/academic";
 import {
   calendarImpact,
+  compareLessonBells,
+  dailyOperationSummary,
   createLessonResolver,
   currentAndNext,
   dailyLessonStatus,
@@ -191,4 +193,15 @@ it("classifies scheduled lesson times at exact boundaries, without claiming atte
   expect(dailyLessonStatus({ ...lesson, start: null }, 540)).toBe("unknown");
   expect(dailyLessonStatus({ ...lesson, end: "08:00" }, 540)).toBe("unknown");
   expect(dailyLessonStatus(lesson, null)).toBe("unknown");
+});
+
+it("compares only changed lesson periods and reports actual day-level operating changes",()=>{
+  const standard=[{type:"lesson",period:1,start:"09:00",end:"09:45"},{type:"lesson",period:2,start:"09:55",end:"10:40"}];
+  const special=[{type:"lesson",period:1,start:"09:00",end:"09:35"},{type:"lesson",period:2,start:"09:55",end:"10:40"}];
+  expect(compareLessonBells(standard,special)).toEqual([{period:1,before:"09:00–09:45",after:"09:00–09:35"}]);
+  const c=operationsPreviewContext();
+  const plan=annualSchema.parse(c.annual!.document);
+  plan.days["2027-03-02"]={type:"instructional",name:"",enabled:true,weekday:2,start:1,end:3};
+  c.annual!.document=plan;
+  expect(dailyOperationSummary(c,"2027-03-02").notices.join()).toContain("운영 교시 변경");
 });
