@@ -102,6 +102,7 @@ export function WorkspaceApp({
   today,
   initialCohort,
   initialScheduleDate,
+  initialQuickAdd,
   initialWorkItem,
   management = false,
   homePublicData,
@@ -113,6 +114,7 @@ export function WorkspaceApp({
   today: string;
   initialCohort?: string;
   initialScheduleDate?: string;
+  initialQuickAdd?: boolean;
   initialWorkItem?: string;
   management?: boolean;
   homePublicData?: ReactNode;
@@ -431,6 +433,8 @@ export function WorkspaceApp({
             key={`${c.workspace.id}-${c.year?.id}`}
             context={c}
             today={today}
+            initialDate={initialScheduleDate}
+            initialQuickAdd={initialQuickAdd}
             onDirtyChange={setDirty}
           />
         ) : null}

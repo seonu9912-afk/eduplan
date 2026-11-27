@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { resolveSchoolTask, taskAudience, taskOverdue, taskPlanSources, type SchoolTask } from "../../src/lib/school-tasks";
+import { resolveSchoolTask, taskAudience, taskOverdue, taskPlanSources, taskCommandSchema, taskSaveSchema, type SchoolTask } from "../../src/lib/school-tasks";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
 const id = (n: number) => `16800000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -199,4 +199,14 @@ describe("school task database boundaries", () => {
     expect((await statuses(task)).rows[0]).toMatchObject({ completed: false });
     await expect(change(task, 3, "complete", { completed: true })).rejects.toMatchObject({ code: "40001" });
   });
+});
+
+it("accepts existing PostgreSQL task UUIDs without weakening ownership checks",()=>{
+ const legacy="12345678-1234-1234-1234-123456789abc";
+ const command={workspace:school,id:legacy,version:1,command:"complete",completed:true};
+ expect(taskCommandSchema.safeParse(command).success).toBe(true);
+ expect(taskCommandSchema.safeParse({...command,completed:false}).success).toBe(true);
+ expect(taskCommandSchema.safeParse({...command,id:"not-a-uuid"}).success).toBe(false);
+ expect(taskCommandSchema.safeParse({...command,version:0}).success).toBe(false);
+ expect(taskSaveSchema.safeParse({workspace:school,year,id:legacy,version:1,kind:"personal",title:"기존 할 일",description:"",department:"",due_date:null,due_time:null,resources:[],submission_url:null,source_business_id:null,deadline_from_source:false}).success).toBe(true);
 });

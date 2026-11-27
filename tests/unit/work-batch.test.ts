@@ -1,0 +1,6 @@
+import {it,expect} from "vitest";
+import {defaultAnnual} from "../../src/lib/academic";
+import {emptyWorkInput,reviewWorkBatch,parseWorkClipboard,workRowsFromMatrix,WORK_HEADERS,workExcelTemplate,readWorkExcel} from "../../src/lib/work-batch";
+it("parses quoted multiline Excel cells and dates",()=>{const rows=workRowsFromMatrix(parseWorkClipboard(WORK_HEADERS.join("\t")+'\r\n2026.11.27\t교무부\t"줄1\n줄2"\t14:00\t교무실\t교사\t업무\r\n'));expect(rows[0].date).toBe("2026-11-27");expect(rows[0].text).toBe("줄1\n줄2");});
+it("validates rows, applies defaults and skips duplicates",()=>{const plan=defaultAnnual();plan.departments=["교무부"];const row={...emptyWorkInput(),text:"자료 취합"};const result=reviewWorkBatch([row,row,{...row,date:"2026-02-30"},{...row,department:"없는 부서"},emptyWorkInput()],plan,"2026-03-01","2027-02-28","교무부","2026-11-27");expect(result.items).toHaveLength(1);expect(result.duplicates).toEqual([2]);expect(result.errors.map(e=>e.row)).toEqual([3,4]);expect(result.items[0].date).toBe("2026-11-27");});
+it("rejects too many rows and round trips template",async()=>{expect(()=>workRowsFromMatrix(Array.from({length:301},()=>[""]))).toThrow();expect(await readWorkExcel(await workExcelTemplate())).toEqual([]);});

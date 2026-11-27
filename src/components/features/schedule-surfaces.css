@@ -160,10 +160,6 @@
 }
 @media screen and (min-width:768px) {
  .schedule-surface[data-work-plan][data-calendar-view=month] .school-calendar-event-row .school-reader-event > small { display:none; }
- .school-reader-calendar[data-work-week] .work-week-label-col { width:60px; }
- .school-reader-calendar[data-work-week] .work-week-row-label { background:var(--surface-muted); color:var(--ep-fg-425a77, #425a77); text-align:center; vertical-align:middle; font-size:12px; font-weight:650; padding:5px 3px; }
- .school-reader-calendar[data-work-week] :is(.school-calendar-date-row,.school-calendar-event-row,.calendar-desktop-overflow,.school-calendar-week-space) > .work-week-row-label { border-block:0; }
- .school-reader-calendar[data-work-week] .weekly-operation-row .work-week-row-label { border-top:1px solid var(--border); }
  .school-reader-calendar[data-work-week] .weekly-operation-row td { min-height:42px; padding:6px; }
  .official-work-plan-layout[data-list] .work-plan-agenda { display:block; }
 }
@@ -178,8 +174,6 @@
 @media print {
  .official-work-plan-layout { display:block; }
  .official-work-plan-sidebar { display:none!important; }
- .school-reader-calendar[data-work-week] .work-week-label-col { width:48px; }
- .school-reader-calendar[data-work-week] .work-week-row-label { font-weight:650; text-align:center; }
 }
 
 .official-work-mini[aria-label="월간 날짜 선택"] { display:block; }

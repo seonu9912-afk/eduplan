@@ -46,9 +46,12 @@ export const taskDirectorySchema = z.array(recipientKey.extend({
 export type TaskTeacher = z.infer<typeof taskDirectorySchema>[number];
 export type TaskData = { tasks: SchoolTask[]; recipients: TaskRecipient[]; directory: TaskTeacher[] };
 
+// PostgreSQL accepts all canonical 128-bit UUIDs, including legacy imported IDs.
+// Database RPCs retain ownership, workspace and version checks.
+const taskId = z.guid("할 일 식별자를 확인해 주세요.");
 const audienceSchema = z.array(recipientKey).min(1, "수신 교원을 선택해 주세요.").max(1000);
 export const taskSaveSchema = z.object({
-  workspace: z.uuid(), year: z.uuid(), id: z.uuid(), version: z.number().int().min(0),
+  workspace: z.uuid(), year: z.uuid(), id: taskId, version: z.number().int().min(0),
   kind: z.enum(["personal", "distributed"]),
   title: z.string().trim().max(200),
   description: z.string().trim().max(4000),
@@ -69,7 +72,7 @@ export const taskSaveSchema = z.object({
     context.addIssue({ code: "custom", path: ["audience"], message: "수신 교원을 선택해 주세요." });
 });
 
-const taskCommand = z.object({ workspace: z.uuid(), id: z.uuid(), version: z.number().int().positive() });
+const taskCommand = z.object({ workspace: z.uuid(), id: taskId, version: z.number().int().positive() });
 export const taskCommandSchema = z.discriminatedUnion("command", [
   taskCommand.extend({ command: z.literal("complete"), completed: z.boolean() }),
   taskCommand.extend({ command: z.enum(["cancel", "delete"]) }),

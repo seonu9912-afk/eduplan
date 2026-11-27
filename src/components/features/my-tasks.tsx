@@ -30,6 +30,8 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   const sender = roster.find((teacher) => teacher.user_id === c.userId);
   const m = useMutation();
   const [clock, setClock] = useState("");
+  const [expanded,setExpanded]=useState(false);
+  const summarized=compact||dashboard;
   const [screen, setScreen] = useState<Screen | null>(() => {
     if (c.taskFocus?.id && data?.tasks.some((task) => task.id === c.taskFocus?.id))
       return { kind: "detail", id: c.taskFocus.id };
@@ -74,7 +76,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   }
   function completeTask(task: SchoolTask, completed: boolean) {
     m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed }),
-      undefined, "");
+      undefined, completed ? "완료한 할 일로 이동했습니다." : "미완료 할 일로 되돌렸습니다.");
   }
   function confirmChange(task: SchoolTask, change: Confirmation) {
     m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, ...change }), () => {
@@ -95,8 +97,8 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
         <button type="button" className="task-row-detail" onClick={() => open({ kind: "detail", id: task.id })}>
           <strong>{title}</strong>
           <span>
-            {task.kind === "personal" ? "개인 할 일" : task.department || "배포받은 업무"}
-            {deadline && ` · ${deadline}`}
+            {task.kind === "personal" ? (summarized ? "" : "개인 할 일") : task.department || "배포받은 업무"}
+            {deadline && `${task.kind==="personal" && summarized ? "" : " · "}${deadline}`}
             {task.cancelled_at && " · 취소"}
             {late && <b className="task-overdue">기한 경과</b>}
           </span>
@@ -119,7 +121,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
           {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div></details>}
         </div>
         <div className={dashboard?"task-dashboard-body":undefined}>
-        {pending.length ? rows(pending) : <p className="task-hint">미완료 할 일이 없습니다.</p>}
+        {pending.length ? <>{rows(summarized&&!expanded?pending.slice(0,5):pending)}{summarized&&pending.length>5&&<button type="button" className="task-expand-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":`나머지 할 일 ${pending.length-5}건 더보기`}</button>}</> : <p className="task-hint">미완료 할 일이 없습니다.</p>}
         {finished.length > 0 && <Disclosure compact label={`완료한 할 일 (${finished.length})`}>{rows(finished)}</Disclosure>}
         {cancelled.length > 0 && <Disclosure compact label={`취소된 업무 (${cancelled.length})`}>{rows(cancelled)}</Disclosure>}
         </div>
