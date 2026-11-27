@@ -1,0 +1,52 @@
+/* Curriculum reading geometry, scoped to the existing screens. */
+@media screen {
+ .cv2 .cv2-table-scroll { border-color:var(--border);border-radius:8px; }
+ .cv2 .cv2-table {font-variant-numeric:tabular-nums;}
+ .cv2 .cv2-table thead th {background:#edf2f8;line-height:1.35;}
+ .cv2 .cv2-table thead tr:first-child th {height:36px;}
+ .cv2 .cv2-table thead tr:nth-child(2) th {top:36px;height:32px;}
+ .cv2 .cv2-table .cv2-group-row>th {background:#f0f4f8;}
+ .cv2 .cv2-table .cv2-row-sum,.cv2 .cv2-table tfoot :is(th,td){background:#eaf1fa;color:#24496f;font-weight:700;}
+ .cv2 .cv2-table input:not(:disabled){background:#fff;border-color:#dce5ef;}
+ .cv2-step-review .cv2-table-scroll{max-height:68vh;}
+ .cv2 .cw3-stat {padding:11px 13px;}
+ .cv2 .cw3-stat small {color:var(--text-secondary);}
+ .cv2 .cw3-stat[data-difference=negative] strong {color:#a13d15;}
+ .cv2 .cw3-stat[data-difference=unknown] strong {color:var(--warning-accent);}
+ .cv2 .cw3-details {max-width:100%;overflow:auto;}
+ .official-curriculum-display .school-reader-toolbar {gap:8px 12px;}
+ .official-curriculum-display .school-reader-toolbar label {display:flex;align-items:center;gap:6px;min-width:0;}
+ .official-curriculum-full {max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+ .official-curriculum-full .school-curriculum-sheet {border-collapse:separate;border-spacing:0;}
+ .official-curriculum-full thead th{position:sticky;top:0;background:#edf2f8;z-index:2;height:36px;}
+ .official-curriculum-full thead tr:nth-child(2) th{top:36px;}
+ .official-curriculum-full tbody th{position:sticky;left:0;background:white;z-index:1;text-align:left;}
+ .official-curriculum-full tfoot :is(th,td),.official-curriculum-full tbody td:last-child {background:#eaf1fa;font-weight:650;color:#24496f;}
+ .official-curriculum-mobile {display:none;}
+}
+@media screen and (max-width:767px) {
+ .cv2 .mobile-view-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0;}
+ .cv2 .mobile-view-toolbar label:last-child{grid-column:1/-1;}
+ .cv2 .mobile-edit-card{padding:9px 10px;gap:5px;border-radius:8px;}
+ .cv2 .mobile-edit-card h3{font-size:14px;}
+ .cv2 .mobile-edit-card p{font-size:12px;color:var(--text-secondary);}
+ .cv2 .curriculum-mobile-review{gap:5px;}
+ .cv2 .curriculum-mobile-review .mobile-edit-card{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;}
+ .cv2 .curriculum-mobile-review h3,.cv2 .curriculum-mobile-review p{grid-column:1;}
+ .cv2 .curriculum-review-value{grid-column:2;grid-row:1/4;text-align:right;align-content:center;color:var(--text-secondary);font-size:11px;}
+ .cv2 .curriculum-review-value strong{font-size:18px;color:#24496f;font-variant-numeric:tabular-nums;}
+ .cv2 .cv2-table .cv2-group-head,.cv2 .cv2-table .cv2-group-cell{position:static;width:70px;min-width:70px;max-width:70px;}
+ .cv2 .cv2-table .cv2-subject-head,.cv2 .cv2-table .cv2-subject-cell{left:0;width:112px;min-width:112px;max-width:112px;}
+ .cv2 .cv2-table .cv2-group-head{position:sticky;top:0;}
+ .cv2 .cv2-table .cv2-adjust-btn{opacity:1;}
+ .official-curriculum-full{display:none;}
+ .official-curriculum-mobile{display:grid;gap:8px;min-width:0;}
+ .official-curriculum-mobile label{display:flex;align-items:center;gap:8px;font-size:13px;}
+ .official-curriculum-mobile select{flex:1;min-width:0;}
+ .official-curriculum-mobile table{table-layout:fixed;width:100%;font-variant-numeric:tabular-nums;}
+ .official-curriculum-mobile :is(th,td){padding:7px 4px;font-size:12px;text-align:center;overflow-wrap:anywhere;}
+ .official-curriculum-mobile :is(th,td):first-child{width:40%;text-align:left;}
+ .official-curriculum-mobile thead th{background:#edf2f8;}
+ .official-curriculum-mobile tbody td:last-child,.official-curriculum-mobile tfoot :is(th,td){background:#eaf1fa;color:#24496f;font-weight:650;}
+}
+@media print {.official-curriculum-mobile{display:none!important}.official-curriculum-full{display:block;max-height:none;overflow:visible;}}

@@ -1,5 +1,6 @@
 "use client";
 import { canPlan } from "@/lib/planning-completion";
+import "./curriculum-display.css";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
@@ -1642,7 +1643,7 @@ export function CurriculumEnhanced({
                     type="button"
                     onClick={() => setWideMobile(!wideMobile)}
                   >
-                    {wideMobile ? "과목별 편집으로 보기" : "전체 편성표 보기"}
+                    {wideMobile ? (simpleStep === "review" ? "학년별로 보기" : "과목별 편집으로 보기") : "전체 편성표 보기"}
                   </button>
                   {!wideMobile && (
                     <>
@@ -1689,7 +1690,7 @@ export function CurriculumEnhanced({
                           </select>
                         </label>
                       </div>
-                      <div className="mobile-card-list">
+                      <div className={`mobile-card-list${simpleStep === "review" ? " curriculum-mobile-review" : ""}`}>
                         {c.subjects
                           .filter(
                             (subject) =>
@@ -1727,7 +1728,7 @@ export function CurriculumEnhanced({
                                   }{" "}
                                   · {col.grade}학년 {col.semester}학기
                                 </p>
-                                <label>
+                                <label className={simpleStep === "review" ? "curriculum-review-value" : undefined}>
                                   {col.field === "weekly"
                                     ? "주당 시수"
                                     : col.field === "year"
@@ -1735,6 +1736,8 @@ export function CurriculumEnhanced({
                                       : "학기 편성"}
                                   {value === null ? (
                                     <span>원본 확인 필요</span>
+                                  ) : simpleStep === "review" ? (
+                                    <strong>{format(value)}{unit}</strong>
                                   ) : (
                                     <HourInput
                                       cellKey={`mobile-${subject.id}-${col.grade}-${col.semester}`}

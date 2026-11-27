@@ -21,6 +21,7 @@ import { ScheduleSearch } from "./schedule-search";
 import type { ScheduleSearchResult } from "@/lib/schedule-search";
 import { ScheduleListView, useScheduleListView } from "./schedule-list-view";
 import "./school-plan-readers.css";
+import "./curriculum-display.css";
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const weekLabels = [...weekdays.slice(1), weekdays[0]];
@@ -290,6 +291,7 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
   const byYear = plans.filter((p) => !p.starts_on || p.starts_on <= end);
   const cohorts = [...new Set(byYear.map((p) => p.cohort_year))];
   const [selection, setSelection] = useState<{ cohort: number; id?: string } | null>(null);
+  const [mobileGrade, setMobileGrade] = useState(c.grades[0] ?? 1);
   const preferred = selection?.cohort ?? year;
   const cohort = cohorts.includes(preferred) ? preferred : cohorts.find((value) => value <= year) ?? cohorts[0];
   const history = byYear.filter((p) => p.cohort_year === cohort);
@@ -303,7 +305,7 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
     name: plan.subject_names?.[id] ?? c.subjects.find((s) => s.id === id)?.name ?? "이전 교과목",
     values: terms.map((t) => hours.get(`${id}:${t.grade}:${t.semester}`)),
   }));
-  return <section className="school-plan-reader">
+  return <section className="school-plan-reader official-curriculum-display">
     <div className="school-reader-toolbar">
       <label>입학년도 <select value={plan.cohort_year} onChange={(e) => setSelection({ cohort: Number(e.target.value) })}>
         {cohorts.map((value) => <option key={value} value={value}>{value}학년도 입학생</option>)}
@@ -317,7 +319,11 @@ export function OfficialCurriculum({ context: c }: { context: Context }) {
     </div>
     <p className="muted">{plan.starts_on && `${plan.starts_on} 적용 · `}{plan.confirmed_at.slice(0, 10)} 공개</p>
     {plan.change_note && <p>{plan.change_note}</p>}
-    <div className="table-scroll">
+    <div className="official-curriculum-mobile no-print">
+      <label>조회 학년 <select value={mobileGrade} onChange={e=>setMobileGrade(Number(e.target.value))}>{c.grades.map(g=><option key={g} value={g}>{g}학년</option>)}</select></label>
+      <table aria-label={`${mobileGrade}학년 공개 교육과정 편성표`}><thead><tr><th scope="col">교과목</th><th scope="col">1학기</th><th scope="col">2학기</th><th scope="col">합계</th></tr></thead><tbody>{rows.map(r=>{const a=r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===1)],b=r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===2)];return <tr key={r.id}><th scope="row">{r.name}</th><td>{a??"—"}</td><td>{b??"—"}</td><td>{a===undefined&&b===undefined?"—":(a??0)+(b??0)}</td></tr>;})}</tbody><tfoot><tr><th scope="row">학년 합계</th>{[1,2].map(s=><td key={s}>{rows.reduce((sum,r)=>sum+(r.values[terms.findIndex(t=>t.grade===mobileGrade&&t.semester===s)]??0),0)}</td>)}<td>{plan.hours.filter(h=>h.grade===mobileGrade).reduce((sum,h)=>sum+h.hours,0)}</td></tr></tfoot></table>
+    </div>
+    <div className="table-scroll official-curriculum-full">
       <table className="school-reader-list school-curriculum-sheet" aria-label="공개 교육과정 편성표">
         <thead><tr><th rowSpan={2} scope="col">교과목</th>{c.grades.map((g) => <th key={g} colSpan={2} scope="colgroup">{g}학년</th>)}<th rowSpan={2} scope="col">합계</th></tr>
           <tr>{terms.map((t) => <th key={`${t.grade}:${t.semester}`} scope="col">{t.semester}학기</th>)}</tr></thead>
