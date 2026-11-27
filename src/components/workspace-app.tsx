@@ -71,6 +71,8 @@ const Curriculum = dynamic(
 );
 import { SchoolSettings } from "@/components/features/settings";
 import { PlanOverview } from "@/components/features/plan-overview";
+import { OperationAudit } from "@/components/features/operation-audit";
+import type { AuditCheck } from "@/lib/operation-audit";
 import type { PlanOverviewRow } from "@/lib/plan-overview";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
@@ -102,6 +104,7 @@ export function WorkspaceApp({
   management = false,
   homePublicData,
   planOverview,
+  operationAudit,
 }: {
   context: Context;
   section: string;
@@ -111,6 +114,7 @@ export function WorkspaceApp({
   management?: boolean;
   homePublicData?: ReactNode;
   planOverview?: PlanOverviewRow[];
+  operationAudit?: AuditCheck[];
 }) {
   const router = useRouter();
   const [modal, setModal] = useState<"school" | "profile" | "menu" | "notifications" | null>(
@@ -440,6 +444,7 @@ export function WorkspaceApp({
         {section === "settings" && schoolAdmin ? (
           <>
             {planOverview && c.year && <PlanOverview rows={planOverview} workspaceId={c.workspace.id} year={c.year.year} />}
+            {operationAudit && c.year && <OperationAudit rows={operationAudit} workspaceId={c.workspace.id} year={c.year.year} />}
             <SchoolSettings
               key={`${c.year?.id}-${c.year?.version}`}
               context={c}
