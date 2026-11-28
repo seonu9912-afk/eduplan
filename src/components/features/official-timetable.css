@@ -429,3 +429,18 @@
   --ep-fg-8e452e: hsl(14 43% 76%);
  }
 }
+
+/* Class view already identifies the grade. Keep ordinary lessons on the table
+   surface and reserve fill for creative activities and exceptional lessons. */
+@media screen, print {
+ .official-timetable-grid[data-audience="class"][data-change-badges] button.official-lesson[data-kind="subject"]:not([data-changed]):not([data-blocked]):not([data-cancelled]) {
+  background:transparent;
+  border-radius:0;
+ }
+ .official-timetable-grid[data-audience="class"][data-change-badges] button.official-lesson:not([data-kind="subject"]):not([data-changed]):not([data-blocked]):not([data-cancelled]) {
+  background:color-mix(in srgb,var(--lesson-accent) 8%,var(--ep-bg-ffffff,white));
+ }
+ .official-timetable-grid[data-audience="class"][data-change-badges] button.official-lesson[data-kind="subject"]:not([data-changed]):not([data-blocked]):not([data-cancelled]):hover {
+  background:color-mix(in srgb,var(--foreground) 4%,transparent);
+ }
+}

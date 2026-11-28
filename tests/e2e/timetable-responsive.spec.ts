@@ -63,3 +63,26 @@ for (const width of [320,390,430]) test(`lesson card geometry stays uniform in b
     await expect(sheet.locator("thead .timetable-day-badge").filter({hasText:"단축"})).toHaveCount(0);
   }
 });
+
+for (const width of [390,1440]) test(`class timetable uses neutral ordinary lessons at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
+ const sheet=page.locator(".official-timetable");
+ const table=sheet.locator(".official-timetable-grid");
+ await sheet.getByRole("button",{name:"학급별",exact:true}).click();
+ for(const mode of ["기본","주간"]){
+  await sheet.getByRole("button",{name:mode,exact:true}).click();
+  await expect(table).toHaveAttribute("data-audience","class");
+  const ordinary=table.locator('button.official-lesson[data-kind="subject"]:not([data-changed]):not([data-blocked]):not([data-cancelled])');
+  await expect(ordinary.first()).toBeVisible();
+  await expect(ordinary.first()).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+  await expect(ordinary.first()).toHaveCSS("border-radius","0px");
+  const exceptions=table.locator('button.official-lesson:is(:not([data-kind="subject"]),[data-changed],[data-blocked],[data-cancelled])');
+  for(const item of await exceptions.all()) await expect(item).not.toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+ }
+ await sheet.getByRole("button",{name:"교사별",exact:true}).click();
+ await expect(table).toHaveAttribute("data-audience","teacher");
+ const teacherLesson=table.locator('button.official-lesson[data-kind="subject"]').first();
+ if(await teacherLesson.count()) await expect(teacherLesson).not.toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+});

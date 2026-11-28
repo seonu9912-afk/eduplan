@@ -70,7 +70,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                       {!showChangeBadges && current(cell, column.date) && <small className="timetable-current-label">진행 중</small>}
                       {!showChangeBadges && (cell.blocked || cell.changed) && <small className="timetable-lesson-state">{cell.blocked || "변경 수업"}</small>}
                     </>;
-                    const attributes = { className: "official-lesson", "data-kind": cell.kind, "data-grade": classFirst && grades.length === 1 ? grades[0] : undefined, "data-blocked": cell.blocked ? "" : undefined, "data-current": current(cell, column.date) ? "" : undefined, "data-cancelled": badges.includes("미실시") ? "" : undefined };
+                    const attributes = { className: "official-lesson", "data-kind": cell.kind, "data-grade": classFirst && grades.length === 1 ? grades[0] : undefined, "data-blocked": cell.blocked ? "" : undefined, "data-current": current(cell, column.date) ? "" : undefined, "data-cancelled": badges.includes("미실시") ? "" : undefined, "data-changed": cell.changed || badges.length > 0 ? "" : undefined };
                     return showChangeBadges ? <button type="button" {...attributes} key={cell.id} aria-label={[dateLabel(column.date), period + "교시", cell.classes, cell.subject, ...badges, "상세 보기"].join(" ")} onClick={() => setDetail({ cell, date: column.date, notice: column.notice })}>{content}</button> : <div {...attributes} key={cell.id}>{content}</div>;
                   })}
                 </td>;
