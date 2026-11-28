@@ -40,7 +40,7 @@ const WorkPlans = dynamic(
   { loading: () => <p role="status">화면을 불러오는 중…</p> },
 );
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -56,11 +56,17 @@ import {
   ClipboardList,
   PanelTop,
   Table2,
+  UserRound,
+  School,
+  ContactRound,
+  X,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ThemePreferenceControl } from "@/components/theme-preference";
 import { Button } from "@/components/ui/button";
 import { Modal, Notice } from "@/components/common";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog";
+import "@/app/mobile-menu.css";
 import {
   CreateSchoolForm,
   ProfileForm,
@@ -125,6 +131,7 @@ export function WorkspaceApp({
   const [modal, setModal] = useState<"school" | "profile" | "menu" | "notifications" | null>(
     null,
   );
+  const menuTrigger = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState("");
   const changes = usePublishedChanges(c);
   const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length + changes.items.length;
@@ -223,6 +230,45 @@ export function WorkspaceApp({
         : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
     </Link>
   </Button>;
+  const renderMobileNav = (inMenu: boolean) => (
+      <nav className={`mobile-bottom-nav no-print${inMenu ? " mobile-menu-bottom-nav" : ""}`} aria-label="모바일 주요 메뉴">
+        {[
+          { id: "home", label: "홈", icon: House },
+          { id: "calendar", label: "학사일정", icon: CalendarDays },
+          { id: "plans", label: sections.plans, icon: ClipboardList },
+          { id: "timetable", label: "시간표", icon: Table2 },
+        ].map(({ id, label, icon: Icon }) => (
+          <Link
+            data-guarded-navigation
+            key={id}
+            href={`${base}/${id}${suffix}`}
+            aria-current={section === id ? "page" : undefined}
+            onClick={(e) => {
+              if (!allowNavigation()) e.preventDefault();
+              else { setDirty(false); if (inMenu) setModal(null); }
+            }}
+          >
+            <Icon />
+            <span>{label}</span>
+          </Link>
+        ))}
+        <button
+          ref={inMenu ? undefined : menuTrigger}
+          type="button"
+          onClick={() => setModal(inMenu ? null : "menu")}
+          aria-haspopup="dialog"
+          aria-expanded={modal === "menu"}
+          data-menu-active={inMenu ? "" : undefined}
+        >
+          <Menu />
+          <span>전체 메뉴</span>
+        </button>
+      </nav>
+  );
+  const menuGroups = [
+    { title: "학교 업무", items: [{ id: "curriculum", icon: BookOpen }, { id: "teaching", icon: PanelTop }, { id: "notifications", icon: Bell }] },
+    { title: "학교 관리", items: [{ id: "teachers", icon: Users }, { id: "settings", icon: Settings2 }, { id: "people", icon: ContactRound }] },
+  ];
   return (
     <div className="app-shell">
       <header className="app-header no-print">
@@ -348,35 +394,7 @@ export function WorkspaceApp({
           )}
         </div>
       </nav>
-      <nav className="mobile-bottom-nav no-print" aria-label="모바일 주요 메뉴">
-        {[
-          { id: "home", label: "홈", icon: House },
-          { id: "calendar", label: "학사일정", icon: CalendarDays },
-          { id: "plans", label: sections.plans, icon: ClipboardList },
-          { id: "timetable", label: "시간표", icon: Table2 },
-        ].map(({ id, label, icon: Icon }) => (
-          <Link
-            data-guarded-navigation
-            key={id}
-            href={`${base}/${id}${suffix}`}
-            aria-current={section === id ? "page" : undefined}
-            onClick={(e) => {
-              if (!allowNavigation()) e.preventDefault();
-              else setDirty(false);
-            }}
-          >
-            <Icon />
-            <span>{label}</span>
-          </Link>
-        ))}
-        <button
-          onClick={() => setModal("menu")}
-          aria-expanded={modal === "menu"}
-        >
-          <Menu />
-          <span>전체 메뉴</span>
-        </button>
-      </nav>
+      {renderMobileNav(false)}
       <main key={`${c.workspace.id}:${section}`} id="main-content" className="workspace-content workspace-motion-enter"
         data-surface={section === "settings" ? "form" : "wide"} data-section={section}>
         <Notice message={error} error />
@@ -485,42 +503,54 @@ export function WorkspaceApp({
           }}>알림 설정</Button>
         </div>
       </Modal>
-      <Modal
-        open={modal === "menu"}
-        onOpenChange={(v) => !v && setModal(null)}
-        title="전체 메뉴"
-        description={`${c.workspace.name} · ${roles[c.role]}`}
-      >
-        <nav className="mobile-menu-grid" aria-label="모든 기능">
-          {Object.entries(sections).filter(([id]) => visibleSection(id)).map(([id, label]) => (
-            <Link
-              data-guarded-navigation
-              key={id}
-              href={`${base}/${id}${suffix}`}
-              aria-current={section === id ? "page" : undefined}
-              onClick={(e) => {
-                if (!allowNavigation()) e.preventDefault();
-                else {
-                  setDirty(false);
-                  setModal(null);
-                }
-              }}
-            >
-              {label}
-              <ChevronRight size={16} />
-            </Link>
-          ))}
-        </nav>
-        <ThemePreferenceControl />
-        <div className="mobile-view-toolbar">
-          <Button variant="outline" onClick={() => { setSignOutError(""); setModal("profile"); }}>
-            내 프로필
-          </Button>
-          <Button variant="outline" onClick={() => setModal("school")}>
-            학교 만들기
-          </Button>
-        </div>
-      </Modal>
+      <Dialog open={modal === "menu"} onOpenChange={(open) => { if (!open) setModal(null); }}>
+        <DialogContent className="edu-dialog mobile-menu-sheet" showCloseButton={false}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            requestAnimationFrame(() => {
+              if (!document.querySelector('[data-slot="dialog-content"][data-state="open"]')) menuTrigger.current?.focus();
+            });
+          }}>
+          <header className="mobile-menu-header">
+            <span className="mobile-menu-handle" aria-hidden="true" />
+            <div className="mobile-menu-title-row">
+              <DialogTitle>전체 메뉴</DialogTitle>
+              <DialogClose asChild><Button type="button" variant="ghost" size="icon" aria-label="닫기"><X /></Button></DialogClose>
+            </div>
+            <DialogDescription><strong>{c.workspace.name}</strong><span>{roles[c.role]}</span></DialogDescription>
+          </header>
+          <div className="edu-dialog-body mobile-menu-body">
+            <nav aria-label="추가 기능" className="mobile-menu-groups">
+              {menuGroups.map(({ title, items }) => {
+                const visible = items.filter(({ id }) => visibleSection(id));
+                return visible.length > 0 && <section className="mobile-menu-group" key={title}>
+                  <h3>{title}</h3>
+                  <div className="mobile-menu-tiles">
+                    {visible.map(({ id, icon: Icon }) => <Link
+                      data-guarded-navigation key={id} href={`${base}/${id}${suffix}`}
+                      aria-current={section === id ? "page" : undefined}
+                      onClick={(event) => {
+                        if (!allowNavigation()) event.preventDefault();
+                        else { setDirty(false); setModal(null); }
+                      }}>
+                      <span className="mobile-menu-tile-icon"><Icon aria-hidden="true" />
+                        {id === "notifications" && unreadCount > 0 && <span className="mobile-menu-unread" aria-label={`읽지 않은 알림 ${unreadCount}개`} />}
+                      </span>
+                      <span>{sections[id]}</span>
+                    </Link>)}
+                  </div>
+                </section>;
+              })}
+            </nav>
+            <ThemePreferenceControl compact />
+            <div className="mobile-menu-account">
+              <button type="button" onClick={() => { setSignOutError(""); setModal("profile"); }}><UserRound aria-hidden="true" /><span>내 프로필</span><ChevronRight aria-hidden="true" /></button>
+              <button type="button" onClick={() => setModal("school")}><School aria-hidden="true" /><span>학교 만들기</span><ChevronRight aria-hidden="true" /></button>
+            </div>
+          </div>
+          {renderMobileNav(true)}
+        </DialogContent>
+      </Dialog>
       <Modal
         open={modal === "school"}
         onOpenChange={(v) => !v && setModal(null)}

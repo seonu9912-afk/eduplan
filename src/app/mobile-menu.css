@@ -1,0 +1,49 @@
+/* Mobile navigation sheet: the existing bottom navigation remains available inside the modal focus scope. */
+.edu-dialog.mobile-menu-sheet {
+  grid-template-rows: auto minmax(0,1fr) auto;
+  background: var(--card);
+}
+.mobile-menu-header { padding: 12px 16px 14px; border-bottom: 1px solid var(--border); min-width: 0; }
+.mobile-menu-handle { display:block; width:32px; height:4px; border-radius:3px; background:var(--border); margin:0 auto 8px; }
+.mobile-menu-title-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.mobile-menu-title-row [data-slot="dialog-title"] { font-size:18px !important; }
+.mobile-menu-title-row button { flex:none; }
+.mobile-menu-header [data-slot="dialog-description"] { display:grid; gap:1px; margin-top:2px; line-height:1.5; }
+.mobile-menu-header [data-slot="dialog-description"] strong { color:var(--foreground); font-size:15px; font-weight:650; }
+.mobile-menu-header [data-slot="dialog-description"] span { font-size:12px; }
+.mobile-menu-body.edu-dialog-body { padding:12px 16px 10px; }
+.mobile-menu-groups { display:grid; gap:12px; }
+.mobile-menu-group h3 { font-size:12px; font-weight:650; color:var(--text-secondary); margin:0 0 3px; }
+.mobile-menu-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.mobile-menu-tiles a { min-width:0; min-height:66px; padding:7px 3px; border-radius:9px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--foreground); text-decoration:none; font-size:13px; font-weight:550; text-align:center; }
+.mobile-menu-tiles a[aria-current="page"] { color:var(--primary); background:color-mix(in srgb,var(--primary) 9%,transparent); font-weight:700; }
+.mobile-menu-tile-icon { position:relative; display:flex; color:var(--text-secondary); }
+.mobile-menu-tile-icon svg { width:23px; height:23px; }
+.mobile-menu-tiles a[aria-current="page"] .mobile-menu-tile-icon { color:var(--primary); }
+.mobile-menu-unread { position:absolute; right:-3px; top:-2px; width:8px; height:8px; border-radius:50%; background:#c03642; border:1px solid var(--card); }
+.mobile-menu-sheet .theme-preference-compact { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:12px; padding-top:12px; }
+.mobile-menu-sheet .theme-preference-compact h3 { font-size:14px; white-space:nowrap; }
+.mobile-menu-sheet .theme-preference-compact .theme-preference-options { width:148px; max-width:55%; flex:none; gap:2px; padding:3px; }
+.mobile-menu-sheet .theme-preference-compact button { min-width:0; min-height:44px; padding:0; }
+.mobile-menu-account { display:grid; gap:0; margin-top:7px; }
+.mobile-menu-account button { display:flex; align-items:center; gap:10px; min-height:44px; padding:5px 3px; border:0; background:transparent; color:var(--foreground); text-align:left; font-size:14px; }
+.mobile-menu-account button > span { flex:1; }
+.mobile-menu-account svg { width:18px; height:18px; color:var(--text-secondary); }
+.mobile-menu-account svg:last-child { width:15px; height:15px; }
+.mobile-menu-sheet :is(a,button):focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+@media screen and (max-width:767px) {
+  .edu-dialog.mobile-menu-sheet { inset:auto 0 0; margin:0; width:100%; max-width:100%; max-height:min(var(--visible-height),calc(100dvh - env(safe-area-inset-top,0px) - 8px)); border-radius:20px 20px 0 0; }
+  .mobile-menu-header { padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px)); }
+  .mobile-menu-body.edu-dialog-body { padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px)); min-height:0; }
+  .mobile-menu-sheet .mobile-menu-bottom-nav { position:static; inset:auto; width:100%; box-shadow:none; flex:none; }
+  .mobile-menu-sheet .mobile-menu-bottom-nav [data-menu-active] { color:var(--primary); font-weight:750; }
+  .mobile-menu-sheet .mobile-menu-bottom-nav [data-menu-active]::before { position:absolute; bottom:0; width:18px; height:2px; border-radius:2px; background:currentColor; content:""; }
+}
+@media screen and (max-width:767px) and (prefers-reduced-motion:no-preference) {
+  .edu-dialog.mobile-menu-sheet[data-state="open"] { animation:mobile-menu-enter 220ms cubic-bezier(.2,.75,.25,1) both; }
+  .edu-dialog.mobile-menu-sheet[data-state="closed"] { animation:mobile-menu-exit 150ms ease-in both; }
+  @keyframes mobile-menu-enter { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  @keyframes mobile-menu-exit { from { transform:translateY(0); } to { transform:translateY(100%); } }
+}
+@media (prefers-reduced-motion:reduce) { .edu-dialog.mobile-menu-sheet { animation:none; } }
+@media print { .mobile-menu-sheet { display:none!important; } }

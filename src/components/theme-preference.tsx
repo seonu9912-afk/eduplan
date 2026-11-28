@@ -36,9 +36,9 @@ export function ThemeRuntime() {
   }, []);
   return null;
 }
-export function ThemePreferenceControl() {
+export function ThemePreferenceControl({ compact = false }: { compact?: boolean } = {}) {
   const current = useSyncExternalStore(subscribe, preference, () => "system" as ThemePreference);
   const options = [{value:"light", label:"밝게", Icon:Sun},{value:"dark", label:"어둡게", Icon:Moon},{value:"system", label:"시스템", Icon:Monitor}] as const;
-  return <section className="theme-preference" aria-label="화면 테마"><h3>화면 테마</h3><div className="theme-preference-options" role="group" aria-label="화면 테마 선택">
-  {options.map(({value,label,Icon})=><button key={value} type="button" aria-pressed={current===value} onClick={()=>change(value)}><Icon size={18} aria-hidden="true"/>{label}</button>)}</div><p>시스템은 기기의 화면 설정을 따릅니다. 설정은 이 브라우저에 저장됩니다.</p></section>;
+  return <section className={`theme-preference${compact ? " theme-preference-compact" : ""}`} aria-label="화면 테마"><h3>화면 테마</h3><div className="theme-preference-options" role="group" aria-label="화면 테마 선택">
+  {options.map(({value,label,Icon})=><button key={value} type="button" aria-pressed={current===value} onClick={()=>change(value)}><Icon size={18} aria-hidden="true"/><span className={compact ? "sr-only" : undefined}>{label}</span></button>)}</div>{!compact && <p>시스템은 기기의 화면 설정을 따릅니다. 설정은 이 브라우저에 저장됩니다.</p>}</section>;
 }
