@@ -1,7 +1,7 @@
 "use client";
 import { useSyncExternalStore, useEffect, type ReactNode, type MouseEvent } from "react";
-import { Building2, ClipboardCheck, Link2, Users, Settings2, ChevronRight, ChevronLeft } from "lucide-react";
-import { settingsSectionFromHash, isSettingsDetailHash } from "@/lib/school-settings-sections";
+import { Building2, Users, Settings2, ChevronRight, ChevronLeft } from "lucide-react";
+import { settingsSectionFromHash, isSettingsDetailHash, settingsAnchorFromHash } from "@/lib/school-settings-sections";
 import "./school-settings-layout.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -31,18 +31,15 @@ const subscribeHash=(callback:()=>void)=>{window.addEventListener("hashchange",c
 const readHash=()=>window.location.hash;
 const serverHash=()=>"";
 const settingsGroups=[
- {id:"school",name:"학교 기본 정보",description:"학교급 · 학교명 · 기본 정보",icon:Building2},
- {id:"year",name:"학년도 관리",description:"학년·학급 구성 · 학기 설정",icon:CalendarDays},
- {id:"operations",name:"학교 운영 설정",description:"부서 · 운영 업무 · 시정표",icon:Settings2},
- {id:"accounts",name:"구성원·권한 관리",description:"가입 계정 · 담당 업무 권한",icon:Users},
- {id:"overview",name:"계획 수립 현황",description:"저장본과 공개본 비교 · 데이터 점검",icon:ClipboardCheck},
- {id:"connections",name:"외부 서비스 연동",description:"나이스 · 날씨 · 업무 바로가기",icon:Link2},
- {id:"system",name:"사용 환경 및 정보",description:"앱 설치 · 버전 정보",icon:ShieldCheck},
+ {id:"school",name:"학교 정보",description:"학교급 · 나이스 · 날씨 · 업무 바로가기",icon:Building2},
+ {id:"operations",name:"학교 운영",description:"학년도 · 학급 구성 · 학기 · 부서 · 시정표",icon:Settings2},
+ {id:"accounts",name:"구성원 및 권한",description:"교원 명부 · 가입 계정 · 업무별 권한",icon:Users},
+ {id:"system",name:"시스템 관리",description:"계획 수립 현황 · 데이터 점검 · 앱 정보",icon:ShieldCheck},
 ] as const;
 export function SchoolSettings({ context: c, overview, installPanel }: { context: Context; overview?: ReactNode; installPanel?: ReactNode }) {
   const editable=c.role==="admin";
   const hash=useSyncExternalStore(subscribeHash,readHash,serverHash);
-  const groups=settingsGroups.filter(g=>editable||g.id==="school"||g.id==="year");
+  const groups=settingsGroups.filter(g=>editable||g.id==="school"||g.id==="operations");
   const requested=settingsSectionFromHash(hash);
   const active=groups.some(g=>g.id===requested)?requested:"school";
   const current=groups.find(g=>g.id===active)!;
@@ -61,8 +58,9 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
   }
   useEffect(()=>{
     // Support pre-existing links from Home as well as direct links to a category.
-    if(hash==="#school-links"||hash==="#school-information"){
-      const frame=requestAnimationFrame(()=>document.getElementById(hash.slice(1))?.scrollIntoView({block:"start"}));
+    const anchor=settingsAnchorFromHash(hash);
+    if(anchor){
+      const frame=requestAnimationFrame(()=>document.getElementById(anchor)?.scrollIntoView({block:"start"}));
       return()=>cancelAnimationFrame(frame);
     }
   },[hash]);
@@ -83,34 +81,43 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
           <h2 id="settings-mobile-detail-title" tabIndex={-1}>{current.name}</h2><p>{current.description}</p>
         </header>
         <div className="settings-hub-group" id="settings-school" hidden={active!=="school"}>
-          <SchoolTypeForm key={c.schoolType} context={c}/>
-          <div className="panel settings-hub-note"><h3>학교 공통 정보</h3><p>학교급은 전체 학년도에 공통으로 적용됩니다. 학교명과 나이스 정보는 외부 서비스 연동에서 확인할 수 있습니다.</p></div>
+          <section className="settings-subgroup" aria-labelledby="settings-school-type-title">
+            <h3 id="settings-school-type-title" className="settings-subgroup-title">학교 기본 정보</h3>
+            <SchoolTypeForm key={c.schoolType} context={c}/>
+          </section>
+          {editable&&<section className="settings-subgroup" id="settings-connections" aria-label="외부 서비스 연동">
+            <SchoolInformationSettings context={c}/><SchoolLinkSettings context={c}/>
+          </section>}
         </div>
-        <div className="settings-hub-group" id="settings-year" hidden={active!=="year"}>
-          <YearForm key={`${c.year.id}-${c.schoolType}`} context={c} year={c.year.year} editable={editable}/>
-          {editable && <YearTransfer key={c.year.id} context={c}/> }
-          <div className="panel settings-hub-note"><h3>학년도별 기준</h3><p>학년도는 3월부터 다음 해 2월까지이며, 학급 구성과 학사일정은 해당 학년도 자료에 적용됩니다.</p></div>
+        <div className="settings-hub-group" id="settings-operations" hidden={active!=="operations"}>
+          <section className="settings-subgroup" id="settings-year" aria-labelledby="settings-year-title">
+            <h3 id="settings-year-title" className="settings-subgroup-title">학년도 관리</h3>
+            <YearForm key={`${c.year.id}-${c.schoolType}`} context={c} year={c.year.year} editable={editable}/>
+            {editable && <YearTransfer key={c.year.id} context={c}/> }
+          </section>
+          {editable&&<section className="settings-subgroup" aria-labelledby="settings-operations-title">
+            <h3 id="settings-operations-title" className="settings-subgroup-title">학교 운영 기준</h3>
+            {links([{href:base+"/plans"+yearQuery+"&view=manage",name:"부서·운영 업무",description:"업무계획 관리에서 부서와 학교 운영 항목을 설정합니다."},{href:base+"/timetable"+yearQuery+"&view=manage",name:"시정표·시간표 운영",description:"시간표 관리에서 시정표와 수업 운영 정보를 설정합니다."},{href:base+"/calendar"+yearQuery+"&view=manage",name:"학기·방학·수업일",description:"학사일정에서 해당 학년도의 운영 기준을 설정합니다."}])}
+          </section>}
         </div>
         {editable&&<>
-          <section className="settings-hub-group" id="settings-operations" hidden={active!=="operations"}>
-            {links([{href:base+"/plans"+yearQuery+"&view=manage",name:"부서·운영 업무",description:"업무계획 관리에서 부서와 학교 운영 항목을 설정합니다."},{href:base+"/timetable"+yearQuery+"&view=manage",name:"시정표·시간표 운영",description:"시간표 관리에서 시정표와 수업 운영 정보를 설정합니다."},{href:base+"/calendar"+yearQuery+"&view=manage",name:"학기·방학·수업일",description:"학사일정에서 해당 학년도의 운영 기준을 설정합니다."}])}
-          </section>
           <section className="settings-hub-group" id="settings-accounts" hidden={active!=="accounts"}>
-            <div className="panel settings-hub-note"><p>교원 명부, 로그인 계정, 업무별 편집 권한은 별개의 정보입니다. 교원 등록만으로 접근 권한이 생기지 않습니다.</p></div>
             {links([{href:base+"/teachers"+yearQuery,name:"교원 명부",description:"교원 정보와 가입 계정의 연결을 관리합니다."},{href:base+"/people"+yearQuery,name:"구성원 관리",description:"가입 계정, 초대 및 학교 접근 권한을 관리합니다."},{href:base+"/people"+yearQuery+"#permission-matrix-title",name:"업무별 편집 권한",description:"기능별 편집·공개 담당자를 지정합니다."}])}
-          </section>
-          <section className="settings-hub-group" id="settings-overview" hidden={active!=="overview"}>
-            {overview??<div className="panel settings-hub-note"><p>계획 수립 현황을 불러오지 못했습니다.</p></div>}
-          </section>
-          <section className="settings-hub-group" id="settings-connections" hidden={active!=="connections"}>
-            <SchoolInformationSettings context={c}/><SchoolLinkSettings context={c}/>
+            <div className="panel settings-hub-note"><p>교원 명부, 로그인 계정, 업무별 편집 권한은 별개의 정보입니다. 교원 등록만으로 접근 권한이 생기지 않습니다.</p></div>
           </section>
           <section className="settings-hub-group" id="settings-system" hidden={active!=="system"}>
-            {installPanel}
-            <div className="panel settings-hub-note"><h3>버전 및 배포 정보</h3>
+            <section className="settings-subgroup" id="settings-overview" aria-labelledby="settings-overview-title">
+              <h3 id="settings-overview-title" className="settings-subgroup-title">계획 수립 현황 및 데이터 점검</h3>
+              {overview??<div className="panel settings-hub-note"><p>계획 수립 현황을 불러오지 못했습니다.</p></div>}
+            </section>
+            <section className="settings-subgroup" aria-labelledby="settings-app-title">
+              <h3 id="settings-app-title" className="settings-subgroup-title">사용 환경 및 정보</h3>
+              {installPanel}
+              <div className="panel settings-hub-note"><h3>버전 및 배포 정보</h3>
               <dl className="build-info"><dt>버전</dt><dd>{buildInfo.version}</dd><dt>환경</dt><dd>{buildInfo.deployment==="production"?"Production":buildInfo.deployment==="preview"?"Preview":"Development"}</dd><dt>배포 빌드 시각</dt><dd>{buildInfo.builtAt?new Intl.DateTimeFormat("ko-KR",{dateStyle:"medium",timeStyle:"medium",timeZone:"Asia/Seoul"}).format(new Date(buildInfo.builtAt)):"개발 실행"}</dd><dt>Git 커밋</dt><dd>{buildInfo.commit?<code title={buildInfo.commit}>{buildInfo.commit.slice(0,12)}</code>:"제공되지 않음"}</dd>{buildInfo.id&&<><dt>Vercel 배포 ID</dt><dd><code>{buildInfo.id}</code></dd></>}</dl>
             </div>
-            <div className="panel settings-hub-note"><p>학생 이름이나 성적 등 민감한 개인정보는 입력하지 않습니다.</p></div>
+              <div className="panel settings-hub-note"><p>학생 이름이나 성적 등 민감한 개인정보는 입력하지 않습니다.</p></div>
+            </section>
           </section>
         </>}
       </div>

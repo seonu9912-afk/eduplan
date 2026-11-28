@@ -81,3 +81,24 @@
  .school-settings-hub .settings-destination-list{gap:0}
  .school-settings-hub :is(#settings-mobile-list-title,#settings-mobile-detail-title):focus{outline:none}
 }
+
+/* Four shared settings categories with clear internal sections. */
+@media screen {
+ .school-settings-hub .settings-subgroup { display:grid; gap:10px; min-width:0; scroll-margin-top:24px; }
+ .school-settings-hub .settings-subgroup + .settings-subgroup { border-top:1px solid var(--border); padding-top:14px; margin-top:4px; }
+ .school-settings-hub .settings-subgroup-title { font-size:15px; font-weight:650; margin:0; }
+ .school-settings-hub .settings-subgroup > .settings-form { min-width:0; }
+ .school-settings-hub .settings-hub-nav a { min-height:56px; }
+}
+@media screen and (min-width:768px) {
+ .school-settings-hub .settings-hub-layout { grid-template-columns:minmax(205px,235px) minmax(0,1fr); gap:20px; }
+ .school-settings-hub .settings-hub-nav.panel { padding:0; gap:0; border:0; box-shadow:none; background:transparent; }
+ .school-settings-hub .settings-hub-nav a { padding:12px 10px; border-bottom:1px solid var(--border); border-radius:0; }
+ .school-settings-hub .settings-hub-nav a:last-child { border-bottom:0; }
+ .school-settings-hub .settings-hub-nav a[aria-current=page] { border-radius:6px; }
+ .school-settings-hub .settings-hub-content { gap:16px; }
+}
+@media screen and (max-width:767px) {
+ .school-settings-hub .settings-subgroup + .settings-subgroup { padding-top:12px; margin-top:0; }
+ .school-settings-hub .settings-subgroup-title { font-size:15px; }
+}

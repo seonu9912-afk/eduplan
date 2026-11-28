@@ -1,19 +1,11 @@
 import {it,expect} from "vitest";
-import {settingsSectionFromHash,isSettingsDetailHash} from "../../src/lib/school-settings-sections";
-it("keeps existing settings links working and defaults unknown hashes to school information",()=>{
- expect(settingsSectionFromHash("#school-links")).toBe("connections");
- expect(settingsSectionFromHash("#school-information")).toBe("connections");
- expect(settingsSectionFromHash("#settings-year")).toBe("year");
- expect(settingsSectionFromHash("#settings-overview")).toBe("overview");
- expect(settingsSectionFromHash("#invalid")).toBe("school");
- expect(settingsSectionFromHash("")).toBe("school");
+import {settingsSectionFromHash,isSettingsDetailHash,settingsAnchorFromHash} from "../../src/lib/school-settings-sections";
+it("maps current and legacy links into four settings groups",()=>{
+ const groups={school:["#settings-school","#settings-connections","#school-links","#school-information"],operations:["#settings-year","#settings-operations"],accounts:["#settings-accounts"],system:["#settings-overview","#settings-system"]};
+ for(const [group,hashes] of Object.entries(groups))for(const hash of hashes){expect(settingsSectionFromHash(hash)).toBe(group);expect(isSettingsDetailHash(hash)).toBe(true);}
+ for(const hash of ["","#invalid","constructor","__proto__"]){expect(settingsSectionFromHash(hash)).toBe("school");expect(isSettingsDetailHash(hash)).toBe(false);}
 });
-
-it("distinguishes the settings index from valid detail links",()=>{
- expect(isSettingsDetailHash("")).toBe(false);
- expect(isSettingsDetailHash("#invalid")).toBe(false);
- expect(isSettingsDetailHash("#settings-school")).toBe(true);
- expect(isSettingsDetailHash("#settings-year")).toBe(true);
- expect(isSettingsDetailHash("#school-links")).toBe(true);
- expect(isSettingsDetailHash("#school-information")).toBe(true);
+it("retains anchors for old direct links",()=>{
+ for(const hash of ["#settings-year","#settings-overview","#settings-connections","#school-links","#school-information"])expect(settingsAnchorFromHash(hash)).toBe(hash.slice(1));
+ for(const hash of ["","#settings-school","#settings-operations","#settings-accounts","#settings-system"])expect(settingsAnchorFromHash(hash)).toBeNull();
 });

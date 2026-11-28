@@ -184,7 +184,16 @@
 .school-connection-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
 .school-connection-heading h2 { margin:0; min-width:0; }
 .school-neis-search { display:grid; gap:10px; min-width:0; }
-.school-neis-search-toggle[data-slot="button"] { display:none; }
+.school-neis-search-toggle[data-slot="button"] { display:flex; width:100%; min-height:44px; justify-content:flex-start; gap:7px; padding:0 2px; border:0; border-top:1px solid var(--border); border-radius:0; background:transparent; color:var(--foreground); box-shadow:none; font-size:13px; }
+.school-neis-chevron { margin-left:auto; color:var(--text-secondary); }
+.school-neis-search-toggle[aria-expanded="true"] .school-neis-chevron { transform:rotate(180deg); }
+.school-neis-search[data-collapsed="true"] { display:none; }
+.school-neis-search-form { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:end; min-width:0; }
+.school-neis-search-form > label { display:grid; gap:5px; min-width:0; font-size:12px; }
+.school-neis-search-form > label > input { width:100%; min-width:0; }
+.school-neis-search-form > button[data-slot="button"] { min-height:40px; padding-inline:12px; white-space:nowrap; font-size:13px; }
+.school-settings-hub #settings-connections .school-neis-refresh[data-slot="button"], .school-settings-hub #settings-connections .school-shortcut-settings-heading > button[data-slot="button"] { border:0; box-shadow:none; background:transparent; color:var(--primary); font-weight:550; white-space:nowrap; }
+.school-settings-hub #settings-connections .school-weather-location-settings { border:0; border-top:1px solid var(--border); border-radius:0; box-shadow:none; background:transparent; }
 .school-info-summary a { display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; }
 @media screen and (max-width:767px) {
  .school-settings-hub #settings-connections { gap:14px; }
