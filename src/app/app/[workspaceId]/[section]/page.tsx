@@ -16,7 +16,7 @@ export default async function WorkspacePage({
   searchParams,
 }: {
   params: Promise<{ workspaceId: string; section: string }>;
-  searchParams: Promise<{ year?: string; cohort?: string; view?: string; date?: string; period?: string; task?: string; source?: string; workItem?: string; quick?: string }>;
+  searchParams: Promise<{ year?: string; cohort?: string; view?: string; date?: string; period?: string; task?: string; source?: string; workItem?: string; quick?: string; submissionCourse?: string }>;
 }) {
   const [p, q] = await Promise.all([params, searchParams]);
   if (
@@ -63,6 +63,7 @@ export default async function WorkspacePage({
       initialScheduleDate={q.date}
       initialSchedulePeriod={q.period}
       initialQuickAdd={q.quick==="1"}
+      initialSubmissionCourse={uuid.safeParse(q.submissionCourse).data}
       initialWorkItem={typeof q.workItem === "string" && q.workItem.length <= 80 ? q.workItem : undefined}
       management={management}
       planOverview={planOverview}

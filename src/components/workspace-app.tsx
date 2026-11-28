@@ -112,6 +112,7 @@ export function WorkspaceApp({
   initialSchedulePeriod,
   initialQuickAdd,
   initialWorkItem,
+  initialSubmissionCourse,
   management = false,
   homePublicData,
   planOverview,
@@ -125,6 +126,7 @@ export function WorkspaceApp({
   initialSchedulePeriod?: string;
   initialQuickAdd?: boolean;
   initialWorkItem?: string;
+  initialSubmissionCourse?: string;
   management?: boolean;
   homePublicData?: ReactNode;
   planOverview?: PlanOverviewRow[];
@@ -454,7 +456,7 @@ export function WorkspaceApp({
             />
           </>
         ) : null}
-        {section === "teaching" && <TeachingModule key={c.year?.id ?? "no-year"} context={c} onDirtyChange={setDirty} />}
+        {section === "teaching" && <TeachingModule key={`${c.year?.id ?? "no-year"}:${initialSubmissionCourse ?? ""}`} context={c} onDirtyChange={setDirty} initialSubmissionCourse={initialSubmissionCourse} />}
         {section === "people" && schoolAdmin ? (
           <Members
             context={c}

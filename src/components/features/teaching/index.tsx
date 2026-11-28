@@ -68,23 +68,26 @@ const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
   context: c,
   onDirtyChange,
+  initialSubmissionCourse,
 }: {
   context: Context;
+  initialSubmissionCourse?: string;
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const [initialTarget, setInitialTarget] = useState<
     TeachingTarget | undefined
   >();
+  const focusCourse = c.teaching?.courses.find(p=>p.id===initialSubmissionCourse&&!p.archived);
   const router = useRouter(),
-    [tab, setTab] = useState<Tab>("lesson"),
-    [selected, setSelected] = useState<string | null>(null),
+    [tab, setTab] = useState<Tab>(focusCourse?"review":"lesson"),
+    [selected, setSelected] = useState<string | null>(focusCourse?.id??null),
     [dirty, setDirty] = useState(false),
     [creating, setCreating] = useState(false);
   const [filters, setFilters] = useState(() => {
     const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
     const term = c.semesters.find((item) => item.start_date <= today && today <= item.end_date);
     return {
-    semester: term ? String(term.number) : "",
+    semester: focusCourse ? (focusCourse.semester ? String(focusCourse.semester) : "") : term ? String(term.number) : "",
     grade: "",
     subject: "",
     classId: "",

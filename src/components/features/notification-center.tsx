@@ -21,7 +21,7 @@ export function NotificationCenter({ context: c, onNavigate, changes }: { contex
         {reminders.map(n=><li className="notification-card" key={`teaching:${n.course_id}:${n.scope}`}>
           <div className="notification-content"><div className="notification-heading"><h2>{submissionAlertLabels[n.kind]}</h2>{n.due_date&&<time dateTime={n.due_date}>{n.due_date}</time>}</div>
           <p>{n.grade}학년 {n.subject_name} · {submissionScopeLabel(n.scope)}</p>{n.note&&<p>{n.note}</p>}</div>
-          <div className="notification-actions"><Button asChild variant="ghost"><Link href={`/app/${c.workspace.id}/teaching?year=${c.year?.year}`} onClick={event=>{if(onNavigate&&!onNavigate())event.preventDefault();}}>수업·평가 열기</Link></Button></div>
+          <div className="notification-actions"><Button asChild variant="ghost"><Link href={`/app/${c.workspace.id}/teaching?year=${c.year?.year}&submissionCourse=${n.course_id}`} onClick={event=>{if(onNavigate&&!onNavigate())event.preventDefault();}}>수업·평가 열기</Link></Button></div>
         </li>)}
         {items.map((n) => (
           <li className="notification-card" key={n.id}>
