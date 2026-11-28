@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { calendarDays, dateLabel } from "@/lib/domain";
+import { calendarDays } from "@/lib/domain";
 import { dayTypes } from "@/lib/academic";
 import { isAnnualMilestone, type AnnualMonth, type AnnualOccurrence, type AnnualScheduleModel } from "@/lib/annual-schedule-reader";
 import type { ScheduleEntry } from "@/lib/school-schedule";
@@ -20,24 +20,23 @@ export function AnnualScheduleReader({ model, year, date, today, onSelect, onMon
   onOpen:(entry:ScheduleEntry,trigger:HTMLElement)=>void;
 }) {
   const [filter,setFilter] = useState<"all"|"milestones">("all");
-  const [dayFilter,setDayFilter] = useState<string|null>(null);
   const selected = model.months.find(item=>date.startsWith(item.month)) ?? model.months[0];
-  const selectedDay = dayFilter === date ? dayFilter : null;
   const partial = model.publishedDays !== model.dates.length;
   const count = (n:number, known:number, total:number) => !known ? "—" : `${n}일${known < total ? " · 일부" : ""}`;
-  const items = selected.occurrences.filter(item=>(filter==="all"||isAnnualMilestone(item))&&(!selectedDay||(item.from<=selectedDay&&item.to>=selectedDay)));
+  const items = selected.occurrences.filter(item=>filter==="all"||isAnnualMilestone(item));
   const kind = (item:AnnualOccurrence) => {
     if (item.entry.tone!=="break") return "event";
     return selected.dates.some(day=>day>=item.from&&day<=item.to&&model.academic.get(day)?.type==="vacation") ? "vacation" : "holiday";
   };
   function calendar(month:AnnualMonth) {
     const selectedMonth = month.month===selected.month;
-    return <section className="annual-reader-month" key={month.month} data-selected={selectedMonth?"":undefined}>
-      <button type="button" className="annual-reader-month-heading" aria-pressed={selectedMonth} aria-label={`${month.month} 월별 일정`}
-        onClick={()=>{setDayFilter(null);onSelect(date.startsWith(month.month)?date:month.dates[0]);}}>
+    return <button type="button" className="annual-reader-month" key={month.month} data-selected={selectedMonth?"":undefined}
+      aria-pressed={selectedMonth} aria-label={`${month.month} 월별 일정`}
+      onClick={()=>onSelect(selectedMonth?date:month.dates[0])}>
+      <span className="annual-reader-month-heading">
         <strong>{monthName(month.month)}</strong><span>{count(month.teachingDays,month.publishedDays,month.dates.length)}</span>
-      </button>
-      <div className="annual-reader-days" aria-label={`${month.month} 달력`}>
+      </span>
+      <span className="annual-reader-days" aria-hidden="true">
         {weekdays.map((label,i)=><span key={label} className="annual-reader-weekday" data-weekday={i}>{label}</span>)}
         {calendarDays(month.month).map((day,i)=>{
           if (!day.startsWith(month.month)) return <span key={day} aria-hidden="true"/>;
@@ -48,16 +47,15 @@ export function AnnualScheduleReader({ model, year, date, today, onSelect, onMon
           const event = schedule?.entries.some(item=>item.tone==="event");
           const hasBreak = schedule?.entries.some(item=>item.tone==="break");
           const label = [day, academic?.name || (academic ? dayTypes[academic.type] : "미공개"), ...new Set(schedule?.entries.map(item=>item.title)??[])].filter(Boolean).join(" · ");
-          return <button key={day} type="button" className="annual-reader-day" data-weekday={i%7}
+          return <span key={day} className="annual-reader-day" data-weekday={i%7}
             data-vacation={vacation?"":undefined} data-holiday={holiday||hasBreak&&!vacation?"":undefined}
             data-event={event?"":undefined} data-unpublished={!schedule?.available?"":undefined}
-            aria-current={day===today?"date":undefined} aria-pressed={selectedDay===day} aria-label={label} title={label}
-            onClick={()=>{setDayFilter(day);onSelect(day);}}>
+            aria-current={day===today?"date":undefined} title={label}>
             <time dateTime={day}>{Number(day.slice(8))}</time>
-          </button>;
+          </span>;
         })}
-      </div>
-    </section>;
+      </span>
+    </button>;
   }
   return <section className="annual-reader" aria-label="연간 학사일정">
     <div className="annual-reader-summary" aria-label="수업일수">
@@ -72,18 +70,17 @@ export function AnnualScheduleReader({ model, year, date, today, onSelect, onMon
         <div className="annual-reader-grid">{model.months.map(calendar)}</div>
       </div>
       <aside className="annual-reader-agenda no-print" aria-label="선택 월 학사일정">
-        <div className="annual-reader-agenda-heading"><div><h3>{selectedDay?dateLabel(selectedDay):monthName(selected.month)} 학사일정</h3><span>월 수업일수 {count(selected.teachingDays,selected.publishedDays,selected.dates.length)}</span></div>
+        <div className="annual-reader-agenda-heading"><div><h3>{monthName(selected.month)} 학사일정</h3><span>월 수업일수 {count(selected.teachingDays,selected.publishedDays,selected.dates.length)}</span></div>
           <button type="button" className="annual-reader-month-link" onClick={()=>onMonthView(date)} aria-label="월간 일정 보기">월간 보기 <ArrowUpRight size={14}/></button></div>
-        {selectedDay&&<button type="button" className="annual-reader-reset" onClick={()=>setDayFilter(null)}>{monthName(selected.month)} 전체 보기</button>}
         <div className="annual-reader-filter" role="group" aria-label="일정 범위">
           <button type="button" aria-pressed={filter==="all"} onClick={()=>setFilter("all")}>전체 일정</button>
           <button type="button" aria-pressed={filter==="milestones"} onClick={()=>setFilter("milestones")} title="휴업·방학, 기간 행사, 학기 시작과 종료">주요 일정</button>
         </div>
-        <div className="annual-reader-agenda-content" key={`${selected.month}:${selectedDay??""}:${filter}`}>
+        <div className="annual-reader-agenda-content" key={`${selected.month}:${filter}`}>
           {items.length ? <ul>{items.map(item=><li key={occurrenceKey(item)} data-kind={kind(item)}>
             <span className="annual-reader-occurrence-date">{occurrenceDate(item)}</span>
             <div><ScheduleDetailTitle entry={item.entry} onOpen={onOpen}/>{item.entry.time&&<small>{item.entry.time}</small>}<ResourceLinks value={item.entry.resources} compact/></div>
-          </li>)}</ul> : <p className="annual-reader-note">{selectedDay&&!model.schedule.get(selectedDay)?.available||!selected.publishedDays?"공개된 일정이 없습니다.":"표시할 일정이 없습니다."}</p>}
+          </li>)}</ul> : <p className="annual-reader-note">{!selected.publishedDays?"공개된 일정이 없습니다.":"표시할 일정이 없습니다."}</p>}
         </div>
       </aside>
     </div>

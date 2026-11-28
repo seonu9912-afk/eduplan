@@ -16,7 +16,9 @@
 .annual-reader-legend i[data-kind="vacation"] { background:var(--annual-vacation); border-radius:2px; }
 .annual-reader-legend i[data-kind="unpublished"] { background:var(--text-secondary); opacity:.4; }
 .annual-reader-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
-.annual-reader-month { min-width:0; padding:3px 4px 7px; border-bottom:2px solid transparent; }
+.annual-reader-month { display:block; width:100%; min-width:0; padding:3px 4px 7px; border:0; border-bottom:2px solid transparent; background:transparent; text-align:start; color:inherit; cursor:pointer; }
+.annual-reader-month:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+@media (hover:hover) { .annual-reader-month:not([data-selected]):hover { background:color-mix(in srgb,var(--primary) 3%,transparent); } }
 .annual-reader-month[data-selected] { border-bottom-color:var(--primary); background:color-mix(in srgb,var(--primary) 5%,transparent); border-radius:6px 6px 0 0; }
 .annual-reader-month-heading { display:flex; justify-content:space-between; align-items:center; gap:3px; width:100%; min-height:38px; text-align:start; }
 .annual-reader-month-heading strong { font-size:15px; font-weight:600; }
@@ -32,13 +34,11 @@
 .annual-reader-day[data-event]::after { content:""; width:3px; height:3px; position:absolute; bottom:1px; left:calc(50% - 1.5px); border-radius:50%; background:var(--annual-event); }
 .annual-reader-day[data-unpublished] { color:var(--text-secondary); opacity:.52; }
 .annual-reader-day[aria-current="date"] time { background:var(--primary); color:white; }
-.annual-reader-day[aria-pressed="true"]:not([aria-current="date"]) time { outline:1px solid var(--primary); }
-.annual-reader-day:hover { background:var(--surface-muted); }
 .annual-reader-agenda { min-width:0; border-inline-start:1px solid var(--annual-line); padding-inline-start:16px; }
 .annual-reader-agenda-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px 8px; }
 .annual-reader-agenda-heading h3 { font-size:17px; font-weight:600; margin:0; }
 .annual-reader-agenda-heading span { font-size:12px; color:var(--text-secondary); }
-.annual-reader-month-link,.annual-reader-reset { display:inline-flex; gap:3px; align-items:center; min-height:44px; color:var(--primary); font-size:12px; }
+.annual-reader-month-link { display:inline-flex; gap:3px; align-items:center; min-height:44px; color:var(--primary); font-size:12px; }
 .annual-reader-filter { display:flex; gap:12px; border-bottom:1px solid var(--annual-line); margin-top:4px; }
 .annual-reader-filter button { min-height:44px; font-size:13px; color:var(--text-secondary); border-bottom:2px solid transparent; }
 .annual-reader-filter button[aria-pressed="true"] { color:var(--primary); border-bottom-color:var(--primary); font-weight:500; }

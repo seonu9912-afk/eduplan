@@ -42,3 +42,27 @@ for(const theme of ["light","dark"] as const)for(const width of [390,1440])test(
   }
  }
 });
+
+for(const width of [390,1440])test(`annual calendar selects months rather than individual dates: ${width}`,async({page})=>{
+ const c=operationsPreviewContext();
+ const scope={workspace_id:c.workspace.id,academic_year_id:c.year!.id,published_at:"2027-02-20T00:00:00Z",published_by:c.userId,starts_on:"2027-03-01",source_version:1,change_note:""};
+ const doc=defaultAnnual(c.grades);
+ doc.holidays={"2027-04-03":"연간 검증 일정 A","2027-04-17":"연간 검증 일정 B"};
+ c.schoolPublications=[{...scope,id:"calendar-annual",domain:"calendar",payload:{document:doc,events:[],semesters:[],classes:[]}}];
+ await page.clock.setFixedTime(new Date("2027-03-02T01:00:00Z"));
+ await page.setViewportSize({width,height:900});
+ await page.addInitScript(data=>localStorage.setItem("eduplan-operations-rehearsal-v1",data),JSON.stringify(c));
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"공개 학사일정",exact:true}).click();
+ await page.locator(".calendar-reader-shell").getByRole("button",{name:"연간",exact:true}).click();
+ const annual=page.locator(".annual-reader");
+ await expect(annual.locator("button.annual-reader-month")).toHaveCount(12);
+ await expect(annual.locator("button.annual-reader-day")).toHaveCount(0);
+ const april=annual.getByRole("button",{name:"2027-04 월별 일정",exact:true});
+ await april.locator("time[datetime='2027-04-03']").click();
+ await expect(april).toHaveAttribute("aria-pressed","true");
+ const agenda=annual.locator(".annual-reader-agenda");
+ await expect(agenda.getByRole("heading",{name:"4월 학사일정",exact:true})).toBeVisible();
+ await expect(agenda.getByText("연간 검증 일정 A",{exact:true})).toBeVisible();
+ await expect(agenda.getByText("연간 검증 일정 B",{exact:true})).toBeVisible();
+});
