@@ -15,7 +15,7 @@ import {
 import { defaultReportFormat } from "@/lib/teaching-format";
 import { TeachingConnections } from "./teaching-connections";
 import { ReportFormatEditor } from "./report-format-editor";
-import { useState, useEffect, useRef, useEffectEvent, type ReactNode } from "react";
+import { useState, useEffect, useRef, useEffectEvent } from "react";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
 import {
@@ -47,8 +47,6 @@ import {
   type TeachingDocument,
 } from "@/lib/teaching";
 import type { Context, Row } from "@/lib/models";
-import { addDays } from "@/lib/domain";
-import { PublicationFields } from "../publication-fields";
 import { CourseForm } from "./course-form";
 import { WeeklyPlanGrid } from "./weekly-plan-grid";
 import { linkedTeachingCalendar } from "@/lib/teaching-calendar-context";
@@ -69,11 +67,9 @@ const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
   context: c,
   onDirtyChange,
-  actions,
 }: {
   context: Context;
   onDirtyChange: (dirty: boolean) => void;
-  actions?: ReactNode;
 }) {
   const [initialTarget, setInitialTarget] = useState<
     TeachingTarget | undefined
@@ -91,7 +87,7 @@ export function TeachingModule({
     grade: "",
     subject: "",
     classId: "",
-    ownership: c.role === "viewer" ? "all" : "mine",
+    ownership: "mine",
     archived: false,
     };
   });
@@ -107,7 +103,7 @@ export function TeachingModule({
   if (!c.year || !c.teaching)
     return (
       <>
-      <div className="page-heading teaching-page-heading"><h1>수업·평가</h1>{actions}</div>
+      <div className="page-heading teaching-page-heading"><h1>수업·평가</h1></div>
       <Empty
         title="학년도를 먼저 설정해 주세요"
         description="작업공간 설정에서 학년도를 개설하면 수업·평가 계획을 작성할 수 있습니다."
@@ -163,7 +159,6 @@ export function TeachingModule({
       <div className="teaching-screen">
         <div className="page-heading teaching-page-heading">
           <h1>수업·평가</h1>
-          {actions}
         </div>
         <Disclosure className="teaching-query" compact label={
           <span className="teaching-query-summary">
@@ -568,7 +563,6 @@ function CourseEditor({
     [autoActive, setAutoActive] = useState(false),
     [autoError, setAutoError] = useState(""),
     [editing, setEditing] = useState(false),
-    [publishing, setPublishing] = useState(false),
     [collaborating, setCollaborating] = useState(false),
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
@@ -736,17 +730,13 @@ function CourseEditor({
       level: "확인 필요",
       message: "담당 학급이 연결되지 않았습니다.",
     });
-  const save = (publication?: { startsOn: string; note: string }) => {
+  const save = () => {
     if (autoInFlight.current) return;
     const confirm =
       doc.lesson_status === "확정" ||
       doc.evaluations.some((v) => v.status === "확정");
-    if (confirm && course.visibility === "workspace" && !publication) {
-      setPublishing(true);
-      return;
-    }
     if (
-      confirm && !publication &&
+      confirm &&
       !window.confirm(
         `확정은 EduPlan 내부 관리 상태이며 학교의 공식 심의·결재를 대체하지 않습니다. 현재 점검 ${issues.length}건을 확인하고 저장할까요?`,
       )
@@ -754,13 +744,12 @@ function CourseEditor({
       return;
     const submittedRevision = revision.current;
     m.execute(
-      () => saveTeachingPlan(course.id, course.version, doc, confirm, publication),
+      () => saveTeachingPlan(course.id, course.version, doc, confirm),
       (version) => {
         setCourse((value) => ({ ...value, version }));
-        setPublishing(false);
         if (revision.current === submittedRevision) saved();
       },
-      publication ? `${publication.startsOn} 적용 공개본을 저장했습니다.` : "계획을 저장했습니다.",
+      "계획을 저장했습니다.",
     );
   };
   const versionConflict =
@@ -1143,19 +1132,6 @@ function CourseEditor({
             </Button>
           )}
         </footer>
-        <Modal open={publishing} onOpenChange={setPublishing} title="수업·평가계획 공개"
-          description={`확정 상태인 항목을 선택한 날짜부터 공개합니다. 현재 점검 항목은 ${issues.length}건입니다.`}>
-          <form className="form-stack" onSubmit={(event) => {
-            event.preventDefault();
-            const fields = new FormData(event.currentTarget);
-            save({ startsOn: String(fields.get("startsOn")), note: String(fields.get("note")) });
-          }}>
-            <PublicationFields start={`${c.year!.year}-03-01`}
-              end={addDays(`${c.year!.year + 1}-03-01`, -1)} />
-            <InlineNotice mutation={m} />
-            <Button type="submit" disabled={m.pending || versionConflict}>공개본 저장</Button>
-          </form>
-        </Modal>
         <Modal
           open={editing}
           onOpenChange={setEditing}

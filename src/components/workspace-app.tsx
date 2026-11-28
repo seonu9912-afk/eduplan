@@ -90,7 +90,7 @@ import type { Context } from "@/lib/models";
 import { canPlan } from "@/lib/planning-completion";
 import { managementDomains } from "@/lib/school-publications";
 import { OfficialTimetable } from "@/components/features/official-timetable";
-import { OfficialCurriculum, OfficialSchedule, OfficialTeaching } from "@/components/features/school-plan-readers";
+import { OfficialCurriculum, OfficialSchedule } from "@/components/features/school-plan-readers";
 const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
@@ -147,8 +147,8 @@ export function WorkspaceApp({
   const schoolAdmin = c.role === "admin";
   const staffingAccess = schoolAdmin || canPlan(c, "staffing");
   const area = managementDomains[section];
-  const sharedPlan = ["calendar", "plans", "curriculum", "timetable", "teaching"].includes(section);
-  const mayManage = sharedPlan && (section === "teaching" || (area && (schoolAdmin || canPlan(c, area))));
+  const sharedPlan = ["calendar", "plans", "curriculum", "timetable"].includes(section);
+  const mayManage = sharedPlan && (area && (schoolAdmin || canPlan(c, area)));
   const visibleSection = (id: string) =>
     id === "settings" || id === "people" ? schoolAdmin : id === "teachers" ? staffingAccess : true;
   const activeYearId = c.year?.id;
@@ -220,8 +220,7 @@ export function WorkspaceApp({
         else setDirty(false);
       }}>
       <Settings2 aria-hidden="true" />
-      {management ? "공개본 보기" : section === "teaching" ? "내 계획·관리"
-        : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
+      {management ? "공개본 보기" : area && canPlan(c, area) ? `${sections[section]} 관리` : "관리자 검토"}
     </Link>
   </Button>;
   const renderMobileNav = (inMenu: boolean) => (
@@ -380,7 +379,7 @@ export function WorkspaceApp({
         <Notice message={error} error />
         <LessonReminder context={c} showErrors={section === "notifications"} />
         {readerTools && <h1 className="sr-only">{sections[section]}</h1>}
-        {sharedPlan && !readerTools && !(section === "teaching" && management) && (
+        {sharedPlan && !readerTools && (
           <header className={management ? "workspace-view-tools no-print" : "page-heading no-print"}>
             {!management && <h1>{sections[section]}</h1>}
             {managementLink}
@@ -455,10 +454,7 @@ export function WorkspaceApp({
             />
           </>
         ) : null}
-        {section === "teaching" && management ? (
-          <TeachingModule key={c.year?.id ?? "no-year"} context={c} onDirtyChange={setDirty} actions={managementLink} />
-        ) : null}
-        {section === "teaching" && !management && <OfficialTeaching context={c} />}
+        {section === "teaching" && <TeachingModule key={c.year?.id ?? "no-year"} context={c} onDirtyChange={setDirty} />}
         {section === "people" && schoolAdmin ? (
           <Members
             context={c}

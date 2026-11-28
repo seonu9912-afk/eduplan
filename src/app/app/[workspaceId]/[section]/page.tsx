@@ -33,7 +33,7 @@ export default async function WorkspacePage({
     ].includes(p.section)
   )
     notFound();
-  const management = p.section === "teachers" || (q.view === "manage" && (!!managementDomains[p.section] || p.section === "teaching"));
+  const management = p.section === "teachers" || p.section === "teaching" || (q.view === "manage" && !!managementDomains[p.section]);
   const context = await getWorkspaceContext(p.workspaceId, q.year, p.section, management);
   const taskYear = !management && (p.section === "home" || p.section === "plans") ? context.year?.id : undefined;
   const [operations, tasks] = await Promise.all([

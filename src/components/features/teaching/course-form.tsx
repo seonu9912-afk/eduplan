@@ -176,7 +176,7 @@ export function CourseForm({
             </p>
           )}
         </fieldset>
-        <Field label="계획 공개 범위" id="course-visibility">
+        <Field label="계획 공유 범위" id="course-visibility">
           <select
             id="course-visibility"
             name="visibility"
