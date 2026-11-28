@@ -36,3 +36,24 @@ for(const width of [320,390,430,1440])test(`school settings navigation at ${widt
   await expect(hub.getByLabel("1학년 학급 수")).toBeVisible();
  }
 });
+
+for(const width of [320,390,430,1440])test(`external settings search remains usable at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("navigation",{name:"통합 운영 실습 단계"}).getByRole("button",{name:"학교 설정",exact:true}).click();
+ const hub=page.locator(".school-settings-hub");
+ await hub.getByRole("link",{name:/외부 서비스 연동/}).click();
+ const connection=hub.locator("#school-information");
+ const toggle=connection.locator(".school-neis-search-toggle");
+ const input=connection.getByLabel("나이스 학교명",{exact:true});
+ if(width<768 && await toggle.count()){
+   await expect(input).toBeHidden();
+   await toggle.click();
+   await expect(input).toBeVisible();
+ }else await expect(input).toBeVisible();
+ const form=connection.locator(".school-neis-search-form");
+ const bounds=await form.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+ expect(bounds.scroll).toBeLessThanOrEqual(bounds.client+1);
+ await expect(connection.getByRole("button",{name:"학교 검색"})).toBeVisible();
+ await expect(hub.getByRole("button",{name:"바로가기 추가"})).toBeVisible();
+});

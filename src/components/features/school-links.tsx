@@ -58,7 +58,7 @@ export function SchoolLinkSettings({ context: c }: { context: Context }) {
   const write = useMutation();
   const links = c.schoolLinks ?? [];
   return <section className="panel settings-form" id="school-links">
-    <div className="personal-day-heading">
+    <div className="personal-day-heading school-shortcut-settings-heading">
       <h2>업무 바로가기</h2>
       <Button type="button" variant="outline" onClick={() => {
         write.setNotice({ message: "", error: false });
@@ -66,7 +66,7 @@ export function SchoolLinkSettings({ context: c }: { context: Context }) {
       }}><Plus aria-hidden="true" />바로가기 추가</Button>
     </div>
     {c.schoolLinksError ? <p role="alert">바로가기 목록을 불러오지 못했습니다.</p> : !links.length && <p className="muted">등록된 바로가기가 없습니다.</p>}
-    <ul className="school-settings-link-list">{links.map((link) => (
+    {links.length > 0 && <ul className="school-settings-link-list">{links.map((link) => (
       <li key={link.id}>
         <div><strong>{link.name}</strong>
           <small>{linkCategories[link.category as keyof typeof linkCategories]} · 순서 {link.position}</small></div>
@@ -79,7 +79,7 @@ export function SchoolLinkSettings({ context: c }: { context: Context }) {
           setDeleting(link);
         }} aria-label={`${link.name} 삭제`}>삭제</Button>
       </li>
-    ))}</ul>
+    ))}</ul>}
     {!editing && <InlineNotice mutation={write} />}
     {editing && <Modal open title={editing.id ? "업무 바로가기 수정" : "업무 바로가기 추가"}
       onOpenChange={(open) => { if (!open && !write.pending) setEditing(null); }}>
