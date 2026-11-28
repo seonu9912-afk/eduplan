@@ -84,7 +84,7 @@ import type { PlanOverviewRow } from "@/lib/plan-overview";
 import { Members } from "@/components/features/members";
 import { detachPreviousPushAccount } from "@/app/push-actions";
 import { logout } from "@/app/actions";
-import { academicYearOf, roles } from "@/lib/domain";
+import { roles } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { canPlan } from "@/lib/planning-completion";
 import { managementDomains } from "@/lib/school-publications";
@@ -141,15 +141,6 @@ export function WorkspaceApp({
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState("");
   const base = `/app/${c.workspace.id}`;
-  const currentSchoolYear = academicYearOf(today);
-  const yearOptions = [...new Set([
-    ...c.years.map((y) => y.year),
-    currentSchoolYear - 1,
-    currentSchoolYear,
-    currentSchoolYear + 1,
-  ])].filter((year) => year >= 2000 && year <= 2100).sort((a, b) => b - a);
-  const otherYears = Array.from({ length: 101 }, (_, index) => 2100 - index)
-    .filter((year) => !yearOptions.includes(year));
   const schoolAdmin = c.role === "admin";
   const staffingAccess = schoolAdmin || canPlan(c, "staffing");
   const area = managementDomains[section];
@@ -288,21 +279,6 @@ export function WorkspaceApp({
                   {w.name}
                 </option>
               ))}
-            </select>
-            <label className="sr-only" htmlFor="year-picker">
-              학년도 선택
-            </label>
-            <select
-              id="year-picker"
-              value={c.year?.year ?? ""}
-              onChange={(e) => navigate(`${base}/${section}?year=${e.target.value}${management ? "&view=manage" : ""}`)}
-            >
-              {yearOptions.map((year) => (
-                <option key={year} value={year}>{year}학년도</option>
-              ))}
-              <optgroup label="다른 학년도">
-                {otherYears.map((year) => <option key={year} value={year}>{year}학년도</option>)}
-              </optgroup>
             </select>
           </div>
           <div className="workspace-actions">

@@ -698,9 +698,6 @@ td select {
   max-width: min(330px, 100%);
   text-overflow: ellipsis;
 }
-.workspace-pickers #year-picker {
-  flex-shrink: 0;
-}
 .workspace-actions {
   display: flex;
   align-items: center;

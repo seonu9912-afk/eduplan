@@ -235,7 +235,6 @@ select {
     border-color: transparent;
   }
   .workspace-pickers #workspace-picker { flex: 1 1 0; text-overflow: ellipsis; }
-  .workspace-pickers #year-picker { max-width: 48%; }
   .workspace-content {
     padding: 12px max(16px, env(safe-area-inset-right)) 22px
       max(16px, env(safe-area-inset-left));
