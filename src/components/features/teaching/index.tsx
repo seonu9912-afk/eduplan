@@ -12,7 +12,6 @@ import {
   reconcileAssessmentLinks,
   reviewAuthoring,
 } from "@/lib/teaching-authoring";
-import { defaultReportFormat } from "@/lib/teaching-format";
 import { TeachingConnections } from "./teaching-connections";
 import { ReportFormatEditor } from "./report-format-editor";
 import { useState, useEffect, useRef, useEffectEvent } from "react";
@@ -54,6 +53,7 @@ import { formatProjectedUnits } from "@/lib/teaching-calendar-grid";
 import { AssessmentEditor } from "./assessment-editor";
 import { ReferencePanel } from "./reference-panel";
 import { TeachingReview } from "./review";
+import { TeachingSubmissionPanel } from "./submission-panel";
 import { TeachingPrint } from "./teaching-print";
 import { SchoolTeachingReview } from "./school-review";
 type Tab = "overview" | "lesson" | "assessment" | "review" | "document";
@@ -61,7 +61,7 @@ const tabs: [Tab, string][] = [
   ["overview", "수업 현황"],
   ["lesson", "교수학습계획"],
   ["assessment", "평가계획"],
-  ["review", "검토·출력"],
+  ["review", "제출·출력"],
 ];
 const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
@@ -467,7 +467,7 @@ export function TeachingModule({
         ) : (
           <div className="course-picker">
             <label>
-              <span className="teaching-course-label">{filters.ownership === "mine" ? "내 담당 수업" : "조회할 수업"}</span>
+              <span className="sr-only">{filters.ownership === "mine" ? "내 담당 수업" : "조회할 수업"}</span>
               <select
                 aria-label="편집할 수업"
                 value={course?.id ?? ""}
@@ -478,13 +478,11 @@ export function TeachingModule({
                 </option>
                 {courses.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.grade}학년 {p.subject_name} · {period(p.semester)} ·{" "}
-                    {p.teacher_name}
+                    {p.grade}학년 {p.subject_name} · {period(p.semester)}{matches(p, { ...filters, ownership: "mine" }) ? "" : ` · ${p.teacher_name}`}
                   </option>
                 ))}
               </select>
             </label>
-            {course && <p>{classNames(course.id)} · 공통 계획</p>}
           </div>
         )}
       </div>
@@ -566,6 +564,7 @@ function CourseEditor({
     [collaborating, setCollaborating] = useState(false),
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
+    [submissionPending, setSubmissionPending] = useState(false),
     [evaluation, setEvaluation] = useState(course.semester || 1),
     [selectedAssessment, setSelectedAssessment] = useState<string | null>(null),
     [printMode, setPrintMode] = useState<"lesson" | "assessment" | "both">(
@@ -626,7 +625,7 @@ function CourseEditor({
     setAutoError("");
     onDirtyChange(false);
   };
-  const busy = m.pending || referencePending || restorePending;
+  const busy = m.pending || referencePending || restorePending || submissionPending;
   const serverPlan = c.teaching!.plans.find((p) => p.course_id === course.id);
   const previousDocument =
     serverPlan && teachingDocumentSchema.safeParse(serverPlan.document).data;
@@ -785,13 +784,9 @@ function CourseEditor({
       <div
         className={`teaching-screen ${tab === "overview" ? "teaching-editor-hidden" : ""}`}
       >
-        <div className="plan-savebar">
+        <div className="plan-savebar teaching-compact-savebar">
           <div className="teaching-save-meta">
             <div className="teaching-save-summary">
-            <strong>
-              {course.grade}학년 {course.subject_name} ·{" "}
-              {period(course.semester)}
-            </strong>
             <SaveStatus state={saveState}>
               {autoActive
                 ? "자동 저장 중…"
@@ -803,46 +798,46 @@ function CourseEditor({
                       ? "저장 실패 · 입력 내용 유지"
                       : dirty
                         ? "저장하지 않은 변경사항"
-                        : `저장 완료 · v${course.version}`}
+                        : "저장 완료"}
             </SaveStatus>
             </div>
-            <small className="teaching-save-time">
-              {new Date(
-                serverCourse.version === course.version
-                  ? serverCourse.updated_at
-                  : course.updated_at,
-              ).toLocaleString("ko-KR", {
-                timeZone: "Asia/Seoul",
-              })}
-            </small>
           </div>
           <div className="teaching-actions">
             {editable && (
               <>
                 {managesCourse && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="수업 설정"
+                    title="수업 설정"
                     disabled={dirty || busy}
                     onClick={() => setEditing(true)}
                   >
-                    <Settings2 /> 수업 설정
+                    <Settings2 aria-hidden="true" />
                   </Button>
                 )}
                 {managesCourse && course.visibility === "workspace" && (
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
+                    aria-label="공동작성 담당자"
+                    title="공동작성 담당자"
                     disabled={dirty || busy}
                     onClick={() => setCollaborating(true)}
                   >
-                    <Users /> 공동작성 담당자
+                    <Users aria-hidden="true" />
                   </Button>
                 )}
                 <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label="계획 저장"
+                  title="계획 저장"
                   disabled={!dirty || busy || autoActive || versionConflict}
                   onClick={() => save()}
                 >
-                  <Save />
-                  {m.pending ? "저장 중…" : "계획 저장"}
+                  <Save aria-hidden="true" />
                 </Button>
               </>
             )}
@@ -893,60 +888,8 @@ function CourseEditor({
             필요한 내용을 복사해 둔 뒤 새로고침하여 최신 계획과 비교하세요.
           </p>
         )}
-        <ReferencePanel
-          context={c}
-          course={course}
-          editable={managesCourse && !course.archived && !busy}
-          dirty={dirty}
-          onSaved={saved}
-          onBusyChange={setReferencePending}
-        />
         {tab === "lesson" && (
           <>
-            <label className="plan-status-control">
-              교수학습계획 상태
-              <select
-                aria-label="교수학습계획 상태"
-                value={doc.lesson_status}
-                disabled={!editable || busy}
-                onChange={(e) =>
-                  change({
-                    ...doc,
-                    lesson_status: e.target
-                      .value as TeachingDocument["lesson_status"],
-                  })
-                }
-              >
-                {planStatuses.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            <div className="teaching-operating-settings">
-              <label>
-                주당 시수
-                <input
-                  aria-label="수업 운영 주당 시수"
-                  type="number"
-                  min={0}
-                  max={10000}
-                  step={0.5}
-                  disabled={!editable || busy}
-                  value={doc.report?.weekly_hours ?? ""}
-                  onChange={(e) =>
-                    change({
-                      ...doc,
-                      report: {
-                        format: doc.report?.format ?? defaultReportFormat(),
-                        weekly_hours:
-                          e.target.value === "" ? null : Number(e.target.value),
-                      },
-                    })
-                  }
-                />
-              </label>
-              <p>주차와 자동 비고는 학사일정에서 가져옵니다.</p>
-            </div>
             <WeeklyPlanGrid
               calendar={calendar}
               context={c}
@@ -971,8 +914,7 @@ function CourseEditor({
         )}
         {tab === "assessment" && (
           <>
-            <div className="assessment-status-row">
-              {course.semester === 0 && (
+            {course.semester === 0 && <div className="assessment-status-row">
                 <label>
                   평가 학기
                   <select
@@ -984,30 +926,7 @@ function CourseEditor({
                     <option value={2}>2학기</option>
                   </select>
                 </label>
-              )}
-              <label className="plan-status-control">
-                평가계획 상태
-                <select
-                  aria-label="평가계획 상태"
-                  value={ev.status}
-                  disabled={!editable || busy}
-                  onChange={(e) =>
-                    change({
-                      ...doc,
-                      evaluations: doc.evaluations.map((v) =>
-                        v.semester === ev.semester
-                          ? { ...v, status: e.target.value as typeof v.status }
-                          : v,
-                      ),
-                    })
-                  }
-                >
-                  {planStatuses.map((s) => (
-                    <option key={s}>{s}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            </div>}
             <AssessmentEditor
               key={ev.semester}
               selectedId={selectedAssessment}
@@ -1037,13 +956,51 @@ function CourseEditor({
         )}
         {tab === "review" && (
           <>
-            <div className="teaching-document-actions"><Button variant="outline" onClick={() => onNavigate("document")}>전체 문서 미리보기</Button></div>
+            <TeachingSubmissionPanel course={course} document={doc} rows={c.teaching!.submissions} author={(course.owner_id === c.userId || assigned) && !course.archived} blocked={busy || autoActive || versionConflict} dirty={dirty} errors={issues.filter(i => i.level === "오류").length} checks={issues.filter(i => i.level !== "오류").length} onBusyChange={setSubmissionPending} />
+            <Disclosure compact className="teaching-legacy-status" label="기존 계획 확정 및 연동 기준 (임시)">
+            <label className="plan-status-control">
+              교수학습계획 상태
+              <select
+                aria-label="교수학습계획 상태"
+                value={doc.lesson_status}
+                disabled={!editable || busy}
+                onChange={(e) =>
+                  change({
+                    ...doc,
+                    lesson_status: e.target
+                      .value as TeachingDocument["lesson_status"],
+                  })
+                }
+              >
+                {planStatuses.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
+              </select>
+            </label>
+              {doc.evaluations.map((item) => <label className="plan-status-control" key={item.semester}>
+                {item.semester}학기 평가계획 상태
+                <select aria-label={doc.evaluations.length === 1 ? "평가계획 상태" : `${item.semester}학기 평가계획 상태`} value={item.status} disabled={!editable || busy} onChange={(e) => change({ ...doc, evaluations: doc.evaluations.map(v => v.semester === item.semester ? { ...v, status: e.target.value as typeof v.status } : v) })}>
+                  {planStatuses.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </label>)}
+        <ReferencePanel
+          context={c}
+          course={course}
+          editable={managesCourse && !course.archived && !busy}
+          dirty={dirty}
+          onSaved={saved}
+          onBusyChange={setReferencePending}
+        />
+
+            </Disclosure>
+            <Disclosure compact label="교수학습·평가 연계 확인">
             <TeachingConnections
               doc={doc}
               standards={c.teaching!.standards}
               onOpenLesson={openLesson}
               onOpenAssessment={openAssessment}
             />
+            </Disclosure>
             <TeachingReview
               course={course}
               issues={issues}
@@ -1052,6 +1009,7 @@ function CourseEditor({
               onRestored={saved}
               onBusyChange={setRestorePending}
               onPrint={print}
+              onPreview={() => onNavigate("document")}
               onLocate={(issue) => {
                 if (issue.assessment_id)
                   openAssessment(
@@ -1061,6 +1019,7 @@ function CourseEditor({
                 else if (issue.unit_id) openLesson(issue.unit_id);
               }}
             />
+            <Disclosure compact label="출력 양식 설정">
             <ReportFormatEditor
               context={c}
               course={course}
@@ -1083,11 +1042,12 @@ function CourseEditor({
                 })
               }
             />
+            </Disclosure>
           </>
         )}
         {tab === "document" && (
           <>
-          <div className="teaching-document-actions"><Button variant="outline" onClick={() => onNavigate("review")}>검토·출력으로 돌아가기</Button></div>
+          <div className="teaching-document-actions"><Button variant="outline" onClick={() => onNavigate("review")}>제출·출력으로 돌아가기</Button></div>
           <TeachingPrint
             context={c}
             course={course}

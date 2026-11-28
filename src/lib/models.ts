@@ -10,6 +10,7 @@ export type Member = {
   role: string;
 };
 export type TeachingData = {
+  submissions?: import('./teaching-submissions').TeachingSubmission[];
   courses: Row<"teaching_courses">[];
   editors: Row<"teaching_course_editors">[];
   classes: Row<"teaching_course_classes">[];

@@ -1648,6 +1648,22 @@ export type Database = {
         };
         Returns: number;
       };
+      submit_teaching_version: {
+        Args: { target_course: string; expected_version: number; scopes: string[] };
+        Returns: Json;
+      };
+      change_teaching_submission: {
+        Args: { target_submission: string; expected_status: string; next_status: string; note?: string };
+        Returns: undefined;
+      };
+      list_teaching_submissions: {
+        Args: { target: string; year_id: string; target_course?: string };
+        Returns: Json;
+      };
+      read_teaching_submission: {
+        Args: { target_submission: string };
+        Returns: Json;
+      };
       save_teaching_plan: {
         Args: {
           confirm_plan?: boolean;

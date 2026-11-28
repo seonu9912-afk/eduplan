@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { History, Printer } from "lucide-react";
+import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import { InlineNotice, useMutation } from "@/components/common";
 import { teachingHistory, restoreTeachingPlan } from "@/app/teaching-actions";
@@ -14,6 +15,7 @@ export function TeachingReview({
   onBusyChange,
   onRestored,
   onPrint,
+  onPreview,
   onLocate,
 }: {
   course: Row<"teaching_courses">;
@@ -24,6 +26,7 @@ export function TeachingReview({
   onBusyChange: (busy: boolean) => void;
   onRestored: () => void;
   onPrint: (mode: "lesson" | "assessment") => void;
+  onPreview: () => void;
 }) {
   const [history, setHistory] = useState<
       | Pick<
@@ -42,29 +45,7 @@ export function TeachingReview({
   }, [m.pending, onBusyChange]);
   return (
     <section className="teaching-section">
-      <div className="section-title">
-        <div>
-          <h2>검토·출력</h2>
-          <p>
-            누락과 합계를 확인합니다. 교육청 지침 및 학교의 심의·결재를 대체하지
-            않습니다.
-          </p>
-        </div>
-        <div className="teaching-actions">
-          <Button variant="outline" onClick={() => onPrint("lesson")}>
-            <Printer /> 교수학습계획 인쇄
-          </Button>
-          <Button variant="outline" onClick={() => onPrint("assessment")}>
-            <Printer /> 평가계획 인쇄
-          </Button>
-        </div>
-      </div>
-      {dirty && (
-        <div className="info-box">
-          인쇄에는 현재 화면의 미저장 내용도 포함됩니다. 보관할 계획은 먼저
-          저장해 주세요.
-        </div>
-      )}
+      <Disclosure compact label={`제출 전 자동 점검 · 오류 ${errors}건 · 확인 필요 ${checks}건`}>
       <div className="review-summary">
         <button
           aria-pressed={filter === "오류"}
@@ -108,6 +89,31 @@ export function TeachingReview({
           입력값·연결·합계 점검에서 오류가 발견되지 않았습니다.
         </p>
       )}
+      </Disclosure>
+      <div className="section-title">
+        <div>
+          <h2>현재 작성본 출력</h2>
+          <p>
+            현재 작성 중인 계획을 출력합니다. 제출본 출력은 별도 연계 예정입니다.
+          </p>
+        </div>
+        <div className="teaching-actions">
+          <Button variant="outline" onClick={onPreview}>전체 문서 미리보기</Button>
+          <Button variant="outline" onClick={() => onPrint("lesson")}>
+            <Printer /> 교수학습계획 인쇄
+          </Button>
+          <Button variant="outline" onClick={() => onPrint("assessment")}>
+            <Printer /> 평가계획 인쇄
+          </Button>
+        </div>
+      </div>
+      {dirty && (
+        <div className="info-box">
+          인쇄에는 현재 화면의 미저장 내용도 포함됩니다. 보관할 계획은 먼저
+          저장해 주세요.
+        </div>
+      )}
+      <Disclosure compact label="저장 및 변경 이력">
       <div className="teaching-history">
         <div className="section-title">
           <div>
@@ -181,6 +187,7 @@ export function TeachingReview({
           </>
         )}
       </div>
+      </Disclosure>
     </section>
   );
 }

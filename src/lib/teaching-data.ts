@@ -2,6 +2,7 @@ import "server-only";
 import { session } from "./data";
 import { readAllRows } from "./pagination";
 import type { TeachingData } from "./models";
+import { teachingSubmissionsSchema } from "./teaching-submissions";
 export async function getTeachingData(
   workspaceId: string,
   yearId: string,
@@ -23,7 +24,7 @@ export async function getTeachingData(
   );
   if (courses.error)
     throw Error("수업·평가 자료를 불러오지 못했습니다. 다시 시도해 주세요.");
-  const [standards, copies, directory, subjects] = await Promise.all([
+  const [standards, copies, directory, subjects, submissions] = await Promise.all([
     readAllRows((from, to) =>
       db
         .from("achievement_standards")
@@ -44,6 +45,7 @@ export async function getTeachingData(
     ),
     db.rpc("staff_directory", { target: workspaceId, year_id: yearId }),
     db.from("subjects").select("id,name").eq("workspace_id", workspaceId),
+    db.rpc("list_teaching_submissions", { target: workspaceId, year_id: yearId }),
   ]);
   if (
     directory.error ||
@@ -53,7 +55,9 @@ export async function getTeachingData(
     courses.data!.some((c) => c.teaching_plans.length !== 1)
   )
     throw Error("수업 자료가 변경 중입니다. 새로고침 후 다시 확인해 주세요.");
+  const parsedSubmissions = teachingSubmissionsSchema.safeParse(submissions.data);
   return {
+    submissions: !submissions.error && parsedSubmissions.success ? parsedSubmissions.data : undefined,
     courses: courses.data!.map(
       ({
         teaching_plans,

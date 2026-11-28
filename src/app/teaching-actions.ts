@@ -1,6 +1,7 @@
 "use server";
 import { authoringIntegrityErrors } from "@/lib/teaching-authoring";
 import { z } from "zod";
+import { submissionScopeSchema, submissionStatusSchema } from "@/lib/teaching-submissions";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uuid } from "@/lib/domain";
@@ -189,5 +190,30 @@ export async function archiveTeachingCourse(
     if (error) throw error;
     refresh();
     return data;
+  });
+}
+
+export async function submitTeachingVersion(courseId: string, version: number, input: unknown) {
+  return run(async () => {
+    uuid.parse(courseId);
+    z.number().int().positive().parse(version);
+    const scopes = z.array(submissionScopeSchema).min(1).max(3).refine(v => new Set(v).size === v.length).parse(input);
+    const db = await dbClient();
+    const { data, error } = await db.rpc("submit_teaching_version", { target_course: courseId, expected_version: version, scopes });
+    if (error) throw error;
+    refresh();
+    return z.array(uuid).parse(data);
+  });
+}
+export async function withdrawTeachingSubmission(id: string, status: string) {
+  return run(async () => {
+    uuid.parse(id);
+    const expected = submissionStatusSchema.parse(status);
+    if (expected !== "submitted" && expected !== "reviewing") throw Error("검토 대기 또는 검토 중인 제출만 철회할 수 있습니다.");
+    const db = await dbClient();
+    const { error } = await db.rpc("change_teaching_submission", { target_submission: id, expected_status: expected, next_status: "withdrawn" });
+    if (error) throw error;
+    refresh();
+    return true;
   });
 }

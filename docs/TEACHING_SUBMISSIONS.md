@@ -10,3 +10,6 @@ The new workflow is separate from teaching-plan publication and ordinary save st
 - Acceptance database tested with a rolled-back synthetic school and four accounts: private submission, duplicate rejection, draft revision after submission, same-school colleague and outsider access denial, admin access only to submitted content, review start, required revision note, resubmission and completion, history retention.
 - Initial fixture creation required the existing link_reason field for unlinked courses; rerun passed.
 - Production not migrated. UI, submission deadlines, expected-target dashboard, review notifications, report export and final integration tests remain to be implemented. Before release, test assessment and combined scope submissions, withdrawal, stale status and multi-user races. Submitted version stores authored plan; freezing derived calendar references and rendering exact submitted documents requires separate report integration.
+
+## Stage 2
+Teacher submission panel and server actions connected. Current draft output remains separate. Production migration and browser checks pending.

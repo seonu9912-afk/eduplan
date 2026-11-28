@@ -214,3 +214,36 @@
  .assessment-workspace .rubric-table :is(input,textarea){width:100%;min-width:0;font-size:16px}
  .assessment-workspace .rubric-table td[data-label=편집] button{min-height:40px}
 }
+
+/* Shared course selector and action strip: no redundant card, title or time. */
+@media screen {
+ .teaching-module .course-picker{margin:0 0 4px}
+ .teaching-module .course-picker label{gap:0}
+ .teaching-module .course-picker select{min-height:44px}
+ .teaching-module .plan-savebar.teaching-compact-savebar{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:8px;padding:0 0 6px;margin:0 0 10px;background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;box-shadow:none}
+ .teaching-module .teaching-compact-savebar>div:first-child{flex:1 1 auto;min-width:0;display:block}
+ .teaching-compact-savebar .teaching-save-summary{display:flex;justify-content:flex-start;min-width:0;gap:4px}
+ .teaching-compact-savebar .save-status{font-size:12px;overflow-wrap:anywhere}
+ .teaching-module .plan-savebar.teaching-compact-savebar .teaching-actions{width:auto;flex:0 0 auto;display:flex;flex-wrap:nowrap;gap:2px;justify-content:flex-end}
+ .teaching-module .plan-savebar.teaching-compact-savebar .teaching-actions [data-slot=button]{width:40px;min-width:40px;height:44px;min-height:44px;padding:0;border:0;background:transparent;box-shadow:none;color:var(--foreground)}
+ .teaching-module .plan-savebar.teaching-compact-savebar .teaching-actions [data-slot=button] svg{width:18px;height:18px}
+ .teaching-module .teaching-legacy-status{margin-bottom:10px}
+}
+
+@media screen {
+ .teaching-submission-panel{margin-bottom:12px}
+ .teaching-submission-panel>.section-title{margin-bottom:8px;gap:8px}
+ .teaching-submission-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:8px}
+ .teaching-submission-card{display:grid;align-content:start;gap:8px;min-width:0;border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--card)}
+ .teaching-submission-card h3{font-size:14px;font-weight:650;margin:0}
+ .teaching-submission-heading,.teaching-submission-history li>div{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+ .teaching-submission-card p,.teaching-submission-history p{margin:0;overflow-wrap:anywhere}
+ .teaching-submission-state{font-size:12px;color:var(--text-secondary);font-weight:600}
+ .teaching-submission-state[data-status=submitted],.teaching-submission-state[data-status=reviewing]{color:#2563eb}
+ .teaching-submission-state[data-status=accepted]{color:var(--ep-fg-24694d,#24694d)}
+ .teaching-submission-state[data-status=changes_requested]{color:var(--ep-fg-80541b,#80541b)}
+ .teaching-submission-note{background:var(--surface-muted);border-radius:6px;padding:8px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+ .teaching-submission-history{margin-top:8px}
+ .teaching-submission-history ol{display:grid;gap:8px;list-style:none;padding:0}
+ .teaching-submission-history li{display:grid;gap:4px;border-bottom:1px solid var(--border);padding-bottom:8px;font-size:13px}
+}
