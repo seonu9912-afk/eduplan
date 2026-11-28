@@ -91,15 +91,12 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
     if (m.pending || m.isInFlight()) return;
     setUndo(null);
     const animate = completed && !screen && navigator.onLine;
-    const started = performance.now();
     if (animate) setMoving(task.id);
     m.execute(async () => {
       try {
-        const result = await changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed });
-        if (animate && result.ok) {
-          const remaining = 800 - (performance.now() - started);
-          if (remaining > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
-        }
+        const save = changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed });
+        if (!animate) return await save;
+        const [result] = await Promise.all([save, new Promise<void>((resolve) => window.setTimeout(resolve, 800))]);
         return result;
       } finally {
         if (animate) setMoving(null);

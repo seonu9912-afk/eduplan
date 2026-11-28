@@ -87,6 +87,11 @@ test("home separates agenda, personal tasks, and shortcuts at desktop and mobile
  await expect(detail.getByRole("heading")).toContainText("오늘의 일정");
  await page.setViewportSize({width:390,height:844});
  await expect(home.locator(".home-week-mobile-grid")).toBeVisible();
+ const dayButtons=home.locator(".home-week-mobile-grid .mobile-calendar-span-day");
+ await expect(dayButtons.first()).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+ await expect(calendar).toHaveCSS("border-left-width","0px");
+ await expect(tasks).toHaveCSS("border-left-width","0px");
+ await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
  const smallCal=await calendar.boundingBox(), smallDay=await detail.boundingBox(), smallTasks=await tasks.boundingBox();
  expect(smallDay!.y).toBeGreaterThanOrEqual(smallCal!.y+smallCal!.height);
  expect(smallTasks!.y).toBeGreaterThanOrEqual(smallDay!.y+smallDay!.height);

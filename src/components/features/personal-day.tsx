@@ -241,7 +241,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
     </div>
     <div className="home-week-mobile-grid" data-weekdays-only={dates.length === 5 ? "" : undefined}>
       <MobileCalendarDates date={selected} today={today} start={dates[0]} end={dates[dates.length-1]} period="week"
-        showWeekends={weekend.showWeekends} emphasizeToday spanDays={days}
+        showWeekends={weekend.showWeekends} emphasizeToday compactRows spanDays={days}
         items={day => days.get(day)?.entries ?? []} onSelect={setSelection} onNavigate={step => setSelection(addDays(selected,step*7))} />
     </div>
     <div className="home-week-grid" style={{ gridTemplateColumns: `repeat(${dates.length}, minmax(0, 1fr))`, gridTemplateRows: `48px repeat(3, 30px) 24px` }}>

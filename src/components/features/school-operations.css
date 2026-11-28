@@ -729,3 +729,73 @@
  .personal-day .home-calendar-stack,.personal-day .home-dashboard-side { display:block; }
  .personal-day .home-week-detail { margin-block-start:12px; }
 }
+
+/* Mobile home: align calendar and task chrome with the shared weekly reader. */
+@media screen and (max-width:767px) {
+ .workspace-content .personal-day { --home-grid-line:color-mix(in srgb,var(--border) 65%,var(--card)); gap:12px; }
+ .workspace-content .personal-day .home-today-grid { gap:8px; }
+ .workspace-content .personal-day .home-today-grid > .personal-widget,
+ .workspace-content .personal-day .home-calendar-stack > .personal-widget,
+ .workspace-content .personal-day .home-dashboard-side > .my-tasks,
+ .workspace-content .personal-day .home-shortcuts > .personal-widget {
+  border:0; border-top:1px solid var(--home-grid-line); border-radius:0; background:transparent;
+  padding:10px 0 4px; box-shadow:none; min-width:0;
+ }
+ .workspace-content .personal-day .home-today-grid > .personal-widget { gap:8px; }
+ .workspace-content .personal-day .personal-day-heading { gap:6px 8px; }
+ .workspace-content .personal-day .personal-day-heading h2,
+ .workspace-content .personal-day .home-dashboard-side .my-tasks h3 { font-size:15px; font-weight:600; }
+ .workspace-content .personal-day .personal-day-heading .widget-link { font-size:12px; font-weight:500; }
+ .workspace-content .personal-day .personal-widget-note { margin:0; font-size:13px; line-height:1.5; }
+ .workspace-content .personal-day .home-calendar-stack,
+ .workspace-content .personal-day .home-dashboard-side,
+ .workspace-content .personal-day .home-week-and-tasks { gap:8px; }
+ .workspace-content .personal-day .home-weekly-agenda { gap:6px; }
+ .workspace-content .personal-day .home-week-toolbar { gap:2px 8px; }
+ .workspace-content .personal-day .home-week-toolbar h3 { font-size:16px; font-weight:600; margin:0; }
+ .workspace-content .personal-day .home-week-toolbar h3 small { font-size:11px; font-weight:400; }
+ .workspace-content .personal-day .home-week-navigation { flex:1 1 auto; justify-content:flex-end; gap:0; }
+ .workspace-content .personal-day .home-week-navigation > button[data-slot="button"] {
+  border:0; background:transparent; box-shadow:none; color:var(--foreground);
+  min-height:44px; border-radius:6px; font-weight:500; font-size:12px; padding-inline:7px;
+ }
+ .workspace-content .personal-day .home-week-navigation > button[data-size="icon"] { width:44px; min-width:44px; padding:0; }
+ .workspace-content .personal-day .home-week-navigation > button[aria-label="주말 표시"] { margin-inline-end:auto; color:var(--text-secondary); }
+ .workspace-content .personal-day .home-week-navigation > button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+ .workspace-content .personal-day .home-week-mobile-grid .mobile-calendar-dates { padding:6px 0 5px; background:var(--card); border-block:1px solid var(--home-grid-line); }
+ .workspace-content .personal-day .mobile-calendar-weekdays { font-weight:500; padding-bottom:6px; }
+ .workspace-content .personal-day .mobile-calendar-span-week { column-gap:0; grid-template-rows:32px 19px 19px 16px; row-gap:1px; }
+ .workspace-content .personal-day .mobile-calendar-span-week[data-lanes="0"]:not([data-overflow]) { grid-template-rows:44px 0 0 0; row-gap:0; }
+ .workspace-content .personal-day .mobile-calendar-span-week[data-lanes="1"]:not([data-overflow]) { grid-template-rows:32px 19px 0 0; }
+ .workspace-content .personal-day .mobile-calendar-span-week[data-lanes="2"]:not([data-overflow]) { grid-template-rows:32px 19px 19px 0; }
+ .workspace-content .personal-day .mobile-calendar-span-day {
+  background:transparent; border:0; border-inline-end:1px solid var(--home-grid-line); border-radius:0; font-weight:450;
+ }
+ .workspace-content .personal-day .mobile-calendar-span-day:last-of-type { border-inline-end:0; }
+ .workspace-content .personal-day .mobile-calendar-span-day time { font-weight:500; }
+ .workspace-content .personal-day .mobile-calendar-span-event { font-weight:500; margin-inline:2px; border-radius:3px; }
+ .workspace-content .personal-day .mobile-calendar-span-more { font-weight:500; line-height:15px; }
+ .workspace-content .personal-day .home-week-detail { gap:5px; }
+ .workspace-content .personal-day .home-detail-count { font-size:12px; }
+ .workspace-content .personal-day .home-dashboard-side .my-tasks > summary { min-height:44px; }
+ .workspace-content .personal-day .home-dashboard-side .my-tasks > summary > span { margin-inline-start:auto; font-size:11px; }
+ .workspace-content .personal-day .home-dashboard-side .my-tasks > summary::after { margin-inline-start:2px; }
+ .workspace-content .personal-day .task-widget-actions[data-dashboard] { position:relative; gap:4px; margin:0 0 3px; justify-content:space-between; }
+ .workspace-content .personal-day .task-widget-actions[data-dashboard] > button {
+  flex:0 1 auto; min-height:44px; padding-inline:8px; border:0; background:transparent; box-shadow:none; color:var(--primary); font-weight:500;
+ }
+ .workspace-content .personal-day .task-widget-actions[data-dashboard]:has(.task-dashboard-more) .task-direct-actions { display:none; }
+ .workspace-content .personal-day .task-dashboard-more { display:block; position:relative; margin-inline-start:auto; }
+ .workspace-content .personal-day .task-dashboard-more > summary { display:grid; place-items:center; width:44px; min-height:44px; border:0; }
+ .workspace-content .personal-day .task-dashboard-more > summary::after { content:none; }
+ .workspace-content .personal-day .task-dashboard-menu {
+  position:absolute; right:0; top:100%; z-index:10; display:grid; gap:4px; min-width:144px; max-width:75vw; padding:6px;
+  border:1px solid var(--border); border-radius:8px; background:var(--card); box-shadow:0 4px 16px #00000014;
+ }
+ .workspace-content .personal-day .task-dashboard-more:not([open]) .task-dashboard-menu { display:none; }
+ .workspace-content .personal-day .task-dashboard-menu button { min-height:44px; justify-content:flex-start; white-space:nowrap; }
+ .workspace-content .personal-day .home-dashboard-side .task-list > li { border-color:var(--home-grid-line); padding-block:2px; }
+ .workspace-content .personal-day .home-dashboard-side .task-row-detail strong { font-size:14px; font-weight:500; }
+ .workspace-content .personal-day .home-dashboard-side .task-row[data-complete] .task-row-detail strong { font-size:13px; font-weight:400; }
+ .workspace-content .personal-day .home-dashboard-side .task-expand-toggle { border:0; color:var(--primary); font-weight:500; }
+}
