@@ -113,3 +113,20 @@ for(const width of [320,390,1440])test(`school name and level settings fit at ${
   expect(await row.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
  }
 });
+
+for(const width of [320,390,1440])test(`weather location settings do not expose grid coordinates at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("navigation",{name:"통합 운영 실습 단계"}).getByRole("button",{name:"학교 설정",exact:true}).click();
+ const hub=page.locator(".school-settings-hub");
+ await hub.getByRole("link",{name:/학교 정보/}).click();
+ const location=hub.locator(".school-weather-location-settings");
+ await location.locator("summary").click();
+ await expect(location.getByRole("button",{name:"위치 변경"})).toBeVisible();
+ await location.getByRole("button",{name:"위치 변경"}).click();
+ await expect(location.getByLabel("학교명",{exact:true})).toBeVisible();
+ await expect(location.getByLabel("지역·도로명 (선택)")).toBeVisible();
+ await expect(location.locator('input[name="nx"],input[name="ny"]')).toHaveCount(0);
+ const form=location.locator(".weather-location-search-form");
+ expect(await form.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+});

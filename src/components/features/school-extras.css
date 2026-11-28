@@ -218,3 +218,25 @@
  .school-settings-hub #settings-connections #school-links > .muted { font-size:13px; margin:0; }
  .school-settings-hub #settings-connections .school-settings-link-list > li { flex-wrap:wrap; }
 }
+
+@media screen {
+ .weather-location-label{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0}
+ .weather-location-label small{font-size:11px;font-weight:500;color:var(--text-secondary);white-space:nowrap}
+ .weather-location-settings-body,.weather-location-search{display:grid;gap:10px;min-width:0}
+ .weather-location-current{display:flex;align-items:flex-start;gap:8px;min-width:0}
+ .weather-location-current>svg{flex:none;color:var(--text-secondary);margin-top:2px}
+ .weather-location-current>div{min-width:0;overflow-wrap:anywhere}
+ .weather-location-current strong{font-size:13px}
+ .weather-location-current .field-hint{font-size:12px;margin:3px 0 0}
+ .weather-location-actions{display:flex;flex-wrap:wrap;gap:6px}
+ .weather-location-actions>button[data-slot="button"]{min-height:44px;padding-inline:9px;font-size:12px}
+ .weather-location-search-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:8px}
+ .weather-location-search-form label{display:grid;gap:4px;min-width:0;font-size:12px}
+ .weather-location-search-form input{width:100%;min-width:0;font-size:16px;min-height:44px}
+ .weather-location-search-form button[data-slot="button"]{min-height:44px;white-space:nowrap}
+}
+@media screen and (max-width:767px){
+ .weather-location-search-form{grid-template-columns:minmax(0,1fr) auto}
+ .weather-location-search-form label:first-child{grid-column:1/-1}
+ .weather-location-search-form button[data-slot="button"]{font-size:12px;padding-inline:8px}
+}

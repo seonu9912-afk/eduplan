@@ -8,6 +8,7 @@ import { findNeisSchools, getSchoolMeals, matchesNeisSchoolLevel, parseNeisMeals
 import { getSchoolWeather, weatherReleaseTimes, summarizeSchoolWeather } from "../../src/lib/school-weather";
 import { schoolLocationKey, villageForecastGrid } from "../../src/lib/school-location";
 import schoolIndex from "../../src/lib/data/school-weather-grid.json";
+import { resolveSchoolWeatherLocation, filterWeatherLocationSchools } from "../../src/lib/weather-location";
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
@@ -130,4 +131,14 @@ it("provides six hourly forecasts across midnight without inventing missing valu
   expect(result.hourly).toHaveLength(6);
   expect(result.hourly[0]).toEqual({ date: "20261128", hour: "00", temperature: 4, condition: "맑음", precipitation: 0 });
   expect(result.hourly[1]).toMatchObject({ hour: "01", temperature: null, condition: null, precipitation: null });
+});
+
+it("resolves only known school addresses and filters location search without guessing",()=>{
+ const school={...codes,name:"서울고등학교",type:"고등학교",region:"서울특별시",road_address:"서울특별시 서초구 효령로 197",homepage_url:null,foundation_day:null};
+ const location=resolveSchoolWeatherLocation(school);
+ expect(location).toMatchObject({weather_location_address:school.road_address});
+ expect(location?.weather_nx).toBeGreaterThan(0);
+ expect(resolveSchoolWeatherLocation({...school,road_address:"서울특별시 서초구 효령로 9999"})).toBeNull();
+ expect(filterWeatherLocationSchools([school],"서울 서초구")).toEqual([school]);
+ expect(filterWeatherLocationSchools([school],"부산")).toEqual([]);
 });

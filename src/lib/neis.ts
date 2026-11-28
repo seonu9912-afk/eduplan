@@ -67,6 +67,11 @@ export const findNeisSchools = unstable_cache(
   ["neis-school-search-v2"], { revalidate: 86400 },
 );
 
+export const findNeisLocationSchools = unstable_cache(
+  async (name: string) => (await neisRows("schoolInfo", { SCHUL_NM: name, pSize: "100" })).flatMap(schoolInfo),
+  ["neis-weather-school-search-v1"], { revalidate: 86400 },
+);
+
 export const readNeisSchool = unstable_cache(
   async (office: string, code: string) =>
     (await neisRows("schoolInfo", { ATPT_OFCDC_SC_CODE: office, SD_SCHUL_CODE: code }))

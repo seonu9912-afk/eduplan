@@ -76,7 +76,7 @@ export function SchoolHomePublicData({ school, today, unavailable, mealEnds = {}
   mealEnds?: MealEndTimes;
 }) {
   return <>
-    <PublicWidget kind="weather" address={school?.road_address || school?.region || undefined}>
+    <PublicWidget kind="weather" address={school?.weather_location_address || (school?.weather_nx != null && school?.weather_ny != null ? "기존 설정 위치" : undefined)}>
       <Suspense fallback={<Availability>학교 날씨를 불러오는 중…</Availability>}>
         <WeatherSummary school={school} unavailable={unavailable} />
       </Suspense>

@@ -710,6 +710,8 @@ export type Database = {
           foundation_day: string | null;
           weather_nx: number | null;
           weather_ny: number | null;
+          weather_location_address: string | null;
+          weather_location_mode: string | null;
           id: string;
           region: string;
           school_type: string;
@@ -722,6 +724,8 @@ export type Database = {
           foundation_day?: string | null;
           weather_nx?: number | null;
           weather_ny?: number | null;
+          weather_location_address?: string | null;
+          weather_location_mode?: string | null;
           id: string;
           region?: string;
           school_type?: string;
@@ -734,6 +738,8 @@ export type Database = {
           foundation_day?: string | null;
           weather_nx?: number | null;
           weather_ny?: number | null;
+          weather_location_address?: string | null;
+          weather_location_mode?: string | null;
           id?: string;
           region?: string;
           school_type?: string;

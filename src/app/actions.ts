@@ -21,8 +21,8 @@ import type { Result, Role } from "@/lib/models";
 import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import type { PlanningDomain } from "@/lib/planning-completion";
 import { neisSchoolCode, schoolLinkFields, weatherGrid } from "@/lib/external-links";
-import { findNeisSchools, matchesNeisSchoolLevel, readNeisSchool } from "@/lib/neis";
-import { schoolLocationKey } from "@/lib/school-location";
+import { findNeisSchools, findNeisLocationSchools, matchesNeisSchoolLevel, readNeisSchool } from "@/lib/neis";
+import { resolveSchoolWeatherLocation, filterWeatherLocationSchools } from "@/lib/weather-location";
 
 function userError(error: unknown): string {
   if (error instanceof z.ZodError)
@@ -252,26 +252,49 @@ export async function connectNeisSchool(input: unknown) {
     const official = await readNeisSchool(neis_office_code, neis_school_code);
     if (!official || !matchesNeisSchoolLevel(official.type, data.school_type))
       throw Error("이 작업공간의 교육과정 단계에 맞는 나이스 학교를 선택해 주세요.");
-    let nx: number | null = null, ny: number | null = null;
-    if (official.road_address) {
-      const index: Record<string, number> = (await import("@/lib/data/school-weather-grid.json")).schools;
-      const packed = index[schoolLocationKey(official.name, official.road_address)];
-      if (packed) {
-        nx = Math.floor(packed / 256);
-        ny = packed % 256;
-      }
-    }
-    if (nx === null && data.neis_office_code === neis_office_code && data.neis_school_code === neis_school_code &&
-      data.road_address === official.road_address) {
-      nx = data.weather_nx;
-      ny = data.weather_ny;
-    }
+    const sameSchool = data.neis_office_code === neis_office_code && data.neis_school_code === neis_school_code && data.road_address === official.road_address;
+    const automatic = resolveSchoolWeatherLocation(official);
+    const location = sameSchool && data.weather_location_mode === "manual" ? {
+      weather_nx: data.weather_nx, weather_ny: data.weather_ny, weather_location_address: data.weather_location_address, weather_location_mode: data.weather_location_mode,
+    } : automatic ? {...automatic, weather_location_mode: "auto"} : sameSchool ? {
+      weather_nx: data.weather_nx, weather_ny: data.weather_ny, weather_location_address: data.weather_location_address, weather_location_mode: data.weather_location_mode,
+    } : {weather_nx:null, weather_ny:null, weather_location_address:null, weather_location_mode:null};
     const result = await db.from("schools").update({
       neis_office_code, neis_school_code, road_address: official.road_address,
       homepage_url: official.homepage_url, foundation_day: official.foundation_day,
-      weather_nx: nx, weather_ny: ny,
+      ...location,
     }).eq("id", workspaceId).eq("school_type", data.school_type).select("id").single();
     if (result.error) throw result.error;
+    refresh();
+  });
+}
+export async function searchSchoolWeatherLocations(workspaceId: string, query: string, address: string) {
+  return run(async () => {
+    const name = z.string().trim().min(2,"학교명을 두 글자 이상 입력하세요.").max(80).parse(query);
+    const filter = z.string().trim().max(120).parse(address);
+    await authorized(workspaceId, ["admin"]);
+    return filterWeatherLocationSchools(await findNeisLocationSchools(name), filter).map(school=>({
+      name: school.name, address: school.road_address!, neis_office_code:school.neis_office_code, neis_school_code:school.neis_school_code,
+    }));
+  });
+}
+export async function setSchoolWeatherLocation(input: unknown) {
+  return run(async () => {
+    const value = z.object({workspaceId:uuid, selection:neisSchoolCode.nullable()}).parse(input);
+    const {db}=await authorized(value.workspaceId,["admin"]);
+    const {data:school,error}=await db.from("schools").select("*").eq("id",value.workspaceId).single();
+    if(error)throw error;
+    const codes=value.selection ?? neisSchoolCode.safeParse(school).data;
+    if(!codes)throw Error("나이스 학교를 먼저 연결하거나 학교명을 검색해 위치를 선택하세요.");
+    const official=await readNeisSchool(codes.neis_office_code,codes.neis_school_code);
+    const location=official && resolveSchoolWeatherLocation(official);
+    if(!location)throw Error("공식 학교 위치 자료에서 주소를 확인할 수 없습니다. 기존 날씨 위치는 유지됩니다.");
+    let write=db.from("schools").update({...location,weather_location_mode:value.selection?"manual":"auto"}).eq("id",value.workspaceId);
+    if(!value.selection){
+      write=write.eq("neis_office_code",codes.neis_office_code).eq("neis_school_code",codes.neis_school_code);
+    }
+    const saved=await write.select("id").single();
+    if(saved.error)throw saved.error;
     refresh();
   });
 }
@@ -279,7 +302,7 @@ export async function saveSchoolWeatherGrid(input: unknown) {
   return run(async () => {
     const { workspaceId, grid } = z.object({ workspaceId: uuid, grid: weatherGrid.nullable() }).parse(input);
     const { db } = await authorized(workspaceId, ["admin"]);
-    const result = await db.from("schools").update(grid ?? { weather_nx: null, weather_ny: null })
+    const result = await db.from("schools").update({...(grid ?? { weather_nx: null, weather_ny: null }),weather_location_mode:null,weather_location_address:null})
       .eq("id", workspaceId).select("id").single();
     if (result.error) throw result.error;
     refresh();
