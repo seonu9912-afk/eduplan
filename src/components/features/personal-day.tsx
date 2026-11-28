@@ -191,7 +191,7 @@ function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: stri
   </div>;
 }
 
-const weekdayNames = ["월", "화", "수", "목", "금", "토", "일"];
+const weekdayNames = ["일", "월", "화", "수", "목", "금", "토"];
 const agendaTones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 
 function HomeWeeklyAgenda({ context, today, department, plansHref }: {
@@ -248,10 +248,10 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
       {dates.map((day, column) => <div key={day} className="home-week-column"
         style={{ gridColumn: column + 1, gridRow: "1 / -1" }} aria-hidden="true" />)}
       {dates.map((day, column) => <button key={day} type="button" className="home-week-date"
-        data-weekend={column >= 5 ? "" : undefined} aria-current={day === today ? "date" : undefined}
+        data-weekday={weekdayNames[new Date(day + "T00:00:00Z").getUTCDay()]} aria-current={day === today ? "date" : undefined}
         aria-pressed={day === selected} aria-label={dayTitle(day)}
         style={{ gridColumn: column + 1, gridRow: 1 }} onClick={() => setSelection(day)}>
-        <span>{weekdayNames[column]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
+        <span>{weekdayNames[new Date(day + "T00:00:00Z").getUTCDay()]}</span><time dateTime={day}>{Number(day.slice(8))}</time>
       </button>)}
       {visibleLanes.flatMap((lane, row) => lane.map(({ entry, start, end }) =>
         <button type="button" className="home-week-event" data-continues-before={entry.date<dates[start]?"":undefined} data-continues-after={entry.end>dates[end]?"":undefined} data-past={entry.end < today ? "" : undefined} data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department, entry.tone)}

@@ -350,7 +350,8 @@
 .home-week-date { display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 54px; min-width: 0; z-index: 1; color: var(--foreground); cursor: pointer; }
 .home-week-date span { font-size: 12px; color: var(--text-secondary); }
 .home-week-date time { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.home-week-date[data-weekend] span { color: var(--ep-fg-87432f, #87432f); }
+.home-week-date[data-weekday="일"] span { color: var(--ep-fg-a64750, #a64750); }
+.home-week-date[data-weekday="토"] span { color: var(--ep-fg-326198, #326198); }
 .home-week-date[aria-current="date"] time { color: var(--primary); }
 .home-week-date[aria-pressed="true"] time { background: #315e95; color: white; border-radius: 50%; min-width: 30px; min-height: 30px; display: grid; place-items: center; }
 .home-week-event, .home-week-detail-list > li {

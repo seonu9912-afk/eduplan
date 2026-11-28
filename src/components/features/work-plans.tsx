@@ -20,13 +20,12 @@ import { annualSchema, defaultAnnual, type AnnualPlan } from "@/lib/academic";
 import {
   addDays,
   calendarDays,
-  weekRange,
   monthRange,
 } from "@/lib/domain";
 import { previousWorkPlan, publishWorkPlan, saveAnnual } from "@/app/actions";
 import type { Context } from "@/lib/models";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
-import { shiftScheduleDate } from "@/lib/schedule-dates";
+import { calendarWeekRange, shiftScheduleDate } from "@/lib/schedule-dates";
 import { ResourceLinkEditor, ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { PlanPublicationPreview } from "./plan-publication-preview";
@@ -103,7 +102,7 @@ export function WorkPlans({
   const operations = operationNames(plan);
   const range =
     view === "week"
-      ? { start: weekRange(date).start, end: addDays(weekRange(date).start, 6) }
+      ? calendarWeekRange(date)
       : monthRange(date.slice(0, 7));
   const dates =
     view === "week"

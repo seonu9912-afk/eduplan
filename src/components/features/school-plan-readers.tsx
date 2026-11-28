@@ -7,11 +7,11 @@ import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, Pan
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/common";
 import { canPlan } from "@/lib/planning-completion";
-import { addDays, dateLabel, monthRange, weekRange, seoulToday } from "@/lib/domain";
+import { addDays, dateLabel, monthRange, seoulToday } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publishedSchoolContext } from "@/lib/school-publications";
 import { weeklyCalendarSections, compactCalendarWeek, monthlyCalendarLaneCount, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
-import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
+import { calendarWeekRange, scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
 import { ResourceLinks } from "./resource-links";
@@ -56,7 +56,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const [view, setView] = useState<ScheduleView>(initialDate ? "month" : work ? "week" : "month");
   const weekend = useWeekendVisibility(c.workspace.id, c.userId);
   const listView = useScheduleListView(c.workspace.id, c.userId, work);
-  const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start) : requestedDate;
+  const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start, end) : requestedDate;
   const [selectedRelease, setSelectedRelease] = useState<string | null>(null);
   const detail = useScheduleDetail(() => work && initialWorkItem
     ? schoolScheduleEntries(publishedSchoolContext(c, clamp(serverToday)), requestedDate, requestedDate, true)
@@ -73,14 +73,14 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const miniRange = monthRange(miniMonth);
   const miniDates = scheduleDates(`${miniMonth}-01`, "month");
   const workWeek = work && view === "week";
-  const range = view === "year" ? { start, end } : view === "week" ? weekRange(date) : monthRange(month);
+  const range = view === "year" ? { start, end } : view === "week" ? calendarWeekRange(date) : monthRange(month);
   const publications = c.schoolPublications ?? [];
   const selected = publications.find((release) => release.id === selectedRelease);
   const displayed = selected
     ? [selected, ...publications.filter((release) => release.domain !== selected.domain)]
     : publications;
   const officialContext = { ...c, schoolPublications: displayed };
-  const dates = view === "year" ? [] : view === "week" ? visibleWeekDates(date, weekend.showWeekends, start) : scheduleDates(date, view);
+  const dates = view === "year" ? [] : view === "week" ? visibleWeekDates(date, weekend.showWeekends, start, end) : scheduleDates(date, view);
   const columns = view === "week" ? dates.length : 7;
   const monthWeeks = view === "month" ? dates.length / 7 : 0;
   const calendarRef = useRef<HTMLDivElement>(null);
@@ -101,7 +101,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const available = annual ? annual.publishedDays > 0 : [...days.values()].some((day) => day.available);
   const agendaDates = [date];
   const title = view === "year" ? `${year}학년도` : view === "week"
-    ? `${dateLabel(range.start)} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
+    ? `${dateLabel(dates[0])} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
   const options: { value: ScheduleView; label: string }[] = [
     { value: "month", label: work ? "월중계획" : "월간" },
     { value: "week", label: work ? "주간계획" : "주간" },
@@ -150,7 +150,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
             <div className="official-work-mini-grid">
               {weekdays.map((day) => <span key={day} className="mini-weekday">{day}</span>)}
               {miniDates.map((day) => <button type="button" key={day} disabled={day < start || day > end}
-                data-in-week={view === "week" && day >= range.start && day <= visibleEnd ? "" : undefined}
+                data-in-week={view === "week" && dates.includes(day) ? "" : undefined}
                 data-adjacent={!day.startsWith(miniMonth) ? "" : undefined}
                 aria-current={day === today ? "date" : undefined} aria-pressed={day === date}
                 aria-label={`${day} 날짜 이동`} onClick={() => selectMiniDay(day)}><time dateTime={day}>{Number(day.slice(8))}</time></button>)}

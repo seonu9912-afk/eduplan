@@ -23,6 +23,8 @@ for(const theme of ["light","dark"] as const)for(const width of [390,1440])test(
   for(const mode of name==="공개 학사일정"?["월간","주간"]:["월중계획","주간계획"]){
    await reader.getByRole("button",{name:mode,exact:true}).click();
    await expect(reader.locator(".schedule-reader-toolbar")).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+   const labels=width>=768?reader.locator(".school-reader-calendar thead th"):reader.locator(".mobile-calendar-weekdays span");
+   await expect(labels).toHaveText(["일","월","화","수","목","금","토"]);
    if(width>=768){
     const table=reader.locator(".school-reader-calendar");
     await expect(table).toBeVisible();

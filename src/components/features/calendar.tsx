@@ -1,4 +1,5 @@
 "use client";
+import { calendarWeekRange } from "@/lib/schedule-dates";
 import {canPlan} from "@/lib/planning-completion";
 import Link from "next/link";
 import { useState } from "react";
@@ -36,7 +37,6 @@ import {
   monthRange,
   moveMonth,
   overlaps,
-  weekRange,
 } from "@/lib/domain";
 import type { Context, Row } from "@/lib/models";
 export function Calendar({
@@ -88,7 +88,7 @@ export function Calendar({
     setWeekDate(date);
     onFocusDate?.(date);
   }
-  const range = view === "week" ? weekRange(weekDate) : monthRange(month);
+  const range = view === "week" ? calendarWeekRange(weekDate) : monthRange(month);
   const filtered = c.events.filter(
     (e) =>
       (type === "all" || e.event_type === type) &&
@@ -110,11 +110,11 @@ export function Calendar({
   };
   const previous =
     view === "week"
-      ? weekRange(addDays(weekDate, -7)).end < start
+      ? calendarWeekRange(addDays(weekDate, -7)).end < start
       : moveMonth(month, -1) < start.slice(0, 7);
   const next =
     view === "week"
-      ? weekRange(addDays(weekDate, 7)).start > end
+      ? calendarWeekRange(addDays(weekDate, 7)).start > end
       : moveMonth(month, 1) > end.slice(0, 7);
   function edit(event: Row<"events">) {
     setEditing(event);

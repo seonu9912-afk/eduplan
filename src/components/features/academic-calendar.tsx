@@ -60,7 +60,7 @@ import { EventExcelImport } from "./event-excel-import";
 import "./academic-calendar.css";
 import "./schedule-surfaces.css";
 import { Button } from "@/components/ui/button";
-import { addDays, dateLabel, monthRange, weekRange } from "@/lib/domain";
+import { addDays, dateLabel, monthRange } from "@/lib/domain";
 import { scheduleDates, shiftScheduleDate, type CalendarPeriod } from "@/lib/schedule-dates";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { MobileCalendarDates, type CalendarCellItem } from "./mobile-calendar-dates";
@@ -89,6 +89,7 @@ type RangeEdit = {
   base: AnnualPlan;
 };
 type Edit = DayEdit | EventEdit | RangeEdit;
+import { calendarWeekRange } from "@/lib/schedule-dates";
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -564,7 +565,7 @@ export function AcademicCalendar({
     projectedReport.days.filter(isTeachingDay).length - counts.total;
   const firstDate = `${year}-03-01`;
   const lastDate = addDays(`${year + 1}-03-01`, -1);
-  const mobilePeriod = mobileRange === "week" ? weekRange(date) : monthRange(date.slice(0, 7));
+  const mobilePeriod = mobileRange === "week" ? calendarWeekRange(date) : monthRange(date.slice(0, 7));
   const selectMobileDate = (day: string) => move(() => {
     setDate(day);
     setMonth(day.slice(0, 7));

@@ -9,7 +9,7 @@ it("preserves the selected day while moving months and trims the empty last rows
   expect(shiftScheduleDate("2028-01-31", "month", 1)).toBe("2028-02-29");
   expect(scheduleDates("2026-02-10", "month")).toHaveLength(28);
   expect(scheduleDates("2027-03-03", "week")).toEqual([
-    "2027-03-01", "2027-03-02", "2027-03-03", "2027-03-04", "2027-03-05", "2027-03-06", "2027-03-07",
+    "2027-02-28", "2027-03-01", "2027-03-02", "2027-03-03", "2027-03-04", "2027-03-05", "2027-03-06",
   ]);
 });
 
@@ -82,11 +82,15 @@ it("keeps the configured operation groups and trips aligned without merging them
 });
 
 it("hides weekend columns without moving the selected week, retaining academic-year boundary dates", () => {
-  expect(visibleWeekDate("2026-11-29", false)).toBe("2026-11-27");
-  expect(visibleWeekDates("2026-11-29", false)).toEqual(["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26", "2026-11-27"]);
+  expect(visibleWeekDate("2026-11-29", false)).toBe("2026-11-30");
+  expect(visibleWeekDate("2026-12-05", false)).toBe("2026-12-04");
+  expect(visibleWeekDates("2026-11-29", false)).toEqual(["2026-11-30", "2026-12-01", "2026-12-02", "2026-12-03", "2026-12-04"]);
   expect(visibleWeekDates("2026-11-29", true)).toHaveLength(7);
   expect(visibleWeekDate("2025-03-01", false, "2025-03-01")).toBe("2025-03-01");
   expect(visibleWeekDates("2025-03-01", false, "2025-03-01")).toHaveLength(7);
+  expect(visibleWeekDate("2027-02-28", false, "2026-03-01", "2027-02-28")).toBe("2027-02-28");
+  expect(visibleWeekDates("2027-02-28", false, "2026-03-01", "2027-02-28")).toHaveLength(7);
+  expect(scheduleDates("2026-11-29", "week")).toEqual(["2026-11-29","2026-11-30","2026-12-01","2026-12-02","2026-12-03","2026-12-04","2026-12-05"]);
 });
 
 import { compactCalendarWeek, monthlyCalendarLaneCount, weeklyCalendarSections } from "../../src/lib/school-schedule";

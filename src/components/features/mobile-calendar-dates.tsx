@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { compactCalendarWeek, type ScheduleEntry } from "@/lib/school-schedule";
 import { dateLabel } from "@/lib/domain";
-import { scheduleDates, type CalendarPeriod } from "@/lib/schedule-dates";
+import { scheduleDates, visibleWeekDates, type CalendarPeriod } from "@/lib/schedule-dates";
 import "./mobile-calendar-dates.css";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import "./department-badge.css";
@@ -25,10 +25,10 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
   onNavigate: (step: number) => void;
 }) {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const weekdaysOnly = period === "week" && !showWeekends;
-  const days = weekdaysOnly ? scheduleDates(date, period).slice(0, 5) : scheduleDates(date, period);
+  const days = period === "week" ? visibleWeekDates(date, showWeekends, start, end) : scheduleDates(date, period);
+  const weekdaysOnly = period === "week" && days.length === 5;
   const month = date.slice(0, 7);
-  const labels = period === "week" ? [...weekdays.slice(1), weekdays[0]].slice(0, weekdaysOnly ? 5 : 7) : weekdays;
+  const labels = weekdaysOnly ? weekdays.slice(1, 6) : weekdays;
   return (
     <div className="mobile-calendar-dates" data-emphasize-today={emphasizeToday ? "" : undefined} data-compact-rows={compactRows ? "" : undefined} data-weekdays-only={weekdaysOnly ? "" : undefined} role="group" aria-label={period === "week" ? "주간 날짜 선택" : "월간 날짜 선택"}
       onTouchStart={(event) => {
@@ -73,7 +73,7 @@ export function MobileCalendarDates({ date, today, start, end, period, items, on
           const enabled = day >= start && day <= end;
           const entries = enabled ? items(day) : [];
           const first = entries[0];
-          const weekday = labels[index % 7];
+          const weekday = labels[index % labels.length];
           return <button key={day} type="button" data-date={day} data-weekday={weekday}
             data-adjacent={period === "month" && !day.startsWith(month) ? "" : undefined}
             aria-label={`${Number(day.slice(0, 4))}년 ${dateLabel(day)} ${weekday}요일${first ? `, 일정 ${entries.length}건, ${first.title}` : ""}`}
