@@ -152,7 +152,7 @@ it("validates live school location records and excludes closed or invalid school
 });
 it("matches live school name and address before falling back to the snapshot",async()=>{
  vi.stubEnv("SCHOOL_LOCATION_API_KEY","test-key");
- const fetch=vi.fn().mockResolvedValue(Response.json(schoolLocationResponse([liveSchoolRow,{...liveSchoolRow,schoolId:"B000013001",rdnmadr:"부산광역시 중구 중앙대로 1"}])));
+ const fetch=vi.fn().mockImplementation(async()=>Response.json(schoolLocationResponse([liveSchoolRow,{...liveSchoolRow,schoolId:"B000013001",rdnmadr:"부산광역시 중구 중앙대로 1"}])));
  vi.stubGlobal("fetch",fetch);
  const school={name:liveSchoolRow.schoolNm,road_address:liveSchoolRow.rdnmadr};
  expect(await resolveLatestSchoolWeatherLocation(school)).toEqual({...villageForecastGrid(37.49,127),weather_location_address:school.road_address});
