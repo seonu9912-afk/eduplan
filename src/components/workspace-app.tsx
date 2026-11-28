@@ -88,7 +88,7 @@ const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
   calendar: "학사일정",
-  plans: "업무 계획",
+  plans: "업무계획",
   timetable: "시간표",
   teaching: "수업·평가",
   teachers: "교원 관리",
