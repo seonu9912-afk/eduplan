@@ -142,3 +142,23 @@ it("resolves only known school addresses and filters location search without gue
  expect(filterWeatherLocationSchools([school],"서울 서초구")).toEqual([school]);
  expect(filterWeatherLocationSchools([school],"부산")).toEqual([]);
 });
+
+import { parseSchoolLocationResponse, findLiveSchoolLocations, resolveLatestSchoolWeatherLocation, readLiveSchoolLocation } from "../../src/lib/school-location-api";
+const liveSchoolRow={schoolId:"B000013000",schoolNm:"서울고등학교",rdnmadr:"서울특별시 서초구 효령로 197",operSttus:"운영",latitude:"37.49",longitude:"127.00"};
+const schoolLocationResponse=(items:unknown[])=>({response:{header:{resultCode:"00"},body:{items,totalCount:items.length}}});
+it("validates live school location records and excludes closed or invalid schools",()=>{
+ expect(parseSchoolLocationResponse(schoolLocationResponse([liveSchoolRow,{...liveSchoolRow,operSttus:"폐교"},{...liveSchoolRow,latitude:""}])).rows).toHaveLength(1);
+ expect(()=>parseSchoolLocationResponse({response:{header:{resultCode:"30"},body:{items:[]}}})).toThrow();
+});
+it("matches live school name and address before falling back to the snapshot",async()=>{
+ vi.stubEnv("SCHOOL_LOCATION_API_KEY","test-key");
+ const fetch=vi.fn().mockResolvedValue(Response.json(schoolLocationResponse([liveSchoolRow,{...liveSchoolRow,schoolId:"B000013001",rdnmadr:"부산광역시 중구 중앙대로 1"}])));
+ vi.stubGlobal("fetch",fetch);
+ const school={name:liveSchoolRow.schoolNm,road_address:liveSchoolRow.rdnmadr};
+ expect(await resolveLatestSchoolWeatherLocation(school)).toEqual({...villageForecastGrid(37.49,127),weather_location_address:school.road_address});
+ expect((await findLiveSchoolLocations("서울고등학교","서울 서초구")).map(x=>x.id)).toEqual(["B000013000"]);
+ expect(await readLiveSchoolLocation("B000013000","다른 주소")).toBeNull();
+ expect((fetch.mock.calls[0][0] as URL).searchParams.get("schoolNm")).toBe("서울고등학교");
+ fetch.mockRejectedValue(new Error("offline"));
+ expect(await resolveLatestSchoolWeatherLocation(school)).toEqual(resolveSchoolWeatherLocation(school));
+});

@@ -25,3 +25,5 @@ export type SchoolWeather = {
   high: number | null;
   precipitation: number | null;
 };
+
+export type WeatherLocationCandidate = { name:string; address:string; selection: {source:"location";schoolId:string;address:string} | {source:"neis";neis_office_code:string;neis_school_code:string} };

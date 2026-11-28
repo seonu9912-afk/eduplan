@@ -8,7 +8,7 @@ import { Disclosure } from "@/components/ui/disclosure";
 import { externalUrl } from "@/lib/external-links";
 import { dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-import type { NeisSchool } from "@/lib/school-public-data-model";
+import type { NeisSchool, WeatherLocationCandidate } from "@/lib/school-public-data-model";
 import "./school-extras.css";
 
 export function SchoolInformationSettings({ context: c }: { context: Context }) {
@@ -83,7 +83,7 @@ export function SchoolInformationSettings({ context: c }: { context: Context }) 
   </section>;
 }
 
-type WeatherCandidate={name:string;address:string;neis_office_code:string;neis_school_code:string};
+type WeatherCandidate=WeatherLocationCandidate;
 function SchoolWeatherLocation({context:c}:{context:Context}){
   const m=useMutation();
   const [searching,startSearch]=useTransition();
@@ -95,7 +95,7 @@ function SchoolWeatherLocation({context:c}:{context:Context}){
   const configured=school?.weather_nx!=null&&school.weather_ny!=null;
   const status=!configured?"위치 설정 필요":school?.weather_location_mode==="auto"?"자동 설정":school?.weather_location_mode==="manual"?"직접 선택":"기존 위치 사용";
   const select=(candidate:WeatherCandidate|null)=>{
-    m.execute(()=>setSchoolWeatherLocation({workspaceId:c.workspace.id,selection:candidate?{neis_office_code:candidate.neis_office_code,neis_school_code:candidate.neis_school_code}:null}),()=>{setOpen(false);setResults(null);setError("");},"날씨 위치를 저장했습니다.");
+    m.execute(()=>setSchoolWeatherLocation({workspaceId:c.workspace.id,selection:candidate?.selection??null}),()=>{setOpen(false);setResults(null);setError("");},"날씨 위치를 저장했습니다.");
   };
   return <Disclosure compact className="school-weather-location-settings" label={<span className="weather-location-label">학교 날씨 위치 <small>{status}</small></span>}>
     <div className="weather-location-settings-body">
@@ -125,7 +125,7 @@ function SchoolWeatherLocation({context:c}:{context:Context}){
         </form>
         <p className="field-hint">학교 위치를 찾을 수 없으면 가까운 학교를 검색해 선택하세요. 나이스 연결 학교나 급식 정보는 변경되지 않습니다.</p>
         {error&&<p role="alert">{error}</p>}
-        {results&&(results.length?<ul className="school-settings-link-list">{results.map(result=><li key={result.neis_office_code+result.neis_school_code}><div><strong>{result.name}</strong><small>{result.address}</small></div><Button type="button" variant="outline" disabled={m.pending||searching} onClick={()=>select(result)}>선택</Button></li>)}</ul>:<p role="status">위치 자료가 있는 학교를 찾지 못했습니다. 다른 학교명이나 지역으로 검색해 주세요.</p>)}
+        {results&&(results.length?<ul className="school-settings-link-list">{results.map(result=><li key={result.selection.source==="location"?result.selection.schoolId:result.selection.neis_office_code+result.selection.neis_school_code}><div><strong>{result.name}</strong><small>{result.address}</small></div><Button type="button" variant="outline" disabled={m.pending||searching} onClick={()=>select(result)}>선택</Button></li>)}</ul>:<p role="status">위치 자료가 있는 학교를 찾지 못했습니다. 다른 학교명이나 지역으로 검색해 주세요.</p>)}
       </div>}
       <InlineNotice mutation={m}/>
     </div>
