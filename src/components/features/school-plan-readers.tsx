@@ -10,7 +10,7 @@ import { canPlan } from "@/lib/planning-completion";
 import { addDays, dateLabel, monthRange, seoulToday } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { publishedSchoolContext } from "@/lib/school-publications";
-import { weeklyCalendarSections, compactCalendarWeek, monthlyCalendarLaneCount, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
+import { weeklyCalendarSections, compactCalendarWeek, monthlyCalendarLaneCount, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, operationPersonGroups, type ScheduleEntry } from "@/lib/school-schedule";
 import { calendarWeekRange, scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
 import { MobileCalendarDates } from "./mobile-calendar-dates";
@@ -175,7 +175,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
                 })}</ul> : <p className="schedule-agenda-empty"><CalendarDays aria-hidden="true" size={18} />
                   {schedule?.available ? (workWeek ? "등록된 일반 일정이 없습니다." : "등록된 일정이 없습니다.") : "선택한 날짜에 적용되는 공개 계획이 없습니다."}
                 </p>}
-                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation"><h4>{name}</h4><OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} today={today} onOpen={showEntry} /></section>)}</div> : null}
+                {workWeek && schedule?.operationGroups?.length ? <div className="weekly-mobile-operations">{schedule.operationGroups.map((name) => <section key={name} className="weekly-mobile-operation" data-operation={name}><h4>{name}</h4>{!inDialog && (name === "당직" || name === "출장") ? <MobileOperationPeople name={name} entries={schedule.entries.filter((entry) => entry.operationGroup === name)} onOpen={showEntry} /> : <OperationEntries entries={schedule.entries.filter((entry) => entry.operationGroup === name)} today={today} onOpen={showEntry} />}</section>)}</div> : null}
               </section>;
             })}
           </div>);
@@ -317,6 +317,38 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
       {!work && activityTools && <Modal open={secondary==="activities"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="교육활동 편성 요청 · 가능한 날짜 분석" wide>{activityTools}</Modal>}
     </section>
   );
+}
+
+function MobileOperationPeople({ name, entries, onOpen }: { name: string; entries: ScheduleEntry[]; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {
+  const [selected, setSelected] = useState<{ label: string; entries: ScheduleEntry[] } | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const people = operationPersonGroups(entries, name);
+  if (!people.length) return <span className="weekly-operation-empty">없음</span>;
+  return <>
+    <div className="weekly-mobile-people">{people.map((person, index) => <span className="weekly-mobile-person" key={person.label}>
+      {index > 0 && <span className="weekly-mobile-person-separator" aria-hidden="true">·</span>}
+      <button type="button" className="schedule-detail-trigger" aria-haspopup="dialog" aria-label={`${person.label} ${name} 상세 보기`} onClick={event => {
+        if (person.entries.length === 1) onOpen(person.entries[0], event.currentTarget);
+        else { trigger.current = event.currentTarget; setSelected(person); }
+      }}>{person.label}</button>
+    </span>)}</div>
+    <Modal open={!!selected} onOpenChange={open => { if (!open) setSelected(null); }} onCloseAutoFocus={event => {
+      if (trigger.current?.isConnected) { event.preventDefault(); trigger.current.focus(); }
+    }} title={`${name} 상세`} description="선택한 사람의 해당 날짜 등록 내역입니다.">
+      {selected && <div className="weekly-mobile-person-detail">
+        <h3>{selected.label}</h3>
+        {selected.entries.map(entry => <section key={entry.id}>
+          <h4>{entry.assignmentText || entry.title}</h4>
+          <dl>{[
+            ["기간", entry.date === entry.end ? dateLabel(entry.date) : `${dateLabel(entry.date)} ~ ${dateLabel(entry.end)}`],
+            ["시간", entry.time], ["장소", entry.location], ["담당 부서", entry.department], ["대상·참석자", entry.participants],
+          ].filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+          <ResourceLinks value={entry.resources} />
+        </section>)}
+        <Button variant="outline" onClick={() => setSelected(null)}>닫기</Button>
+      </div>}
+    </Modal>
+  </>;
 }
 
 function OperationEntries({ entries, today, onOpen }: { entries: ScheduleEntry[]; today: string; onOpen: (entry: ScheduleEntry, trigger: HTMLElement) => void }) {

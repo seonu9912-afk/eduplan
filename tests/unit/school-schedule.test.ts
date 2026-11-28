@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { operationsPreviewContext } from "../../src/app/recovery-preview/operations-fixture";
 import { defaultAnnual } from "../../src/lib/academic";
 import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "../../src/lib/schedule-dates";
-import { calendarWeekLanes, publishedScheduleDays, weeklyOperationGroups } from "../../src/lib/school-schedule";
+import { calendarWeekLanes, publishedScheduleDays, weeklyOperationGroups, operationPersonGroups } from "../../src/lib/school-schedule";
 import type { SchoolPlanPublication } from "../../src/lib/school-publications";
 
 it("preserves the selected day while moving months and trims the empty last rows", () => {
@@ -146,4 +146,17 @@ it("weekly calendar separates all daily tasks, period lanes and operations witho
   const period=result.periodLanes.flat().filter(span=>span.start<=col&&span.end>=col).length;
   expect(period+result.daily.get(dates[col])!.length).toBe(days.get(dates[col])!.entries.filter(entry=>!("operationGroup" in entry)).length);
  }
+});
+
+
+it("groups operation names and preserves all related entries", () => {
+ const base={date:"2027-03-02",end:"2027-03-02",tone:"work" as const,operationGroup:"출장",title:"연수"};
+ const a={...base,id:"a",participants:"김 교사, 이 교사"};
+ const b={...base,id:"b",participants:"김 교사",title:"협의회"};
+ const c={...base,id:"c",title:"참석자 없는 출장"};
+ expect(operationPersonGroups([a,b,c],"출장")).toEqual([
+  {label:"김 교사",entries:[a,b]}, {label:"이 교사",entries:[a]}, {label:"이름 미입력",entries:[c]},
+ ]);
+ const duty={...base,id:"d",operationGroup:"당직",assignmentText:"박 교사"};
+ expect(operationPersonGroups([duty],"당직")).toEqual([{label:"박 교사",entries:[duty]}]);
 });

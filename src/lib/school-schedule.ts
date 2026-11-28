@@ -160,3 +160,19 @@ export function weeklyCalendarSections(dates: string[], days: ReadonlyMap<string
   const daily = new Map(dates.map(date => [date, general.get(date)!.entries.filter(entry => entry.date === entry.end)]));
   return { periodLanes: calendarWeekLanes(dates, periods), daily };
 }
+
+
+/** Group explicitly separated participant names without inferring a person from a trip title. */
+export function operationPersonGroups(entries: ScheduleEntry[], name: string) {
+  const groups = new Map<string, ScheduleEntry[]>();
+  for (const entry of entries) {
+    const source = entry.participants?.trim() || (name === "출장" ? "" : (entry.assignmentText ?? entry.title).trim());
+    const labels = [...new Set(source.split(/[,，、;；·\n/]+/).map(label => label.trim()).filter(Boolean))];
+    for (const label of labels.length ? labels : ["이름 미입력"]) {
+      const list = groups.get(label) ?? [];
+      if (!list.some(item => item.id === entry.id)) list.push(entry);
+      groups.set(label, list);
+    }
+  }
+  return [...groups].map(([label, entries]) => ({ label, entries }));
+}

@@ -68,3 +68,35 @@ for(const width of [390,1440])test(`annual calendar selects months rather than i
  await expect(agenda.getByText("연간 검증 일정 A",{exact:true})).toBeVisible();
  await expect(agenda.getByText("연간 검증 일정 B",{exact:true})).toBeVisible();
 });
+
+
+test("mobile weekly agenda shows people beside operation labels and retains all trip details", async({page})=>{
+ const c=operationsPreviewContext();
+ const scope={workspace_id:c.workspace.id,academic_year_id:c.year!.id,published_at:"2027-02-20T00:00:00Z",published_by:c.userId,starts_on:"2027-03-01",source_version:1,change_note:""};
+ c.schoolPublications=[{...scope,id:"work-people",domain:"plans",payload:{workSettings:{dutyEnabled:true},business:[
+  {id:"duty",date:"2027-03-02",department:"교무부",kind:"당직",text:"김 교사"},
+  {id:"trip1",date:"2027-03-02",department:"교무부",kind:"출장",text:"교육과정 연수",participants:"이 교사, 박 교사",time:"13:00",location:"교육지원청"},
+  {id:"trip2",date:"2027-03-02",department:"교무부",kind:"출장",text:"생활지도 협의",participants:"이 교사",time:"15:00"}
+ ]}}];
+ await page.clock.setFixedTime(new Date("2027-03-02T01:00:00Z"));
+ await page.setViewportSize({width:390,height:900});
+ await page.addInitScript(data=>localStorage.setItem("eduplan-operations-rehearsal-v1",data),JSON.stringify(c));
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"공개 주간계획",exact:true}).click();
+ const agenda=page.locator(".calendar-reader-mobile-agenda");
+ const trip=agenda.locator('[data-operation="출장"]');
+ await expect(trip.locator(".weekly-mobile-person button")).toHaveText(["이 교사","박 교사"]);
+ await expect(trip.getByText("교육과정 연수",{exact:true})).toHaveCount(0);
+ const horizontal=await trip.evaluate(el=>el.querySelector(".weekly-mobile-people")!.getBoundingClientRect().left>=el.querySelector("h4")!.getBoundingClientRect().right);
+ expect(horizontal).toBe(true);
+ await trip.getByRole("button",{name:"이 교사 출장 상세 보기"}).click();
+ const detail=page.getByRole("dialog",{name:"출장 상세"});
+ await expect(detail.getByText("교육과정 연수",{exact:true})).toBeVisible();
+ await expect(detail.getByText("생활지도 협의",{exact:true})).toBeVisible();
+ await detail.getByRole("button",{name:"닫기",exact:true}).click();
+ await trip.getByRole("button",{name:"박 교사 출장 상세 보기"}).click();
+ await expect(page.getByRole("dialog",{name:"일정 상세"}).getByRole("heading",{name:"교육과정 연수"})).toBeVisible();
+ await page.getByRole("dialog",{name:"일정 상세"}).getByRole("button",{name:"닫기",exact:true}).click();
+ await page.setViewportSize({width:1440,height:900});
+ await expect(page.locator(".school-calendar-desktop .weekly-operation-description").getByText("교육과정 연수",{exact:true})).toBeVisible();
+});

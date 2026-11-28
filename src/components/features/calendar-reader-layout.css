@@ -284,3 +284,26 @@
  .workspace-content .calendar-reader-shell .task-row-detail strong { font-size:14px; font-weight:500; }
  .workspace-content .calendar-reader-shell .task-expand-toggle { border:0; color:var(--primary); font-weight:500; }
 }
+
+
+/* Mobile weekly agenda only: people are inline with the operation label. */
+@media screen and (max-width:767px) {
+ .workspace-content .calendar-reader-shell .calendar-reader-mobile-agenda .weekly-mobile-operation:is([data-operation="당직"],[data-operation="출장"]) {
+  display:grid; grid-template-columns:44px minmax(0,1fr); flex:1 1 100%; align-items:start; gap:8px; min-width:0;
+ }
+ .calendar-reader-mobile-agenda .weekly-mobile-operation:is([data-operation="당직"],[data-operation="출장"]) h4 { padding-top:8px; line-height:1.5; }
+ .calendar-reader-mobile-agenda .weekly-mobile-people { display:flex; flex-wrap:wrap; align-items:center; gap:0 7px; min-width:0; }
+ .calendar-reader-mobile-agenda .weekly-mobile-person { display:inline-flex; align-items:center; gap:7px; max-width:100%; min-width:0; }
+ .workspace-content .calendar-reader-mobile-agenda .weekly-mobile-person .schedule-detail-trigger {
+  min-height:36px; padding:5px 0; font-size:14px; font-weight:500; color:var(--foreground); line-height:1.5; overflow-wrap:anywhere;
+ }
+ .weekly-mobile-person-separator { color:var(--text-secondary); flex:none; }
+ .calendar-reader-mobile-agenda .weekly-mobile-operation:is([data-operation="당직"],[data-operation="출장"]) > .weekly-operation-empty { padding-top:8px; }
+}
+.weekly-mobile-person-detail { display:grid; gap:12px; min-width:0; }
+.weekly-mobile-person-detail > section { display:grid; gap:6px; border-top:1px solid var(--border); padding-top:12px; overflow-wrap:anywhere; }
+.weekly-mobile-person-detail :is(h3,h4,dl,dd) { margin:0; }
+.weekly-mobile-person-detail dl { display:grid; gap:5px; }
+.weekly-mobile-person-detail dl > div { display:grid; grid-template-columns:80px minmax(0,1fr); gap:8px; }
+.weekly-mobile-person-detail dt { color:var(--text-secondary); }
+.weekly-mobile-person-detail > button { justify-self:end; }
