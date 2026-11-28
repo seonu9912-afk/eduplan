@@ -1648,6 +1648,14 @@ export type Database = {
         };
         Returns: number;
       };
+      save_teaching_deadlines: {
+        Args: { target: string; year_id: string; term: number; expected_version: number; lesson_date: string | null; assessment_date: string | null };
+        Returns: number;
+      };
+      teaching_deadline_data: {
+        Args: { target: string; year_id: string };
+        Returns: Json;
+      };
       submit_teaching_version: {
         Args: { target_course: string; expected_version: number; scopes: string[] };
         Returns: Json;

@@ -137,7 +137,7 @@ export function WorkspaceApp({
   const menuTrigger = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState("");
   const changes = usePublishedChanges(c);
-  const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length + changes.items.length;
+  const unreadCount = (c.operations?.notifications ?? []).filter((item) => !item.read_at).length + changes.items.length + (c.teachingDeadlines?.alerts.length ?? 0);
   const [editorDirty, setDirty] = useState(false);
   useEditGuard("workspace-editor", editorDirty);
   const dirty = useDeviceDirty();

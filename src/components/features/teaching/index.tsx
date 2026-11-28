@@ -963,7 +963,7 @@ function CourseEditor({
         )}
         {tab === "review" && (
           <>
-            <TeachingSubmissionPanel course={course} document={doc} rows={c.teaching!.submissions} author={(course.owner_id === c.userId || assigned) && !course.archived} blocked={busy || autoActive || versionConflict} dirty={dirty} errors={issues.filter(i => i.level === "오류").length} checks={issues.filter(i => i.level !== "오류").length} onBusyChange={setSubmissionPending} />
+            <TeachingSubmissionPanel course={course} document={doc} rows={c.teaching!.submissions} deadlines={c.teachingDeadlines?.deadlines} author={(course.owner_id === c.userId || assigned) && !course.archived} blocked={busy || autoActive || versionConflict} dirty={dirty} errors={issues.filter(i => i.level === "오류").length} checks={issues.filter(i => i.level !== "오류").length} onBusyChange={setSubmissionPending} />
             <Disclosure compact className="teaching-legacy-status" label="기존 계획 확정 및 연동 기준 (임시)">
             <label className="plan-status-control">
               교수학습계획 상태

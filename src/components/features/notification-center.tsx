@@ -6,16 +6,23 @@ import { Button } from "@/components/ui/button";
 import { useMutation, InlineNotice } from "@/components/common";
 import { markOperationRead } from "@/app/operations-actions";
 import type { Context } from "@/lib/models";
+import {submissionAlertLabels,submissionScopeLabel} from "@/lib/teaching-submissions";
 import { PublishedChanges, type PublishedChangesState } from "./published-changes";
 import "./school-operations.css";
 export function NotificationCenter({ context: c, onNavigate, changes }: { context: Context; onNavigate?: () => boolean; changes?: PublishedChangesState }) {
   const m = useMutation();
   const [confirmed, setConfirmed] = useState<string[]>([]);
   const items = (c.operations?.notifications ?? []).filter((n) => !n.read_at && !confirmed.includes(n.id));
+  const reminders=c.teachingDeadlines?.alerts??[];
   return (
     <section className="notification-center">
       <h1 className="sr-only">내 알림</h1>
       <ul className="notification-list">
+        {reminders.map(n=><li className="notification-card" key={`teaching:${n.course_id}:${n.scope}`}>
+          <div className="notification-content"><div className="notification-heading"><h2>{submissionAlertLabels[n.kind]}</h2>{n.due_date&&<time dateTime={n.due_date}>{n.due_date}</time>}</div>
+          <p>{n.grade}학년 {n.subject_name} · {submissionScopeLabel(n.scope)}</p>{n.note&&<p>{n.note}</p>}</div>
+          <div className="notification-actions"><Button asChild variant="ghost"><Link href={`/app/${c.workspace.id}/teaching?year=${c.year?.year}`} onClick={event=>{if(onNavigate&&!onNavigate())event.preventDefault();}}>수업·평가 열기</Link></Button></div>
+        </li>)}
         {items.map((n) => (
           <li className="notification-card" key={n.id}>
             <div className="notification-content">
@@ -53,7 +60,7 @@ export function NotificationCenter({ context: c, onNavigate, changes }: { contex
         ))}
       </ul>
       {changes && <PublishedChanges context={c} state={changes} onNavigate={onNavigate} />}
-      {!items.length && !changes?.items.length && <p className="notification-empty" role="status">
+      {!items.length && !reminders.length && !changes?.items.length && <p className="notification-empty" role="status">
         <Bell size={18} aria-hidden="true" /> 확인할 새 알림이 없습니다.
       </p>}
       <InlineNotice mutation={m} />

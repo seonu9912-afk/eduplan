@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
 import { InlineNotice, useMutation } from "@/components/common";
 import { submitTeachingVersion, withdrawTeachingSubmission } from "@/app/teaching-actions";
-import { activeSubmission, latestSubmission, submissionScopeLabel, submissionStatusLabels, type SubmissionScope, type TeachingSubmission } from "@/lib/teaching-submissions";
+import { dueForScope, type TeachingDeadline, activeSubmission, latestSubmission, submissionScopeLabel, submissionStatusLabels, type SubmissionScope, type TeachingSubmission } from "@/lib/teaching-submissions";
 import type { TeachingDocument } from "@/lib/teaching";
 import type { Row } from "@/lib/models";
 
 function date(value: string) {
   return new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
-export function TeachingSubmissionPanel({ course, document, rows, author, blocked, dirty, errors, checks, onBusyChange }: {
+export function TeachingSubmissionPanel({ course, document, rows, deadlines, author, blocked, dirty, errors, checks, onBusyChange }: {
   course: Row<"teaching_courses">;
   document: TeachingDocument;
   rows?: TeachingSubmission[];
+  deadlines?: TeachingDeadline[];
   author: boolean;
   blocked: boolean;
   dirty: boolean;
@@ -58,9 +59,11 @@ export function TeachingSubmissionPanel({ course, document, rows, author, blocke
         {scopes.map(item => {
           const latest = latestSubmission(records, item.scope);
           const changed = latest && latest.version !== course.version;
+          const due = dueForScope(deadlines??[],course.semester,item.scope);
           return <article key={item.scope} className="teaching-submission-card">
             <div className="teaching-submission-heading"><h3>{submissionScopeLabel(item.scope)}</h3>
               <span className="teaching-submission-state" data-status={latest?.status ?? "draft"}>{latest ? submissionStatusLabels[latest.status] : "미제출"}</span></div>
+            {due&&<p className="muted-small">제출 기한 · {due}</p>}
             {latest ? <>
               <p className="muted-small">제출본 v{latest.version} · {date(latest.submitted_at)} 제출</p>
               {changed && <p className="muted-small">현재 저장본 v{course.version} · 제출 이후 저장 버전 변경</p>}

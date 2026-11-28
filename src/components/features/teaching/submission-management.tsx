@@ -3,8 +3,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Modal, InlineNotice, useMutation } from "@/components/common";
-import { readTeachingSubmission, reviewTeachingSubmission } from "@/app/teaching-actions";
-import { activeSubmission, latestSubmission, submissionScopeLabel, submissionStatusLabels, type SubmissionDetail, type TeachingSubmission, type SubmissionScope } from "@/lib/teaching-submissions";
+import { readTeachingSubmission, reviewTeachingSubmission, saveTeachingDeadlines } from "@/app/teaching-actions";
+import { dueForScope, type TeachingDeadline, activeSubmission, latestSubmission, submissionScopeLabel, submissionStatusLabels, type SubmissionDetail, type TeachingSubmission, type SubmissionScope } from "@/lib/teaching-submissions";
 import { curriculumTeachingTargets } from "@/lib/teaching-targets";
 import { emptyTeachingDocument, teachingDocumentSchema, reviewTeaching } from "@/lib/teaching";
 import type { Context, Row } from "@/lib/models";
@@ -22,6 +22,7 @@ export function SubmissionManagement({context:c,initialSemester}:{context:Contex
   const [grade,setGrade]=useState("all");
   const [status,setStatus]=useState("all");
   const [selected,setSelected]=useState<string|null>(null);
+  const [settingDeadline,setSettingDeadline]=useState(false);
   const data=c.teaching!;
   if(data.submissions===undefined) return <p className="notice notice-error" role="alert">제출 기록을 불러오지 못했습니다. 새로고침 후 다시 확인하세요.</p>;
   const submissions=data.submissions;
@@ -58,6 +59,14 @@ export function SubmissionManagement({context:c,initialSemester}:{context:Contex
   const chosen=submissions.find(s=>s.id===selected);
   return <section className="teaching-submission-management">
     <div className="section-title"><h2>제출 관리</h2><label className="submission-term"><span className="sr-only">제출 관리 학기</span><select value={term} onChange={e=>setTerm(Number(e.target.value))}><option value={1}>1학기</option><option value={2}>2학기</option></select></label></div>
+    <div className="submission-deadline-strip">
+      <div><small>교수학습계획 마감</small><strong>{dueForScope(c.teachingDeadlines?.deadlines??[],term,"lesson")??"미설정"}</strong></div>
+      <div><small>평가계획 마감</small><strong>{dueForScope(c.teachingDeadlines?.deadlines??[],term,scopeFor(term))??"미설정"}</strong></div>
+      <Button variant="outline" size="sm" disabled={!c.teachingDeadlines} onClick={()=>setSettingDeadline(true)}>기한 설정</Button>
+    </div>
+    <Modal open={settingDeadline} onOpenChange={setSettingDeadline} title={`${term}학기 제출 기한 설정`} description="학교 공통 제출 기한입니다. 비워 두면 기한을 해제합니다.">
+      {settingDeadline&&<DeadlineSettings key={term} context={c} term={term} deadline={c.teachingDeadlines?.deadlines.find(d=>d.semester===term)} onDone={()=>setSettingDeadline(false)}/>}
+    </Modal>
     <div className="submission-summary">{summary.map(d=><button key={d.key} type="button" data-state={d.key} aria-pressed={status===(d.key==="submitted"?"pending":d.label)} onClick={()=>setStatus(status===(d.key==="submitted"?"pending":d.label)?"all":d.key==="submitted"?"pending":d.label)}><span>{d.label}</span><strong>{d.count}</strong></button>)}</div>
     {states.length>0&&<div className="submission-summary-bar" aria-hidden="true">{summary.map(d=><span key={d.key} data-state={d.key} style={{width:`${100*d.count/states.length}%`}}/>)}</div>}
     <p className="muted-small">확인 가능한 계획 {states.length}건 · 검토 완료 {summary[3].count}건. 교육과정 미연결 대상은 아래에서 별도로 확인합니다.</p>
@@ -76,6 +85,21 @@ export function SubmissionManagement({context:c,initialSemester}:{context:Contex
       {chosen&&<SubmissionReview key={chosen.id} context={c} row={chosen}/>}
     </Modal>
   </section>;
+}
+
+function DeadlineSettings({context:c,term,deadline,onDone}:{context:Context;term:number;deadline?:TeachingDeadline;onDone:()=>void}){
+  const [lesson,setLesson]=useState(deadline?.lesson_due??"");
+  const [assessment,setAssessment]=useState(deadline?.assessment_due??"");
+  const m=useMutation();
+  return <form className="form-stack" onSubmit={event=>{
+    event.preventDefault();
+    m.execute(()=>saveTeachingDeadlines(c.workspace.id,c.year!.id,term,deadline?.version??0,lesson||null,assessment||null),onDone,"제출 기한을 저장했습니다.");
+  }}>
+    <label>교수학습계획<input type="date" value={lesson} onChange={e=>setLesson(e.target.value)}/></label>
+    <label>평가계획<input type="date" value={assessment} onChange={e=>setAssessment(e.target.value)}/></label>
+    <p className="muted-small">마감 7일 전부터 미제출 담당자에게 앱 알림이 표시됩니다. 연간 교수학습계획에는 설정된 두 학기 기한 중 가장 이른 날짜를 적용합니다. 마감 후에도 제출할 수 있습니다.</p>
+    <InlineNotice mutation={m}/><Button type="submit" disabled={m.pending}>{m.pending?"저장 중…":"저장"}</Button>
+  </form>;
 }
 
 function SubmissionReview({context:c,row}:{context:Context;row:TeachingSubmission}){

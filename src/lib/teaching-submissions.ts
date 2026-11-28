@@ -33,3 +33,15 @@ export const submissionDetailSchema = z.object({
   report: z.unknown().nullable().optional(), content: z.unknown(),
 });
 export type SubmissionDetail = z.infer<typeof submissionDetailSchema>;
+
+export const teachingDeadlineDataSchema = z.object({
+  deadlines:z.array(z.object({semester:z.number().int().min(1).max(2),lesson_due:z.iso.date().nullable(),assessment_due:z.iso.date().nullable(),version:z.number().int().positive()})),
+  alerts:z.array(z.object({course_id:z.uuid(),grade:z.number(),subject_name:z.string(),scope:submissionScopeSchema,due_date:z.iso.date().nullable(),kind:z.enum(["changes_requested","overdue","today","upcoming"]),note:z.string()}))
+});
+export type TeachingDeadlineData = z.infer<typeof teachingDeadlineDataSchema>;
+export type TeachingDeadline = TeachingDeadlineData["deadlines"][number];
+export function dueForScope(deadlines:TeachingDeadline[],semester:number,scope:SubmissionScope):string|null {
+  if(scope!=="lesson") return deadlines.find(d=>d.semester===Number(scope.slice(-1)))?.assessment_due??null;
+  return deadlines.filter(d=>semester===0||d.semester===semester).flatMap(d=>d.lesson_due?[d.lesson_due]:[]).sort()[0]??null;
+}
+export const submissionAlertLabels = {changes_requested:"수정 요청",overdue:"제출 기한 지남",today:"오늘 제출 마감",upcoming:"제출 기한 임박"} as const;

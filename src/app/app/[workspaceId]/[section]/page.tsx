@@ -1,4 +1,5 @@
 import { getOperationsData } from "@/lib/operations-data";
+import { loadTeachingDeadlines } from "@/lib/teaching-deadlines-data";
 import { getTeachingData } from "@/lib/teaching-data";
 import { notFound } from "next/navigation";
 import { getWorkspaceContext } from "@/lib/data";
@@ -36,12 +37,14 @@ export default async function WorkspacePage({
   const management = p.section === "teachers" || p.section === "teaching" || (q.view === "manage" && !!managementDomains[p.section]);
   const context = await getWorkspaceContext(p.workspaceId, q.year, p.section, management);
   const taskYear = !management && (p.section === "home" || p.section === "plans") ? context.year?.id : undefined;
-  const [operations, tasks] = await Promise.all([
+  const [operations, tasks, teachingDeadlines] = await Promise.all([
     getOperationsData(context, p.section, management),
     taskYear ? loadSchoolTasks(context.workspace.id, taskYear) : undefined,
+    context.year ? loadTeachingDeadlines(context.workspace.id,context.year.id) : undefined,
   ]);
   context.operations = operations;
   context.myTasks = tasks;
+  context.teachingDeadlines = teachingDeadlines;
   if (taskYear) context.taskFocus = {
     id: uuid.safeParse(q.task).data,
     source: typeof q.source === "string" && q.source.length <= 80 ? q.source : undefined,

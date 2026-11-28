@@ -27,6 +27,7 @@ export type TeachingData = {
   >[];
 };
 export type Context = {
+  teachingDeadlines?: import('./teaching-submissions').TeachingDeadlineData | null;
   myTasks?: import("./school-tasks").TaskData | null;
   taskFocus?: { id?: string; source?: string };
   school?: Row<"schools"> | null;

@@ -241,3 +241,18 @@ export async function reviewTeachingSubmission(id: string, status: string, next:
     return true;
   });
 }
+
+export async function saveTeachingDeadlines(workspace:string,year:string,term:number,version:number,lesson:string|null,assessment:string|null) {
+  return run(async()=>{
+    uuid.parse(workspace);uuid.parse(year);
+    z.number().int().min(1).max(2).parse(term);
+    z.number().int().nonnegative().parse(version);
+    const lesson_date=z.iso.date().nullable().parse(lesson);
+    const assessment_date=z.iso.date().nullable().parse(assessment);
+    const db=await dbClient();
+    const {data,error}=await db.rpc("save_teaching_deadlines",{target:workspace,year_id:year,term,expected_version:version,lesson_date,assessment_date});
+    if(error)throw error;
+    refresh();
+    return data;
+  });
+}

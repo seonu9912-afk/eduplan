@@ -276,3 +276,10 @@
  .submission-review-actions{display:flex;gap:6px;flex-wrap:wrap}
  .submission-review-detail .teaching-report-preview{overflow:auto;max-width:100%}
 }
+
+@media screen {
+ .submission-deadline-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1px solid var(--border);border-radius:8px}
+ .submission-deadline-strip>div{display:grid;gap:3px;flex:1 1 110px}
+ .submission-deadline-strip small{font-size:11px;color:var(--text-secondary)}
+ .submission-deadline-strip strong{font-size:13px}
+}
