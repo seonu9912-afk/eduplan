@@ -179,13 +179,13 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
               </section>;
             })}
           </div>);
-  const viewExtras = <>
+  const displayMode = <>
           {work && view !== "year" && <div className="schedule-segments" role="group" aria-label="일정 표시 방식">
             <button type="button" aria-pressed={!listView.isList} onClick={() => listView.setIsList(false)}>달력</button>
             <button type="button" aria-pressed={listView.isList} onClick={() => listView.setIsList(true)}>목록</button>
           </div>}
-          {view === "week" && <WeekendToggle {...weekend} />}
   </>;
+  const viewExtras = <>{displayMode}{view === "week" && <WeekendToggle {...weekend} />}</>;
   return (
     <section className="school-plan-reader schedule-surface reader-surface calendar-reader-shell" data-calendar-view={view} data-work-plan={work ? "" : undefined} data-sidebar-collapsed={sidebarCollapsed ? "" : undefined}>
       <div className="schedule-reader-toolbar no-print">
@@ -196,9 +196,10 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           <ReaderViewSegment options={options} value={view} label="보기 전환" onChange={(value) => { setMiniMonthOverride(null); setMoreOpen(false); setView(value); }} />
           <Button className="schedule-search-toggle" variant="outline" size="sm" aria-label="일정 검색" aria-expanded={searchOpen} onClick={() => { setMoreOpen(false); setSearchOpen((open) => !open); }}><Search size={16} /><span>일정 검색</span></Button>
           <Button className="schedule-more-toggle" variant="outline" size="icon" aria-label="일정 더보기" aria-expanded={moreOpen} aria-controls="schedule-secondary-controls" onClick={() => {setSearchOpen(false);setMoreOpen(open=>!open);}}><Ellipsis size={20}/></Button>
-          <div className="reader-mobile-view-extra">{viewExtras}</div>
+          {work && view !== "year" && <div className="reader-mobile-view-extra">{displayMode}</div>}
           <div id="schedule-secondary-controls" className="schedule-secondary-controls" data-open={moreOpen}>
           <div className="schedule-view-extra reader-desktop-view-extra" data-open={moreOpen}>{viewExtras}</div>
+          {view === "week" && <div className="reader-mobile-weekend-action"><WeekendToggle {...weekend} /></div>}
 
           <label className="schedule-jump reader-desktop-date"><span className="sr-only">기준일</span>
             <input type="date" value={date} min={start} max={end} onChange={(e) => {

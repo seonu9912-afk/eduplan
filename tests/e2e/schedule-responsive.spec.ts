@@ -78,13 +78,20 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
  const main=reader.locator(".official-schedule-main");
  if(width<768){
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
-   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
+   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeHidden();
+   const segment=toolbar.getByRole("group",{name:"일정 표시 방식"});
+   expect((await segment.boundingBox())!.width).toBeLessThanOrEqual(150);
    await expect(toolbar.locator('input[type="date"]')).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeHidden();
    expect((await main.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
    await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
+   const weekend=toolbar.getByRole("button",{name:"주말 표시"});
+   const pressed=await weekend.getAttribute("aria-pressed");
+   await weekend.click();
+   await expect(weekend).toHaveAttribute("aria-pressed",pressed==="true"?"false":"true");
+   await weekend.click();
    await expect(toolbar.locator('input[type="date"]')).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeVisible();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
