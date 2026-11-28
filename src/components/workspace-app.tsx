@@ -380,7 +380,7 @@ export function WorkspaceApp({
         <Notice message={error} error />
         <LessonReminder context={c} showErrors={section === "notifications"} />
         {readerTools && <h1 className="sr-only">{sections[section]}</h1>}
-        {sharedPlan && !readerTools && (
+        {sharedPlan && !readerTools && !(section === "teaching" && management) && (
           <header className={management ? "workspace-view-tools no-print" : "page-heading no-print"}>
             {!management && <h1>{sections[section]}</h1>}
             {managementLink}
@@ -456,7 +456,7 @@ export function WorkspaceApp({
           </>
         ) : null}
         {section === "teaching" && management ? (
-          <TeachingModule context={c} onDirtyChange={setDirty} />
+          <TeachingModule key={c.year?.id ?? "no-year"} context={c} onDirtyChange={setDirty} actions={managementLink} />
         ) : null}
         {section === "teaching" && !management && <OfficialTeaching context={c} />}
         {section === "people" && schoolAdmin ? (

@@ -120,3 +120,28 @@
  .teaching-module .plan-savebar>div:first-child{min-width:0;flex:1 1 100%}
  .teaching-module .plan-savebar .teaching-actions{flex-wrap:wrap}
 }
+
+/* Align the published view switch with the teaching page title and compact the save bar. */
+@media screen {
+ .workspace-content[data-section="teaching"] .teaching-page-heading{margin:0 0 12px;gap:8px;flex-wrap:nowrap;align-items:center}
+ .teaching-page-heading h1{margin:0;min-width:0}
+ .teaching-page-heading .workspace-manage-link{flex:none;min-height:40px;white-space:nowrap;padding-inline:10px}
+ .teaching-overview-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+ .teaching-module .plan-savebar{margin-bottom:10px;gap:8px;padding:12px;background:var(--card);border-color:var(--border)}
+ .teaching-save-summary{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;min-width:0}
+ .teaching-save-summary strong{min-width:0}
+ .teaching-save-summary .save-status{max-width:100%;min-width:0}
+ .teaching-module .plan-savebar .teaching-save-time{font-size:11px;color:var(--text-secondary)}
+}
+@media screen and (max-width:767px) {
+ .workspace-content[data-section="teaching"] .teaching-page-heading{margin-bottom:10px}
+ .teaching-page-heading .workspace-manage-link{font-size:12px;min-height:40px;padding:6px 8px}
+ .teaching-page-heading .workspace-manage-link svg{width:15px;height:15px}
+ .teaching-module .plan-savebar{padding:10px;gap:7px}
+ .teaching-module .plan-savebar>div:first-child{gap:3px}
+ .teaching-save-summary{justify-content:space-between;gap:4px 8px}
+ .teaching-module .plan-savebar .teaching-actions{display:flex;gap:5px;justify-content:flex-end}
+ .teaching-module .plan-savebar .teaching-actions [data-slot=button]{min-height:40px;padding:6px 8px;font-size:12px;line-height:1.35}
+ .teaching-module .plan-savebar .teaching-actions [data-slot=button] svg{width:14px;height:14px}
+ .teaching-overview-actions{justify-content:flex-start}
+}

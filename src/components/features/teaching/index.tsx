@@ -15,7 +15,7 @@ import {
 import { defaultReportFormat } from "@/lib/teaching-format";
 import { TeachingConnections } from "./teaching-connections";
 import { ReportFormatEditor } from "./report-format-editor";
-import { useState, useEffect, useRef, useEffectEvent } from "react";
+import { useState, useEffect, useRef, useEffectEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
 import {
@@ -69,9 +69,11 @@ const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
   context: c,
   onDirtyChange,
+  actions,
 }: {
   context: Context;
   onDirtyChange: (dirty: boolean) => void;
+  actions?: ReactNode;
 }) {
   const [initialTarget, setInitialTarget] = useState<
     TeachingTarget | undefined
@@ -104,10 +106,13 @@ export function TeachingModule({
     );
   if (!c.year || !c.teaching)
     return (
+      <>
+      <div className="page-heading teaching-page-heading"><h1>수업·평가</h1>{actions}</div>
       <Empty
         title="학년도를 먼저 설정해 주세요"
         description="작업공간 설정에서 학년도를 개설하면 수업·평가 계획을 작성할 수 있습니다."
       />
+      </>
     );
   const data = c.teaching;
   const matches = (p: Row<"teaching_courses">, f: typeof filters) =>
@@ -156,25 +161,9 @@ export function TeachingModule({
   return (
     <div className="teaching-module">
       <div className="teaching-screen">
-        <div className="page-heading">
-          <div>
-            <h1>수업·평가</h1>
-          </div>
-          {canPlan(c, "assessment") && (
-            <Button
-              onClick={() => {
-                if (canLeave()) {
-                  changed(false);
-                  setSelected(null);
-                  setTab("overview");
-                  setInitialTarget(undefined);
-                  setCreating(true);
-                }
-              }}
-            >
-              <Plus /> 새 수업 설정
-            </Button>
-          )}
+        <div className="page-heading teaching-page-heading">
+          <h1>수업·평가</h1>
+          {actions}
         </div>
         <Disclosure className="teaching-query" compact label={
           <span className="teaching-query-summary">
@@ -360,13 +349,29 @@ export function TeachingModule({
               <SchoolTeachingReview context={c} openPlan={(id) => select(id, "review")} />
               </>
             )}
-            <div className="section-title">
+            <div className="section-title teaching-overview-heading">
               <div>
                 <h2>
                   담당 수업 <span>{courses.length}</span>
                 </h2>
                 <p>여러 학급에 하나의 공통 계획을 연결할 수 있습니다.</p>
               </div>
+              <div className="teaching-overview-actions">
+          {canPlan(c, "assessment") && (
+            <Button
+              onClick={() => {
+                if (canLeave()) {
+                  changed(false);
+                  setSelected(null);
+                  setTab("overview");
+                  setInitialTarget(undefined);
+                  setCreating(true);
+                }
+              }}
+            >
+              <Plus /> 새 수업 설정
+            </Button>
+          )}
               <label className="archive-toggle">
                 <input
                   type="checkbox"
@@ -375,6 +380,7 @@ export function TeachingModule({
                 />{" "}
                 보관된 수업
               </label>
+              </div>
             </div>
             {!courses.length ? (
               <div className="panel teaching-empty">
@@ -789,7 +795,8 @@ function CourseEditor({
         className={`teaching-screen ${tab === "overview" ? "teaching-editor-hidden" : ""}`}
       >
         <div className="plan-savebar">
-          <div>
+          <div className="teaching-save-meta">
+            <div className="teaching-save-summary">
             <strong>
               {course.grade}학년 {course.subject_name} ·{" "}
               {period(course.semester)}
@@ -807,7 +814,8 @@ function CourseEditor({
                         ? "저장하지 않은 변경사항"
                         : `저장 완료 · v${course.version}`}
             </SaveStatus>
-            <small>
+            </div>
+            <small className="teaching-save-time">
               {new Date(
                 serverCourse.version === course.version
                   ? serverCourse.updated_at
