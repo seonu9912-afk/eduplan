@@ -468,3 +468,30 @@
 @media screen and (max-width:360px) {
   .official-timetable.reader-surface > .official-timetable-scroll .official-timetable-grid thead th .timetable-date-inline { font-size:11px; padding-inline:0; }
 }
+
+/* Mobile timetable: match calendar reader navigation and use one row for audience and actions. */
+.official-timetable.reader-surface .timetable-mobile-mode-toggle { display:none; }
+@media screen and (max-width:767px) {
+ .official-timetable.reader-surface .official-timetable-controls { display:grid; grid-template-columns:minmax(0,1fr) 44px 44px; column-gap:3px; row-gap:0; align-items:center; margin-bottom:4px; }
+ .official-timetable.reader-surface .official-timetable-controls > .reader-period-nav { grid-column:1/-1; grid-row:1; width:100%; }
+ .official-timetable.reader-surface .reader-period-title h2 { font-size:16px; font-weight:600; letter-spacing:-.02em; }
+ .official-timetable.reader-surface .reader-period-nav > button[data-slot="button"],
+ .official-timetable.reader-surface .reader-more-toggle[data-slot="button"],
+ .official-timetable.reader-surface .timetable-mobile-mode-toggle[data-slot="button"] { border:0; border-radius:6px; background:transparent; box-shadow:none; color:var(--foreground); font-weight:500; min-height:44px; height:44px; }
+ .official-timetable.reader-surface .reader-period-nav > .reader-today { color:var(--primary); }
+ .official-timetable.reader-surface .reader-timetable-view { display:contents; }
+ .official-timetable.reader-surface .reader-timetable-view > .reader-segments { display:none; }
+ .official-timetable.reader-surface .official-timetable-controls > .reader-audience { grid-column:1; grid-row:2; width:100%; min-width:0; display:flex; flex-wrap:nowrap; gap:2px; padding:0; border:0; border-radius:0; background:transparent; }
+ .official-timetable.reader-surface .reader-audience > button { flex:1 1 0; min-width:0; min-height:44px; height:44px; padding:0 2px; border:0; border-bottom:2px solid transparent; border-radius:0; font-size:12px; font-weight:500; white-space:nowrap; background:transparent; box-shadow:none; }
+ .official-timetable.reader-surface .reader-audience > button:first-child { flex:1.55 1 0; }
+ .official-timetable.reader-surface .reader-audience > button[aria-pressed="true"] { color:var(--primary); border-bottom-color:var(--primary); font-weight:600; background:transparent; box-shadow:none; }
+ .official-timetable.reader-surface .timetable-mobile-mode-toggle[data-slot="button"] { display:inline-flex; grid-column:2; grid-row:2; width:44px; min-width:44px; padding:0; align-items:center; justify-content:center; }
+ .official-timetable.reader-surface .reader-more-toggle[data-slot="button"] { grid-column:3; grid-row:2; width:44px; min-width:44px; padding:0; }
+ .official-timetable.reader-surface .timetable-mobile-mode-toggle svg { width:20px; height:20px; }
+ .official-timetable.reader-surface .reader-timetable-view > .reader-secondary-controls { grid-column:1/-1; grid-row:3; }
+ .official-timetable.reader-surface .official-timetable-controls > .reader-target-filters { grid-column:1/-1; grid-row:4; margin-top:5px; }
+ .official-timetable.reader-surface .official-timetable-controls button:focus-visible { outline:2px solid var(--primary); outline-offset:-2px; }
+}
+@media screen and (max-width:360px) {
+ .official-timetable.reader-surface .reader-audience > button { font-size:11px; padding-inline:1px; }
+}

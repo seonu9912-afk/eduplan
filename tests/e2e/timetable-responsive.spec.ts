@@ -1,4 +1,11 @@
-import {test,expect} from "@playwright/test";
+import {test,expect,type Locator} from "@playwright/test";
+async function selectMode(sheet: Locator, mode: string, width: number) {
+ if(width>=768){ await sheet.getByRole("button",{name:mode,exact:true}).click(); return; }
+ const toggle=sheet.locator(".timetable-mobile-mode-toggle");
+ const target=mode==="기본"?"기본 시간표로 전환":"주간 시간표로 전환";
+ if(await toggle.getAttribute("aria-label")===target) await toggle.click();
+ await expect(toggle).toHaveAttribute("aria-label",mode==="기본"?"주간 시간표로 전환":"기본 시간표로 전환");
+}
 for(const width of [320,375,390,430,1440]){
  test(`official timetable at ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:900});
@@ -18,7 +25,7 @@ for(const width of [320,375,390,430,1440]){
   await expect(table.locator("[data-cancelled]")).toHaveCount(0);
   await sheet.getByRole("button",{name:"교사별",exact:true}).click();
   await expect(table).toHaveAttribute("data-audience","teacher");
-  await sheet.getByRole("button",{name:"기본",exact:true}).click();
+  await selectMode(sheet,"기본",width);
   await expect(sheet.locator(".official-timetable-caption")).toBeHidden();
   if(width>=768) { const period=table.locator("thead th").first(); expect((await period.boundingBox())!.width).toBeLessThanOrEqual(80); }
   await expect(sheet.locator(".official-timetable-scroll")).toBeVisible();
@@ -34,7 +41,7 @@ for(const width of [320,390,430]) test(`shared reader controls at ${width}px`,as
   const reader=page.locator(".reader-surface");
   const nav=reader.locator(".reader-period-nav");
   await expect(nav).toBeVisible();
-  metrics.push(await nav.getByRole("button",{name:"오늘",exact:true}).evaluate(el=>({height:el.getBoundingClientRect().height,radius:getComputedStyle(el).borderRadius,segmentHeight:el.closest(".reader-surface")!.querySelector(".reader-segments")!.getBoundingClientRect().height})));
+  metrics.push(await nav.getByRole("button",{name:"오늘",exact:true}).evaluate(el=>({height:el.getBoundingClientRect().height,radius:getComputedStyle(el).borderRadius,segmentHeight:Array.from(el.closest(".reader-surface")!.querySelectorAll(".reader-segments > button")).find(button=>button.getBoundingClientRect().height>0)!.getBoundingClientRect().height})));
   const box=await nav.evaluate(el=>({scroll:el.scrollWidth,width:el.clientWidth}));
   expect(box.scroll).toBeLessThanOrEqual(box.width+1);
  }
@@ -54,7 +61,7 @@ for (const width of [320,390,430,1440]) test(`lesson card geometry stays uniform
   const sheet=page.locator(".official-timetable");
   await sheet.getByRole("button",{name:"학급별",exact:true}).click();
   for (const mode of ["기본","주간"]) {
-    await sheet.getByRole("button",{name:mode,exact:true}).click();
+    await selectMode(sheet,mode,width);
     const cards=sheet.locator("button.official-lesson");
     await expect(cards.first()).toBeVisible();
     const sizes=await cards.evaluateAll(elements=>elements.map(el=>{
@@ -100,7 +107,7 @@ for (const width of [390,1440]) test(`class timetable uses neutral ordinary less
  const table=sheet.locator(".official-timetable-grid");
  await sheet.getByRole("button",{name:"학급별",exact:true}).click();
  for(const mode of ["기본","주간"]){
-  await sheet.getByRole("button",{name:mode,exact:true}).click();
+  await selectMode(sheet,mode,width);
   await expect(table).toHaveAttribute("data-audience","class");
   const ordinary=table.locator('button.official-lesson[data-kind="subject"]:not([data-changed]):not([data-blocked]):not([data-cancelled])');
   await expect(ordinary.first()).toBeVisible();
@@ -136,4 +143,31 @@ for(const width of [320,375,390,430]) test(`timetable dates are separated from m
  await input.fill((await input.getAttribute("min"))!);
  await expect(dialog).toBeHidden();
  await expect(more).toHaveAttribute("aria-expanded","false");
+});
+
+for(const width of [320,375,390,430,1440])test(`timetable mode and audience use a single mobile row at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
+ const sheet=page.locator(".official-timetable");
+ const toggle=sheet.locator(".timetable-mobile-mode-toggle");
+ const segment=sheet.getByRole("group",{name:"시간표 보기 방식",includeHidden:true});
+ if(width>=768){await expect(toggle).toBeHidden();await expect(segment).toBeVisible();return;}
+ await expect(toggle).toBeVisible();
+ await expect(segment).toBeHidden();
+ const controls=sheet.locator(".official-timetable-controls");
+ const geometry=await controls.evaluate(el=>{
+  const rects=[".reader-audience",".timetable-mobile-mode-toggle",".reader-more-toggle"].map(selector=>el.querySelector(selector)!.getBoundingClientRect());
+  const outer=el.getBoundingClientRect();
+  return {oneRow:rects.every(r=>Math.abs(r.top-rects[0].top)<=2),nonOverlap:rects.slice(1).every((r,i)=>r.left>=rects[i].right-1),within:rects.every(r=>r.left>=outer.left-1&&r.right<=outer.right+1),height:Math.max(...rects.map(r=>r.height))};
+ });
+ expect(geometry).toEqual({oneRow:true,nonOverlap:true,within:true,height:44});
+ await selectMode(sheet,"기본",width);
+ await expect(sheet.locator(".official-timetable-grid thead .timetable-weekday-label")).toHaveCount(5);
+ await selectMode(sheet,"주간",width);
+ await expect(sheet.locator(".official-timetable-grid thead time")).toHaveCount(5);
+ await sheet.getByRole("button",{name:"학급별",exact:true}).click();
+ await expect(sheet.locator(".reader-target-filters")).toBeVisible();
+ await sheet.getByRole("button",{name:"시간표 더보기"}).click();
+ await expect(sheet.locator(".reader-secondary-controls")).toBeVisible();
 });
