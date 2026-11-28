@@ -277,28 +277,25 @@ function YearForm({
 
 function SchoolNameForm({context:c}:{context:Context}) {
   const m=useMutation();
-  const [saved,setSaved]=useState(c.workspace.name);
-  const [name,setName]=useState(c.workspace.name);
+  // Keep only the user's draft in state; unchanged inputs follow the server prop.
+  // Capture the original name on the first edit for optimistic concurrency.
+  const [draft,setDraft]=useState<{name:string;original:string}|null>(null);
+  const name=draft?.name??c.workspace.name;
+  const saved=draft?.original??c.workspace.name;
   const editable=c.role==="admin";
-  useEffect(()=>{
-    setName(current=>current===saved?c.workspace.name:current);
-    setSaved(c.workspace.name);
-  // Synchronize external changes without discarding an unsaved input.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[c.workspace.name]);
   const changed=name.trim()!==saved;
   return <form className="school-name-settings school-basic-field-form" onSubmit={e=>{
     e.preventDefault();
     const next=name.trim();
     if(!editable||!next||!changed||m.pending)return;
-    m.execute(()=>renameSchool({workspaceId:c.workspace.id,name:next,previousName:saved}),value=>{
-      setSaved(value);
-      setName(value);
-    },"학교명을 변경했습니다.");
+    m.execute(()=>renameSchool({workspaceId:c.workspace.id,name:next,previousName:saved}),()=>setDraft(null),"학교명을 변경했습니다.");
   }}>
     <label htmlFor="settings-school-name">학교명</label>
     <div className="school-basic-field-row">
-      <input id="settings-school-name" name="school_name" value={name} onChange={e=>setName(e.target.value)} maxLength={80} required disabled={!editable||m.pending} autoComplete="off"/>
+      <input id="settings-school-name" name="school_name" value={name} onChange={e=>{
+        const next=e.target.value;
+        setDraft(current=>next===c.workspace.name?null:{name:next,original:current?.original??c.workspace.name});
+      }} maxLength={80} required disabled={!editable||m.pending} autoComplete="off"/>
       {editable&&<Button type="submit" variant="outline" disabled={m.pending||!changed||!name.trim()}>학교명 저장</Button>}
     </div>
     <p className="field-hint">학교명만 변경되며 기존 학년도 자료와 구성원, 나이스 연결은 유지됩니다.</p>
