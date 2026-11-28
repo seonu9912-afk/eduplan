@@ -1,0 +1,78 @@
+/* Read-only year view, sharing the same date-effective publications as other calendars. */
+.calendar-reader-shell[data-calendar-view="year"] .calendar-reader-layout { display:block; min-width:0; }
+.annual-reader { min-width:0; --annual-event:var(--primary); --annual-holiday:#b45353; --annual-vacation:#398363; --annual-line:var(--border); }
+.annual-reader-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; border-bottom:1px solid var(--annual-line); padding:12px 0 16px; }
+.annual-reader-summary > div { display:grid; gap:3px; min-width:0; }
+.annual-reader-summary > div > span { font-size:12px; color:var(--text-secondary); }
+.annual-reader-summary strong { font-size:clamp(22px,2.4vw,32px); font-weight:600; font-variant-numeric:tabular-nums; line-height:1.2; }
+.annual-reader-summary small { margin-inline-start:3px; font-size:12px; font-weight:400; color:var(--text-secondary); }
+.annual-reader-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(250px,29%); gap:20px; align-items:start; margin-top:12px; }
+.annual-reader-caption { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 12px; margin-bottom:8px; }
+.annual-reader-caption strong { font-size:13px; font-weight:500; }
+.annual-reader-legend { display:flex; flex-wrap:wrap; gap:4px 10px; font-size:11px; color:var(--text-secondary); }
+.annual-reader-legend span { display:flex; align-items:center; gap:4px; }
+.annual-reader-legend i { width:8px; height:8px; border-radius:50%; background:var(--annual-event); flex:none; }
+.annual-reader-legend i[data-kind="holiday"] { background:var(--annual-holiday); }
+.annual-reader-legend i[data-kind="vacation"] { background:var(--annual-vacation); border-radius:2px; }
+.annual-reader-legend i[data-kind="unpublished"] { background:var(--text-secondary); opacity:.4; }
+.annual-reader-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.annual-reader-month { min-width:0; padding:3px 4px 7px; border-bottom:2px solid transparent; }
+.annual-reader-month[data-selected] { border-bottom-color:var(--primary); background:color-mix(in srgb,var(--primary) 5%,transparent); border-radius:6px 6px 0 0; }
+.annual-reader-month-heading { display:flex; justify-content:space-between; align-items:center; gap:3px; width:100%; min-height:38px; text-align:start; }
+.annual-reader-month-heading strong { font-size:15px; font-weight:600; }
+.annual-reader-month-heading span { color:var(--text-secondary); font-size:11px; white-space:nowrap; }
+.annual-reader-month[data-selected] .annual-reader-month-heading strong { color:var(--primary); }
+.annual-reader-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px 0; }
+.annual-reader-weekday { font-size:10px; text-align:center; color:var(--text-secondary); padding-bottom:3px; }
+.workspace-content .annual-reader .annual-reader-day { position:relative; display:grid; place-items:center; min-width:0; min-height:0; aspect-ratio:1; padding:0; border:0; border-radius:3px; font-size:clamp(10px,1vw,13px); font-variant-numeric:tabular-nums; line-height:1; }
+.annual-reader-day time { display:grid; place-items:center; width:80%; aspect-ratio:1; border-radius:50%; }
+.annual-reader-day[data-weekday="0"],.annual-reader-weekday[data-weekday="0"],.annual-reader-day[data-holiday] { color:var(--annual-holiday); }
+.annual-reader-day[data-weekday="6"],.annual-reader-weekday[data-weekday="6"] { color:#4779af; }
+.annual-reader-day[data-vacation] { background:color-mix(in srgb,var(--annual-vacation) 16%,transparent); }
+.annual-reader-day[data-event]::after { content:""; width:3px; height:3px; position:absolute; bottom:1px; left:calc(50% - 1.5px); border-radius:50%; background:var(--annual-event); }
+.annual-reader-day[data-unpublished] { color:var(--text-secondary); opacity:.52; }
+.annual-reader-day[aria-current="date"] time { background:var(--primary); color:white; }
+.annual-reader-day[aria-pressed="true"]:not([aria-current="date"]) time { outline:1px solid var(--primary); }
+.annual-reader-day:hover { background:var(--surface-muted); }
+.annual-reader-agenda { min-width:0; border-inline-start:1px solid var(--annual-line); padding-inline-start:16px; }
+.annual-reader-agenda-heading { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px 8px; }
+.annual-reader-agenda-heading h3 { font-size:17px; font-weight:600; margin:0; }
+.annual-reader-agenda-heading span { font-size:12px; color:var(--text-secondary); }
+.annual-reader-month-link,.annual-reader-reset { display:inline-flex; gap:3px; align-items:center; min-height:44px; color:var(--primary); font-size:12px; }
+.annual-reader-filter { display:flex; gap:12px; border-bottom:1px solid var(--annual-line); margin-top:4px; }
+.annual-reader-filter button { min-height:44px; font-size:13px; color:var(--text-secondary); border-bottom:2px solid transparent; }
+.annual-reader-filter button[aria-pressed="true"] { color:var(--primary); border-bottom-color:var(--primary); font-weight:500; }
+.annual-reader-agenda-content ul,.annual-reader-print ul { list-style:none; padding:0; margin:0; }
+.annual-reader-agenda-content li { display:grid; grid-template-columns:55px minmax(0,1fr); gap:6px; padding:5px 0; align-items:start; border-bottom:1px solid var(--annual-line); }
+.annual-reader-occurrence-date { font-size:12px; color:var(--text-secondary); padding-top:12px; font-variant-numeric:tabular-nums; }
+.annual-reader-agenda-content li > div { border-inline-start:3px solid var(--annual-event); padding-inline-start:8px; min-width:0; }
+.annual-reader-agenda-content li[data-kind="holiday"] > div { border-color:var(--annual-holiday); }
+.annual-reader-agenda-content li[data-kind="vacation"] > div { border-color:var(--annual-vacation); }
+.annual-reader-agenda-content .schedule-detail-trigger { min-height:40px; text-align:start; white-space:normal; overflow-wrap:anywhere; font-weight:500; font-size:14px; }
+.annual-reader-agenda-content small,.annual-reader-note { font-size:12px; color:var(--text-secondary); }
+.annual-reader-note { padding-block:8px; }
+.annual-reader-print { display:none; }
+@media screen and (max-width:1100px) { .annual-reader-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media screen and (max-width:767px) {
+ .annual-reader-layout { grid-template-columns:minmax(0,1fr); gap:12px; }
+ .annual-reader-grid { gap:5px; }
+ .annual-reader-month { padding:2px 2px 5px; }
+ .annual-reader-month-heading strong { font-size:13px; }
+ .annual-reader-month-heading span { font-size:10px; }
+ .annual-reader-agenda { border-inline-start:0; border-top:1px solid var(--annual-line); padding:12px 0 0; }
+ .annual-reader-agenda-content .schedule-detail-trigger { min-height:44px; }
+}
+@media screen and (max-width:360px) { .annual-reader-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media screen and (prefers-reduced-motion:no-preference) {
+ .annual-reader-agenda-content { animation:annual-agenda-in 180ms ease-out both; }
+ @keyframes annual-agenda-in { from { opacity:.55; } to { opacity:1; } }
+}
+@media print {
+ .annual-reader-layout { display:none; }
+ .annual-reader-print { display:block; }
+ .annual-reader-print > div { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-items:start; }
+ .annual-reader-print section { break-inside:avoid; border:1px solid #ccc; padding:5px; font-size:9pt; }
+ .annual-reader-print h4 { font-size:10pt; margin:0 0 3px; }
+ .annual-reader-print li { margin:2px 0; overflow-wrap:anywhere; }
+ .annual-reader-print li span { font-weight:600; }
+}

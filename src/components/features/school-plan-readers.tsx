@@ -9,7 +9,7 @@ import { Modal } from "@/components/common";
 import { canPlan } from "@/lib/planning-completion";
 import { addDays, dateLabel, monthRange, weekRange, seoulToday } from "@/lib/domain";
 import type { Context } from "@/lib/models";
-import { publicationAt, publishedSchoolContext } from "@/lib/school-publications";
+import { publishedSchoolContext } from "@/lib/school-publications";
 import { weeklyCalendarSections, compactCalendarWeek, monthlyCalendarLaneCount, publishedScheduleDays, schoolScheduleEntries, weeklyOperationGroups, type ScheduleEntry } from "@/lib/school-schedule";
 import { scheduleDates, shiftScheduleDate, visibleWeekDate, visibleWeekDates } from "@/lib/schedule-dates";
 import { Disclosure } from "@/components/ui/disclosure";
@@ -18,6 +18,8 @@ import { ResourceLinks } from "./resource-links";
 import { DepartmentBadge } from "./department-badge";
 import { scheduleDepartmentColor } from "@/lib/department-badge";
 import { MyTasks } from "./my-tasks";
+import { AnnualScheduleReader } from "./annual-schedule-reader";
+import { buildAnnualSchedule } from "@/lib/annual-schedule-reader";
 import { ScheduleDetailDialog, ScheduleDetailTitle, useScheduleDetail } from "./schedule-detail";
 import { useWeekendVisibility, WeekendToggle } from "./weekend-visibility";
 import { ScheduleSearch } from "./schedule-search";
@@ -95,11 +97,8 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const days = publishedScheduleDays(officialContext, dates.filter((day) => day >= start && day <= end), work);
   const calendarDays = workWeek ? new Map([...days].map(([day, value]) => [day, { ...value, entries: value.entries.filter((entry) => !entry.operationGroup) }])) : days;
   const operationGroups = workWeek ? weeklyOperationGroups(dates, days) : [];
-  const available = view === "year" ? !!publicationAt(displayed, "calendar", date) :
-    [...days.values()].some((day) => day.available);
-  const entries = view === "year" && available
-    ? schoolScheduleEntries(publishedSchoolContext(officialContext, date), start, end, false)
-    : [];
+  const annual = view === "year" ? buildAnnualSchedule(officialContext, year) : null;
+  const available = annual ? annual.publishedDays > 0 : [...days.values()].some((day) => day.available);
   const agendaDates = [date];
   const title = view === "year" ? `${year}학년도` : view === "week"
     ? `${dateLabel(range.start)} – ${dateLabel(visibleEnd)}` : `${month.slice(0, 4)}년 ${Number(month.slice(5))}월`;
@@ -183,7 +182,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   return (
     <section className="school-plan-reader schedule-surface reader-surface calendar-reader-shell" data-calendar-view={view} data-work-plan={work ? "" : undefined} data-sidebar-collapsed={sidebarCollapsed ? "" : undefined}>
       <div className="schedule-reader-toolbar no-print">
-        <div className="calendar-reader-navigation"><Button type="button" variant="ghost" size="icon" className="calendar-sidebar-toggle" aria-label={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"} aria-expanded={!sidebarCollapsed} aria-controls="calendar-reader-sidebar" onClick={()=>setSidebarCollapsed(v=>!v)}>{sidebarCollapsed?<PanelLeftOpen size={20}/>:<PanelLeftClose size={20}/>}</Button>
+        <div className="calendar-reader-navigation">{view !== "year" && <Button type="button" variant="ghost" size="icon" className="calendar-sidebar-toggle" aria-label={sidebarCollapsed ? "사이드바 펼치기" : "사이드바 접기"} aria-expanded={!sidebarCollapsed} aria-controls="calendar-reader-sidebar" onClick={()=>setSidebarCollapsed(v=>!v)}>{sidebarCollapsed?<PanelLeftOpen size={20}/>:<PanelLeftClose size={20}/>}</Button>}
         <ReaderPeriodNavigator title={title} onTitleClick={() => {setMiniMonthOverride(null);setMoreOpen(false);setSecondary("date");}} previous={canPrevious ? () => navigate(-1) : undefined} next={canNext ? () => navigate(1) : undefined}
           todayDisabled={today < start || today > end} today={() => { setMiniMonthOverride(null); setDate(today); }} /></div>
         <div className="schedule-view-controls">
@@ -219,18 +218,15 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
         <Button className="no-print" variant="outline" onClick={() => setSelectedRelease(null)}>자동 적용본 보기</Button>
       </div>}
       <div className="calendar-reader-layout" data-list={work && listView.isList ? "" : undefined}>
-        <aside id="calendar-reader-sidebar" className="calendar-reader-sidebar no-print" aria-label="캘린더 보조 영역">
+        {view !== "year" && <aside id="calendar-reader-sidebar" className="calendar-reader-sidebar no-print" aria-label="캘린더 보조 영역">
           <div className="calendar-sidebar-desktop-tools">{work && canPlan(c,"plans") && <Button asChild className="calendar-quick-add"><Link href={`/app/${c.workspace.id}/plans?year=${year}&view=manage&date=${date}&quick=1`}><Plus size={18}/>일정 등록</Link></Button>}{actions && <div className="calendar-sidebar-action">{actions}</div>}{miniCalendar}</div>
           <MyTasks key={c.taskFocus?.id ?? c.taskFocus?.source} context={c} today={today} compact dashboard />
-        </aside>
+        </aside>}
         <div className="official-schedule-main">
       {view === "year" ? (
-        available ? (
-          <table className="school-reader-list"><thead><tr><th>기간</th><th>학사일정</th></tr></thead>
-            <tbody>{entries.map((item) => <tr key={item.id}><td>{dateLabel(item.date)}{item.end !== item.date && ` ~ ${dateLabel(item.end)}`}</td>
-              <td><ScheduleDetailTitle entry={item} onOpen={showEntry} /><ResourceLinks value={item.resources} compact /></td></tr>)}</tbody>
-          </table>
-        ) : <p className="panel school-reader-empty">선택한 날짜에 적용되는 공개 계획이 없습니다.</p>
+        annual && <AnnualScheduleReader model={annual} year={year} date={date} today={today}
+          onSelect={selectDate} onMonthView={(day) => { setDate(day); setMiniMonthOverride(null); setView("month"); }}
+          onOpen={showEntry} />
       ) : <>
         {work && listView.isList ? <ScheduleListView dates={dates.filter(day => day >= start && day <= end && (view !== "month" || day.startsWith(month)))} days={days} today={today} selectedDate={date} available={available} onOpen={showEntry} /> : <>
         <div className="school-calendar-mobile no-print">
