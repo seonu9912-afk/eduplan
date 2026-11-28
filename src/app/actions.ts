@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   academicSchema,
+  gradesForSchoolType,
   schoolTypeSchema,
   eventSchema,
   hourSchema,
@@ -21,7 +22,7 @@ import type { Result, Role } from "@/lib/models";
 import { requirePlanPermission } from "@/lib/plan-permissions.server";
 import type { PlanningDomain } from "@/lib/planning-completion";
 import { neisSchoolCode, schoolLinkFields, weatherGrid } from "@/lib/external-links";
-import { findNeisSchools, findNeisLocationSchools, matchesNeisSchoolLevel, readNeisSchool } from "@/lib/neis";
+import { findNeisSchools, findNeisLocationSchools, matchesNeisSchoolLevel, readNeisSchool, readNeisClassPreview } from "@/lib/neis";
 import { resolveSchoolWeatherLocation, filterWeatherLocationSchools } from "@/lib/weather-location";
 import { findLiveSchoolLocations, readLiveSchoolLocation, resolveLatestSchoolWeatherLocation } from "@/lib/school-location-api";
 import type { WeatherLocationCandidate } from "@/lib/school-public-data-model";
@@ -329,6 +330,20 @@ export async function saveSchoolWeatherGrid(input: unknown) {
     if (result.error) throw result.error;
     refresh();
   });
+}
+export async function previewNeisClassCounts(workspaceId:string,year:number){
+ return run(async()=>{
+  const selected=schoolYearSchema.parse(year);
+  const {db}=await authorized(workspaceId,["admin"]);
+  const {data:school,error}=await db.from("schools").select("school_type,neis_office_code,neis_school_code").eq("id",workspaceId).single();
+  if(error)throw error;
+  const codes=neisSchoolCode.safeParse(school);
+  if(!codes.success)throw Error("학교 정보에서 나이스 학교를 먼저 연결해 주세요.");
+  const type=schoolTypeSchema.parse(school.school_type);
+  const result=await readNeisClassPreview(codes.data.neis_office_code,codes.data.neis_school_code,selected,gradesForSchoolType(type),type);
+  if(!result)throw Error("선택한 학년도의 공개 학급정보가 없습니다. 학급 수를 직접 입력해 주세요.");
+  return result;
+ });
 }
 export async function saveYear(input: unknown) {
   return run(async () => {

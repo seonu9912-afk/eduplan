@@ -4,7 +4,7 @@ import { isoDate, schoolTypeSchema, type SchoolType } from "./domain";
 import { externalUrl, neisSchoolCode } from "./external-links";
 import type { NeisSchool, PublicDataResult, SchoolMeal } from "./school-public-data-model";
 
-type NeisEndpoint = "schoolInfo" | "mealServiceDietInfo";
+type NeisEndpoint = "schoolInfo" | "mealServiceDietInfo" | "classInfo";
 const alternativeSchoolLevels: Record<string, SchoolType | undefined> = {
   "각종학교(초)": "초등학교",
   "각종학교(중)": "중학교",
@@ -32,6 +32,10 @@ async function neisRows(endpoint: NeisEndpoint, query: Record<string, string>): 
     const rows = groups?.find((group: { row?: unknown }) => group.row)?.row;
     if (code !== "INFO-000" || !Array.isArray(rows) ||
       rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))) throw Error();
+    if(endpoint==="classInfo"){
+      const count=groups?.find((group:{head?:unknown})=>group.head)?.head?.find((entry:{list_total_count?:unknown})=>entry.list_total_count!=null)?.list_total_count;
+      if(!Number.isSafeInteger(Number(count))||Number(count)!==rows.length)throw Error();
+    }
     return rows;
   } catch {
     throw Error("나이스에서 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
@@ -109,4 +113,32 @@ export async function getSchoolMeals(school: unknown, date: string): Promise<Pub
   } catch {
     return { status: "error" };
   }
+}
+
+export type NeisClassPreview={schoolName:string;year:number;grades:{grade:number;count:number|null;names:string[]}[];excluded:number};
+export function parseNeisClassPreview(rows:Record<string,unknown>[],office:string,code:string,year:number,grades:number[],schoolType:string):NeisClassPreview|null{
+ if(!rows.length)return null;
+ const names=new Map<number,Set<number>>(grades.map(g=>[g,new Set<number>()]));
+ const identities=new Map<string,string>();
+ let excluded=0;
+ const schoolName=field(rows[0],"SCHUL_NM");
+ if(!schoolName)throw Error("학교명을 확인할 수 없습니다.");
+ for(const row of rows){
+  if(field(row,"ATPT_OFCDC_SC_CODE")!==office||field(row,"SD_SCHUL_CODE")!==code||field(row,"AY")!==String(year)||field(row,"SCHUL_NM")!==schoolName)throw Error("나이스 자료의 학교 또는 학년도가 일치하지 않습니다.");
+  const grade=Number(field(row,"GRADE")),className=field(row,"CLASS_NM"),course=field(row,"SCHUL_CRSE_SC_NM");
+  const day=field(row,"DGHT_CRSE_SC_NM");
+  if(!names.has(grade)||!/^[0-9]{1,2}$/.test(className)||Number(className)<1||Number(className)>30||course&&!matchesNeisSchoolLevel(course,schoolType)||day&&day!=="주간"){excluded++;continue;}
+  const n=Number(className),key=grade+":"+n,identity=[course,day,field(row,"ORD_SC_NM"),field(row,"DDDEP_NM")].join("|");
+  if(identities.has(key)&&identities.get(key)!==identity)throw Error("동일한 학급 번호가 여러 과정에 존재합니다. 학급 수를 직접 확인해 주세요.");
+  identities.set(key,identity);names.get(grade)!.add(n);
+ }
+ const result=grades.map(grade=>{
+  const sorted=[...names.get(grade)!].sort((a,b)=>a-b);
+  return {grade,count:sorted.length&&sorted.every((n,i)=>n===i+1)?sorted.length:null,names:sorted.map(String)};
+ });
+ return {schoolName,year,grades:result,excluded};
+}
+export async function readNeisClassPreview(office:string,code:string,year:number,grades:number[],schoolType:string){
+ const rows=await neisRows("classInfo",{ATPT_OFCDC_SC_CODE:office,SD_SCHUL_CODE:code,AY:String(year),pSize:"1000"});
+ return parseNeisClassPreview(rows,office,code,year,grades,schoolType);
 }

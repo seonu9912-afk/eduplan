@@ -1,6 +1,6 @@
 "use client";
-import { useSyncExternalStore, useEffect, useState, type ReactNode, type MouseEvent } from "react";
-import { Building2, Users, Settings2, ChevronRight, ChevronLeft, Plus } from "lucide-react";
+import { useSyncExternalStore, useEffect, useState, useTransition, type ReactNode, type MouseEvent } from "react";
+import { Building2, Users, Settings2, ChevronRight, ChevronLeft, Plus, Download, ExternalLink } from "lucide-react";
 import { settingsSectionFromHash, isSettingsDetailHash, settingsAnchorFromHash } from "@/lib/school-settings-sections";
 import "./school-settings-layout.css";
 import Link from "next/link";
@@ -16,7 +16,7 @@ import {
   SubmitButton,
   useMutation,
 } from "@/components/common";
-import { saveYear, setSchoolType, renameSchool } from "@/app/actions";
+import { saveYear, setSchoolType, renameSchool, previewNeisClassCounts } from "@/app/actions";
 import {
   monthRange,
   schoolTypes,
@@ -30,6 +30,7 @@ import { SchoolLinkSettings } from "./school-links";
 import { SchoolInformationSettings } from "./school-information-settings";
 import { YearTransfer } from "./year-transfer";
 import { Button } from "@/components/ui/button";
+import type { NeisClassPreview } from "@/lib/neis";
 const subscribeHash=(callback:()=>void)=>{window.addEventListener("hashchange",callback);window.addEventListener("popstate",callback);return()=>{window.removeEventListener("hashchange",callback);window.removeEventListener("popstate",callback);}};
 const readHash=()=>window.location.hash;
 const serverHash=()=>"";
@@ -174,6 +175,12 @@ function YearForm({
 }) {
   const m = useMutation();
   const router = useRouter();
+  const [counts,setCounts]=useState(()=>c.grades.map(g=>String(c.classes.filter(x=>x.grade===g).length)));
+  const [preview,setPreview]=useState<NeisClassPreview|null>(null);
+  const [importError,setImportError]=useState("");
+  const [importing,startImport]=useTransition();
+  const linked=!!(c.school?.neis_office_code&&c.school?.neis_school_code);
+  function updateCounts(next:string[]){setCounts(next);onDirty(c.grades.some((g,i)=>next[i]!==String(c.classes.filter(x=>x.grade===g).length)));}
   const term = (n: number) => c.semesters.find((s) => s.number === n);
   const defaults = [
     { start_date: `${year}-03-01`, end_date: `${year}-07-20` },
@@ -182,10 +189,6 @@ function YearForm({
   return (
     <form
       className="panel settings-form academic-year-class-form"
-      onChange={e=>{
-        const form=new FormData(e.currentTarget);
-        onDirty(c.grades.some(n=>String(form.get(`classes-${n}`))!==String(c.classes.filter(x=>x.grade===n).length)));
-      }}
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -205,7 +208,7 @@ function YearForm({
         );
       }}
     >
-      <fieldset disabled={!editable || m.pending}>
+      <fieldset disabled={!editable || m.pending || importing}>
         <div className="settings-section">
           <div className="section-label">
             <GraduationCap size={20} />
@@ -214,8 +217,30 @@ function YearForm({
           <p className="muted">
             선택한 학년도의 학년별 학급 수를 설정합니다.
           </p>
+          {editable&&<div className="class-import-tools">
+            <Button type="button" variant="outline" disabled={!linked||importing||m.pending} onClick={()=>{
+              setPreview(null);setImportError("");
+              startImport(async()=>{try{const result=await previewNeisClassCounts(c.workspace.id,year);if(result.ok)setPreview(result.data);else setImportError(result.error);}catch{setImportError("나이스 학급정보를 불러오지 못했습니다.");}});
+            }}><Download size={15} aria-hidden="true"/>{importing?"조회 중…":"나이스 학급정보 가져오기"}</Button>
+            <a href="https://www.schoolinfo.go.kr/" target="_blank" rel="noopener noreferrer">학교알리미 공시자료 확인 <ExternalLink size={12} aria-hidden="true"/></a>
+            {!linked&&<p className="field-hint">학교 정보에서 나이스 학교를 먼저 연결하세요.</p>}
+            {importError&&<p role="alert" className="field-hint">{importError}</p>}
+            {preview&&<div className="class-import-preview">
+              <strong>{preview.schoolName} · {preview.year}학년도 공개 학급정보</strong>
+              <p className="field-hint">현재 입력값과 비교한 결과입니다. 확인되지 않은 학년은 기존 값을 유지합니다.</p>
+              <div className="class-import-table" role="table" aria-label="학급 수 비교">
+                <div role="row"><span role="columnheader">학년</span><span role="columnheader">현재 입력</span><span role="columnheader">나이스</span></div>
+                {preview.grades.map((row,i)=><div role="row" key={row.grade}><span role="cell">{row.grade}학년</span><span role="cell">{counts[i]||"—"}</span><strong role="cell">{row.count===null?"확인 필요":row.count+"학급"}</strong></div>)}
+              </div>
+              {preview.excluded>0&&<p className="field-hint">일반 숫자 학급으로 확인할 수 없는 자료 {preview.excluded}건은 제외했습니다. 실제 학급 편성을 확인하세요.</p>}
+              <div className="class-import-actions"><Button type="button" variant="ghost" onClick={()=>setPreview(null)}>취소</Button><Button type="button" disabled={preview.grades.every(row=>row.count===null)} onClick={()=>{
+                updateCounts(counts.map((v,i)=>preview.grades[i]?.count!=null?String(preview.grades[i].count):v));setPreview(null);
+              }}>입력칸에 반영</Button></div>
+              <p className="field-hint">아래 학급 구성 저장을 눌러야 실제 학교 자료에 적용됩니다.</p>
+            </div>}
+          </div>}
           <div className="class-counts">
-            {c.grades.map((n) => (
+            {c.grades.map((n,i) => (
               <Field key={n} label={`${n}학년 학급 수`} id={`class-count-${n}`}>
                 <div className="unit-input">
                   <input
@@ -224,7 +249,8 @@ function YearForm({
                     type="number"
                     min={0}
                     max={30}
-                    defaultValue={c.classes.filter((x) => x.grade === n).length}
+                    value={counts[i]}
+                    onChange={e=>updateCounts(counts.map((v,j)=>j===i?e.target.value:v))}
                     required
                   />
                   <span>학급</span>

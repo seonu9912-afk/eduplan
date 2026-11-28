@@ -147,3 +147,16 @@
  .school-settings-hub .school-basic-fields .school-type-settings { padding:0; border:0; }
  .school-settings-hub .school-basic-field-row > button[data-slot="button"] { font-size:12px; padding-inline:8px; }
 }
+
+@media screen{
+ .class-import-tools{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;margin-top:10px}
+ .class-import-tools>a{display:inline-flex;gap:4px;align-items:center;font-size:12px;color:var(--primary)}
+ .class-import-tools>.field-hint{width:100%;margin:0}
+ .class-import-preview{width:100%;min-width:0;display:grid;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px}
+ .class-import-preview>strong{font-size:13px}
+ .class-import-preview .field-hint{margin:0;font-size:12px}
+ .class-import-table{display:grid;gap:0}
+ .class-import-table>div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+ .class-import-table>div:first-child{font-size:12px;color:var(--text-secondary)}
+ .class-import-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+}
