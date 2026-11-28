@@ -651,3 +651,35 @@ select {
 @media screen and (max-width:374px) {
   .app-shell > .app-header .header-inner { --header-edge:max(10px,env(safe-area-inset-left,0px),env(safe-area-inset-right,0px)); }
 }
+
+
+/* Native date controls (including iOS WebKit) must not extend past their grid/flex item. */
+@media screen and (max-width:767px) {
+  .app-shell input[type="date"] {
+    box-sizing:border-box; min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%;
+  }
+  .app-shell input[type="date"]::-webkit-date-and-time-value {
+    min-width:0; min-inline-size:0; max-width:100%; text-align:start;
+  }
+  .app-shell input[type="date"]::-webkit-datetime-edit {
+    min-width:0; max-width:100%;
+  }
+  /* A date is a full-width field; actions wrap below it, never beside it. */
+  .reader-surface .schedule-secondary-controls > .schedule-jump,
+  .reader-surface .reader-secondary-controls > label:has(> input[type="date"]) {
+    flex:0 0 100%; width:100%; min-width:0; max-width:100%; box-sizing:border-box;
+    grid-column:1/-1;
+  }
+  .reader-surface .schedule-secondary-controls > .schedule-jump > input[type="date"],
+  .reader-surface .reader-secondary-controls > label > input[type="date"] {
+    display:block; box-sizing:border-box; width:100%; min-width:0; max-width:100%;
+    min-inline-size:0; max-inline-size:100%; margin:0;
+  }
+  .reader-surface .schedule-secondary-controls,
+  .reader-surface .reader-secondary-controls {
+    box-sizing:border-box; min-width:0; max-width:100%; flex-wrap:wrap;
+  }
+  .reader-surface :is(.schedule-secondary-controls,.reader-secondary-controls) > :is(button,a) {
+    max-width:100%; min-width:0; white-space:normal;
+  }
+}

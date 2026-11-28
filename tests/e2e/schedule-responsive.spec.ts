@@ -118,3 +118,31 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
  const geometry=await toolbar.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
  expect(geometry.scroll).toBeLessThanOrEqual(geometry.client+1);
 });
+
+
+for(const width of [320,390,430]) test(`date input stays on its own row in schedule readers at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ for(const tab of ["공개 학사일정","공개 주간계획"]){
+  await page.getByRole("button",{name:tab,exact:true}).click();
+  const reader=page.locator(".calendar-reader-shell");
+  const modes=tab==="공개 학사일정"?["월간","주간","연간"]:["월중계획","주간계획"];
+  for(const mode of modes){
+   await reader.getByRole("button",{name:mode,exact:true}).click();
+   const more=reader.getByRole("button",{name:"일정 더보기"});
+   if(await more.getAttribute("aria-expanded")!=="true") await more.click();
+   const controls=reader.locator(".schedule-secondary-controls");
+   const input=controls.locator('input[type="date"]');
+   await expect(input).toBeVisible();
+   const geometry=await controls.evaluate(el=>{
+    const outer=el.getBoundingClientRect();
+    const field=el.querySelector('input[type="date"]')!.getBoundingClientRect();
+    const label=el.querySelector(".schedule-jump")!.getBoundingClientRect();
+    const buttons=Array.from(el.querySelectorAll(":scope > button,:scope > a")).map(button=>button.getBoundingClientRect()).filter(rect=>rect.width&&rect.height);
+    return {within:field.left>=outer.left&&field.right<=outer.right&&field.right<=label.right+1,fullRow:Math.abs(label.width-el.clientWidth+parseFloat(getComputedStyle(el).paddingLeft)+parseFloat(getComputedStyle(el).paddingRight))<=2,overlap:buttons.some(rect=>rect.left<field.right&&rect.right>field.left&&rect.top<field.bottom&&rect.bottom>field.top)};
+   });
+   expect(geometry).toEqual({within:true,fullRow:true,overlap:false});
+   await more.click();
+  }
+ }
+});
