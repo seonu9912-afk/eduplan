@@ -48,6 +48,7 @@ import {
   BookOpen,
   CalendarDays,
   ChevronRight,
+  ChevronDown,
   House,
   LogOut,
   Plus,
@@ -266,6 +267,7 @@ export function WorkspaceApp({
         <div className="header-inner">
           <Brand />
           <div className="workspace-pickers">
+            <span className="mobile-school-title" aria-hidden="true"><span>{c.workspace.name}</span><ChevronDown size={14} /></span>
             <label className="sr-only" htmlFor="workspace-picker">
               작업공간 선택
             </label>

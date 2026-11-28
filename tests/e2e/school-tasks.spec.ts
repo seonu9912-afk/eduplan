@@ -166,3 +166,32 @@ test("creates a linked task from a published work item and opens the exact sourc
     await context.close();
   }
 });
+
+test("mobile school title is centered without changing the desktop header", async ({ page }) => {
+  const data = JSON.parse(readFileSync(fixture!, "utf8")) as Scenario;
+  await login(page, data.sender);
+  await page.goto(`/app/${data.workspace}/home?year=${data.year}`);
+  const header=page.locator(".app-header .header-inner");
+  const title=header.locator(".mobile-school-title");
+  const picker=header.getByLabel("작업공간 선택");
+  for(const width of [320,390,430]){
+    await page.setViewportSize({width,height:850});
+    await expect(title).toBeVisible();
+    await expect(title).toHaveCSS("font-size","16px");
+    await expect(title).toHaveCSS("font-weight","700");
+    const center=await header.locator(".workspace-pickers").evaluate(el=>{const r=el.getBoundingClientRect();return r.left+r.width/2;});
+    expect(Math.abs(center-width/2)).toBeLessThanOrEqual(1);
+    const overlap=await header.evaluate(el=>{
+      const picker=el.querySelector(".workspace-pickers")!.getBoundingClientRect();
+      const right=el.querySelector(".header-right")!.getBoundingClientRect();
+      const brand=el.querySelector(".brand")!.getBoundingClientRect();
+      return picker.left<brand.right||picker.right>right.left;
+    });
+    expect(overlap).toBe(false);
+    await expect(picker).toBeEnabled();
+  }
+  await page.setViewportSize({width:1440,height:900});
+  await expect(title).toBeHidden();
+  await expect(picker).toHaveCSS("opacity","1");
+  await expect(header).toHaveCSS("display","flex");
+});
