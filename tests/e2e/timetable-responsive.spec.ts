@@ -67,7 +67,27 @@ for (const width of [320,390,430,1440]) test(`lesson card geometry stays uniform
     expect(sizes.every(s=>s.height===sizes[0].height&&s.centerOffset<=1&&s.slotPresent===s.hasBadge&&(!s.slotPresent||s.slotHeight===15))).toBe(true);
     expect(sizes.some(s=>!s.slotPresent)).toBe(true);
     expect(sizes[0].height).toBe(width<768?58:60);
-    await expect(sheet.locator("thead .timetable-day-badge").filter({hasText:"단축"})).toHaveCount(0);
+    await expect(sheet.locator("thead .timetable-day-badge")).toHaveCount(0);
+    const heading=sheet.locator(".official-timetable-grid thead th");
+    if(mode==="주간"){
+      const times=heading.locator("time");
+      await expect(times).toHaveCount(5);
+      const labels=await times.allTextContents();
+      expect(labels.every((label,index)=>new RegExp("^\\\\d{1,2}\\\\("+["월","화","수","목","금"][index]+"\\\\)$").test(label))).toBe(true);
+      await expect(heading.locator(".timetable-weekday-label")).toHaveCount(0);
+      const geometry=await times.evaluateAll(elements=>elements.map(el=>({height:el.getBoundingClientRect().height,width:el.getBoundingClientRect().width,cellWidth:el.closest("th")!.getBoundingClientRect().width})));
+      expect(geometry.every(x=>x.height<=28&&x.width<=x.cellWidth)).toBe(true);
+      const notice=heading.locator("button.timetable-date-detail").first();
+      if(await notice.count()){
+        await notice.click();
+        await expect(page.getByRole("dialog",{name:"일과 운영 안내"})).toBeVisible();
+        await expect(page.getByRole("dialog",{name:"일과 운영 안내"}).locator(".timetable-detail-notice")).toBeVisible();
+        await page.keyboard.press("Escape");
+      }
+    }else{
+      await expect(heading.locator(".timetable-weekday-label")).toHaveText(["월","화","수","목","금"]);
+      await expect(heading.locator("time")).toHaveCount(0);
+    }
   }
 });
 

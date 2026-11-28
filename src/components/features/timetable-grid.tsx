@@ -34,12 +34,20 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
         <colgroup><col className="timetable-period-col"/>{columns.map(column=><col key={column.date}/>)}</colgroup>
         <thead><tr>
           <th scope="col">교시</th>
-          {columns.map((column, index) => (
-            <th scope="col" key={column.date} data-today={mode === "weekly" && column.date === today ? "" : undefined}><span className="timetable-weekday-label">{days[index]}</span>
-              {mode === "weekly" && (showChangeBadges && column.noticeLabel === "단축" ? <button type="button" className="timetable-date-detail" aria-label={dateLabel(column.date) + " 일과 운영 상세 보기"} onClick={() => setDetail({date: column.date, notice: column.notice})}><time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time></button> : <time dateTime={column.date} aria-current={column.date === today ? "date" : undefined}><span className="timetable-date-full">{dateLabel(column.date)}</span><span className="timetable-date-short" aria-hidden="true">{Number(column.date.slice(8))}</span></time>)}
-              {column.notice && !(showChangeBadges && column.noticeLabel === "단축") && (showChangeBadges ? <button type="button" className="timetable-day-badge" aria-label={dateLabel(column.date) + " " + column.notice} onClick={() => setDetail({ date: column.date, notice: column.notice })}>{column.noticeLabel ?? (/방학/.test(column.notice) ? "방학" : /수업일 아님|휴업|공휴일/.test(column.notice) || !column.teaching && column.cells.length ? "휴업" : "안내")}</button> : <small className="timetable-day-notice">{column.notice}</small>)}
-            </th>
-          ))}
+          {columns.map((column, index) => {
+            const weekday = days[index];
+            const weekly = mode === "weekly";
+            const dayLabel = `${Number(column.date.slice(8))}(${weekday})`;
+            const dateContent = <time className="timetable-date-inline" dateTime={column.date}
+              aria-current={column.date === today ? "date" : undefined}>{dayLabel}</time>;
+            return <th scope="col" key={column.date} data-today={weekly && column.date === today ? "" : undefined}>
+              {weekly ? (showChangeBadges && column.notice ? <button type="button" className="timetable-date-detail"
+                aria-label={dateLabel(column.date) + " " + weekday + "요일 일과 운영 상세 보기: " + column.notice}
+                title={column.notice} data-notice={column.noticeLabel ?? "안내"} onClick={() => setDetail({date: column.date, notice: column.notice})}>
+                {dateContent}</button> : dateContent) : <span className="timetable-weekday-label">{weekday}</span>}
+              {!showChangeBadges && column.notice && <small className="timetable-day-notice">{column.notice}</small>}
+            </th>;
+          })}
         </tr></thead>
         <tbody>
           {Array.from({ length: week.rows }, (_, index) => {
