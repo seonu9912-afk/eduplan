@@ -73,7 +73,8 @@ for (const width of [320,390,430,1440]) test(`lesson card geometry stays uniform
       const times=heading.locator("time");
       await expect(times).toHaveCount(5);
       const labels=await times.allTextContents();
-      expect(labels.every((label,index)=>new RegExp("^\\\\d{1,2}\\\\("+["월","화","수","목","금"][index]+"\\\\)$").test(label))).toBe(true);
+      const dates=await times.evaluateAll(elements=>elements.map(el=>el.getAttribute("datetime")!));
+      expect(labels).toEqual(dates.map((date,index)=>Number(date.slice(8))+"("+["월","화","수","목","금"][index]+")"));
       await expect(heading.locator(".timetable-weekday-label")).toHaveCount(0);
       const geometry=await times.evaluateAll(elements=>elements.map(el=>({height:el.getBoundingClientRect().height,width:el.getBoundingClientRect().width,cellWidth:el.closest("th")!.getBoundingClientRect().width})));
       expect(geometry.every(x=>x.height<=28&&x.width<=x.cellWidth)).toBe(true);
