@@ -6,6 +6,7 @@ import { operationsPreviewContext } from "./operations-fixture";
 import { Staffing, type StaffingActions } from "@/components/features/staffing";
 import { PersonalDay } from "@/components/features/personal-day";
 import { SchoolShortcuts } from "@/components/features/school-links";
+import { SchoolSettings } from "@/components/features/settings";
 import { OfficialTimetable } from "@/components/features/official-timetable";
 import { OfficialSchedule } from "@/components/features/school-plan-readers";
 import {
@@ -244,7 +245,7 @@ export function OperationsPreview() {
     [dirty, setDirty] = useState(false);
   const onDirty = useCallback((v: boolean) => setDirty(v), []);
   if (!c) return <p>통합 운영 실습 자료를 불러오고 있습니다.</p>;
-  const tabs = ["오늘", "교원·수급", "학사일정", "월중·주간", "시간표 조회", "수업 연계", "공개 학사일정", "공개 주간계획"];
+  const tabs = ["오늘", "교원·수급", "학사일정", "월중·주간", "시간표 조회", "수업 연계", "공개 학사일정", "공개 주간계획", "학교 설정"];
   return (
     <div className="operations-module">
       <header>
@@ -336,6 +337,7 @@ export function OperationsPreview() {
           save={store.saveWork}
         />
       )}
+      {tab === "학교 설정" && <SchoolSettings context={c} />}
       {tab === "공개 주간계획" && <OfficialSchedule context={{...c,myTasks:{tasks:[],recipients:[],directory:[]}}} today="2027-03-02" work actions={<Button variant="outline">업무계획 관리</Button>} />}
       {tab === "공개 학사일정" && <OfficialSchedule context={c} today="2027-03-02" initialDate="2027-03-02" actions={<Button variant="outline">학사일정 관리</Button>} />}
       {tab === "시간표 조회" && <OfficialTimetable context={c} today="2027-03-02" initialDate="2027-03-02" />}

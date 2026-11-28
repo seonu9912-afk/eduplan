@@ -1,7 +1,7 @@
 "use client";
-import { useSyncExternalStore, useEffect, type ReactNode } from "react";
-import { Building2, ClipboardCheck, Link2, Users, Settings2, ChevronRight } from "lucide-react";
-import { settingsSectionFromHash } from "@/lib/school-settings-sections";
+import { useSyncExternalStore, useEffect, type ReactNode, type MouseEvent } from "react";
+import { Building2, ClipboardCheck, Link2, Users, Settings2, ChevronRight, ChevronLeft } from "lucide-react";
+import { settingsSectionFromHash, isSettingsDetailHash } from "@/lib/school-settings-sections";
 import "./school-settings-layout.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +46,19 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
   const requested=settingsSectionFromHash(hash);
   const active=groups.some(g=>g.id===requested)?requested:"school";
   const current=groups.find(g=>g.id===active)!;
+  const detail=isSettingsDetailHash(hash)&&groups.some(g=>g.id===requested);
+  function mobileNavigate(event:MouseEvent<HTMLAnchorElement>,nextHash:string){
+    if(!window.matchMedia("(max-width:767px)").matches||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey||event.button!==0)return;
+    event.preventDefault();
+    if(window.location.hash!==nextHash){
+      window.history.pushState(null,"",window.location.pathname+window.location.search+nextHash);
+      window.dispatchEvent(new Event("hashchange"));
+    }
+    requestAnimationFrame(()=>{
+      window.scrollTo({top:0,behavior:"instant"});
+      document.getElementById(nextHash?"settings-mobile-detail-title":"settings-mobile-list-title")?.focus({preventScroll:true});
+    });
+  }
   useEffect(()=>{
     // Support pre-existing links from Home as well as direct links to a category.
     if(hash==="#school-links"||hash==="#school-information"){
@@ -57,15 +70,18 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
   const base=`/app/${c.workspace.id}`;
   const yearQuery=`?year=${c.year.year}`;
   const links=(items:{href:string;name:string;description:string}[])=><div className="settings-destination-list">{items.map(item=><Link key={item.href} className="settings-destination" href={item.href}><div><strong>{item.name}</strong><small>{item.description}</small></div><ChevronRight size={16}/></Link>)}</div>;
-  return <div className="school-settings-hub">
-    <div className="page-heading"><div><h1>학교 설정</h1><p>학교 공통 기준과 학년도별 운영 설정을 관리합니다.</p></div></div>
+  return <div className="school-settings-hub" data-mobile-detail={detail?"true":"false"}>
+    <div className="page-heading settings-main-heading"><div><h1 id="settings-mobile-list-title" tabIndex={-1}>학교 설정</h1><p>학교 공통 기준과 학년도별 운영 설정을 관리합니다.</p></div></div>
     <div className="panel settings-intro"><div className="tile-icon"><GraduationCap/></div><div><h2>{c.workspace.name}</h2><p>{c.schoolType} · {c.year.year}학년도</p></div><span className="scope-tag">{editable?"관리자":"조회 전용"}</span></div>
     <div className="settings-hub-layout">
       <nav className="settings-hub-nav panel" aria-label="학교 설정 분류">
-        {groups.map(({id,name,description,icon:Icon})=><a key={id} href={"#settings-"+id} aria-current={active===id?"page":undefined}><Icon size={17} aria-hidden="true"/><span><strong>{name}</strong><small>{description}</small></span><ChevronRight size={14} className="settings-nav-arrow"/></a>)}
+        {groups.map(({id,name,description,icon:Icon})=><a key={id} href={"#settings-"+id} onClick={event=>mobileNavigate(event,"#settings-"+id)} aria-current={active===id?"page":undefined}><Icon size={17} aria-hidden="true"/><span><strong>{name}</strong><small>{description}</small></span><ChevronRight size={14} className="settings-nav-arrow"/></a>)}
       </nav>
       <div className="settings-hub-content">
-        <header className="settings-hub-heading"><h2>{current.name}</h2><p>{current.description}</p></header>
+        <header className="settings-hub-heading">
+          <a className="settings-mobile-back" href={yearQuery} onClick={event=>mobileNavigate(event,"")}><ChevronLeft size={18} aria-hidden="true"/>학교 설정</a>
+          <h2 id="settings-mobile-detail-title" tabIndex={-1}>{current.name}</h2><p>{current.description}</p>
+        </header>
         <div className="settings-hub-group" id="settings-school" hidden={active!=="school"}>
           <SchoolTypeForm key={c.schoolType} context={c}/>
           <div className="panel settings-hub-note"><h3>학교 공통 정보</h3><p>학교급은 전체 학년도에 공통으로 적용됩니다. 학교명과 나이스 정보는 외부 서비스 연동에서 확인할 수 있습니다.</p></div>
@@ -135,7 +151,7 @@ function YearForm({
               })),
               class_counts: c.grades.map((n) => Number(f.get(`classes-${n}`))),
             }),
-          () => router.push(`/app/${c.workspace.id}/settings?year=${year}`),
+          () => router.push(`/app/${c.workspace.id}/settings?year=${year}#settings-year`),
         );
       }}
     >

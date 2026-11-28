@@ -45,3 +45,39 @@
   --ep-border-7296bf: hsl(212 30% 56%);
  }
 }
+
+/* On mobile, settings use a list → detail flow; desktop keeps the sidebar. */
+.settings-mobile-back{display:none}
+@media screen and (max-width:767px){
+ .school-settings-hub{gap:10px}
+ .workspace-content .school-settings-hub .settings-main-heading{margin:0;padding:0}
+ .workspace-content .school-settings-hub .settings-main-heading h1{font-size:22px;font-weight:700}
+ .school-settings-hub .settings-main-heading p{display:none}
+ .school-settings-hub .settings-intro{padding:8px 0 10px;gap:10px;background:transparent;box-shadow:none;border:0;border-bottom:1px solid var(--border)}
+ .school-settings-hub .settings-intro .tile-icon{display:none}
+ .school-settings-hub .settings-intro h2{font-size:15px;font-weight:650}
+ .school-settings-hub .settings-intro p{font-size:12px;color:var(--text-secondary);margin-top:3px}
+ .school-settings-hub .settings-intro .scope-tag{display:none}
+ .school-settings-hub .settings-hub-layout{display:block;min-width:0}
+ .school-settings-hub .settings-hub-nav.panel{display:grid;grid-template-columns:minmax(0,1fr);gap:0;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
+ .school-settings-hub .settings-hub-nav a{grid-template-columns:24px minmax(0,1fr) 18px;gap:10px;min-height:58px;padding:9px 2px;border-radius:0;border-bottom:1px solid var(--border);background:transparent;color:var(--foreground)}
+ .school-settings-hub .settings-hub-nav a:last-child{border-bottom:0}
+ .school-settings-hub .settings-hub-nav a>svg:first-child{width:20px;height:20px;color:var(--text-secondary)}
+ .school-settings-hub .settings-hub-nav a span{gap:3px}
+ .school-settings-hub .settings-hub-nav a strong{font-size:14px;font-weight:600}
+ .school-settings-hub .settings-hub-nav a small{display:block;font-size:11px;color:var(--text-secondary)}
+ .school-settings-hub .settings-nav-arrow{display:block;color:var(--text-secondary)}
+ .school-settings-hub[data-mobile-detail="false"] .settings-hub-content{display:none}
+ .school-settings-hub[data-mobile-detail="true"] :is(.settings-main-heading,.settings-intro,.settings-hub-nav){display:none}
+ .school-settings-hub .settings-hub-content{gap:12px}
+ .school-settings-hub .settings-hub-heading{display:grid;gap:4px}
+ .school-settings-hub .settings-mobile-back{display:inline-flex;align-items:center;justify-self:start;gap:3px;min-height:44px;padding:0 4px 0 0;color:var(--primary);font-size:13px;font-weight:500;text-decoration:none}
+ .school-settings-hub .settings-hub-heading h2{font-size:21px;font-weight:700}
+ .school-settings-hub .settings-hub-heading p{font-size:12px;margin:0}
+ .school-settings-hub .settings-hub-content :is(.school-type-settings,.settings-form){padding:10px 0;min-width:0;box-shadow:none}
+ .school-settings-hub .settings-hub-content .settings-section{padding:14px 0}
+ .school-settings-hub .settings-hub-content .settings-hub-note{padding:12px 0;background:transparent;box-shadow:none;border:0;border-top:1px solid var(--border);border-radius:0}
+ .school-settings-hub .settings-destination{min-height:52px;padding:10px 2px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+ .school-settings-hub .settings-destination-list{gap:0}
+ .school-settings-hub :is(#settings-mobile-list-title,#settings-mobile-detail-title):focus{outline:none}
+}
