@@ -332,11 +332,11 @@ function OperationEntries({ entries, today, onOpen }: { entries: ScheduleEntry[]
 
 function WeeklyDailyEvent({entry,onOpen}:{entry:ScheduleEntry;onOpen:(entry:ScheduleEntry,trigger:HTMLElement)=>void}) {
   return <article className="weekly-daily-event" data-tone={entry.tone} data-department-color={scheduleDepartmentColor(entry.department,entry.tone)}>
-    {(entry.department || entry.time || entry.location) && <div className="weekly-daily-meta">
+    <div className="weekly-daily-title">
       {entry.department && <DepartmentBadge department={entry.department}/>}
-      {(entry.time || entry.location) && <small>{[entry.time,entry.location].filter(Boolean).join(" · ")}</small>}
-    </div>}
-    <div className="weekly-daily-title"><ScheduleDetailTitle entry={entry} onOpen={onOpen}/></div>
+      <ScheduleDetailTitle entry={entry} onOpen={onOpen}/>
+    </div>
+    {(entry.time || entry.location) && <small>{[entry.time,entry.location].filter(Boolean).join(" · ")}</small>}
     <ResourceLinks value={entry.resources} compact/>
   </article>;
 }

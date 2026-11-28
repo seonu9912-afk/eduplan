@@ -53,8 +53,6 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await expect(scope(schoolAdmin).getByText(privateTask, { exact: true })).toHaveCount(0);
     await expect(scope(schoolAdmin).getByRole("button", { name: "업무 배포", exact: true })).toHaveCount(0);
 
-    const more = scope(page).locator(".task-dashboard-more > summary");
-    if (await more.isVisible() && (await more.locator("..").getAttribute("open")) === null) await more.click();
     await scope(page).getByRole("button", { name: "업무 배포", exact: true }).click();
     await field(page).fill(task);
     await page.getByLabel("마감일", { exact: true }).fill(`${data.year}-11-20`);
@@ -101,7 +99,6 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await expect(scope(other).getByRole("checkbox", { name: `${task} 완료` })).not.toBeChecked();
     await expect(scope(other).getByText(privateTask, { exact: true })).toHaveCount(0);
     await page.reload();
-    if (await more.isVisible() && (await more.locator("..").getAttribute("open")) === null) await more.click();
     await scope(page).getByRole("button", { name: "배포한 업무", exact: true }).click();
     await dialog(page, "배포한 업무 관리").getByText(task, { exact: true }).click();
     await expect(dialog(page, "배포한 업무 관리").getByText("완료 1명 / 전체 3명 · 미완료 2명")).toBeVisible();

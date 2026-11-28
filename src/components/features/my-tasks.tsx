@@ -149,10 +149,10 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
       {data ? <>
         <div className="task-actions task-widget-actions" data-dashboard={dashboard ? "" : undefined}>
           <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "personal" })}><Plus size={16} />할 일 추가</Button>
-          {!dashboard && <div className="task-direct-actions">          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
-          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div>}
-          {dashboard&&(sender||authored.length>0)&&<details className="task-dashboard-more"><summary aria-label="할 일 더보기"><Ellipsis size={18}/></summary><div className="task-dashboard-menu">          {sender && <Button type="button" variant="ghost" size="sm" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); open({ kind: "form", taskKind: "distributed" }); }}>업무 배포</Button>}
-          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={(event) => { event.currentTarget.closest("details")?.removeAttribute("open"); open({ kind: "manage" }); }}>배포한 업무</Button>}</div></details>}
+          <div className="task-direct-actions">          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
+          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div>
+          {dashboard&&(sender||authored.length>0)&&<details className="task-dashboard-more"><summary aria-label="할 일 더보기"><Ellipsis size={18}/></summary><div className="task-dashboard-menu">          {sender && <Button type="button" variant="outline" size="sm" onClick={() => open({ kind: "form", taskKind: "distributed" })}>업무 배포</Button>}
+          {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div></details>}
         </div>
         <div className={dashboard?"task-dashboard-body":undefined}>
         {activeRows.length ? <>{rows(summarized&&!expanded?activeRows.slice(0,5):activeRows)}{summarized&&activeRows.length>5&&<button type="button" className="task-expand-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":`나머지 할 일 ${activeRows.length-5}건 더보기`}</button>}</> : <p className="task-hint">{finishedToday.length ? "모든 할 일을 완료했습니다." : "미완료 할 일이 없습니다."}</p>}

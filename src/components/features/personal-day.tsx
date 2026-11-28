@@ -228,7 +228,7 @@ function HomeWeeklyAgenda({ context, today, department, plansHref }: {
   <section className="personal-widget home-weekly-agenda" aria-label="주간 일정">
     <header className="personal-day-heading">
       <h2><CalendarDays aria-hidden="true" />주간 일정</h2>
-      <Link className="widget-link" href={plansHref}>업무 계획 <ArrowUpRight aria-hidden="true" /></Link>
+      <Link className="widget-link" href={plansHref}>월중·주간계획 <ArrowUpRight aria-hidden="true" /></Link>
     </header>
     <div className="home-week-toolbar">
       <h3>{monthTitle} <small>{dateLabel(dates[0])} – {dateLabel(dates[dates.length - 1])}</small></h3>
