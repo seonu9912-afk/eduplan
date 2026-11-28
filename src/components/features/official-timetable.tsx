@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Ellipsis, Printer, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/common";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { myTeacherIds, seoulClock } from "@/lib/school-operations";
@@ -47,6 +48,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
   const [classId, setClassId] = useState("");
   const [teacherQuery, setTeacherQuery] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const defaultMode = timetableModeForWeek(c, date);
   const mode = selectedMode ?? defaultMode;
   const week = useMemo(() => timetableWeek(c, date, mode, true), [c, date, mode]);
@@ -85,8 +87,14 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
     audience === "class" ? classes.get(selectedClass) : audiences[audience];
   return (
     <section className="official-timetable reader-surface">
+      <Modal open={dateOpen} onOpenChange={setDateOpen} title="날짜 이동" description="조회할 날짜를 선택하세요.">
+        <label className="field reader-date-dialog-field">기준 날짜
+          <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={e => { if (e.target.value) { setDate(clamp(e.target.value)); setDateOpen(false); } }} />
+        </label>
+      </Modal>
       <div className="official-timetable-controls no-print">
         <ReaderPeriodNavigator title={mode === "weekly" ? `${dateLabel(firstDate)} – ${dateLabel(lastDate)}` : dateLabel(date)} subtitle={term ? `${term.number}학기` : undefined}
+          onTitleClick={() => { setMoreOpen(false); setDateOpen(true); }}
           previousLabel="이전 주" nextLabel="다음 주"
           previous={mode === "weekly" && addDays(firstDate, -1) >= start ? () => setDate(clamp(addDays(date, -7))) : undefined}
           next={mode === "weekly" && addDays(firstDate, 7) <= end ? () => setDate(clamp(addDays(date, 7))) : undefined}
@@ -95,7 +103,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
           <ReaderViewSegment<TimetableMode> options={[{value:"weekly",label:"주간"},{value:"basic",label:"기본"}]} value={mode} onChange={setMode} label="시간표 보기 방식" />
           <Button type="button" className="reader-more-toggle" variant="outline" size="icon" aria-label="시간표 더보기" aria-expanded={moreOpen} aria-controls="timetable-secondary-controls" onClick={() => setMoreOpen(open => !open)}><Ellipsis size={20} /></Button>
           {moreOpen && <div id="timetable-secondary-controls" className="reader-secondary-controls">
-                <label>날짜 이동
+                <label className="reader-desktop-date">날짜 이동
                   <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={(e) => {
                     if (e.target.value) { setDate(clamp(e.target.value)); setMoreOpen(false); }
                   }} />

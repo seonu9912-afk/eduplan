@@ -51,3 +51,20 @@
   --ep-bg-edf4fc: hsl(212 39% 17%);
  }
 }
+
+/* Mobile date navigation is a separate dialog, not a native input competing with toolbar actions. */
+.reader-mobile-view-extra,.reader-mobile-action-label,.reader-period-chevron { display:none; }
+.reader-date-dialog-field { width:100%; min-width:0; }
+.reader-date-dialog-field input { display:block; width:100%; max-width:100%; min-width:0; font-size:16px; min-height:44px; }
+@media screen and (max-width:767px) {
+ .reader-surface .reader-period-picker { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-height:44px; max-width:100%; border:0; padding:0; background:transparent; color:inherit; font:inherit; }
+ .reader-surface .reader-period-chevron { display:inline-block; flex:0 0 12px; width:12px; height:12px; }
+ .reader-surface .reader-desktop-date,.reader-surface .reader-desktop-view-extra { display:none !important; }
+ .reader-surface .schedule-view-controls > .reader-mobile-view-extra { display:flex; grid-column:1/-1; min-width:0; align-items:center; justify-content:space-between; gap:8px; padding:3px 0 5px; }
+ .reader-surface .schedule-view-controls > .reader-mobile-view-extra:empty { display:none; }
+ .reader-surface .reader-mobile-view-extra > .schedule-segments { flex:1 1 0; min-width:0; }
+ .reader-surface .reader-mobile-view-extra > button { flex:0 0 auto; margin-inline-start:auto; }
+ .reader-surface .schedule-view-controls > .schedule-secondary-controls[data-open=true],.reader-surface .reader-timetable-view > .reader-secondary-controls { display:grid !important; grid-template-columns:minmax(0,1fr); grid-column:1/-1; width:100%; max-width:100%; min-width:0; gap:6px; padding:7px 0; border:0; border-block-start:1px solid var(--border); border-radius:0; background:transparent; box-shadow:none; position:static; }
+ .reader-surface :is(.schedule-secondary-controls,.reader-secondary-controls) > :is(button,a,[data-slot="button"]) { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:44px; height:auto; justify-content:flex-start; white-space:normal; padding:8px 12px; }
+ .reader-surface .reader-mobile-action-label { display:inline; }
+}

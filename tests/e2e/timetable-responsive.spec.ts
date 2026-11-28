@@ -42,7 +42,7 @@ for(const width of [320,390,430]) test(`shared reader controls at ${width}px`,as
  expect(metrics[2]).toEqual(metrics[0]);
  const sheet=page.locator(".official-timetable");
  await sheet.getByRole("button",{name:"시간표 더보기"}).click();
- await expect(sheet.getByLabel("기준 날짜")).toBeVisible();
+ await expect(sheet.locator(".reader-secondary-controls").getByLabel("기준 날짜")).toBeHidden();
  await sheet.getByRole("button",{name:"시간표 더보기"}).click();
  await expect(sheet.getByLabel("기준 날짜")).toHaveCount(0);
 });
@@ -116,20 +116,24 @@ for (const width of [390,1440]) test(`class timetable uses neutral ordinary less
 });
 
 
-for(const width of [320,390,430]) test(`timetable date input does not overlap other controls at ${width}px`,async({page})=>{
+for(const width of [320,375,390,430]) test(`timetable dates are separated from menu actions at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});
  await page.goto("/recovery-preview/operations");
  await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
  const sheet=page.locator(".official-timetable");
- await sheet.getByRole("button",{name:"시간표 더보기"}).click();
+ const more=sheet.getByRole("button",{name:"시간표 더보기"});
+ await more.click();
  const controls=sheet.locator(".reader-secondary-controls");
- const input=controls.getByLabel("기준 날짜");
+ await expect(controls.getByLabel("기준 날짜")).toBeHidden();
+ await expect(controls.getByRole("button",{name:"인쇄·PDF 저장"})).toBeVisible();
+ await sheet.locator(".reader-period-picker").click();
+ const dialog=page.getByRole("dialog",{name:"날짜 이동"});
+ await expect(dialog).toBeVisible();
+ const input=dialog.getByLabel("기준 날짜");
  await expect(input).toBeVisible();
- const geometry=await controls.evaluate(el=>{
-  const outer=el.getBoundingClientRect();
-  const field=el.querySelector('input[type="date"]')!.getBoundingClientRect();
-  const others=Array.from(el.querySelectorAll(":scope > button,:scope > a,:scope > label:not(:has(input[type=date]))")).map(node=>node.getBoundingClientRect()).filter(rect=>rect.width&&rect.height);
-  return {within:field.left>=outer.left&&field.right<=outer.right,overlap:others.some(rect=>rect.left<field.right&&rect.right>field.left&&rect.top<field.bottom&&rect.bottom>field.top)};
- });
- expect(geometry).toEqual({within:true,overlap:false});
+ const bounds=await input.evaluate(el=>({field:el.getBoundingClientRect().width,parent:el.parentElement!.clientWidth}));
+ expect(bounds.field).toBeLessThanOrEqual(bounds.parent+1);
+ await input.fill((await input.getAttribute("min"))!);
+ await expect(dialog).toBeHidden();
+ await expect(more).toHaveAttribute("aria-expanded","false");
 });

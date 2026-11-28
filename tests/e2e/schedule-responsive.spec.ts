@@ -32,7 +32,7 @@ for(const width of [320,390,430,1440])test(`public calendar compact controls at 
   await expect(toolbar.getByRole("button",{name:"일정 검색"})).toBeVisible();
   const more=toolbar.getByRole("button",{name:"일정 더보기"});
   await more.click();
-  await expect(date).toBeVisible();
+  await expect(date).toBeHidden();
   await expect(toolbar.getByRole("button",{name:"학사일정 관리"})).toBeVisible();
   await more.click();
   const geometry=await toolbar.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,right:el.getBoundingClientRect().right,viewport:document.documentElement.clientWidth}));
@@ -77,15 +77,15 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
  await expect(tasks).toBeVisible();
  const main=reader.locator(".official-schedule-main");
  if(width<768){
-   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
-   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeHidden();
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
+   await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
    await expect(toolbar.locator('input[type="date"]')).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeHidden();
    expect((await main.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
    await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
-   await expect(toolbar.locator('input[type="date"]')).toBeVisible();
+   await expect(toolbar.locator('input[type="date"]')).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeVisible();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
  }else{
@@ -120,7 +120,7 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
 });
 
 
-for(const width of [320,390,430]) test(`date input stays on its own row in schedule readers at ${width}px`,async({page})=>{
+for(const width of [320,375,390,430]) test(`date navigation is independent of schedule actions at ${width}px`,async({page})=>{
  await page.setViewportSize({width,height:900});
  await page.goto("/recovery-preview/operations");
  for(const tab of ["공개 학사일정","공개 주간계획"]){
@@ -130,19 +130,18 @@ for(const width of [320,390,430]) test(`date input stays on its own row in sched
   for(const mode of modes){
    await reader.getByRole("button",{name:mode,exact:true}).click();
    const more=reader.getByRole("button",{name:"일정 더보기"});
-   if(await more.getAttribute("aria-expanded")!=="true") await more.click();
-   const controls=reader.locator(".schedule-secondary-controls");
-   const input=controls.locator('input[type="date"]');
-   await expect(input).toBeVisible();
-   const geometry=await controls.evaluate(el=>{
-    const outer=el.getBoundingClientRect();
-    const field=el.querySelector('input[type="date"]')!.getBoundingClientRect();
-    const label=el.querySelector(".schedule-jump")!.getBoundingClientRect();
-    const buttons=Array.from(el.querySelectorAll(":scope > button,:scope > a")).map(button=>button.getBoundingClientRect()).filter(rect=>rect.width&&rect.height);
-    return {within:field.left>=outer.left&&field.right<=outer.right&&field.right<=label.right+1,fullRow:Math.abs(label.width-el.clientWidth+parseFloat(getComputedStyle(el).paddingLeft)+parseFloat(getComputedStyle(el).paddingRight))<=2,overlap:buttons.some(rect=>rect.left<field.right&&rect.right>field.left&&rect.top<field.bottom&&rect.bottom>field.top)};
-   });
-   expect(geometry).toEqual({within:true,fullRow:true,overlap:false});
    await more.click();
+   const controls=reader.locator(".schedule-secondary-controls");
+   await expect(controls.locator('input[type="date"]')).toBeHidden();
+   await expect(controls.getByRole("button",{name:"인쇄",exact:true})).toBeVisible();
+   const geometry=await controls.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+   expect(geometry.scroll).toBeLessThanOrEqual(geometry.client+1);
+   await reader.locator(".reader-period-picker").click();
+   const picker=page.getByRole("dialog",{name:"날짜 이동"});
+   await expect(picker).toBeVisible();
+   await picker.locator(".official-work-mini-grid button:not(:disabled)").first().click();
+   await expect(picker).toBeHidden();
+   await expect(more).toHaveAttribute("aria-expanded","false");
   }
  }
 });

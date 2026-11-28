@@ -683,3 +683,12 @@ select {
     max-width:100%; min-width:0; white-space:normal;
   }
 }
+
+/* Keep real date-editing fields inside their own available width on iOS and narrow screens. */
+@media screen and (max-width:767px) {
+ input:is([type="date"],[type="month"],[type="datetime-local"],[type="time"]) { box-sizing:border-box; min-width:0; min-inline-size:0; max-width:100%; max-inline-size:100%; font-size:16px; }
+ input:is([type="date"],[type="month"],[type="datetime-local"],[type="time"])::-webkit-date-and-time-value { min-width:0; max-width:100%; text-align:start; }
+ :is(.field,.form-two > *, .heading-actions > label,.annual-toolbar > label,.work-date-controls > label):has(> input:is([type="date"],[type="month"],[type="datetime-local"],[type="time"])) { min-width:0; max-width:100%; }
+ :is(.field,.form-two > *, .heading-actions > label,.annual-toolbar > label,.work-date-controls > label) > input:is([type="date"],[type="month"],[type="datetime-local"],[type="time"]) { display:block; width:100%; min-width:0; max-width:100%; }
+ .app-shell .reader-surface .reader-desktop-date { display:none !important; }
+}
