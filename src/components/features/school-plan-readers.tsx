@@ -29,7 +29,7 @@ import { CalendarFeedSettings } from "./calendar-feed-settings";
 import "./school-plan-readers.css";
 import "./schedule-surfaces.css";
 import "./curriculum-display.css";
-import { ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
+import { ReaderPeriodDialog, ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
 import "./reader-controls.css";
 import "./calendar-reader-layout.css";
 
@@ -38,7 +38,7 @@ const dayName = (date: string) => weekdays[new Date(`${date}T00:00:00Z`).getUTCD
 const tones = { event: "학사일정", work: "업무계획", break: "휴업·방학" };
 type ScheduleView = "month" | "week" | "year";
 
-export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, activityTools, initialDate, initialWorkItem }: { context: Context; today: string; work?: boolean; actions?: ReactNode; activityTools?: ReactNode; initialDate?: string; initialWorkItem?: string }) {
+export function OfficialSchedule({ context: c, today: serverToday, work = false, actions, activityTools, initialDate, initialWorkItem, initialPeriod }: { context: Context; today: string; work?: boolean; actions?: ReactNode; activityTools?: ReactNode; initialDate?: string; initialWorkItem?: string; initialPeriod?: string }) {
   const [today, setToday] = useState(serverToday);
   useEffect(() => {
     const tick = () => setToday(seoulToday());
@@ -53,7 +53,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
   const clamp = (value: string) => value < start ? start : value > end ? end : value;
   const router = useRouter();
   const [requestedDate, setDate] = useState(clamp(initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) && !Number.isNaN(Date.parse(initialDate)) ? initialDate : today));
-  const [view, setView] = useState<ScheduleView>(initialDate ? "month" : work ? "week" : "month");
+  const [view, setView] = useState<ScheduleView>(initialPeriod === "year" && !work ? "year" : initialPeriod === "week" ? "week" : initialPeriod === "month" ? "month" : initialDate ? "month" : work ? "week" : "month");
   const weekend = useWeekendVisibility(c.workspace.id, c.userId);
   const listView = useScheduleListView(c.workspace.id, c.userId, work);
   const date = view === "week" ? visibleWeekDate(requestedDate, weekend.showWeekends, start, end) : requestedDate;
@@ -316,7 +316,7 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           }}>이 버전 보기</Button>
         </li>)}</ul></div>
       </Modal>
-      <Modal open={secondary==="date"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="날짜 이동" description="이동할 날짜를 선택하세요.">{miniCalendar}</Modal>
+      <ReaderPeriodDialog open={secondary==="date"} onOpenChange={open=>{if(!open)setSecondary(null)}} period={view} date={date} start={start} end={end} years={c.years.map(y=>y.year)} showWeekends={weekend.showWeekends} onSelect={day=>{selectDate(clamp(day));setSecondary(null);}} onYearSelect={chosen=>{setSecondary(null);if(chosen!==year)router.push(`/app/${c.workspace.id}/calendar?year=${chosen}&period=year`);}} />
       {!work && activityTools && <Modal open={secondary==="activities"} onOpenChange={open=>{if(!open)setSecondary(null)}} title="교육활동 편성 요청 · 가능한 날짜 분석" wide>{activityTools}</Modal>}
     </section>
   );

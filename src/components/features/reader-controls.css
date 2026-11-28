@@ -66,3 +66,22 @@
  .reader-surface :is(.schedule-secondary-controls,.reader-secondary-controls) > :is(button,a,[data-slot="button"]) { box-sizing:border-box; width:100%; min-width:0; max-width:100%; min-height:44px; height:auto; justify-content:flex-start; white-space:normal; padding:8px 12px; }
  .reader-surface .reader-mobile-action-label { display:inline; }
 }
+
+/* Common period picker: selection matches the actual reader period. */
+.reader-period-months h3 { text-align:center; margin-bottom:12px; font-size:16px; }
+.reader-period-choice-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; min-width:0; }
+.reader-period-choice-grid[data-period="year"] { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.reader-period-choice-grid button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:0; min-height:54px; padding:8px 4px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--foreground); font-weight:600; }
+.reader-period-choice-grid button small { font-size:10px; font-weight:400; }
+.reader-week-picker { width:100%; min-width:0; }
+.reader-week-picker-heading { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:4px; margin-bottom:8px; text-align:center; }
+.reader-week-picker-heading button[data-slot="button"] { width:44px; height:44px; border:0; background:transparent; }
+.reader-week-picker-days,.reader-week-choice { display:grid; align-items:center; text-align:center; gap:0; min-width:0; }
+.reader-week-picker-days { color:var(--text-secondary); font-size:12px; padding:6px 0; }
+.reader-week-picker-rows { display:grid; gap:4px; }
+.reader-week-choice { width:100%; min-height:44px; padding:4px 0; border:1px solid transparent; border-radius:8px; color:var(--foreground); background:transparent; font-size:14px; }
+.reader-week-choice span[data-adjacent],.reader-week-choice span[data-unavailable] { opacity:.45; }
+.reader-period-choice-grid button[aria-pressed="true"],.reader-week-choice[aria-pressed="true"] { background:#28558e; border-color:#28558e; color:#fff; }
+.reader-week-choice:disabled { opacity:.35; }
+.reader-week-choice:not(:disabled):hover,.reader-period-choice-grid button:not([aria-pressed="true"]):hover { border-color:var(--primary); }
+.reader-week-choice:focus-visible,.reader-period-choice-grid button:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }

@@ -130,9 +130,9 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
    }
    await expect(reader.locator(".weekly-operation-row > th[scope=row]").first()).toBeVisible();
    await toolbar.locator(".reader-period-picker").click();
-   const picker=page.getByRole("dialog",{name:"날짜 이동"});
+   const picker=page.getByRole("dialog",{name:"주간 이동"});
    await expect(picker).toBeVisible();
-   await picker.locator(".official-work-mini-grid button:not(:disabled)").first().click();
+   await picker.locator(".reader-week-choice:not(:disabled)").first().click();
    await expect(picker).toBeHidden();
  }
  const geometry=await toolbar.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
@@ -157,9 +157,11 @@ for(const width of [320,375,390,430]) test(`date navigation is independent of sc
    const geometry=await controls.evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
    expect(geometry.scroll).toBeLessThanOrEqual(geometry.client+1);
    await reader.locator(".reader-period-picker").click();
-   const picker=page.getByRole("dialog",{name:"날짜 이동"});
+   const picker=page.getByRole("dialog",{name:mode==="연간"?"학년도 이동":mode==="월간"||mode==="월중계획"?"월간 이동":"주간 이동"});
    await expect(picker).toBeVisible();
-   await picker.locator(".official-work-mini-grid button:not(:disabled)").first().click();
+   if(mode==="연간")await picker.locator('[data-period="year"] button[aria-pressed="true"]').click();
+   else if(mode==="월간"||mode==="월중계획"){await expect(picker.locator('[data-period="month"] button')).toHaveCount(12);await picker.locator('[data-period="month"] button').first().click();}
+   else await picker.locator(".reader-week-choice:not(:disabled)").first().click();
    await expect(picker).toBeHidden();
    await expect(more).toHaveAttribute("aria-expanded","false");
   }

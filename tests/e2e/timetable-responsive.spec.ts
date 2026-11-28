@@ -133,6 +133,14 @@ for(const width of [320,375,390,430]) test(`timetable dates are separated from m
  const controls=sheet.locator(".reader-secondary-controls");
  await expect(controls.getByLabel("기준 날짜")).toBeHidden();
  await expect(controls.getByRole("button",{name:"인쇄·PDF 저장"})).toBeVisible();
+ await selectMode(sheet,"주간",width);
+ const weeklyDialog=page.getByRole("dialog",{name:"주간 이동"});
+ await sheet.locator(".reader-period-picker").click();
+ await expect(weeklyDialog).toBeVisible();
+ await expect(weeklyDialog.locator(".reader-week-picker-days span")).toHaveCount(5);
+ await weeklyDialog.locator(".reader-week-choice:not(:disabled)").first().click();
+ await expect(weeklyDialog).toBeHidden();
+ await selectMode(sheet,"기본",width);
  await sheet.locator(".reader-period-picker").click();
  const dialog=page.getByRole("dialog",{name:"날짜 이동"});
  await expect(dialog).toBeVisible();
@@ -140,7 +148,8 @@ for(const width of [320,375,390,430]) test(`timetable dates are separated from m
  await expect(input).toBeVisible();
  const bounds=await input.evaluate(el=>({field:el.getBoundingClientRect().width,parent:el.parentElement!.clientWidth}));
  expect(bounds.field).toBeLessThanOrEqual(bounds.parent+1);
- await input.fill((await input.getAttribute("min"))!);
+ const min=(await input.getAttribute("min"))!;
+ await input.fill(await input.inputValue()===min?(await input.getAttribute("max"))!:min);
  await expect(dialog).toBeHidden();
  await expect(more).toHaveAttribute("aria-expanded","false");
 });

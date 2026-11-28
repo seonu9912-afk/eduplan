@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { CalendarDays, Ellipsis, Printer, Search, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/common";
 import { addDays, dateLabel } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { myTeacherIds, seoulClock } from "@/lib/school-operations";
 import { timetableModeForWeek, timetableWeek, type TimetableAudience, type TimetableCell, type TimetableMode } from "@/lib/timetable-view";
 import { TimetableGrid } from "./timetable-grid";
 import "./official-timetable.css";
-import { ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
+import { ReaderPeriodDialog, ReaderPeriodNavigator, ReaderViewSegment } from "./reader-controls";
 import "./reader-controls.css";
 
 const audiences: Record<TimetableAudience, string> = {
@@ -87,11 +86,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
     audience === "class" ? classes.get(selectedClass) : audiences[audience];
   return (
     <section className="official-timetable reader-surface">
-      <Modal open={dateOpen} onOpenChange={setDateOpen} title="날짜 이동" description="조회할 날짜를 선택하세요.">
-        <label className="field reader-date-dialog-field">기준 날짜
-          <input type="date" aria-label="기준 날짜" value={date} min={start} max={end} onChange={e => { if (e.target.value) { setDate(clamp(e.target.value)); setDateOpen(false); } }} />
-        </label>
-      </Modal>
+      <ReaderPeriodDialog open={dateOpen} onOpenChange={setDateOpen} period={mode==="weekly"?"week":"day"} date={date} start={start} end={end} weekStyle="timetable" showWeekends={false} onSelect={day=>{setDate(clamp(day));setDateOpen(false);}} />
       <div className="official-timetable-controls no-print">
         <ReaderPeriodNavigator title={mode === "weekly" ? `${dateLabel(firstDate)} – ${dateLabel(lastDate)}` : dateLabel(date)} subtitle={term ? `${term.number}학기` : undefined}
           onTitleClick={() => { setMoreOpen(false); setDateOpen(true); }}

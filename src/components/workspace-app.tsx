@@ -109,6 +109,7 @@ export function WorkspaceApp({
   today,
   initialCohort,
   initialScheduleDate,
+  initialSchedulePeriod,
   initialQuickAdd,
   initialWorkItem,
   management = false,
@@ -121,6 +122,7 @@ export function WorkspaceApp({
   today: string;
   initialCohort?: string;
   initialScheduleDate?: string;
+  initialSchedulePeriod?: string;
   initialQuickAdd?: boolean;
   initialWorkItem?: string;
   management?: boolean;
@@ -409,7 +411,7 @@ export function WorkspaceApp({
           />
         ) : null}
         {section === "calendar" && !management && <>
-          <OfficialSchedule key={`${c.year?.id}:calendar:${initialScheduleDate ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} actions={managementLink} activityTools={<ActivityRequests context={c} today={today} embedded />} />
+          <OfficialSchedule key={`${c.year?.id}:calendar:${initialScheduleDate ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} initialPeriod={initialSchedulePeriod} actions={managementLink} activityTools={<ActivityRequests context={c} today={today} embedded />} />
         </>}
         {section === "timetable" && management ? (
           <Timetable
@@ -434,7 +436,7 @@ export function WorkspaceApp({
             onDirtyChange={setDirty}
           />
         ) : null}
-        {section === "plans" && !management && <OfficialSchedule key={`${c.year?.id}:plans:${initialScheduleDate ?? ""}:${initialWorkItem ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} initialWorkItem={initialWorkItem} work actions={managementLink} />}
+        {section === "plans" && !management && <OfficialSchedule key={`${c.year?.id}:plans:${initialScheduleDate ?? ""}:${initialWorkItem ?? ""}`} context={c} today={today} initialDate={initialScheduleDate} initialPeriod={initialSchedulePeriod} initialWorkItem={initialWorkItem} work actions={managementLink} />}
         {section === "curriculum" && management ? (
           <Curriculum
             context={c}
