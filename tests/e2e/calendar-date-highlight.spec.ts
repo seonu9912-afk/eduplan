@@ -22,6 +22,7 @@ for(const theme of ["light","dark"] as const)for(const width of [390,1440])test(
   const reader=page.locator(".calendar-reader-shell");
   for(const mode of name==="공개 학사일정"?["월간","주간"]:["월중계획","주간계획"]){
    await reader.getByRole("button",{name:mode,exact:true}).click();
+   await expect(reader.locator(".schedule-reader-toolbar")).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
    if(width>=768){
     const table=reader.locator(".school-reader-calendar");
     await expect(table).toBeVisible();
@@ -31,6 +32,7 @@ for(const theme of ["light","dark"] as const)for(const width of [390,1440])test(
     await expect(today.locator("..").locator("..")).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
     await expect(table.getByRole("button",{name:"연속 기간 테스트 상세 보기"}).first()).toBeVisible();
    }else{
+    await expect(reader.locator(".mobile-calendar-dates[data-compact-rows]")).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
     const day=reader.locator('.mobile-calendar-span-day[aria-current="date"]');
     await expect(day).toBeVisible();
     const neighbor=reader.locator('.mobile-calendar-span-day:not([aria-current="date"]):not([data-adjacent]):not(:disabled)').first();

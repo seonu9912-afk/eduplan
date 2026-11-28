@@ -1,5 +1,7 @@
 /* Common desktop calendar shell. Calendar data and lane placement are unchanged. */
 .calendar-reader-navigation { min-width:0; }
+/* Flat toolbar belongs to the page surface, not the elevated card surface. */
+.calendar-reader-shell .schedule-reader-toolbar { background:transparent; }
 .calendar-reader-sidebar { min-width:0; }
 .calendar-reader-sidebar .task-dashboard-body { max-height:none; overflow:visible; }
 .calendar-reader-agenda-dialog .school-calendar-agenda > section { min-height:0; }
@@ -198,7 +200,7 @@
 
 /* Mobile reader: flat calendar chrome, visible content hierarchy and intact touch targets. */
 @media screen and (max-width:767px) {
- .workspace-content .calendar-reader-shell { --calendar-grid-line:color-mix(in srgb,var(--border) 65%,var(--card)); }
+ .workspace-content .calendar-reader-shell { --calendar-grid-line:color-mix(in srgb,var(--border) 65%,var(--background)); }
  .workspace-content .calendar-reader-shell .schedule-reader-toolbar { gap:0; padding-bottom:4px; }
  .workspace-content .calendar-reader-shell .reader-period-title h2 { font-size:16px; font-weight:600; letter-spacing:-.02em; }
  .workspace-content .calendar-reader-shell .reader-period-nav > button[data-slot="button"],
@@ -219,7 +221,7 @@
   outline:2px solid var(--primary); outline-offset:-2px;
  }
  .workspace-content .calendar-reader-shell .mobile-calendar-dates[data-compact-rows] {
-  background:var(--card); border-color:var(--calendar-grid-line); padding:7px 0 5px;
+  background:transparent; border-color:var(--calendar-grid-line); padding:7px 0 5px;
  }
  .workspace-content .calendar-reader-shell .mobile-calendar-weekdays { font-size:12px; font-weight:500; padding-bottom:6px; }
  .workspace-content .calendar-reader-shell .mobile-calendar-dates[data-compact-rows] .mobile-calendar-span-day {
