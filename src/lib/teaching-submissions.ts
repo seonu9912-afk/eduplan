@@ -24,3 +24,12 @@ export function activeSubmission(row?: TeachingSubmission) {
 export function latestSubmission(rows: TeachingSubmission[], scope: SubmissionScope) {
   return rows.find(row => row.scope === scope);
 }
+
+export const submissionDetailSchema = z.object({
+  id: z.uuid(), version: z.number().int().positive(), scope: submissionScopeSchema, status: submissionStatusSchema,
+  events: z.array(z.object({status: submissionStatusSchema, at: z.string(), actor: z.string().nullable(), note: z.string().optional()})),
+  course: z.object({grade: z.number(), semester: z.number(), subject_name: z.string(), teacher_name: z.string(),
+    classes: z.array(z.object({id:z.uuid(),grade:z.number(),class_number:z.number()})).nullable().optional()}),
+  report: z.unknown().nullable().optional(), content: z.unknown(),
+});
+export type SubmissionDetail = z.infer<typeof submissionDetailSchema>;

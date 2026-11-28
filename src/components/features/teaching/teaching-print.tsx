@@ -10,7 +10,7 @@ export function TeachingPrint({
   preview = false,
 }: {
   context: Context;
-  course: Row<"teaching_courses">;
+  course: Pick<Row<"teaching_courses">, "id" | "grade" | "semester" | "subject_name" | "teacher_name">;
   document: TeachingDocument;
   mode: ReportMode;
   dirty: boolean;

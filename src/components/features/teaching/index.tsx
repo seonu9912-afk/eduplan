@@ -56,7 +56,8 @@ import { TeachingReview } from "./review";
 import { TeachingSubmissionPanel } from "./submission-panel";
 import { TeachingPrint } from "./teaching-print";
 import { SchoolTeachingReview } from "./school-review";
-type Tab = "overview" | "lesson" | "assessment" | "review" | "document";
+import { SubmissionManagement } from "./submission-management";
+type Tab = "overview" | "lesson" | "assessment" | "review" | "document" | "submissions";
 const tabs: [Tab, string][] = [
   ["overview", "수업 현황"],
   ["lesson", "교수학습계획"],
@@ -111,6 +112,9 @@ export function TeachingModule({
       </>
     );
   const data = c.teaching;
+  const canReview = c.role === "admin" || canPlan(c, "assessment");
+  const visibleTab = tab === "submissions" && !canReview ? "overview" : tab;
+  const visibleTabs: [Tab,string][] = canReview ? [...tabs, ["submissions","제출 관리"]] : tabs;
   const matches = (p: Row<"teaching_courses">, f: typeof filters) =>
     p.archived === f.archived &&
     (!f.semester || p.semester === 0 || String(p.semester) === f.semester) &&
@@ -145,7 +149,7 @@ export function TeachingModule({
     setFilters(f);
     setSelected(id);
     // Filtering the overview should not open an editor automatically.
-    if (id && tab !== "overview") setTab("lesson");
+    if (id && tab !== "overview" && tab !== "submissions") setTab("lesson");
   };
   const classNames = (id: string) =>
     c.classes
@@ -265,13 +269,14 @@ export function TeachingModule({
         </Disclosure>
         <nav
           className="teaching-tabs"
+          data-submissions={canReview ? "true" : undefined}
           data-arrow-axis="horizontal"
           aria-label="수업·평가 보기"
         >
-          {tabs.map(([id, label]) => (
+          {visibleTabs.map(([id, label]) => (
             <button
               key={id}
-              aria-pressed={tab === id || (id === "review" && tab === "document")}
+              aria-pressed={visibleTab === id || (id === "review" && visibleTab === "document")}
               onClick={() => {
                 if (!selected && courses[0]) setSelected(courses[0].id);
                 setTab(id);
@@ -281,7 +286,9 @@ export function TeachingModule({
             </button>
           ))}
         </nav>
-        {tab === "overview" ? (
+        {visibleTab === "submissions" ? (
+          <SubmissionManagement context={c} initialSemester={filters.semester} />
+        ) : visibleTab === "overview" ? (
           <section className="teaching-overview">
             {canPlan(c, "assessment") && (
               <>
@@ -491,12 +498,12 @@ export function TeachingModule({
           key={course.id}
           context={c}
           course={course}
-          tab={tab}
+          tab={visibleTab}
           onNavigate={setTab}
           onDirtyChange={changed}
         />
       ) : (
-        tab !== "overview" && (
+        visibleTab !== "overview" && visibleTab !== "submissions" && (
           <Empty
             title="수업을 선택해 주세요"
             description="수업 현황에서 계획을 열거나 새 수업을 설정하세요."
@@ -782,7 +789,7 @@ function CourseEditor({
   return (
     <>
       <div
-        className={`teaching-screen ${tab === "overview" ? "teaching-editor-hidden" : ""}`}
+        className={`teaching-screen ${tab === "overview" || tab === "submissions" ? "teaching-editor-hidden" : ""}`}
       >
         <div className="plan-savebar teaching-compact-savebar">
           <div className="teaching-save-meta">
@@ -1119,13 +1126,13 @@ function CourseEditor({
           />
         </Modal>
       </div>
-      <TeachingPrint
+      {tab !== "submissions" && <TeachingPrint
         context={c}
         course={course}
         document={reportDocument}
         dirty={dirty}
         mode={printMode}
-      />
+      />}
     </>
   );
 }

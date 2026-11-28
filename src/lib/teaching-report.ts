@@ -40,7 +40,7 @@ const shown = (v: string | number | null | undefined) =>
   v === null || v === undefined || v === "" ? "미입력" : String(v);
 export function buildTeachingReport(
   c: Context,
-  course: Row<"teaching_courses">,
+  course: Pick<Row<"teaching_courses">, "id" | "grade" | "semester" | "subject_name" | "teacher_name">,
   doc: TeachingDocument,
   mode: ReportMode = "both",
   dirty = false,

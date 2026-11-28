@@ -1,7 +1,7 @@
 "use server";
 import { authoringIntegrityErrors } from "@/lib/teaching-authoring";
 import { z } from "zod";
-import { submissionScopeSchema, submissionStatusSchema } from "@/lib/teaching-submissions";
+import { submissionScopeSchema, submissionStatusSchema, submissionDetailSchema } from "@/lib/teaching-submissions";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { uuid } from "@/lib/domain";
@@ -213,6 +213,30 @@ export async function withdrawTeachingSubmission(id: string, status: string) {
     const db = await dbClient();
     const { error } = await db.rpc("change_teaching_submission", { target_submission: id, expected_status: expected, next_status: "withdrawn" });
     if (error) throw error;
+    refresh();
+    return true;
+  });
+}
+
+export async function readTeachingSubmission(id: string) {
+  return run(async () => {
+    uuid.parse(id);
+    const db = await dbClient();
+    const { data, error } = await db.rpc("read_teaching_submission", {target_submission: id});
+    if (error) throw error;
+    return submissionDetailSchema.parse(data);
+  });
+}
+export async function reviewTeachingSubmission(id: string, status: string, next: unknown, input: unknown) {
+  return run(async () => {
+    uuid.parse(id);
+    const expected = z.enum(["submitted","reviewing"]).parse(status);
+    const nextStatus = z.enum(["reviewing","changes_requested","accepted"]).parse(next);
+    const note = z.string().trim().max(3000).parse(input);
+    if (nextStatus === "changes_requested" && !note) throw Error("수정 요청 사유를 입력하세요.");
+    const db = await dbClient();
+    const {error} = await db.rpc("change_teaching_submission", {target_submission:id,expected_status:expected,next_status:nextStatus,note});
+    if(error) throw error;
     refresh();
     return true;
   });
