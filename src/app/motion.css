@@ -1,0 +1,49 @@
+/* Short, non-blocking motion: the shell stays still while the committed view enters. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  :root {
+    --motion-fast: 120ms;
+    --motion-standard: 200ms;
+    --motion-ease: cubic-bezier(.2,.75,.25,1);
+  }
+  .app-shell > .workspace-motion-enter {
+    animation: workspace-view-enter var(--motion-standard) var(--motion-ease) both;
+  }
+  @keyframes workspace-view-enter {
+    from { opacity: .55; }
+    to { opacity: 1; }
+  }
+  .app-shell .nav-item,
+  .app-shell .mobile-bottom-nav > :is(a,button),
+  .reader-surface .reader-segments > button,
+  .app-shell .workspace-content [data-slot="button"],
+  .app-shell .header-right [data-slot="button"] {
+    transition: color var(--motion-fast) ease, background-color var(--motion-fast) ease,
+      border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+  }
+  .app-shell .mobile-bottom-nav > :is(a,button) > svg {
+    transition: transform var(--motion-fast) var(--motion-ease);
+  }
+  .app-shell .mobile-bottom-nav > :is(a,button):active > svg { transform: scale(.9); }
+  .app-shell .mobile-bottom-nav [aria-current="page"]::before {
+    transform-origin: center;
+    animation: nav-indicator-enter 180ms var(--motion-ease) both;
+  }
+  @keyframes nav-indicator-enter {
+    from { transform: scaleX(.35); opacity: .4; }
+    to { transform: scaleX(1); opacity: 1; }
+  }
+  .app-shell .workspace-content :is(.mobile-calendar-span-day,.mobile-calendar-day-grid > button,.calendar-desktop-day,.home-week-date) time {
+    transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+  }
+  .app-shell .workspace-content .task-check input[type="checkbox"] {
+    transition: background-color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+  }
+  [data-slot="dialog-overlay"][data-state="open"] { animation: edu-overlay-in 180ms ease-out both; }
+  [data-slot="dialog-overlay"][data-state="closed"] { animation: edu-overlay-out 130ms ease-in both; }
+  .edu-dialog[data-state="open"] { animation: edu-dialog-in 200ms var(--motion-ease) both; }
+  .edu-dialog[data-state="closed"] { animation: edu-dialog-out 140ms ease-in both; }
+  @keyframes edu-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes edu-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes edu-dialog-in { from { opacity: 0; transform: translateY(8px) scale(.985); } to { opacity: 1; transform: none; } }
+  @keyframes edu-dialog-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(5px) scale(.99); } }
+}

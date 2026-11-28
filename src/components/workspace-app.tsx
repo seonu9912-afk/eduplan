@@ -377,7 +377,7 @@ export function WorkspaceApp({
           <span>전체 메뉴</span>
         </button>
       </nav>
-      <main id="main-content" className="workspace-content"
+      <main key={`${c.workspace.id}:${section}`} id="main-content" className="workspace-content workspace-motion-enter"
         data-surface={section === "settings" ? "form" : "wide"} data-section={section}>
         <Notice message={error} error />
         <LessonReminder context={c} showErrors={section === "notifications"} />

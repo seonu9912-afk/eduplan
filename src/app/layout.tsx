@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import "./mobile.css";
 import "./theme.css";
+import "./motion.css";
 import { ThemeRuntime } from "@/components/theme-preference";
 import { PwaProvider } from "@/components/pwa/pwa-provider";
 import { KeyboardNavigation } from "@/components/keyboard-navigation";
