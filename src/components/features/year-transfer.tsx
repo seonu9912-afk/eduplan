@@ -16,8 +16,8 @@ export function YearTransfer({context:c}:{context:Context}){
   const input={workspaceId:c.workspace.id,source,target,kind};
   const count=preview?.items.filter(i=>i.state==="add").length??0;
   return <section className="panel year-transfer">
-    <div className="panel-heading"><h2><CopyPlus size={19}/>이전 학년도 자료 이관</h2></div>
-    <p className="muted">이전 학년도 운영 기준과 일정을 선택해 새 학년도 저장본에 추가합니다. 업무 권한은 학교 공통 설정이므로 이관하지 않습니다.</p>
+    <div className="panel-heading"><h2><CopyPlus size={19}/>이전 학년도 자료 가져오기</h2></div>
+    <p className="muted">이전 학년도의 운영 기준과 일정을 {target}학년도 저장본에 추가합니다. 기존 공개본과 업무 권한은 변경되지 않습니다.</p>
     <Button type="button" variant="outline" disabled={!years.length} onClick={()=>{setPreview(null);setOpen(true);}}>자료 가져오기</Button>
     {!years.length&&<p className="muted">등록된 이전 학년도가 없습니다.</p>}
     <Modal open={open} onOpenChange={v=>{if(!m.pending)setOpen(v);}} title="이전 학년도 자료 가져오기" description="항목별 미리보기를 확인한 후 추가합니다. 기존 공개본은 변경되지 않습니다." wide>

@@ -1,12 +1,11 @@
 "use client";
-import { useSyncExternalStore, useEffect, type ReactNode, type MouseEvent } from "react";
-import { Building2, Users, Settings2, ChevronRight, ChevronLeft } from "lucide-react";
+import { useSyncExternalStore, useEffect, useState, type ReactNode, type MouseEvent } from "react";
+import { Building2, Users, Settings2, ChevronRight, ChevronLeft, Plus } from "lucide-react";
 import { settingsSectionFromHash, isSettingsDetailHash, settingsAnchorFromHash } from "@/lib/school-settings-sections";
 import "./school-settings-layout.css";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  CalendarDays,
   GraduationCap,
   Save,
   ShieldCheck,
@@ -21,12 +20,16 @@ import { saveYear, setSchoolType } from "@/app/actions";
 import {
   monthRange,
   schoolTypes,
+  academicYearOf,
+  seoulToday,
+  schoolYearSchema,
 } from "@/lib/domain";
 import type { Context } from "@/lib/models";
 import { buildInfo } from "@/lib/build-info";
 import { SchoolLinkSettings } from "./school-links";
 import { SchoolInformationSettings } from "./school-information-settings";
 import { YearTransfer } from "./year-transfer";
+import { Button } from "@/components/ui/button";
 const subscribeHash=(callback:()=>void)=>{window.addEventListener("hashchange",callback);window.addEventListener("popstate",callback);return()=>{window.removeEventListener("hashchange",callback);window.removeEventListener("popstate",callback);}};
 const readHash=()=>window.location.hash;
 const serverHash=()=>"";
@@ -91,13 +94,12 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
         </div>
         <div className="settings-hub-group" id="settings-operations" hidden={active!=="operations"}>
           <section className="settings-subgroup" id="settings-year" aria-labelledby="settings-year-title">
-            <h3 id="settings-year-title" className="settings-subgroup-title">학년도 관리</h3>
-            <YearForm key={`${c.year.id}-${c.schoolType}`} context={c} year={c.year.year} editable={editable}/>
-            {editable && <YearTransfer key={c.year.id} context={c}/> }
+            <h3 id="settings-year-title" className="settings-subgroup-title sr-only">학년도 관리</h3>
+            <AcademicYearSettings key={`${c.year.id}-${c.schoolType}-${c.year.version}`} context={c} editable={editable}/>
           </section>
           {editable&&<section className="settings-subgroup" aria-labelledby="settings-operations-title">
             <h3 id="settings-operations-title" className="settings-subgroup-title">학교 운영 기준</h3>
-            {links([{href:base+"/plans"+yearQuery+"&view=manage",name:"부서·운영 업무",description:"업무계획 관리에서 부서와 학교 운영 항목을 설정합니다."},{href:base+"/timetable"+yearQuery+"&view=manage",name:"시정표·시간표 운영",description:"시간표 관리에서 시정표와 수업 운영 정보를 설정합니다."},{href:base+"/calendar"+yearQuery+"&view=manage",name:"학기·방학·수업일",description:"학사일정에서 해당 학년도의 운영 기준을 설정합니다."}])}
+            {links([{href:base+"/plans"+yearQuery+"&view=manage",name:"부서·운영 업무",description:"업무계획 관리에서 부서와 학교 운영 항목을 설정합니다."},{href:base+"/timetable"+yearQuery+"&view=manage",name:"시정표·시간표 운영",description:"시간표 관리에서 시정표와 수업 운영 정보를 설정합니다."},{href:base+"/calendar"+yearQuery+"&view=manage",name:"학기·방학·수업일",description:"선택한 학년도의 학기 기간, 방학 및 수업일을 설정합니다."}])}
           </section>}
         </div>
         {editable&&<>
@@ -124,14 +126,51 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
     </div>
   </div>;
 }
+function AcademicYearSettings({context:c,editable}:{context:Context;editable:boolean}) {
+  const router=useRouter();
+  const [dirty,setDirty]=useState(false);
+  const [moving,setMoving]=useState(false);
+  if(!c.year)return null;
+  const year=c.year.year;
+  const current=academicYearOf(seoulToday());
+  const years=[...new Set([...c.years.map(item=>item.year),year])].sort((a,b)=>b-a);
+  const next=current+1;
+  const canPrepare=editable&&schoolYearSchema.safeParse(next).success&&!years.includes(next);
+  function switchYear(target:number,prepare=false){
+    if(target===year||moving||!schoolYearSchema.safeParse(target).success)return;
+    if(!years.includes(target)&&!(prepare&&canPrepare&&target===next))return;
+    if(dirty&&!window.confirm("저장하지 않은 학급 구성 변경 사항이 있습니다. 변경 내용을 버리고 학년도를 이동할까요?"))return;
+    if(prepare&&!window.confirm(target+"학년도 자료를 준비할까요? 기존 학년도 자료는 그대로 유지됩니다."))return;
+    setMoving(true);
+    router.push(`/app/${c.workspace.id}/settings?year=${target}#settings-operations`);
+  }
+  return <div className="academic-year-settings" data-edit-year={year}>
+    <div className="academic-year-selector">
+      <div className="academic-year-control">
+        <label htmlFor="settings-edit-year">관리할 학년도</label>
+        <select id="settings-edit-year" value={year} disabled={moving} onChange={e=>switchYear(Number(e.target.value))}>
+          {years.map(y=><option key={y} value={y}>{y}학년도{y===current?" (현재)":""}</option>)}
+        </select>
+      </div>
+      {canPrepare&&<Button type="button" variant="outline" className="academic-year-prepare" disabled={moving} onClick={()=>switchYear(next,true)}><Plus size={16} aria-hidden="true"/>{next}학년도 준비</Button>}
+      <p className="academic-year-range"><span>{year}. 3. 1. ~ {year+1}. 2. {Number(monthRange(`${year+1}-02`).end.slice(8))}.</span><span>선택한 학년도의 설정과 자료를 관리합니다.</span></p>
+      {moving&&<p role="status" className="muted">학년도를 불러오는 중…</p>}
+    </div>
+    <YearForm context={c} year={year} editable={editable&&!moving} onDirty={setDirty}/>
+    {editable && <YearTransfer key={c.year.id} context={c}/>}
+  </div>;
+}
+
 function YearForm({
   context: c,
   year,
   editable,
+  onDirty,
 }: {
   context: Context;
   year: number;
   editable: boolean;
+  onDirty: (dirty:boolean)=>void;
 }) {
   const m = useMutation();
   const router = useRouter();
@@ -142,7 +181,11 @@ function YearForm({
   ];
   return (
     <form
-      className="panel settings-form"
+      className="panel settings-form academic-year-class-form"
+      onChange={e=>{
+        const form=new FormData(e.currentTarget);
+        onDirty(c.grades.some(n=>String(form.get(`classes-${n}`))!==String(c.classes.filter(x=>x.grade===n).length)));
+      }}
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -158,34 +201,18 @@ function YearForm({
               })),
               class_counts: c.grades.map((n) => Number(f.get(`classes-${n}`))),
             }),
-          () => router.push(`/app/${c.workspace.id}/settings?year=${year}#settings-year`),
+          () => {onDirty(false);router.refresh();},
         );
       }}
     >
       <fieldset disabled={!editable || m.pending}>
         <div className="settings-section">
           <div className="section-label">
-            <CalendarDays size={20} />
-            <h2>{year}학년도</h2>
-          </div>
-          <p className="muted">
-            학년도는 3월 1일부터 다음 해 2월 말까지입니다. 학기 기간과 방학은
-            학사운영에서 조정하세요.
-          </p>
-          <Link
-              className="text-link"
-              href={`/app/${c.workspace.id}/calendar?year=${year}`}
-            >
-              학사운영에서 학기 설정하기 →
-          </Link>
-        </div>
-        <div className="settings-section">
-          <div className="section-label">
             <GraduationCap size={20} />
-            <h2>학년·학급 구성</h2>
+            <h2>학급 구성</h2>
           </div>
           <p className="muted">
-            학년별 학급 수를 입력하면 학급이 자동으로 구성됩니다.
+            선택한 학년도의 학년별 학급 수를 설정합니다.
           </p>
           <div className="class-counts">
             {c.grades.map((n) => (
@@ -212,7 +239,7 @@ function YearForm({
         {editable ? (
           <SubmitButton pending={m.pending}>
             <Save />
-            학년도 설정 저장
+            학급 구성 저장
           </SubmitButton>
         ) : (
           <p className="muted">관리자에게 설정 변경을 요청해 주세요.</p>

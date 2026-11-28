@@ -72,3 +72,21 @@ for(const width of [390,1440])test(`legacy settings anchors retain correct categ
   await expect(hub.locator(target)).toBeVisible();
  }
 });
+
+for(const width of [320,390,1440])test(`academic year management shows the selected year and scoped class settings at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("navigation",{name:"통합 운영 실습 단계"}).getByRole("button",{name:"학교 설정",exact:true}).click();
+ const hub=page.locator(".school-settings-hub");
+ await hub.getByRole("link",{name:/학교 운영/}).click();
+ const selector=hub.getByLabel("관리할 학년도",{exact:true});
+ await expect(selector).toBeVisible();
+ const year=await selector.inputValue();
+ await expect(hub.locator(".academic-year-settings")).toHaveAttribute("data-edit-year",year);
+ await expect(hub.locator(".academic-year-range")).toContainText(year+". 3. 1.");
+ await expect(hub.getByRole("button",{name:"학급 구성 저장"})).toBeVisible();
+ await expect(hub.getByRole("heading",{name:"이전 학년도 자료 가져오기"})).toBeVisible();
+ await expect(hub.getByRole("link",{name:/학기·방학·수업일/})).toHaveAttribute("href",new RegExp("year="+year+"&view=manage"));
+ const controls=hub.locator(".academic-year-selector");
+ expect(await controls.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+});

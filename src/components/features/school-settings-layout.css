@@ -102,3 +102,32 @@
  .school-settings-hub .settings-subgroup + .settings-subgroup { padding-top:12px; margin-top:0; }
  .school-settings-hub .settings-subgroup-title { font-size:15px; }
 }
+
+/* Academic year management: one shared selector, targeted class settings and transfer. */
+@media screen {
+ .school-settings-hub .academic-year-settings { display:grid; gap:14px; min-width:0; }
+ .school-settings-hub .academic-year-selector { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 12px; align-items:end; min-width:0; padding-bottom:12px; border-bottom:1px solid var(--border); }
+ .school-settings-hub .academic-year-control { display:grid; gap:5px; min-width:0; max-width:320px; }
+ .school-settings-hub .academic-year-control label { font-size:13px; font-weight:600; }
+ .school-settings-hub .academic-year-control select { width:100%; min-width:0; min-height:44px; font-size:16px; }
+ .school-settings-hub .academic-year-prepare[data-slot="button"] { min-height:44px; white-space:nowrap; padding-inline:10px; color:var(--primary); }
+ .school-settings-hub .academic-year-range { grid-column:1/-1; display:grid; gap:3px; margin:0; font-size:12px; color:var(--text-secondary); }
+ .school-settings-hub .academic-year-class-form { border:0; box-shadow:none; padding:0; background:transparent; }
+ .school-settings-hub .academic-year-class-form .settings-section { padding:0; border:0; }
+ .school-settings-hub .academic-year-class-form .section-label { gap:6px; align-items:center; }
+ .school-settings-hub .academic-year-class-form .section-label h2,.school-settings-hub .academic-year-settings .year-transfer h2 { font-size:16px; font-weight:650; }
+ .school-settings-hub .academic-year-class-form .settings-section > .muted { margin-top:5px; font-size:12px; }
+ .school-settings-hub .academic-year-class-form .class-counts { margin-top:12px; gap:10px; }
+ .school-settings-hub .academic-year-class-form .class-counts input { min-width:0; }
+ .school-settings-hub .academic-year-class-form .settings-save { padding:10px 0 0; }
+ .school-settings-hub .academic-year-settings .year-transfer { border:0; border-top:1px solid var(--border); border-radius:0; box-shadow:none; background:transparent; padding:12px 0 0; gap:6px; }
+ .school-settings-hub .academic-year-settings .year-transfer > .muted { font-size:12px; line-height:1.5; }
+ .school-settings-hub .academic-year-settings .year-transfer > button { min-height:40px; }
+}
+@media screen and (max-width:767px) {
+ .school-settings-hub .academic-year-settings .academic-year-class-form { padding:0; }
+ .school-settings-hub .academic-year-class-form .settings-section { padding:0; }
+ .school-settings-hub .academic-year-class-form .settings-save { align-items:flex-end; }
+ .school-settings-hub .academic-year-class-form .settings-save button { width:auto; min-height:44px; }
+ .school-settings-hub .academic-year-prepare[data-slot="button"] { font-size:12px; padding-inline:8px; }
+}
