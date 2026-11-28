@@ -121,18 +121,52 @@ export function PwaProvider({ children }: { children: ReactNode }) {
               "앱 설치·오프라인 화면 초기화에 실패했습니다. 연결을 복구한 뒤 다시 실행하세요.",
             );
         });
+    // Compare with the last unobstructed viewport as iOS/Android may resize
+    // both layout and visual viewports together. Never interpret pinch zoom as a keyboard.
+    const root = document.documentElement;
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const textInput = () => {
+      const active = document.activeElement;
+      if (active instanceof HTMLTextAreaElement) return !active.readOnly && !active.disabled;
+      if (active instanceof HTMLInputElement) return !active.readOnly && !active.disabled &&
+        ["text","search","email","password","tel","url","number"].includes(active.type) && active.inputMode !== "none";
+      return active instanceof HTMLElement && active.isContentEditable;
+    };
+    let baseline = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+    let lastWidth = window.innerWidth, wasEditing = false, sawShrink = false;
+    let viewportFrame = 0;
     const viewport = () => {
       const view = window.visualViewport;
-      document.documentElement.style.setProperty(
-        "--visible-height",
-        `${view?.height ?? window.innerHeight}px`,
-      );
-      document.documentElement.dataset.keyboard = String(
-        !!view && window.innerHeight - view.height > 150,
-      );
+      const height = view?.height ?? window.innerHeight;
+      const unzoomed = !view || Math.abs(view.scale - 1) < 0.05;
+      const editing = textInput();
+      if (Math.abs(window.innerWidth - lastWidth) > 40) {
+        lastWidth = window.innerWidth;
+        baseline = Math.max(window.innerHeight, height);
+        sawShrink = false;
+      }
+      if (!editing && unzoomed) baseline = Math.max(window.innerHeight, height);
+      if (editing && !wasEditing) sawShrink = false;
+      const shrunk = unzoomed && Math.max(baseline - height, window.innerHeight - height) > 100;
+      if (editing && shrunk) sawShrink = true;
+      const touch = navigator.maxTouchPoints > 0 || window.matchMedia("(pointer: coarse)").matches;
+      // Hide navigation immediately during the initial keyboard animation on touch devices;
+      // when the viewport recovers, restore it even if Safari leaves the input focused.
+      const keyboard = mobile.matches && editing && unzoomed && (shrunk || (touch && !sawShrink));
+      root.style.setProperty("--visible-height", `${height}px`);
+      root.dataset.keyboard = String(keyboard);
+      wasEditing = editing;
+    };
+    const queueViewport = () => {
+      cancelAnimationFrame(viewportFrame);
+      viewportFrame = requestAnimationFrame(viewport);
     };
     viewport();
-    window.visualViewport?.addEventListener("resize", viewport);
+    window.visualViewport?.addEventListener("resize", queueViewport);
+    window.visualViewport?.addEventListener("scroll", queueViewport);
+    window.addEventListener("resize", queueViewport);
+    document.addEventListener("focusin", queueViewport);
+    document.addEventListener("focusout", queueViewport);
     return () => {
       navigator.serviceWorker?.removeEventListener("message", onNotification);
       alive = false;
@@ -140,7 +174,14 @@ export function PwaProvider({ children }: { children: ReactNode }) {
       standalone.removeEventListener("change", sync);
       window.removeEventListener("beforeinstallprompt", before);
       window.removeEventListener("appinstalled", done);
-      window.visualViewport?.removeEventListener("resize", viewport);
+      cancelAnimationFrame(viewportFrame);
+      window.visualViewport?.removeEventListener("resize", queueViewport);
+      window.visualViewport?.removeEventListener("scroll", queueViewport);
+      window.removeEventListener("resize", queueViewport);
+      document.removeEventListener("focusin", queueViewport);
+      document.removeEventListener("focusout", queueViewport);
+      delete root.dataset.keyboard;
+      root.style.removeProperty("--visible-height");
     };
   }, []);
   useEffect(() => {

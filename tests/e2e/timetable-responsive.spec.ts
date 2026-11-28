@@ -180,3 +180,42 @@ for(const width of [320,375,390,430,1440])test(`timetable mode and audience use 
  await sheet.getByRole("button",{name:"시간표 더보기"}).click();
  await expect(sheet.locator(".reader-secondary-controls")).toBeVisible();
 });
+
+for(const width of [390,1440])test(`timetable title matches selected mode at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
+ const sheet=page.locator(".official-timetable");
+ const title=sheet.locator(".reader-period-title");
+ await selectMode(sheet,"주간",width);
+ await expect(title).toHaveText(/\d+월 \d+일\s*–\s*\d+월 \d+일/);
+ await expect(title.locator("small")).toHaveCount(0);
+ await selectMode(sheet,"기본",width);
+ await expect(title).toHaveText(/^(?:\d+학기 )?기본시간표$/);
+ await expect(title.locator("small")).toHaveCount(0);
+});
+
+test("mobile keyboard resize hides bottom navigation and restores it on blur",async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
+ const sheet=page.locator(".official-timetable");
+ await sheet.getByRole("button",{name:"교사별",exact:true}).click();
+ const search=sheet.getByRole("searchbox",{name:"교사 이름 검색"});
+ // Preview lacks the real workspace shell; mount a layout-only nav to exercise common CSS.
+ await page.evaluate(()=>{
+  const nav=document.createElement("nav");nav.className="mobile-bottom-nav";nav.dataset.testKeyboardNav="true";document.body.append(nav);
+ });
+ const nav=page.locator("[data-test-keyboard-nav]");
+ await expect(nav).toBeVisible();
+ await search.focus();
+ await page.setViewportSize({width:390,height:470});
+ await expect(page.locator("html")).toHaveAttribute("data-keyboard","true");
+ await expect(nav).toBeHidden();
+ await expect(search).toHaveCSS("font-size","16px");
+ await expect(search).toHaveCSS("box-shadow","none");
+ await search.blur();
+ await page.setViewportSize({width:390,height:844});
+ await expect(page.locator("html")).toHaveAttribute("data-keyboard","false");
+ await expect(nav).toBeVisible();
+});

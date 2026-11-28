@@ -88,7 +88,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
     <section className="official-timetable reader-surface">
       <ReaderPeriodDialog open={dateOpen} onOpenChange={setDateOpen} period={mode==="weekly"?"week":"day"} date={date} start={start} end={end} weekStyle="timetable" showWeekends={false} onSelect={day=>{setDate(clamp(day));setDateOpen(false);}} />
       <div className="official-timetable-controls no-print">
-        <ReaderPeriodNavigator title={mode === "weekly" ? `${dateLabel(firstDate)} – ${dateLabel(lastDate)}` : dateLabel(date)} subtitle={term ? `${term.number}학기` : undefined}
+        <ReaderPeriodNavigator title={mode === "weekly" ? `${dateLabel(firstDate)} – ${dateLabel(lastDate)}` : term ? `${term.number}학기 기본시간표` : "기본시간표"}
           onTitleClick={() => { setMoreOpen(false); setDateOpen(true); }}
           previousLabel="이전 주" nextLabel="다음 주"
           previous={mode === "weekly" && addDays(firstDate, -1) >= start ? () => setDate(clamp(addDays(date, -7))) : undefined}
@@ -122,7 +122,7 @@ function TimetableSheet({ context: c, today, year, actions, requestedDate }: { c
         {(audience === "teacher" || audience === "class") && <div className="official-timetable-filters reader-target-filters">
           {audience === "teacher" && (
             <div className="timetable-teacher-picker">
-              <label className="timetable-teacher-search"><Search size={16} aria-hidden="true" /><input type="search" value={teacherQuery} placeholder="교사 이름 검색" aria-label="교사 이름 검색" onChange={(e) => setTeacherQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && matchingTeachers.length === 1) { e.preventDefault(); setTeacher(matchingTeachers[0][0]); setTeacherQuery(""); } }} /></label>
+              <label className="timetable-teacher-search"><Search size={16} aria-hidden="true" /><input type="search" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="search" value={teacherQuery} placeholder="교사 이름 검색" aria-label="교사 이름 검색" onChange={(e) => setTeacherQuery(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing && matchingTeachers.length === 1) { e.preventDefault(); setTeacher(matchingTeachers[0][0]); setTeacherQuery(""); } }} /></label>
               <label>교사
                 <select value={selectedTeacher} onChange={(e) => { setTeacher(e.target.value); setTeacherQuery(""); }}>
                   {teacherOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}

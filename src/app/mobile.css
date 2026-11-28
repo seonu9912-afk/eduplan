@@ -692,3 +692,12 @@ select {
  :is(.field,.form-two > *, .heading-actions > label,.annual-toolbar > label,.work-date-controls > label) > input:is([type="date"],[type="month"],[type="datetime-local"],[type="time"]) { display:block; width:100%; min-width:0; max-width:100%; }
  .app-shell .reader-surface .reader-desktop-date { display:none !important; }
 }
+
+/* Mobile text entry: keep fixed navigation out of the keyboard's visual viewport. */
+@media screen and (max-width:767px) {
+ html[data-keyboard="true"] { --bottom-nav-height:0px; scroll-padding-bottom:12px; }
+ html[data-keyboard="true"] .mobile-bottom-nav { display:none !important; }
+ html[data-keyboard="true"] .app-shell { padding-bottom:0; }
+ html[data-keyboard="true"] :is(.mobile-save-bar,.teaching-save-actions) { position:static; }
+ html[data-keyboard="true"] .edu-dialog { max-height:var(--visible-height); }
+}
