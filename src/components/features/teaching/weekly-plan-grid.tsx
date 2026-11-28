@@ -2,6 +2,7 @@
 
 import { Disclosure } from "@/components/ui/disclosure";
 import { useState, type KeyboardEvent } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import "./weekly-plan-grid.css";
 import { Modal } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -184,7 +185,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
     </div>
   );
   return (
-    <section className="teaching-section">
+    <section className="teaching-section teaching-week-section">
       {calendar.issue && (
         <p role="status" className="muted">
           {calendar.issue}
@@ -192,62 +193,81 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
       )}
       {rows.length > 0 && (
         <>
-          <div className="section-title">
-            <p>학사일정 연동 · 수업일이 있는 {rows.length}주</p>
-            {editable && (
+          <div className="teaching-week-toolbar no-print">
+            <div className="teaching-week-toolbar-heading">
+              <h2>교수학습계획</h2>
               <div className="teaching-actions">
-                <Button
-                  variant="outline"
-                  disabled={!past.length}
-                  onClick={undo}
-                >
-                  입력 취소
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={!future.length}
-                  onClick={redo}
-                >
-                  다시 실행
-                </Button>
+                {editable && <>
+                  <Button variant="ghost" size="sm" disabled={!past.length} onClick={undo}>입력 취소</Button>
+                  <Button variant="ghost" size="sm" disabled={!future.length} onClick={redo}>다시 실행</Button>
+                </>}
               </div>
-            )}
-          </div>
-          <div className="teaching-week-progress no-print">
-            <div><strong>단원명 입력 {namedWeeks}/{rows.length}주</strong><span>미입력 {rows.length-namedWeeks}주 · 작성 내용의 완성도와는 별개입니다.</span><progress aria-label="단원명 입력 주차" value={namedWeeks} max={rows.length}/></div>
-            {editable && <Button variant="outline" size="sm" disabled={!firstUnnamed} onClick={jumpToUnnamed}>첫 미입력 주차</Button>}
+            </div>
+            <div className="teaching-week-toolbar-progress">
+              <div className="teaching-week-progress-summary">
+                <span title="단원명 입력 여부만 집계하며 계획의 완성도를 의미하지 않습니다.">단원명 입력 <strong>{namedWeeks}/{rows.length}주</strong></span>
+                <progress aria-label="단원명 입력 주차" value={namedWeeks} max={rows.length}/>
+              </div>
+              <div className="teaching-week-toolbar-actions">
+                {editable && <Button variant="ghost" size="sm" disabled={!firstUnnamed} onClick={jumpToUnnamed}>첫 미입력 주차</Button>}
+                <div className="mobile-only">
+                  <Button variant="ghost" size="sm" onClick={() => setWide(!wide)}>
+                    {wide ? "주차별 편집" : "전체 편성표"} <ChevronRight size={14}/>
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="mobile-only no-print">
-            <Button variant="outline" onClick={() => setWide(!wide)}>
-              {wide ? "주차별 편집으로 보기" : "전체 편성표 보기"}
-            </Button>
             {!wide && mobileRow && (
               <>
                 <div className="mobile-view-toolbar teaching-week-navigation">
-                  <Button variant="outline" size="sm" aria-label="이전 주차" disabled={rows.indexOf(mobileRow) <= 0} onClick={() => { const previous = rows[rows.indexOf(mobileRow)-1]; if(previous) setWeekAnchor(previous.week.anchor); }}>이전</Button>
+                  <Button variant="outline" size="sm" aria-label="이전 주차" disabled={rows.indexOf(mobileRow) <= 0} onClick={() => { const previous = rows[rows.indexOf(mobileRow)-1]; if(previous) setWeekAnchor(previous.week.anchor); }}><ChevronLeft size={18}/></Button>
                   <label>
-                    {editable ? "작성할 주차" : "조회할 주차"}
                     <select
+                      aria-label={editable ? "작성할 주차" : "조회할 주차"}
                       value={mobileRow.week.anchor}
                       onChange={(e) => setWeekAnchor(e.target.value)}
                     >
                       {rows.map(({ week }) => (
                         <option key={week.anchor} value={week.anchor}>
-                          {week.period}
+                          {week.period} · {week.day}
                         </option>
                       ))}
                     </select>
                   </label>
-                  <Button variant="outline" size="sm" aria-label="다음 주차" disabled={rows.indexOf(mobileRow) >= rows.length-1} onClick={() => { const next = rows[rows.indexOf(mobileRow)+1]; if(next) setWeekAnchor(next.week.anchor); }}>다음</Button>
+                  <Button variant="outline" size="sm" aria-label="다음 주차" disabled={rows.indexOf(mobileRow) >= rows.length-1} onClick={() => { const next = rows[rows.indexOf(mobileRow)+1]; if(next) setWeekAnchor(next.week.anchor); }}><ChevronRight size={18}/></Button>
                 </div>
                 {(() => {
                   const { week, unit } = mobileRow;
+                  const renderMobileField = (field: Field) => (
+                    <label key={field} className="teaching-mobile-field" data-field={field}>
+                      <span className="teaching-mobile-field-label">{fields[field].label}</span>
+                      {editable ? (
+                        <div className="teaching-mobile-field-fit">
+                          <div aria-hidden="true" className="teaching-mobile-field-mirror">{unit?.[field] ?? ""}{"\u200b"}</div>
+                          <textarea
+                            rows={field === "title" ? 1 : 2}
+                            maxLength={fields[field].max}
+                            value={unit?.[field] ?? ""}
+                            onBlur={() => setGroup(null)}
+                            onChange={(e) => update(week, unit, { [field]: e.target.value }, field)}
+                          />
+                        </div>
+                      ) : <p className="teaching-read-value">{unit?.[field] || "—"}</p>}
+                    </label>
+                  );
                   return (
                     <article id={`teaching-mobile-week-${week.anchor}`} className="mobile-edit-card teaching-week-mobile-card">
-                      <h3>{week.period}</h3>
-                      {week.calendarNotes.map((note) => (
-                        <p key={note}>{note}</p>
-                      ))}
+                      <div className="teaching-week-calendar" aria-label="학사일정 연동 비고">
+                        <CalendarDays size={16} aria-hidden="true"/>
+                        <div><strong>학사일정 연동</strong>
+                          {week.calendarNotes.length ? <ul>{week.calendarNotes.map(note => <li key={note}>{note}</li>)}</ul> : <p>특이사항 없음</p>}
+                        </div>
+                      </div>
+                      {renderMobileField("title")}
+                      <div className="teaching-mobile-standard">
+                        <span className="teaching-mobile-field-label">성취기준</span>
                       <StandardPicker
                         context={context}
                         value={unit?.standard_ids ?? []}
@@ -258,27 +278,14 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                         grade={course.grade}
                         label="성취기준 선택"
                         disabled={!editable}
+                        showDescriptions
                       />
-                      {(Object.keys(fields) as Field[]).map((field) => (
-                        <label key={field}>
-                          {fields[field].label}
-                          {editable ? <textarea
-                            rows={field === "title" ? 2 : 4}
-                            maxLength={fields[field].max}
-                            readOnly={!editable}
-                            value={unit?.[field] ?? ""}
-                            onBlur={() => setGroup(null)}
-                            onChange={(e) =>
-                              update(
-                                week,
-                                unit,
-                                { [field]: e.target.value },
-                                field,
-                              )
-                            }
-                          /> : <p className="teaching-read-value">{unit?.[field] || "—"}</p>}
-                        </label>
-                      ))}
+
+                      </div>
+                      {(["content", "method", "assessment_method", "alignment"] as Field[]).map(renderMobileField)}
+                      <Disclosure key={week.anchor} compact className="teaching-week-extra" label={
+                        <span>평가계획 연계 및 비고{unit?.assessment_links?.length ? ` · 연계 ${unit.assessment_links.length}건` : ""}{unit?.note?.trim() ? " · 비고 있음" : ""}</span>
+                      }>
                       <LessonLinks
                         unit={
                           unit ?? {
@@ -296,6 +303,9 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                         }
                         onOpen={onOpenAssessment}
                       />
+
+                      {renderMobileField("note")}
+                      </Disclosure>
                     </article>
                   );
                 })()}

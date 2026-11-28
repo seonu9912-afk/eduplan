@@ -19,6 +19,12 @@ for(const width of [320,375,390,430,1440]){
   if(width<768){
    const nav=teaching.locator(".teaching-week-navigation");
    if(await nav.isVisible()){
+    const card=teaching.locator(".teaching-week-mobile-card");
+    await expect(card.locator(".teaching-mobile-field").first()).toContainText("단원명");
+    const extra=card.locator(".teaching-week-extra");
+    await expect(extra).not.toHaveAttribute("open", "");
+    await extra.locator("summary").click();
+    await expect(extra.getByText("직접 작성 비고", {exact:true})).toBeVisible();
     const select=nav.locator("select");const before=await select.inputValue();
     if(await nav.getByRole("button",{name:"다음 주차"}).isEnabled()){
      await nav.getByRole("button",{name:"다음 주차"}).click();

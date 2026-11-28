@@ -13,6 +13,7 @@ export function StandardPicker({
   grade,
   label,
   disabled = false,
+  showDescriptions = false,
 }: {
   context: Context;
   value: string[];
@@ -21,6 +22,7 @@ export function StandardPicker({
   grade: number;
   label: string;
   disabled?: boolean;
+  showDescriptions?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(""),
@@ -42,10 +44,11 @@ export function StandardPicker({
   );
   return (
     <div className="standard-control">
-      <div className="standard-chips">
+      <div className={showDescriptions ? "standard-chips standard-chips-detailed" : "standard-chips"}>
         {value.map((id) => (
           <span key={id} title={standards.find((s) => s.id === id)?.content}>
             {standards.find((s) => s.id === id)?.code ?? "연결 확인 필요"}
+            {showDescriptions && <small>{standards.find((s) => s.id === id)?.content}</small>}
           </span>
         ))}
       </div>

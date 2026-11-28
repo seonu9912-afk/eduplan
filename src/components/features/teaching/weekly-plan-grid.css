@@ -46,10 +46,6 @@
  .teaching-module .teaching-week-grid tbody td:nth-child(3){padding-inline:3px;text-align:center;font-size:12px;line-height:1.45;}
  .teaching-module .teaching-week-date{display:block;white-space:normal;overflow-wrap:normal;font-variant-numeric:tabular-nums;}
  .teaching-module .teaching-week-date span{display:block;}
- .teaching-module 
- .teaching-module 
- .teaching-module 
- .teaching-module 
  .teaching-module .teaching-week-cell { display:grid; grid-template-columns:minmax(0,1fr); gap:2px; min-width:0; }
  .teaching-module .teaching-cell-fit { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; }
  .teaching-module .teaching-cell-fit > :is(textarea,.teaching-cell-mirror) { grid-area:1/1; box-sizing:border-box; width:100%; min-width:0; min-height:56px; margin:0; padding:7px 8px; font-family:inherit; font-size:13px; font-weight:400; line-height:1.55; letter-spacing:normal; white-space:pre-wrap; overflow-wrap:anywhere; word-break:normal; border:1px solid transparent; }
@@ -79,4 +75,40 @@
   --ep-border-7296bf: hsl(212 30% 56%);
   --ep-border-acc7e7: hsl(213 25% 30%);
  }
+}
+
+/* Compact authoring toolbar and mobile fields; the desktop/print table stays intact. */
+@media screen {
+ .teaching-week-toolbar{display:grid;gap:6px;margin-bottom:10px;min-width:0}
+ .teaching-week-toolbar-heading,.teaching-week-toolbar-progress{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap}
+ .teaching-week-toolbar-heading h2{font-size:16px;font-weight:700;margin:0}
+ .teaching-week-toolbar .teaching-actions,.teaching-week-toolbar-actions{display:flex;align-items:center;flex-wrap:wrap;gap:4px}
+ .teaching-week-progress-summary{display:grid;gap:4px;flex:1 1 130px;font-size:12px;color:var(--text-secondary);min-width:0}
+ .teaching-week-progress-summary progress{width:100%;height:4px;accent-color:var(--schedule-accent)}
+ .teaching-week-toolbar [data-slot=button]{font-size:12px;padding-inline:7px;white-space:normal}
+}
+@media screen and (max-width:767px) {
+ .teaching-week-section .teaching-week-navigation{margin:5px 0 8px;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center}
+ .teaching-week-navigation select{min-height:44px;font-size:13px}
+ .teaching-week-navigation button{min-height:44px}
+ .teaching-module .teaching-week-mobile-card{display:grid;gap:12px;padding:10px 0;border:0;box-shadow:none;background:transparent}
+ .teaching-week-calendar{display:flex;align-items:flex-start;gap:8px;padding:9px;background:var(--surface-muted);border-radius:6px;color:var(--text-secondary);font-size:12px;overflow-wrap:anywhere}
+ .teaching-week-calendar svg{flex:none;margin-top:1px}
+ .teaching-week-calendar strong{font-weight:600}
+ .teaching-week-calendar :is(p,ul){margin:2px 0 0}
+ .teaching-week-calendar ul{padding-inline-start:16px}
+ .teaching-mobile-field,.teaching-mobile-standard{display:grid;gap:5px;min-width:0}
+ .teaching-mobile-field-label{font-size:13px;font-weight:600;color:var(--foreground)}
+ .teaching-mobile-field-fit{display:grid;grid-template-columns:minmax(0,1fr);min-width:0}
+ .teaching-mobile-field-fit>:is(textarea,.teaching-mobile-field-mirror){grid-area:1/1;box-sizing:border-box;min-width:0;width:100%;min-height:64px;margin:0;padding:8px 9px;font:inherit;font-size:16px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid transparent;border-radius:6px}
+ .teaching-mobile-field[data-field=title] .teaching-mobile-field-fit>:is(textarea,.teaching-mobile-field-mirror){min-height:44px}
+ .teaching-mobile-field-mirror{visibility:hidden;pointer-events:none}
+ .teaching-mobile-field-fit>textarea{height:100%;resize:none;overflow:auto;background:var(--card);border-color:var(--border)}
+ .teaching-mobile-standard .standard-control{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+ .teaching-mobile-standard .standard-chips-detailed{display:grid;gap:4px}
+ .teaching-mobile-standard .standard-chips-detailed>span{display:grid;gap:3px;white-space:normal;overflow-wrap:anywhere;max-width:100%;padding:7px 8px}
+ .teaching-mobile-standard .standard-chips-detailed small{font-size:12px;line-height:1.5;color:var(--foreground);font-weight:400}
+ .teaching-week-extra{border:1px solid var(--border);border-radius:8px;min-width:0}
+ .teaching-week-extra .edu-disclosure-body{display:grid;gap:10px;min-width:0}
+ .teaching-week-toolbar-actions [data-slot=button]{min-height:40px}
 }
