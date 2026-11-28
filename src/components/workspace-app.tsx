@@ -88,7 +88,7 @@ const sections: Record<string, string> = {
   home: "홈",
   curriculum: "교육과정",
   calendar: "학사일정",
-  plans: "업무계획",
+  plans: "업무 계획",
   timetable: "시간표",
   teaching: "수업·평가",
   teachers: "교원 관리",
@@ -352,7 +352,7 @@ export function WorkspaceApp({
         {[
           { id: "home", label: "홈", icon: House },
           { id: "calendar", label: "학사일정", icon: CalendarDays },
-          { id: "plans", label: "주간계획", icon: ClipboardList },
+          { id: "plans", label: sections.plans, icon: ClipboardList },
           { id: "timetable", label: "시간표", icon: Table2 },
         ].map(({ id, label, icon: Icon }) => (
           <Link
