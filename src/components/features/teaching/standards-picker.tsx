@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, InlineNotice, Modal, useMutation } from "@/components/common";
+import { NationalReferenceBrowser } from "./national-reference-browser";
 import { registerStandard } from "@/app/teaching-actions";
 import type { Context, Row } from "@/lib/models";
 export function StandardPicker({
@@ -28,6 +29,7 @@ export function StandardPicker({
     [query, setQuery] = useState(""),
     [version, setVersion] = useState(""),
     [register, setRegister] = useState(false),
+    [reference,setReference]=useState(false),
     [extra, setExtra] = useState<Row<"achievement_standards">[]>([]);
   const m = useMutation();
   const standards = [
@@ -67,9 +69,12 @@ export function StandardPicker({
         open={open}
         onOpenChange={setOpen}
         title="성취기준 선택"
-        description="사용자가 직접 등록한 자료입니다. 공식 성취기준과 일치하는지 원문을 확인하세요."
+        description="국가 공통 자료를 참고하거나 기존 학교 등록 자료를 선택하세요."
         wide
       >
+        <Button type="button" variant="outline" onClick={()=>setReference(v=>!v)}>{reference?"공통 자료 닫기":"국가 교육과정 자료에서 선택"}</Button>
+        {reference&&<NationalReferenceBrowser context={c} subject={subject} grade={grade} mode="standards" editable={!disabled} onSelect={s=>{setExtra(prev=>prev.some(x=>x.id===s.id)?prev:[...prev,s]);if(!value.includes(s.id))onChange([...value,s.id]);}}/>}
+        <p className="muted-small">학교 등록 성취기준</p>
         <div className="standard-filters">
           <input
             aria-label="성취기준 검색"

@@ -241,3 +241,55 @@ export async function reviewTeachingSubmission(id: string, status: string, next:
     return true;
   });
 }
+
+export async function loadNationalReference(school:string,version:string,subject:string) {
+  return run(async()=>{
+    const {nationalSubjects,levelSourceSchema}=await import("@/lib/national-reference");
+    z.enum(["초등학교","중학교","고등학교"]).parse(school);
+    z.enum(["2022 개정","2015 개정","기타"]).parse(version);
+    z.enum(nationalSubjects).parse(subject);
+    const db=await dbClient();
+    const [official,source]=await Promise.all([
+      db.from("national_achievement_standards").select("id,area,code,content,subject,grade_band,notice,annex,printed_page,curriculum_version,school_type").eq("school_type",school).eq("curriculum_version",version).eq("subject",subject).order("code"),
+      db.from("national_achievement_level_sources").select("payload").eq("school_type",school).eq("curriculum_version",version).eq("subject",subject).maybeSingle()
+    ]);
+    if(official.error)throw official.error;
+    if(source.error)throw source.error;
+    return {official:official.data??[],source:source.data?levelSourceSchema.parse(source.data.payload):null};
+  });
+}
+export async function importNationalStandard(workspace:string,officialId:string|null,sourceHash:string|null,code:string|null){
+  return run(async()=>{
+    uuid.parse(workspace);
+    const db=await dbClient();
+    const {levelSourceSchema,hasPrivateGlyph}=await import("@/lib/national-reference");
+    let input:unknown;
+    if(officialId){
+      uuid.parse(officialId);
+      const {data,error}=await db.from("national_achievement_standards").select("*").eq("id",officialId).single();
+      if(error)throw error;
+      input={workspace_id:workspace,curriculum_version:data.curriculum_version,school_type:data.school_type,subject:data.subject,grade_band:data.grade_band,code:data.code,content:data.content};
+    }else{
+      z.string().regex(/^[0-9a-f]{64}$/).parse(sourceHash);
+      z.string().min(1).max(80).parse(code);
+      const {data,error}=await db.from("national_achievement_level_sources").select("*").eq("source_sha256",sourceHash!).single();
+      if(error)throw error;
+      const s=levelSourceSchema.parse(data.payload);
+      const r=s.standards.find(v=>v.code===code);
+      if(!r||r.source_code&&r.source_code!==r.code||r.linked_code&&r.linked_code!==r.code||hasPrivateGlyph(r.standard_text))throw Error("원문 코드 또는 수식 확인이 필요한 자료입니다. 직접 등록해 주세요.");
+      input={workspace_id:workspace,curriculum_version:data.curriculum_version,school_type:data.school_type,subject:r.language??data.subject,grade_band:s.source.grade_band,code:r.code,content:r.standard_text};
+    }
+    const v=standardSchema.parse(input);
+    const existing=()=>db.from("achievement_standards").select("*").eq("workspace_id",v.workspace_id).eq("curriculum_version",v.curriculum_version).eq("school_type",v.school_type).eq("subject",v.subject).eq("grade_band",v.grade_band).eq("code",v.code).maybeSingle();
+    const first=await existing();
+    if(first.error)throw first.error;
+    if(first.data){if(first.data.content!==v.content)throw Error("같은 코드에 다른 내용이 등록되어 있습니다. 기존 자료를 확인하세요.");return first.data;}
+    const inserted=await db.from("achievement_standards").insert(v).select("*").single();
+    if(inserted.error){
+      if(inserted.error.code==="23505"){const retry=await existing();if(!retry.error&&retry.data?.content===v.content)return retry.data;}
+      throw inserted.error;
+    }
+    refresh();
+    return inserted.data;
+  });
+}

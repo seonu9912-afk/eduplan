@@ -109,6 +109,7 @@ export function AssessmentEditor({
         </div>
       </div>
       <EvaluationFields
+        context={c} subject={course.subject_name} grade={course.grade}
         value={value.detail}
         onChange={(detail) => onChange({ ...value, detail })}
         editable={editable}
@@ -379,6 +380,7 @@ export function AssessmentEditor({
             </label>
           </div>
           <AssessmentDetailFields
+            context={c} subject={course.subject_name} grade={course.grade}
             item={a}
             standards={c.teaching!.standards.filter((s) =>
               a.standard_ids.includes(s.id),

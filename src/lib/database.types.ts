@@ -127,6 +127,18 @@ export type Database = {
           },
         ];
       };
+      national_achievement_standards: {
+        Row: {id:string; curriculum_version:string; school_type:string; subject:string; grade_band:string; area:string; code:string; content:string; notice:string; annex:number; printed_page:number; pdf_page:number; source_sha256:string; source_url:string; created_at:string};
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      national_achievement_level_sources: {
+        Row: {source_sha256:string; curriculum_version:string; school_type:string; subject:string; title:string; review_status:string; payload:Json; created_at:string};
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       achievement_standards: {
         Row: {
           code: string;

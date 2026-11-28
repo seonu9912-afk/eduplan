@@ -1,4 +1,7 @@
 "use client";
+import { useState } from "react";
+import type { Context } from "@/lib/models";
+import { NationalReferenceBrowser } from "./national-reference-browser";
 import { Disclosure } from "@/components/ui/disclosure";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +36,7 @@ export function NarrativeRows({
     code: string;
     content: string;
     curriculum_version: string;
+    subject?:string; school_type?:string;
   }[];
 }) {
   return (
@@ -124,17 +128,20 @@ export function NarrativeRows({
   );
 }
 export function EvaluationFields({
+  context,subject,grade,
   value,
   onChange,
   editable,
   weighted,
 }: {
+  context?:Context;subject?:string;grade?:number;
   value?: EvaluationDetail;
   onChange: (v: EvaluationDetail) => void;
   editable: boolean;
   weighted: boolean;
 }) {
   const d = value ?? emptyEvaluationDetail();
+  const [areaReference,setAreaReference]=useState(false);
   const labels = {
     purpose: "평가의 목적",
     direction: "평가의 기본 방향",
@@ -172,6 +179,7 @@ export function EvaluationFields({
           onChange={(score_bands) => onChange({ ...d, score_bands })}
         />
       )}
+      {context&&subject&&grade!==undefined&&<><Button type="button" size="sm" variant="outline" onClick={()=>setAreaReference(v=>!v)}>{areaReference?"영역별 참고 자료 닫기":"영역별 성취수준 참고"}</Button>{areaReference&&<NationalReferenceBrowser context={context} subject={subject} grade={grade} mode="areas" editable={editable}/>}</>}
       <NarrativeRows
         name="학기 단위 성취수준"
         value={d.semester_levels}
@@ -189,6 +197,7 @@ export function EvaluationFields({
   );
 }
 export function AssessmentDetailFields({
+  context,subject,grade,
   item,
   standards,
   onChange,
@@ -196,18 +205,21 @@ export function AssessmentDetailFields({
   name,
   weighted,
 }: {
+  context?:Context;subject?:string;grade?:number;
   item: AssessmentItem;
   standards: {
     id: string;
     code: string;
     content: string;
     curriculum_version: string;
+    subject?:string; school_type?:string;
   }[];
   onChange: (v: NonNullable<AssessmentItem["detail"]>) => void;
   editable: boolean;
   name: string;
   weighted: boolean;
 }) {
+  const [levelReference,setLevelReference]=useState(false);
   const d = item.detail ?? {
     lessons: null,
     unit_content: "",
@@ -263,6 +275,7 @@ export function AssessmentDetailFields({
           </label>
         ))}
       </div>
+      {context&&subject&&grade!==undefined&&<><Button type="button" size="sm" variant="outline" onClick={()=>setLevelReference(v=>!v)}>{levelReference?"성취수준 자료 닫기":"성취기준별 성취수준 참고·가져오기"}</Button>{levelReference&&<NationalReferenceBrowser context={context} subject={subject} grade={grade} mode="levels" selectedStandards={standards} levelRows={d.standard_levels} onLevels={standard_levels=>onChange({...d,standard_levels})} editable={editable}/>}</>}
       <NarrativeRows
         name={`${name} 성취기준별 성취수준`}
         label="수준 (기존 코드 표기 유지 가능)"
