@@ -37,9 +37,16 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await field(page).fill(privateTask);
     await dialog(page, "개인 할 일 추가").getByRole("button", { name: "저장", exact: true }).click();
     await expect(scope(page).getByText(privateTask, { exact: true })).toBeVisible();
+    const rowMetrics = (p: Page, title: string) => taskRow(p,title).locator(".task-row-detail").evaluate(el=>{
+      const heading=getComputedStyle(el.querySelector("strong")!);
+      const row=getComputedStyle(el);
+      return {fontSize:heading.fontSize,fontWeight:heading.fontWeight,minHeight:row.minHeight,padding:row.padding,gap:row.gap,lineHeight:heading.lineHeight};
+    });
+    const desktopMetrics=await rowMetrics(page,privateTask);
     await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).check();
     const todayDone = (p: Page) => scope(p).locator(".task-history-today");
     await expect(todayDone(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).toBeChecked();
+    expect(await rowMetrics(page,privateTask)).toEqual(desktopMetrics);
     await expect(page.getByRole("button", { name: "실행 취소", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "실행 취소", exact: true }).click();
     await expect(scope(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).not.toBeChecked();
@@ -81,8 +88,10 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     expect(geometry.padding).toBe("0px");
     expect(geometry.touchWidth).toBeGreaterThanOrEqual(44);
     expect(geometry.touchHeight).toBeGreaterThanOrEqual(44);
+    const mobileMetrics=await rowMetrics(receiver,task);
     await taskCheckbox.click();
     await expect(todayDone(receiver).getByRole("checkbox", { name: task+" 완료", exact: true })).toBeChecked();
+    expect(await rowMetrics(receiver,task)).toEqual(mobileMetrics);
     const toast = receiver.locator(".task-undo");
     await expect(toast).toBeVisible();
     await expect(toast).toHaveCSS("position", "fixed");
