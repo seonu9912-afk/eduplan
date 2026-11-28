@@ -332,14 +332,14 @@
 .timetable-detail-notice { margin-top: 12px; color: var(--text-secondary); overflow-wrap: anywhere; }
 @media print { .official-timetable-grid[data-change-badges] button.official-lesson { appearance: none; } }
 
-/* Reserve the same status slot in every lesson, including the basic timetable.
-   Fixed card geometry prevents a single changed lesson from stretching its row. */
+/* Keep lesson card geometry fixed; center only the content actually present.
+   A status badge must not create an empty row in ordinary lessons. */
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] { --lesson-card-height: 60px; --lesson-status-height: 15px; }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] tbody td { height: calc(var(--lesson-card-height) + 5px); padding: 2px; vertical-align: top; }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson {
-  box-sizing: border-box; display: grid; grid-template-rows: var(--lesson-status-height) 17px 15px;
+  box-sizing: border-box; display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: none; grid-auto-rows: max-content;
   width: 100%; min-width: 0; height: var(--lesson-card-height); min-height: var(--lesson-card-height); max-height: var(--lesson-card-height);
-  align-content: start; justify-items: center; align-items: center; gap: 1px; padding: 3px 2px; border: 1px solid transparent; overflow: hidden;
+  align-content: center; justify-items: center; align-items: center; gap: 1px; padding: 3px 2px; border: 1px solid transparent; overflow: hidden;
 }
 .official-timetable > .official-timetable-scroll .official-timetable-grid[data-change-badges] button.official-lesson[data-cancelled] { border: 1px dashed var(--ep-border-b6bec9, #b6bec9); }
 .official-timetable-grid[data-change-badges] button.official-lesson > :is(.timetable-lesson-subject,.timetable-lesson-secondary,.timetable-lesson-meta) { display: block; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.15; }

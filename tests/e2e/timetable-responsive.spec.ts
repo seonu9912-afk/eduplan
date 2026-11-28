@@ -47,7 +47,7 @@ for(const width of [320,390,430]) test(`shared reader controls at ${width}px`,as
  await expect(sheet.getByLabel("기준 날짜")).toHaveCount(0);
 });
 
-for (const width of [320,390,430]) test(`lesson card geometry stays uniform in both modes at ${width}px`, async ({page}) => {
+for (const width of [320,390,430,1440]) test(`lesson card geometry stays uniform and centered in both modes at ${width}px`, async ({page}) => {
   await page.setViewportSize({width,height:900});
   await page.goto("/recovery-preview/operations");
   await page.getByRole("button",{name:"시간표 조회",exact:true}).click();
@@ -57,9 +57,16 @@ for (const width of [320,390,430]) test(`lesson card geometry stays uniform in b
     await sheet.getByRole("button",{name:mode,exact:true}).click();
     const cards=sheet.locator("button.official-lesson");
     await expect(cards.first()).toBeVisible();
-    const sizes=await cards.evaluateAll(elements=>elements.map(el=>({height:el.getBoundingClientRect().height,slot:el.firstElementChild?.classList.contains("timetable-badges"),slotHeight:el.firstElementChild?.getBoundingClientRect().height})));
-    expect(sizes.every(s=>s.slot&&s.slotHeight===15&&s.height===sizes[0].height)).toBe(true);
-    expect(sizes[0].height).toBe(58);
+    const sizes=await cards.evaluateAll(elements=>elements.map(el=>{
+      const card=el.getBoundingClientRect();
+      const children=Array.from(el.children).filter(child=>child.getBoundingClientRect().height>0);
+      const rects=children.map(child=>child.getBoundingClientRect());
+      const slot=el.querySelector(".timetable-badges");
+      return {height:card.height,centerOffset:Math.abs((Math.min(...rects.map(r=>r.top))+Math.max(...rects.map(r=>r.bottom)))/2-(card.top+card.height/2)),slotPresent:!!slot,slotHeight:slot?.getBoundingClientRect().height,hasBadge:!!slot?.querySelector(".timetable-status-badge")};
+    }));
+    expect(sizes.every(s=>s.height===sizes[0].height&&s.centerOffset<=1&&s.slotPresent===s.hasBadge&&(!s.slotPresent||s.slotHeight===15))).toBe(true);
+    expect(sizes.some(s=>!s.slotPresent)).toBe(true);
+    expect(sizes[0].height).toBe(width<768?58:60);
     await expect(sheet.locator("thead .timetable-day-badge").filter({hasText:"단축"})).toHaveCount(0);
   }
 });

@@ -60,7 +60,7 @@ export function TimetableGrid({ week, mode, audience, label, visible, compact = 
                     const grades = [...new Set(Array.from(classLabel.matchAll(/(?:^|[,\s])(\d+)-\d+(?=$|[,\s])/g), (match) => match[1]))];
                     const badges = cell.badges ?? [];
                     const content = <>
-                      {showChangeBadges && <span className="timetable-badges" aria-hidden="true">{badges.slice(0, 1).map(badge => <small key={badge} className="timetable-status-badge" data-status={badge}>{badge === "확인 필요" ? "확인" : badge}{badges.length > 1 && <span className="timetable-extra-status">+{badges.length - 1}</span>}</small>)}</span>}
+                      {showChangeBadges && badges.length > 0 && <span className="timetable-badges" aria-hidden="true">{badges.slice(0, 1).map(badge => <small key={badge} className="timetable-status-badge" data-status={badge}>{badge === "확인 필요" ? "확인" : badge}{badges.length > 1 && <span className="timetable-extra-status">+{badges.length - 1}</span>}</small>)}</span>}
                       <strong className="timetable-lesson-subject">{classFirst ? classLabel : cell.subject}</strong>
                       {audience === "class" ? (cell.teacher && <span className="timetable-lesson-secondary">{cell.teacher}</span>) : <>
                         <span className="timetable-lesson-secondary">{classFirst ? cell.subject : classLabel}</span>
