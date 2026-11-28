@@ -132,3 +132,25 @@
  .task-undo { animation:task-undo-enter 180ms ease-out both; }
  @keyframes task-undo-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 }
+
+/* One task toolbar and popup at every viewport; opening it never changes the list height. */
+@media screen {
+ .workspace-content .my-tasks .task-widget-actions[data-dashboard] { position:relative; display:flex; align-items:center; justify-content:space-between; flex-wrap:nowrap; gap:4px; margin:2px 0; }
+ .workspace-content .my-tasks .task-widget-actions[data-dashboard] > button { background:transparent; border:0; box-shadow:none; color:var(--primary); font-weight:500; flex:0 1 auto; min-width:0; padding-inline:6px; }
+ .workspace-content .my-tasks .task-widget-actions[data-dashboard] .task-dashboard-more { display:block; position:relative; margin:0 0 0 auto; flex:none; }
+ .workspace-content .my-tasks .task-dashboard-more > summary { display:grid; place-items:center; border:0; background:transparent; border-radius:6px; width:36px; height:36px; min-height:36px; }
+ .workspace-content .my-tasks .task-dashboard-more > summary::after { content:none; }
+ .workspace-content .my-tasks .task-dashboard-menu {
+  position:absolute; inset-inline-end:0; top:100%; z-index:25; display:grid; gap:2px; padding:5px;
+  min-width:144px; max-width:calc(100vw - 32px); background:var(--card); border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 16px #0002;
+ }
+ .workspace-content .my-tasks .task-dashboard-more:not([open]) .task-dashboard-menu { display:none; }
+ .workspace-content .my-tasks .task-dashboard-menu button { min-height:36px; justify-content:flex-start; white-space:nowrap; }
+ .workspace-content .my-tasks .task-dashboard-more > summary:hover { background:var(--surface-muted); }
+ .workspace-content .my-tasks > summary > span { margin-inline-start:auto; }
+ .workspace-content .my-tasks > summary::after { margin-inline-start:2px; }
+}
+@media screen and (max-width:767px) {
+ .workspace-content .my-tasks .task-dashboard-more > summary { width:44px; height:44px; min-height:44px; }
+ .workspace-content .my-tasks .task-dashboard-menu button { min-height:44px; }
+}

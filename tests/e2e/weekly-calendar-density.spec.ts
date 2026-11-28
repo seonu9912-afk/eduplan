@@ -20,12 +20,17 @@ for (const width of [1024,1440,1920]) test(`weekly reader shows all dense events
  await page.getByRole("button",{name:"공개 주간계획",exact:true}).click();
  const table=page.locator(".school-reader-calendar[data-week-grid]");
  await expect(table).toBeVisible();
+ await expect(table).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+ await expect(table.locator("..")).toHaveCSS("border-radius","0px");
+ await expect(page.locator(".reader-segments button[aria-pressed='true']")).toHaveCSS("border-bottom-width","2px");
  await expect(table.locator("thead th")).toHaveCount(7);
  await expect(table.locator(".work-week-row-label")).toHaveCount(0);
  await expect(table.locator(".weekly-operation-row").first().locator("td h4")).toHaveCount(7);
  await expect(table.locator(".calendar-desktop-day time").first()).toHaveCSS("font-size","25px");
  const day=table.locator('.weekly-daily-list[data-date="2027-03-02"]');
  await expect(day.locator(".weekly-daily-event")).toHaveCount(12);
+ await expect(day.locator(".weekly-daily-meta").first()).toBeVisible();
+ await expect(day.locator(".weekly-daily-event").first()).toHaveCSS("border-left-width","2px");
  await expect(table.locator(".calendar-desktop-overflow")).toHaveCount(0);
  await expect(table.locator("[data-week-period] .school-reader-event")).toHaveCount(1);
  await expect(table.locator("[data-week-period] .school-calendar-span-cell")).toHaveAttribute("colspan", "7");

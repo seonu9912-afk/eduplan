@@ -799,3 +799,41 @@
  .workspace-content .personal-day .home-dashboard-side .task-row[data-complete] .task-row-detail strong { font-size:13px; font-weight:400; }
  .workspace-content .personal-day .home-dashboard-side .task-expand-toggle { border:0; color:var(--primary); font-weight:500; }
 }
+
+/* Desktop home: one continuous canvas; genuine controls retain their own surfaces. */
+@media screen and (min-width:768px) {
+ .workspace-content .personal-day { --home-grid-line:color-mix(in srgb,var(--border) 68%,var(--background)); gap:16px; }
+ .workspace-content .personal-day .home-today-grid { gap:0; border-block:1px solid var(--home-grid-line); }
+ .workspace-content .personal-day .home-today-grid > .personal-widget {
+  background:transparent; border:0; border-radius:0; box-shadow:none; padding:12px 16px; min-width:0; gap:8px;
+ }
+ .workspace-content .personal-day .home-today-grid > .personal-widget:first-child { padding-inline-start:0; }
+ .workspace-content .personal-day .home-today-grid > .personal-widget:last-child { padding-inline-end:0; }
+ .workspace-content .personal-day .home-calendar-stack > .personal-widget,
+ .workspace-content .personal-day .home-dashboard-side > .my-tasks,
+ .workspace-content .personal-day .home-shortcuts > .personal-widget { background:transparent; border:0; border-radius:0; box-shadow:none; padding:8px 0 4px; }
+ .workspace-content .personal-day .home-calendar-stack,
+ .workspace-content .personal-day .home-dashboard-side { gap:12px; }
+ .workspace-content .personal-day .home-week-detail,
+ .workspace-content .personal-day .home-shortcuts > .personal-widget { border-top:1px solid var(--home-grid-line); padding-top:12px; }
+ .workspace-content .personal-day .personal-day-heading h2,
+ .workspace-content .personal-day .home-dashboard-side .my-tasks h3 { font-size:16px; font-weight:600; }
+ .workspace-content .personal-day .home-week-grid { border:0; border-block:1px solid var(--home-grid-line); border-radius:0; background:transparent; }
+ .workspace-content .personal-day .home-week-grid .home-week-column { border-color:var(--home-grid-line); }
+ .workspace-content .personal-day .home-week-navigation > button[data-slot="button"] { border:0; background:transparent; box-shadow:none; color:var(--foreground); font-weight:500; }
+ .workspace-content .personal-day .home-week-navigation > button[data-slot="button"]:hover { background:var(--surface-muted); }
+ .workspace-content .personal-day .home-week-toolbar h3 { font-weight:600; }
+ .workspace-content .personal-day .personal-widget-note { font-size:14px; }
+}
+@media screen and (min-width:1251px) {
+ .workspace-content .personal-day .home-today-grid > .personal-widget + .personal-widget { border-inline-start:1px solid var(--home-grid-line); }
+}
+@media screen and (min-width:768px) and (max-width:1250px) {
+ .workspace-content .personal-day .home-today-grid:not(.home-today-grid-single) > .personal-widget:first-child { border-bottom:1px solid var(--home-grid-line); padding-inline-end:0; }
+ .workspace-content .personal-day .home-today-grid > .personal-widget:nth-child(2) { padding-inline-start:0; }
+ .workspace-content .personal-day .home-today-grid > .personal-widget:nth-child(3) { border-inline-start:1px solid var(--home-grid-line); }
+}
+@media screen and (min-width:1100px) {
+ .workspace-content .personal-day .home-week-and-tasks { grid-template-columns:minmax(0,1fr) minmax(280px,26%); gap:20px; }
+ .workspace-content .personal-day .home-dashboard-side { border-inline-start:1px solid var(--home-grid-line); padding-inline-start:18px; }
+}

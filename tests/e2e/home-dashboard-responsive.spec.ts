@@ -73,7 +73,20 @@ test("home separates agenda, personal tasks, and shortcuts at desktop and mobile
  const tasks=home.locator(".home-dashboard-side > .my-tasks");
  const shortcuts=home.locator(".home-shortcuts");
  await expect(calendar).toBeVisible();
+ await expect(calendar).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
+ await expect(calendar).toHaveCSS("border-left-width","0px");
+ await expect(tasks).toHaveCSS("background-color","rgba(0, 0, 0, 0)");
  await expect(detail).toBeVisible();
+ const taskMore=tasks.locator(".task-dashboard-more > summary");
+ if(await taskMore.isVisible()){
+  const before=await tasks.boundingBox();
+  await taskMore.click();
+  const menu=tasks.locator(".task-dashboard-menu");
+  await expect(menu).toBeVisible();
+  await expect(menu).toHaveCSS("position","absolute");
+  expect((await tasks.boundingBox())!.height).toBe(before!.height);
+  await taskMore.click();
+ }
  await expect(calendar.locator(".home-week-detail")).toHaveCount(0);
  await expect(home.locator(".home-today-grid > .personal-widget")).toHaveCount(3);
  await expect(shortcuts).toBeVisible();
