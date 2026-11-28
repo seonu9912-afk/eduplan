@@ -160,7 +160,7 @@ export function PersonalDay({ context: c, today, previewNow, publicData, shortcu
 
 
 const liveClockFormat = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
 });
 const liveDateFormat = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul", year: "numeric", month: "long", day: "numeric", weekday: "long",
@@ -171,7 +171,7 @@ function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: stri
   useEffect(() => {
     const tick = () => setInstant(new Date(previewNow ?? Date.now()));
     const first = window.setTimeout(tick, 0);
-    const timer = previewNow ? undefined : window.setInterval(tick, 10000);
+    const timer = previewNow ? undefined : window.setInterval(tick, 1000);
     document.addEventListener("visibilitychange", tick);
     return () => {
       window.clearTimeout(first);
@@ -186,7 +186,7 @@ function HomeLiveClock({ today, previewNow }: { today: string; previewNow?: stri
       <time dateTime={instant?.toISOString() ?? today}>{liveDateFormat.format(instant ?? new Date(`${today}T00:00:00+09:00`))}</time>
     </div>
     <time className="home-clock-time" aria-label="현재 시각 (한국 표준시)" dateTime={instant?.toISOString()}>
-      {instant ? liveClockFormat.format(instant) : "--:--"}
+      {instant ? liveClockFormat.format(instant) : "--:--:--"}
     </time>
   </div>;
 }

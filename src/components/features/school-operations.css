@@ -403,7 +403,7 @@
 }
 @media screen and (max-width: 767px) {
   .home-live-clock { gap: 6px 12px; }
-  .home-clock-time { font-size: clamp(30px, 8vw, 40px); }
+  .home-clock-time { font-size: clamp(23px, 7vw, 34px); }
 }
 
 /* Today's essentials come first; equal-height cards grow with their contents. */

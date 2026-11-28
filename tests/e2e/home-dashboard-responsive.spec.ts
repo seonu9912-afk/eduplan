@@ -96,3 +96,13 @@ test("home separates agenda, personal tasks, and shortcuts at desktop and mobile
  expect(smallDay!.y).toBeGreaterThanOrEqual(smallCal!.y+smallCal!.height);
  expect(smallTasks!.y).toBeGreaterThanOrEqual(smallDay!.y+smallDay!.height);
 });
+
+for(const width of [320,390,1440]) test(`home clock includes seconds without overflow at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ const clock=page.locator(".home-live-clock .home-clock-time");
+ await expect(clock).toHaveText("08:57:00");
+ await expect(clock).toHaveCSS("font-variant-numeric","tabular-nums");
+ const geometry=await clock.evaluate(el=>({right:el.getBoundingClientRect().right,parentRight:el.parentElement!.getBoundingClientRect().right}));
+ expect(geometry.right).toBeLessThanOrEqual(geometry.parentRight+1);
+});
