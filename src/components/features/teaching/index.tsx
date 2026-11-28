@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
 import {
   BookOpen,
+  Check,
   Plus,
   Save,
   Settings2,
@@ -795,17 +796,11 @@ function CourseEditor({
           <div className="teaching-save-meta">
             <div className="teaching-save-summary">
             <SaveStatus state={saveState}>
-              {autoActive
-                ? "자동 저장 중…"
-                : m.pending
-                  ? "저장 중…"
-                  : versionConflict
-                    ? "충돌 · 최신 저장본 확인 필요"
-                    : m.notice.error || autoError
-                      ? "저장 실패 · 입력 내용 유지"
-                      : dirty
-                        ? "저장하지 않은 변경사항"
-                        : "저장 완료"}
+              {saveState === "saved" && <Check size={13} aria-hidden="true" />}
+              {saveState === "saving" ? "저장 중" :
+                saveState === "conflict" ? "저장 충돌" :
+                saveState === "error" ? "저장 실패" :
+                saveState === "dirty" ? "저장 필요" : "저장 완료"}
             </SaveStatus>
             </div>
           </div>

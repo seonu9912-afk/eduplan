@@ -276,3 +276,33 @@
  .submission-review-actions{display:flex;gap:6px;flex-wrap:wrap}
  .submission-review-detail .teaching-report-preview{overflow:auto;max-width:100%}
 }
+
+/* A compact, stable save-state pill scoped to teaching authoring. */
+@media screen {
+ .teaching-module .plan-savebar.teaching-compact-savebar{display:grid;grid-template-columns:minmax(max-content,1fr) auto;align-items:center;column-gap:8px}
+ .teaching-module .plan-savebar.teaching-compact-savebar>.teaching-save-meta{display:block;width:auto;max-width:none;min-width:max-content;overflow:visible}
+ .teaching-module .teaching-compact-savebar .teaching-save-summary{display:flex;flex-wrap:nowrap;justify-content:flex-start;min-width:max-content}
+ .teaching-module .teaching-compact-savebar .save-status{display:inline-flex;align-items:center;flex:0 0 auto;width:max-content;min-width:max-content;max-width:none;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;gap:4px;padding:4px 9px;border:0;border-radius:999px;background:var(--surface-muted);font-size:12px;line-height:1.35;font-weight:600}
+ .teaching-module .teaching-compact-savebar .save-status::before{content:none;display:none}
+ .teaching-module .teaching-compact-savebar .save-status[data-state=saved]{color:#176453;background:#e7f5ee}
+ .teaching-module .teaching-compact-savebar .save-status[data-state=saving]{color:#34577d;background:#eaf0f8}
+ .teaching-module .teaching-compact-savebar .save-status[data-state=dirty]{color:#895404;background:#fff3da}
+ .teaching-module .teaching-compact-savebar .save-status:is([data-state=error],[data-state=conflict]){color:#a42b29;background:#fce9e8}
+ :root[data-theme=dark] .teaching-module .teaching-compact-savebar .save-status[data-state=saved]{color:#a4e0c5;background:#1d4538}
+ :root[data-theme=dark] .teaching-module .teaching-compact-savebar .save-status[data-state=saving]{color:#b9d4f5;background:#2a3d55}
+ :root[data-theme=dark] .teaching-module .teaching-compact-savebar .save-status[data-state=dirty]{color:#f4cf8a;background:#49391e}
+ :root[data-theme=dark] .teaching-module .teaching-compact-savebar .save-status:is([data-state=error],[data-state=conflict]){color:#ffc0bc;background:#512e32}
+ .teaching-module .plan-savebar.teaching-compact-savebar .teaching-actions{width:auto;min-width:0;justify-self:end}
+}
+@media screen and (max-width:767px){
+ .teaching-module .teaching-section.teaching-week-section{border:0;box-shadow:none;background:transparent;padding:0;border-radius:0}
+ .teaching-module .teaching-week-section .teaching-week-mobile-card{padding:4px 0 0;gap:14px;border:0;box-shadow:none}
+ .teaching-module .teaching-week-section .teaching-mobile-field-fit{position:relative;display:grid;grid-template-columns:minmax(0,1fr);width:100%;min-width:0;isolation:isolate}
+ .teaching-module .teaching-week-section .teaching-mobile-field-fit>.teaching-mobile-field-mirror{visibility:hidden;pointer-events:none;display:block}
+ .teaching-module .teaching-week-section .teaching-mobile-field-fit>:is(textarea,.teaching-mobile-field-mirror){box-sizing:border-box;grid-area:1/1;width:100%;min-width:0;max-width:100%;margin:0;padding:9px 11px;font-family:inherit;font-size:16px;font-weight:400;line-height:1.5;min-height:76px;border:1px solid transparent;border-radius:7px}
+ .teaching-module .teaching-week-section .teaching-mobile-field[data-field=title] .teaching-mobile-field-fit>:is(textarea,.teaching-mobile-field-mirror){min-height:44px}
+ .teaching-module .teaching-week-section .teaching-mobile-field-fit>textarea{position:relative;display:block;appearance:none;-webkit-appearance:none;align-self:stretch;height:100%;resize:none;overflow:auto;background:var(--card,#fff);border:1px solid var(--ep-border-dce4ee,#c8d1de);box-shadow:inset 0 0 0 1px var(--ep-border-dce4ee,#c8d1de);outline:0;opacity:1}
+ .teaching-module .teaching-week-section .teaching-mobile-field-fit>textarea:focus{border-color:#7296bf;box-shadow:0 0 0 2px var(--ep-border-acc7e7,#acc7e7)}
+ .teaching-module .teaching-week-section .teaching-mobile-standard .standard-control>button{width:100%;max-width:100%;min-height:44px;justify-content:flex-start}
+ .teaching-module .teaching-week-section .teaching-mobile-field-label{font-size:13px}
+}

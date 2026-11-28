@@ -248,6 +248,7 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
                           <div aria-hidden="true" className="teaching-mobile-field-mirror">{unit?.[field] ?? ""}{"\u200b"}</div>
                           <textarea
                             rows={field === "title" ? 1 : 2}
+                            placeholder={`${fields[field].label} 입력`}
                             maxLength={fields[field].max}
                             value={unit?.[field] ?? ""}
                             onBlur={() => setGroup(null)}
