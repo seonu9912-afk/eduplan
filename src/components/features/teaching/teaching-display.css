@@ -94,3 +94,29 @@
   --ep-bg-f7f9fb: hsl(210 18% 16%);
  }
 }
+
+/* Compact authoring entry: keep the existing query and document data intact. */
+@media screen {
+ .teaching-module .teaching-query{margin:0;border:1px solid var(--border);border-radius:8px;background:var(--card)}
+ .teaching-module .teaching-query .edu-disclosure-heading{padding:8px 12px;min-height:44px}
+ .teaching-module .teaching-query .edu-disclosure-label{flex:1;min-width:0}
+ .teaching-query-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font-size:13px;color:var(--text-secondary);font-weight:500}
+ .teaching-query-summary>span:first-child{min-width:0;overflow-wrap:anywhere}
+ .teaching-query-action{display:inline-flex;align-items:center;gap:4px;flex:none;color:var(--schedule-accent);font-weight:600}
+ .teaching-module .teaching-query .teaching-filters{margin:0;padding:4px 0 8px;box-shadow:none;border:0}
+ .teaching-module .teaching-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:0;background:transparent;border-bottom:1px solid var(--border);border-radius:0}
+ .teaching-module .teaching-tabs button{min-width:0;border-radius:0;box-shadow:none;font-weight:500;white-space:normal;border-bottom:2px solid transparent}
+ .teaching-module .teaching-tabs button[aria-pressed=true]{background:transparent;box-shadow:none;border-bottom-color:var(--schedule-accent);font-weight:700}
+ .teaching-module .course-picker{margin:0 0 10px;gap:4px}
+ .teaching-module .course-picker label{min-width:0;max-width:100%;gap:4px}
+ .teaching-course-label{color:var(--text-secondary);font-size:12px;font-weight:500}
+ .teaching-document-actions{display:flex;justify-content:flex-end;margin:8px 0}
+}
+@media screen and (max-width:767px){
+ .teaching-module .teaching-query-summary{font-size:12px;gap:5px}
+ .teaching-module .teaching-tabs button{padding:7px 2px;font-size:12px;min-height:44px}
+ .teaching-module .course-picker label{width:100%}
+ .teaching-module .course-picker select{width:100%;min-width:0}
+ .teaching-module .plan-savebar>div:first-child{min-width:0;flex:1 1 100%}
+ .teaching-module .plan-savebar .teaching-actions{flex-wrap:wrap}
+}

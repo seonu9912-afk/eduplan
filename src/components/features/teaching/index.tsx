@@ -64,7 +64,6 @@ const tabs: [Tab, string][] = [
   ["lesson", "교수학습계획"],
   ["assessment", "평가계획"],
   ["review", "검토·출력"],
-  ["document", "전체 문서 미리보기"],
 ];
 const period = (s: number) => (s ? `${s}학기` : "연간");
 export function TeachingModule({
@@ -82,13 +81,17 @@ export function TeachingModule({
     [selected, setSelected] = useState<string | null>(null),
     [dirty, setDirty] = useState(false),
     [creating, setCreating] = useState(false);
-  const [filters, setFilters] = useState({
-    semester: "",
+  const [filters, setFilters] = useState(() => {
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
+    const term = c.semesters.find((item) => item.start_date <= today && today <= item.end_date);
+    return {
+    semester: term ? String(term.number) : "",
     grade: "",
     subject: "",
     classId: "",
     ownership: c.role === "viewer" ? "all" : "mine",
     archived: false,
+    };
   });
   const changed = (value: boolean) => {
     setDirty(value);
@@ -173,63 +176,13 @@ export function TeachingModule({
             </Button>
           )}
         </div>
-        <Disclosure className="panel" label="교육과정에서 계산한 작성 대상">
-          <p>
-            현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만
-            표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통
-            자료에서 표시합니다.
-          </p>
-          <div className="operations-scroll">
-            <table className="operations-table">
-              <thead>
-                <tr>
-                  <th>학년·학기</th>
-                  <th>과목</th>
-                  <th>편성 기준</th>
-                  <th>시간표 담당</th>
-                  <th>작성 상태</th>
-                </tr>
-              </thead>
-              <tbody>
-                {curriculumTeachingTargets(c).map((target) => (
-                  <tr
-                    key={`${target.grade}:${target.semester}:${target.subjectId}`}
-                  >
-                    <td>
-                      {target.grade}학년 {target.semester}학기
-                    </td>
-                    <td>{target.subjectName}</td>
-                    <td>
-                      {target.hours}
-                      {target.unit === "credits" ? "학점" : "시간"}
-                    </td>
-                    <td>{target.teacherName || "담당 확인 필요"}</td>
-                    <td>
-                      {target.exists ? (
-                        "기존 계획 있음"
-                      ) : canPlan(c, "assessment") ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            if (canLeave()) {
-                              setInitialTarget(target);
-                              setCreating(true);
-                            }
-                          }}
-                        >
-                          이 과목 계획 시작
-                        </Button>
-                      ) : (
-                        "미작성"
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Disclosure>
-        <section className="panel teaching-filters" aria-label="수업 선택 조건">
+        <Disclosure className="teaching-query" compact label={
+          <span className="teaching-query-summary">
+            <span>{c.year.year}학년도 · {filters.semester ? period(Number(filters.semester)) : "전체 학기"} · {filters.ownership === "mine" ? "내 담당 수업" : "학교 공유 포함"}</span>
+            <span className="teaching-query-action"><Settings2 size={16} /> 조회 설정</span>
+          </span>
+        }>
+        <section className="teaching-filters" aria-label="수업 선택 조건">
           <label>
             학년도
             <select
@@ -325,6 +278,7 @@ export function TeachingModule({
             </select>
           </label>
         </section>
+        </Disclosure>
         <nav
           className="teaching-tabs"
           data-arrow-axis="horizontal"
@@ -333,7 +287,7 @@ export function TeachingModule({
           {tabs.map(([id, label]) => (
             <button
               key={id}
-              aria-pressed={tab === id}
+              aria-pressed={tab === id || (id === "review" && tab === "document")}
               onClick={() => {
                 if (!selected && courses[0]) setSelected(courses[0].id);
                 setTab(id);
@@ -345,10 +299,67 @@ export function TeachingModule({
         </nav>
         {tab === "overview" ? (
           <section className="teaching-overview">
-            <SchoolTeachingReview
-              context={c}
-              openPlan={(id) => select(id, "review")}
-            />
+            {canPlan(c, "assessment") && (
+              <>
+        <Disclosure className="panel" label="교육과정에서 계산한 작성 대상">
+          <p>
+            현재 운영 학년도의 입학년도별 편성에서 실제 시수가 있는 학년·과목만
+            표시합니다. 기존 계획은 보존하고 새 계획의 학사 주차·행사는 공통
+            자료에서 표시합니다.
+          </p>
+          <div className="operations-scroll">
+            <table className="operations-table">
+              <thead>
+                <tr>
+                  <th>학년·학기</th>
+                  <th>과목</th>
+                  <th>편성 기준</th>
+                  <th>시간표 담당</th>
+                  <th>작성 상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {curriculumTeachingTargets(c).map((target) => (
+                  <tr
+                    key={`${target.grade}:${target.semester}:${target.subjectId}`}
+                  >
+                    <td>
+                      {target.grade}학년 {target.semester}학기
+                    </td>
+                    <td>{target.subjectName}</td>
+                    <td>
+                      {target.hours}
+                      {target.unit === "credits" ? "학점" : "시간"}
+                    </td>
+                    <td>{target.teacherName || "담당 확인 필요"}</td>
+                    <td>
+                      {target.exists ? (
+                        "기존 계획 있음"
+                      ) : canPlan(c, "assessment") ? (
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            if (canLeave()) {
+                              setInitialTarget(target);
+                              setCreating(true);
+                            }
+                          }}
+                        >
+                          이 과목 계획 시작
+                        </Button>
+                      ) : (
+                        "미작성"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Disclosure>
+              <SchoolTeachingReview context={c} openPlan={(id) => select(id, "review")} />
+              </>
+            )}
             <div className="section-title">
               <div>
                 <h2>
@@ -455,7 +466,7 @@ export function TeachingModule({
         ) : (
           <div className="course-picker">
             <label>
-              편집할 수업
+              <span className="teaching-course-label">{filters.ownership === "mine" ? "내 담당 수업" : "조회할 수업"}</span>
               <select
                 aria-label="편집할 수업"
                 value={course?.id ?? ""}
@@ -1024,6 +1035,7 @@ function CourseEditor({
         )}
         {tab === "review" && (
           <>
+            <div className="teaching-document-actions"><Button variant="outline" onClick={() => onNavigate("document")}>전체 문서 미리보기</Button></div>
             <TeachingConnections
               doc={doc}
               standards={c.teaching!.standards}
@@ -1072,6 +1084,8 @@ function CourseEditor({
           </>
         )}
         {tab === "document" && (
+          <>
+          <div className="teaching-document-actions"><Button variant="outline" onClick={() => onNavigate("review")}>검토·출력으로 돌아가기</Button></div>
           <TeachingPrint
             context={c}
             course={course}
@@ -1080,6 +1094,7 @@ function CourseEditor({
             mode="both"
             preview
           />
+          </>
         )}
         <footer className="teaching-plan-footer">
           <p>
