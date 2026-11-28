@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, Ellipsis, ListTodo, Plus, X } from "lucide-react";
 import { changeSchoolTask } from "@/app/school-task-actions";
 import { InlineNotice, Modal, useMutation } from "@/components/common";
@@ -38,6 +39,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
     return () => window.clearTimeout(timer);
   }, [undo]);
   const [expanded,setExpanded]=useState(false);
+  const [todayExpanded,setTodayExpanded]=useState(false);
   const summarized=compact||dashboard;
   const [screen, setScreen] = useState<Screen | null>(() => {
     if (c.taskFocus?.id && data?.tasks.some((task) => task.id === c.taskFocus?.id))
@@ -90,13 +92,13 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   function completeTask(task: SchoolTask, completed: boolean) {
     if (m.pending || m.isInFlight()) return;
     setUndo(null);
-    const animate = completed && !screen && navigator.onLine;
+    const animate = completed && !screen && navigator.onLine && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (animate) setMoving(task.id);
     m.execute(async () => {
       try {
         const save = changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed });
         if (!animate) return await save;
-        const [result] = await Promise.all([save, new Promise<void>((resolve) => window.setTimeout(resolve, 800))]);
+        const [result] = await Promise.all([save, new Promise<void>((resolve) => window.setTimeout(resolve, 320))]);
         return result;
       } finally {
         if (animate) setMoving(null);
@@ -126,10 +128,12 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
         <button type="button" className="task-row-detail" onClick={() => open({ kind: "detail", id: task.id })}>
           <strong>{title}</strong>
           {history === "earlier" && complete ? <span><time dateTime={complete}>{completedDate.format(new Date(complete))}</time></span> :
-          !history && <span>
-            {task.kind === "personal" ? (summarized ? "" : "개인 할 일") : task.department || "배포받은 업무"}
-            {deadline && `${task.kind==="personal" && summarized ? "" : " · "}${deadline}`}
-            {task.cancelled_at && " · 취소"}
+          !history && (deadline || task.cancelled_at || task.kind !== "personal" || !summarized) && <span>
+            {[
+              task.kind === "personal" ? (summarized ? "" : "개인 할 일") : task.department || "배포받은 업무",
+              deadline,
+              task.cancelled_at ? "취소" : "",
+            ].filter(Boolean).join(" · ")}
             {late && <b className="task-overdue">기한 경과</b>}
           </span>}
         </button>
@@ -154,7 +158,8 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
         {activeRows.length ? <>{rows(summarized&&!expanded?activeRows.slice(0,5):activeRows)}{summarized&&activeRows.length>5&&<button type="button" className="task-expand-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":`나머지 할 일 ${activeRows.length-5}건 더보기`}</button>}</> : <p className="task-hint">{finishedToday.length ? "모든 할 일을 완료했습니다." : "미완료 할 일이 없습니다."}</p>}
         {finishedToday.length > 0 && <details className="task-history task-history-today" open>
           <summary>오늘 완료 <span>{finishedToday.length}건</span></summary>
-          {rows(finishedToday, "today")}
+          {rows(todayExpanded ? finishedToday : finishedToday.slice(0, 2), "today")}
+          {finishedToday.length > 2 && <button type="button" className="task-history-expand" aria-expanded={todayExpanded} onClick={() => setTodayExpanded(v => !v)}>{todayExpanded ? "완료 목록 접기" : `완료한 할 일 ${finishedToday.length - 2}건 더보기`}</button>}
         </details>}
         {finishedEarlier.length > 0 && <details className="task-history">
           <summary>이전에 완료한 할 일 <span>{finishedEarlier.length}건</span></summary>
@@ -163,13 +168,13 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
         {cancelled.length > 0 && <Disclosure compact label={`취소된 업무 (${cancelled.length})`}>{rows(cancelled)}</Disclosure>}
         </div>
       </> : <p className="task-hint" role="status">할 일을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>}
-      {!screen && undo && <div className="task-undo" role="status">
-        <span>할 일을 완료했습니다.</span>
-        <button type="button" disabled={m.pending || !undoTask} onClick={() => { if (undoTask) completeTask(undoTask.task, false); }}>실행 취소</button>
-        <button type="button" aria-label="완료 알림 닫기" onClick={() => setUndo(null)}><X size={16} /></button>
-      </div>}
       {!screen && <InlineNotice mutation={m} />}
     </details>
+    {!screen && undo && createPortal(<div className="task-undo no-print">
+      <span role="status">할 일을 완료했습니다.</span>
+      <button type="button" disabled={m.pending || !undoTask} onClick={() => { if (undoTask) completeTask(undoTask.task, false); }}>실행 취소</button>
+      <button type="button" aria-label="완료 알림 닫기" onClick={() => setUndo(null)}><X size={16} /></button>
+    </div>, document.body)}
 
     <Modal open={!!screen} onOpenChange={(show) => { if (!show) open(null); }} title={modalTitle} wide={screen?.kind === "manage"}>
       {screen?.kind === "form" && <SchoolTaskForm key={selected?.id ?? screen.taskKind}

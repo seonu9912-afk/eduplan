@@ -40,8 +40,8 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).check();
     const todayDone = (p: Page) => scope(p).locator(".task-history-today");
     await expect(todayDone(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).toBeChecked();
-    await expect(scope(page).getByRole("button", { name: "실행 취소", exact: true })).toBeEnabled();
-    await scope(page).getByRole("button", { name: "실행 취소", exact: true }).click();
+    await expect(page.getByRole("button", { name: "실행 취소", exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: "실행 취소", exact: true }).click();
     await expect(scope(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).not.toBeChecked();
     await scope(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true }).check();
     await expect(todayDone(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).toBeChecked();
@@ -70,8 +70,25 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await expect(dialog(receiver, "할 일 상세").getByRole("button", { name: "완료 처리" })).toBeVisible();
     await dialog(receiver, "할 일 상세").getByRole("button", { name: "닫기" }).click();
     await expect(taskRow(receiver, task).getByText("기한 경과", { exact: true })).toBeVisible();
-    await scope(receiver).getByRole("checkbox", { name: `${task} 완료` }).click();
+    const taskCheckbox = scope(receiver).getByRole("checkbox", { name: `${task} 완료` });
+    const geometry = await taskCheckbox.evaluate(el => {
+      const box = el.getBoundingClientRect();
+      const label = el.closest("label")!.getBoundingClientRect();
+      return { width: box.width, height: box.height, padding: getComputedStyle(el).padding, touchWidth: label.width, touchHeight: label.height };
+    });
+    expect(geometry.width).toBe(18);
+    expect(geometry.height).toBe(18);
+    expect(geometry.padding).toBe("0px");
+    expect(geometry.touchWidth).toBeGreaterThanOrEqual(44);
+    expect(geometry.touchHeight).toBeGreaterThanOrEqual(44);
+    await taskCheckbox.click();
     await expect(todayDone(receiver).getByRole("checkbox", { name: task+" 완료", exact: true })).toBeChecked();
+    const toast = receiver.locator(".task-undo");
+    await expect(toast).toBeVisible();
+    await expect(toast).toHaveCSS("position", "fixed");
+    const toastBox = await toast.boundingBox();
+    const navBox = await receiver.locator(".mobile-bottom-nav").boundingBox();
+    expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(navBox!.y);
     await receiver.goto(plans);
     await expect(todayDone(receiver)).toHaveAttribute("open", "");
     await expect(scope(receiver).getByRole("checkbox", { name: `${task} 완료` })).toBeChecked();
