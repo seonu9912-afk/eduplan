@@ -9,19 +9,22 @@ import type {Context,Row} from "@/lib/models";
 type LevelRow={label:string;description:string;standard_id?:string|null};
 export function NationalReferenceBrowser({context:c,subject,grade,mode,onSelect,selectedStandards=[],levelRows=[],onLevels,editable=true}:{context:Context;subject:string;grade:number;mode:"standards"|"levels"|"areas";onSelect?:(s:Row<"achievement_standards">)=>void;selectedStandards?:SelectedStandard[];levelRows?:LevelRow[];onLevels?:(rows:LevelRow[])=>void;editable?:boolean}){
  const [version,setVersion]=useState(()=>defaultCurriculum(c.schoolType,c.year?.year,grade));
- const [catalog,setCatalog]=useState(()=>referenceSubject(subject)||"국어");
+ const [catalog,setCatalog]=useState(()=>referenceSubject(subject));
  const [language,setLanguage]=useState(()=>nationalLanguages.find(v=>normalized(v)===normalized(subject))??"");
  const [query,setQuery]=useState("");
- const [data,setData]=useState<NationalReference|null>(null);
- const [error,setError]=useState("");
- const [loading,setLoading]=useState(true);
+ const key=JSON.stringify([c.schoolType,version,catalog]);
+ const [loaded,setLoaded]=useState<{key:string;data:NationalReference|null;error:string}|null>(null);
+ const data=loaded?.key===key?loaded.data:null;
+ const error=loaded?.key===key?loaded.error:"";
+ const loading=!!catalog&&loaded?.key!==key;
  const [notice,setNotice]=useState("");
  const m=useMutation();
  useEffect(()=>{
-   let active=true;setLoading(true);setData(null);setError("");setNotice("");
-   loadNationalReference(c.schoolType,version,catalog).then(r=>{if(!active)return;if(r.ok)setData(r.data);else setError(r.error);setLoading(false);}).catch(()=>{if(active){setError("공통 자료를 불러오지 못했습니다.");setLoading(false);}});
+   if(!catalog)return;
+   let active=true;
+   loadNationalReference(c.schoolType,version,catalog).then(r=>{if(active)setLoaded(r.ok?{key,data:r.data,error:""}:{key,data:null,error:r.error});}).catch(()=>{if(active)setLoaded({key,data:null,error:"공통 자료를 불러오지 못했습니다."});});
    return()=>{active=false;};
- },[c.schoolType,version,catalog]);
+ },[c.schoolType,version,catalog,key]);
  const filter=(v:string)=>normalized(v.toLowerCase()).includes(normalized(query.toLowerCase()));
  const source=data?.source;
  const sameLanguage=(v?:string|null)=>!language||v===language;
@@ -45,7 +48,7 @@ export function NationalReferenceBrowser({context:c,subject,grade,mode,onSelect,
    onLevels([...levelRows,...next]);setNotice("참고 진술문을 추가했습니다. 저장 전 검토하세요.");
  };
  return <div className="national-reference-browser">
-   <div className="standard-filters"><select aria-label="국가 자료 교육과정" value={version} onChange={e=>setVersion(e.target.value)} disabled={m.pending}><option>2022 개정</option><option>2015 개정</option><option>기타</option></select><select aria-label="국가 자료 교과" value={catalog} onChange={e=>{setCatalog(e.target.value);setLanguage("");}} disabled={m.pending}>{nationalSubjects.map(s=><option key={s}>{s}</option>)}</select></div>
+   <div className="standard-filters"><select aria-label="국가 자료 교육과정" value={version} onChange={e=>{setVersion(e.target.value);setLoaded(null);setNotice("");}} disabled={m.pending}><option>2022 개정</option><option>2015 개정</option><option>기타</option></select><select aria-label="국가 자료 교과" value={catalog} onChange={e=>{setCatalog(e.target.value);setLanguage("");setLoaded(null);setNotice("");}} disabled={m.pending}><option value="">교과 선택</option>{nationalSubjects.map(s=><option key={s}>{s}</option>)}</select></div>
    {catalog==="생활 외국어"&&<select aria-label="생활 외국어 과목" value={language} onChange={e=>setLanguage(e.target.value)}><option value="">전체 언어</option>{nationalLanguages.map(s=><option key={s}>{s}</option>)}</select>}
    <input aria-label="공통 자료 검색" value={query} onChange={e=>setQuery(e.target.value)} placeholder="코드·영역·내용 검색"/>
    <p className="muted-small">{c.schoolType} · {version} · {catalog} · 성취수준 자료는 추출본이며 원문 확인이 필요합니다.</p>
