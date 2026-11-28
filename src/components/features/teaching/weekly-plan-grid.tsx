@@ -2,7 +2,7 @@
 
 import { Disclosure } from "@/components/ui/disclosure";
 import { useState, type KeyboardEvent } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Undo2, Redo2 } from "lucide-react";
 import "./weekly-plan-grid.css";
 import { Modal } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -198,8 +198,8 @@ export function WeeklyPlanGrid({ calendar, ...props }: Props) {
               <h2>교수학습계획</h2>
               <div className="teaching-actions">
                 {editable && <>
-                  <Button variant="ghost" size="sm" disabled={!past.length} onClick={undo}>입력 취소</Button>
-                  <Button variant="ghost" size="sm" disabled={!future.length} onClick={redo}>다시 실행</Button>
+                  <Button variant="ghost" size="sm" aria-label="입력 취소" title="입력 취소" disabled={!past.length} onClick={undo}><Undo2 size={17}/></Button>
+                  <Button variant="ghost" size="sm" aria-label="다시 실행" title="다시 실행" disabled={!future.length} onClick={redo}><Redo2 size={17}/></Button>
                 </>}
               </div>
             </div>

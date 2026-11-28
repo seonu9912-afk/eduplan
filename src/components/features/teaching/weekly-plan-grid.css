@@ -112,3 +112,16 @@
  .teaching-week-extra .edu-disclosure-body{display:grid;gap:10px;min-width:0}
  .teaching-week-toolbar-actions [data-slot=button]{min-height:40px}
 }
+
+@media screen {
+ .teaching-week-progress-summary progress{appearance:none;-webkit-appearance:none;border:0;border-radius:4px;overflow:hidden;background:#e2e8f0;accent-color:#2563eb}
+ .teaching-week-progress-summary progress::-webkit-progress-bar{background:#e2e8f0;border-radius:4px}
+ .teaching-week-progress-summary progress::-webkit-progress-value{background:#2563eb;border-radius:4px}
+ .teaching-week-progress-summary progress::-moz-progress-bar{background:#2563eb;border-radius:4px}
+ .teaching-week-toolbar-heading .teaching-actions [data-slot=button]{width:40px;height:40px;min-height:40px;padding:0}
+}
+@media screen and (max-width:767px){
+ .teaching-week-toolbar-progress{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}
+ .teaching-week-toolbar-actions{justify-content:space-between}
+ .teaching-week-toolbar .teaching-week-toolbar-actions [data-slot=button]{font-size:12px;min-height:36px;padding:4px 6px}
+}
