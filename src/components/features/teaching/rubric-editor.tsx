@@ -1,5 +1,6 @@
 "use client";
-import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { emptyRubric, type RubricElement } from "@/lib/teaching";
 export function RubricEditor({
@@ -10,6 +11,7 @@ export function RubricEditor({
   weighted,
   editable,
   name,
+  expectedPoints,
 }: {
   value: RubricElement[];
   stages: { id: string; title: string }[];
@@ -23,7 +25,10 @@ export function RubricEditor({
   weighted: boolean;
   editable: boolean;
   name: string;
+  expectedPoints?: number | null;
 }) {
+  const [openId, setOpenId] = useState<string | null>(value[0]?.id ?? null);
+  const total = value.reduce((s, r) => s + (r.points ?? 0), 0);
   const update = (id: string, next: Partial<RubricElement>) =>
     onChange(value.map((r) => (r.id === id ? { ...r, ...next } : r)));
   return (
@@ -33,16 +38,17 @@ export function RubricEditor({
           <h3>평가 요소별 채점기준</h3>
           <p>
             {weighted
-              ? `요소 배점 합계 ${value.reduce((s, r) => s + (r.points ?? 0), 0)}점`
+              ? `요소 배점 합계 ${Number(total.toFixed(4))}점${expectedPoints != null ? ` / ${expectedPoints}점` : ""}`
               : "점수 없이 수준별 판단 기준을 작성합니다."}
           </p>
+          {weighted && expectedPoints != null && <small className="rubric-sum-status" data-valid={Math.abs(total-expectedPoints)<0.001}>{Math.abs(total-expectedPoints)<0.001 ? "배점 일치" : "배점 확인 필요"}</small>}
         </div>
         {editable && (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => onChange([...value, emptyRubric()])}
+            onClick={() => { const item = emptyRubric(); onChange([...value, item]); setOpenId(item.id); }}
           >
             <Plus /> 평가 요소 추가
           </Button>
@@ -59,6 +65,8 @@ export function RubricEditor({
         )
         .map(({ r, i }) => (
           <section className="rubric-element" key={r.id}>
+            <button type="button" className="rubric-element-toggle" aria-expanded={openId === r.id} onClick={() => setOpenId(openId === r.id ? null : r.id)}><span>{i+1}. {r.element || "새 평가 요소"}<small>평정수준 {r.levels.length}개</small></span>{weighted && <b>{r.points ?? "—"}점</b>}<ChevronDown size={16}/></button>
+            <div className="rubric-element-body" hidden={openId !== r.id}>
             <label>
               과제 진행 단계
               <select
@@ -164,7 +172,7 @@ export function RubricEditor({
               />
             </label>
             <div className="table-scroll">
-              <table className="rubric-table">
+              <table className="rubric-table" aria-label="평정수준별 판단 기준">
                 <thead>
                   <tr>
                     <th>평정수준</th>
@@ -178,7 +186,7 @@ export function RubricEditor({
                 <tbody>
                   {r.levels.map((l, j) => (
                     <tr key={l.id}>
-                      <td>
+                      <td data-label="평정수준">
                         <input
                           aria-label={`${name} 요소${i + 1} 단계${j + 1} 수준`}
                           value={l.label}
@@ -195,7 +203,7 @@ export function RubricEditor({
                           }
                         />
                       </td>
-                      <td>
+                      <td data-label="판단 기준">
                         <textarea
                           aria-label={`${name} 요소${i + 1} 단계${j + 1} 기준`}
                           value={l.description}
@@ -215,7 +223,7 @@ export function RubricEditor({
                         />
                       </td>
                       {weighted && (
-                        <td>
+                        <td data-label="점수">
                           <input
                             aria-label={`${name} 요소${i + 1} 단계${j + 1} 점수`}
                             type="number"
@@ -242,7 +250,7 @@ export function RubricEditor({
                           />
                         </td>
                       )}
-                      <td>
+                      <td data-label="편집">
                         {editable && (
                           <button
                             type="button"
@@ -295,6 +303,7 @@ export function RubricEditor({
                 onChange={(e) => update(r.id, { note: e.target.value })}
               />
             </label>
+            </div>
           </section>
         ))}
       {!value.length && (

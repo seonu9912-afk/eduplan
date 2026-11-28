@@ -573,6 +573,7 @@ function CourseEditor({
     [referencePending, setReferencePending] = useState(false),
     [restorePending, setRestorePending] = useState(false),
     [evaluation, setEvaluation] = useState(course.semester || 1),
+    [selectedAssessment, setSelectedAssessment] = useState<string | null>(null),
     [printMode, setPrintMode] = useState<"lesson" | "assessment" | "both">(
       "both",
     );
@@ -785,6 +786,7 @@ function CourseEditor({
   const openAssessment = (id: string, semester: number) => {
     flushSync(() => {
       setEvaluation(semester);
+      setSelectedAssessment(id);
       onNavigate("assessment");
     });
     document.getElementById(`assessment-${id}`)?.focus();
@@ -987,7 +989,7 @@ function CourseEditor({
                   <select
                     aria-label="평가 학기"
                     value={evaluation}
-                    onChange={(e) => setEvaluation(Number(e.target.value))}
+                    onChange={(e) => { setEvaluation(Number(e.target.value)); setSelectedAssessment(null); }}
                   >
                     <option value={1}>1학기</option>
                     <option value={2}>2학기</option>
@@ -1018,6 +1020,9 @@ function CourseEditor({
               </label>
             </div>
             <AssessmentEditor
+              key={ev.semester}
+              selectedId={selectedAssessment}
+              onSelect={setSelectedAssessment}
               context={c}
               course={course}
               value={ev}

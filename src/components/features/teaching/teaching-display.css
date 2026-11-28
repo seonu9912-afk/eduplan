@@ -145,3 +145,72 @@
  .teaching-module .plan-savebar .teaching-actions [data-slot=button] svg{width:14px;height:14px}
  .teaching-overview-actions{justify-content:flex-start}
 }
+
+/* Assessment workbench: one active task, existing controlled fields and report output. */
+@media screen {
+ .assessment-workspace [hidden]{display:none!important}
+ .assessment-workspace .assessment-overview{display:grid;gap:8px;margin-bottom:12px}
+ .assessment-overview .assessment-mode{margin:0}
+ .assessment-ratio-bar{display:flex;height:7px;border-radius:4px;overflow:hidden;background:var(--surface-muted);margin:5px 0}
+ .assessment-ratio-bar span{display:block;flex-shrink:0;background:var(--schedule-accent)}
+ .assessment-split{display:grid;grid-template-columns:minmax(180px,28%) minmax(0,1fr);gap:12px;align-items:start}
+ .assessment-item-list{display:grid;gap:6px;min-width:0;align-content:start}
+ .assessment-list-heading{display:flex;align-items:center;justify-content:space-between;gap:6px}
+ .assessment-list-heading h3{font-size:14px;margin:0}
+ .assessment-list-item{display:grid;gap:4px;min-width:0;width:100%;text-align:left;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--foreground);overflow-wrap:anywhere}
+ .assessment-list-item[aria-pressed=true]{border-color:var(--schedule-accent)}
+ .assessment-list-meta,.assessment-list-name{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0}
+ .assessment-list-meta{font-size:12px;color:var(--text-secondary)}
+ .assessment-list-meta b{color:var(--schedule-accent)}
+ .assessment-list-name{font-weight:650;font-size:14px}
+ .assessment-list-name svg{flex:none;color:var(--text-secondary)}
+ .assessment-list-item small{font-size:12px;color:var(--text-secondary)}
+ .assessment-detail-area{min-width:0}
+ .assessment-detail-area .assessment-card{margin:0;min-width:0}
+ .assessment-detail-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid var(--border);padding-inline:8px}
+ .assessment-detail-tabs button{min-width:0;min-height:42px;font-size:13px;white-space:normal;padding:5px 2px;border-bottom:2px solid transparent;color:var(--text-secondary)}
+ .assessment-detail-tabs button[aria-pressed=true]{border-bottom-color:var(--schedule-accent);color:var(--schedule-accent);font-weight:700}
+ .assessment-detail-pane{min-width:0;padding:8px}
+ .assessment-detail-pane .assessment-fields{padding:4px;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .assessment-detail-pane :is(input,select,textarea){max-width:100%;min-width:0}
+ .assessment-manage{flex:none;max-width:100%;border:1px solid var(--border);border-radius:6px}
+ .assessment-manage .edu-disclosure-heading{padding:5px 8px;font-size:12px}
+ .assessment-manage .edu-disclosure-body{padding:4px}
+ .assessment-back{display:none}
+ .assessment-common-notes .assessment-notes{margin:0}
+ .rubric-element-toggle{display:flex;align-items:center;gap:8px;justify-content:space-between;text-align:left;width:100%;min-height:42px;min-width:0}
+ .rubric-element-toggle>span{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:650}
+ .rubric-element-toggle small{display:block;color:var(--text-secondary);font-size:11px;font-weight:400;margin-top:3px}
+ .rubric-element-toggle svg{flex:none}
+ .rubric-element-toggle[aria-expanded=true] svg{transform:rotate(180deg)}
+ .rubric-element-body{display:grid;gap:10px;min-width:0;border-top:1px solid var(--border);padding-top:10px}
+ .rubric-sum-status{color:var(--text-secondary)}
+ .rubric-sum-status[data-valid=true]{color:var(--ep-fg-24694d,#24694d)}
+ .rubric-sum-status[data-valid=false]{color:var(--ep-fg-80541b,#80541b)}
+}
+@media screen and (max-width:767px){
+ .assessment-split{display:block}
+ .assessment-workspace[data-selected=false] .assessment-detail-area{display:none}
+ .assessment-workspace[data-selected=true] :is(.assessment-overview,.assessment-item-list){display:none}
+ .assessment-workspace .assessment-back{display:inline-flex;margin:4px 8px}
+ .assessment-detail-pane{padding:5px}
+ .assessment-detail-tabs button{font-size:12px;min-height:44px}
+ .assessment-workspace .assessment-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .assessment-workspace .assessment-fields>label:has(input[aria-label$="평가명"]){grid-column:1/-1;grid-row:1}
+ .assessment-workspace .standard-chips-detailed{display:grid;gap:4px}
+ .assessment-workspace .standard-chips-detailed>span{white-space:normal;overflow-wrap:anywhere;display:grid;gap:3px}
+ .assessment-workspace .standard-chips-detailed small{font-weight:400;color:var(--foreground)}
+ .assessment-workspace .rubric-element .table-scroll{border:0;overflow:visible}
+ .assessment-workspace table.rubric-table{display:block;width:100%;min-width:0}
+ .assessment-workspace .rubric-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .assessment-workspace .rubric-table tbody{display:grid;gap:8px}
+ .assessment-workspace .rubric-table tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,90px) 40px;gap:5px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface-muted)}
+ .assessment-workspace .rubric-table td{display:grid;gap:3px;border:0;padding:0;min-width:0;width:auto}
+ .assessment-workspace .rubric-table td[data-label=평정수준]{grid-column:1}
+ .assessment-workspace .rubric-table td[data-label=점수]{grid-column:2;grid-row:1}
+ .assessment-workspace .rubric-table td[data-label=편집]{grid-column:3;grid-row:1;align-self:end}
+ .assessment-workspace .rubric-table td[data-label="판단 기준"]{grid-column:1/-1;grid-row:2}
+ .assessment-workspace .rubric-table td:not([data-label=편집])::before{content:attr(data-label);font-size:11px;color:var(--text-secondary)}
+ .assessment-workspace .rubric-table :is(input,textarea){width:100%;min-width:0;font-size:16px}
+ .assessment-workspace .rubric-table td[data-label=편집] button{min-height:40px}
+}

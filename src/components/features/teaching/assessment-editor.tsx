@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { Disclosure } from "@/components/ui/disclosure";
 import { AssessmentDesign } from "./assessment-design";
 import { AssessmentSchedule } from "./assessment-links";
@@ -8,7 +9,7 @@ import {
 } from "@/lib/teaching-authoring";
 import type { TeachingUnit } from "@/lib/teaching";
 import { Button } from "@/components/ui/button";
-import { Plus, Copy, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUp, ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   emptyAssessment,
   type TeachingDocument,
@@ -28,6 +29,8 @@ export function AssessmentEditor({
   onOpenLesson,
   onChange,
   editable,
+  selectedId,
+  onSelect,
 }: {
   context: Context;
   course: Row<"teaching_courses">;
@@ -37,7 +40,14 @@ export function AssessmentEditor({
   onOpenLesson: (id: string) => void;
   onChange: (v: Evaluation) => void;
   editable: boolean;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }) {
+  const [detailTab, setDetailTab] = useState<"basic" | "design" | "rubric" | "schedule">("basic");
+  const explicitSelection = value.items.some(item => item.id === selectedId);
+  const activeId = explicitSelection ? selectedId : value.items[0]?.id;
+  const selectItem = (id: string | null) => { onSelect(id); setDetailTab("basic"); };
+  const addItem = () => { const item = emptyAssessment(); onChange({ ...value, items: [...value.items, item] }); selectItem(item.id); };
   const weighted = value.mode === "weighted",
     sum = value.items.reduce((n, a) => n + (a.ratio ?? 0), 0);
   const update = (id: string, next: Partial<AssessmentItem>) =>
@@ -51,8 +61,8 @@ export function AssessmentEditor({
     onChange({ ...value, items });
   };
   return (
-    <section className="teaching-section">
-      <div className="section-title">
+    <section className="teaching-section assessment-workspace" data-selected={explicitSelection}>
+      <div className="assessment-overview"><div className="section-title">
         <div>
           <h2>{value.semester}학기 평가계획</h2>
           <p>
@@ -62,9 +72,7 @@ export function AssessmentEditor({
         {editable && (
           <Button
             variant="outline"
-            onClick={() =>
-              onChange({ ...value, items: [...value.items, emptyAssessment()] })
-            }
+            onClick={addItem}
           >
             <Plus /> 평가 항목 추가
           </Button>
@@ -92,6 +100,7 @@ export function AssessmentEditor({
           {weighted
             ? `반영비율 합계 ${Number(sum.toFixed(4))}% / 100%`
             : "점수·비율 합계 검토 제외"}
+          {weighted && <div className="assessment-ratio-bar" aria-hidden="true">{value.items.map((item,i) => <span key={item.id} style={{width: `${Math.max(0,item.ratio ?? 0)/Math.max(100,sum)*100}%`, opacity: [1,.72,.48,.3][i%4]}} />)}</div>}
           <small>
             {weighted
               ? "합계가 맞지 않아도 초안 저장은 가능합니다."
@@ -99,7 +108,6 @@ export function AssessmentEditor({
           </small>
         </div>
       </div>
-      {value.items.length > 0 && <div className="assessment-index no-print"><strong>평가 항목 바로가기</strong><div>{value.items.map((item,index)=><button type="button" key={item.id} onClick={()=>{const target=document.getElementById(`assessment-${item.id}`);target?.scrollIntoView({block:"start"});target?.focus({preventScroll:true});}}><span>{index+1}. {item.name || "새 평가 항목"}</span><small>{weighted && item.ratio !== null ? `${item.ratio}%` : item.type}</small></button>)}</div></div>}
       <EvaluationFields
         value={value.detail}
         onChange={(detail) => onChange({ ...value, detail })}
@@ -112,25 +120,51 @@ export function AssessmentEditor({
           <p>평가 항목마다 관련 성취기준과 평가 요소를 작성합니다.</p>
           {editable && (
             <Button
-              onClick={() => onChange({ ...value, items: [emptyAssessment()] })}
+              onClick={addItem}
             >
               첫 평가 추가
             </Button>
           )}
         </div>
       )}
+      <Disclosure compact label="평가계획 공통 유의사항" className="assessment-common-notes">
+      <label className="assessment-notes">
+        평가계획 공통 유의사항
+        <textarea
+          aria-label="평가계획 공통 유의사항"
+          value={value.notes}
+          maxLength={5000}
+          rows={4}
+          disabled={!editable}
+          onChange={(e) => onChange({ ...value, notes: e.target.value })}
+        />
+      </label>
+      </Disclosure>
+      </div>
+      <div className="assessment-split">
+      <aside className="assessment-item-list" aria-label="평가 항목 목록">
+        <div className="assessment-list-heading"><h3>평가 항목 {value.items.length}개</h3>{editable && <Button size="sm" variant="outline" onClick={addItem}><Plus size={14}/> 추가</Button>}</div>
+        {value.items.map((item,index) => <button type="button" key={item.id} aria-pressed={activeId === item.id} className="assessment-list-item" onClick={() => selectItem(item.id)}>
+          <span className="assessment-list-meta">{item.type} {index+1}{weighted && item.ratio !== null && <b>{item.ratio}%</b>}</span>
+          <span className="assessment-list-name">{item.name || "새 평가 항목"}<ChevronRight size={15}/></span>
+          <small>{[item.period || "시기 미정",weighted && item.points !== null ? `${item.points}점 만점` : ""].filter(Boolean).join(" · ")}</small>
+        </button>)}
+      </aside>
+      <div className="assessment-detail-area">
       {value.items.map((a, i) => (
         <article
           className="assessment-card"
           key={a.id}
           id={`assessment-${a.id}`}
           tabIndex={-1}
+          hidden={activeId !== a.id}
         >
+          <Button className="assessment-back" variant="ghost" size="sm" onClick={() => selectItem(null)}><ChevronLeft size={16}/> 평가 항목 목록</Button>
           <div className="assessment-card-heading">
             <div className="assessment-title-block"><h3>
               {i + 1}. {a.name || "새 평가 항목"}
             </h3><p>{[a.type,a.period,weighted && a.ratio !== null ? `${a.ratio}% 반영` : ""].filter(Boolean).join(" · ")}</p></div>
-            <div className="row-tools">
+            {editable && <Disclosure compact className="assessment-manage" label="항목 관리"><div className="row-tools">
               <button
                 aria-label={`${i + 1}번 평가 위로`}
                 disabled={!editable || i === 0}
@@ -153,6 +187,7 @@ export function AssessmentEditor({
                   const items = [...value.items];
                   items.splice(i + 1, 0, copy);
                   onChange({ ...value, items });
+                  selectItem(copy.id);
                 }}
               >
                 <Copy />
@@ -174,8 +209,10 @@ export function AssessmentEditor({
               >
                 <Trash2 />
               </button>
-            </div>
+            </div></Disclosure>}
           </div>
+          <nav className="assessment-detail-tabs" aria-label="평가 항목 작성 영역">{([["basic","기본 정보"],["design","과제 설계"],["rubric","채점기준"],["schedule","수업 연계"]] as const).map(([id,label]) => <button type="button" key={id} aria-pressed={detailTab === id} onClick={() => setDetailTab(id)}>{label}</button>)}</nav>
+          <div className="assessment-detail-pane" hidden={detailTab !== "basic"}>
           <div className="assessment-fields">
             <label>
               평가 유형
@@ -326,6 +363,7 @@ export function AssessmentEditor({
                 grade={course.grade}
                 label={`${i + 1}번 평가 성취기준 선택`}
                 disabled={!editable}
+                showDescriptions
               />
             </div>
             <label className="assessment-wide">
@@ -340,19 +378,6 @@ export function AssessmentEditor({
               />
             </label>
           </div>
-          <AssessmentDesign
-            item={a}
-            name={`${i + 1}번 평가`}
-            editable={editable}
-            onChange={(next) => update(a.id, next)}
-          />
-          <AssessmentSchedule
-            item={a}
-            units={units}
-            editable={editable}
-            onChange={onChangeUnits}
-            onOpen={onOpenLesson}
-          />
           <AssessmentDetailFields
             item={a}
             standards={c.teaching!.standards.filter((s) =>
@@ -363,18 +388,28 @@ export function AssessmentEditor({
             editable={editable}
             weighted={weighted}
           />
-          <Disclosure
-            className="rubric-details"
-            open={a.type === "수행평가" ? true : undefined}
-            compact
-            label={
-              <>
-                채점기준 · 평가 요소 {a.rubric.length}개
-              </>
-            }
-          >
+          </div>
+          <div className="assessment-detail-pane" hidden={detailTab !== "design"}>
+          <AssessmentDesign
+            item={a}
+            name={`${i + 1}번 평가`}
+            editable={editable}
+            onChange={(next) => update(a.id, next)}
+          />
+          </div>
+          <div className="assessment-detail-pane" hidden={detailTab !== "schedule"}>
+          <AssessmentSchedule
+            item={a}
+            units={units}
+            editable={editable}
+            onChange={onChangeUnits}
+            onOpen={onOpenLesson}
+          />
+          </div>
+          <div className="assessment-detail-pane" hidden={detailTab !== "rubric"}>
             <RubricEditor
               name={`${i + 1}번 평가`}
+              expectedPoints={a.points}
               value={a.rubric}
               stages={a.stages ?? []}
               standards={c.teaching!.standards.filter((s) =>
@@ -384,20 +419,12 @@ export function AssessmentEditor({
               editable={editable}
               onChange={(rubric) => update(a.id, { rubric })}
             />
-          </Disclosure>
+          </div>
         </article>
       ))}
-      <label className="assessment-notes">
-        평가계획 공통 유의사항
-        <textarea
-          aria-label="평가계획 공통 유의사항"
-          value={value.notes}
-          maxLength={5000}
-          rows={4}
-          disabled={!editable}
-          onChange={(e) => onChange({ ...value, notes: e.target.value })}
-        />
-      </label>
+      </div>
+      </div>
+
     </section>
   );
 }
