@@ -675,6 +675,24 @@ export async function manageMember(
   });
 }
 
+export async function renameSchool(input: unknown) {
+  return run(async () => {
+    const { workspaceId, name, previousName } = z.object({
+      workspaceId: uuid,
+      name: z.string().trim().min(1, "학교명을 입력해 주세요.").max(80, "학교명은 80자 이내로 입력해 주세요."),
+      previousName: z.string().min(1).max(80),
+    }).parse(input);
+    const { db } = await authorized(workspaceId, ["admin"]);
+    const { data, error } = await db.from("workspaces")
+      .update({name}).eq("id", workspaceId).eq("kind", "school")
+      .eq("name", previousName).select("id,name").maybeSingle();
+    if (error) throw error;
+    if (!data) throw new Error("학교 정보가 변경되었거나 접근할 수 없습니다. 새로고침 후 다시 시도해 주세요.");
+    refresh();
+    return data.name;
+  });
+}
+
 export async function setSchoolType(workspaceId: string, schoolType: string) {
   return run(async () => {
     const value = schoolTypeSchema.parse(schoolType);

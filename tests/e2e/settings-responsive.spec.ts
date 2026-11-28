@@ -90,3 +90,26 @@ for(const width of [320,390,1440])test(`academic year management shows the selec
  const controls=hub.locator(".academic-year-selector");
  expect(await controls.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
 });
+
+for(const width of [320,390,1440])test(`school name and level settings fit at ${width}px`,async({page})=>{
+ await page.setViewportSize({width,height:900});
+ await page.goto("/recovery-preview/operations");
+ await page.getByRole("navigation",{name:"통합 운영 실습 단계"}).getByRole("button",{name:"학교 설정",exact:true}).click();
+ const hub=page.locator(".school-settings-hub");
+ await hub.getByRole("link",{name:/학교 정보/}).click();
+ const name=hub.getByLabel("학교명",{exact:true});
+ const save=hub.getByRole("button",{name:"학교명 저장",exact:true});
+ await expect(name).toBeVisible();
+ await expect(save).toBeDisabled();
+ const original=await name.inputValue();
+ await name.fill(original+" 변경");
+ await expect(save).toBeEnabled();
+ await name.fill("   ");
+ await expect(save).toBeDisabled();
+ await name.fill(original);
+ await expect(save).toBeDisabled();
+ await expect(hub.getByRole("button",{name:"학교급 저장",exact:true})).toBeDisabled();
+ for(const row of await hub.locator(".school-basic-field-row").all()){
+  expect(await row.evaluate(el=>el.scrollWidth-el.clientWidth)).toBeLessThanOrEqual(1);
+ }
+});

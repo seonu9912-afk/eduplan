@@ -16,7 +16,7 @@ import {
   SubmitButton,
   useMutation,
 } from "@/components/common";
-import { saveYear, setSchoolType } from "@/app/actions";
+import { saveYear, setSchoolType, renameSchool } from "@/app/actions";
 import {
   monthRange,
   schoolTypes,
@@ -34,7 +34,7 @@ const subscribeHash=(callback:()=>void)=>{window.addEventListener("hashchange",c
 const readHash=()=>window.location.hash;
 const serverHash=()=>"";
 const settingsGroups=[
- {id:"school",name:"학교 정보",description:"학교급 · 나이스 · 날씨 · 업무 바로가기",icon:Building2},
+ {id:"school",name:"학교 정보",description:"학교명 · 학교급 · 나이스 · 날씨 · 업무 바로가기",icon:Building2},
  {id:"operations",name:"학교 운영",description:"학년도 · 학급 구성 · 학기 · 부서 · 시정표",icon:Settings2},
  {id:"accounts",name:"구성원 및 권한",description:"교원 명부 · 가입 계정 · 업무별 권한",icon:Users},
  {id:"system",name:"시스템 관리",description:"계획 수립 현황 · 데이터 점검 · 앱 정보",icon:ShieldCheck},
@@ -86,7 +86,7 @@ export function SchoolSettings({ context: c, overview, installPanel }: { context
         <div className="settings-hub-group" id="settings-school" hidden={active!=="school"}>
           <section className="settings-subgroup" aria-labelledby="settings-school-type-title">
             <h3 id="settings-school-type-title" className="settings-subgroup-title">학교 기본 정보</h3>
-            <SchoolTypeForm key={c.schoolType} context={c}/>
+            <div className="school-basic-fields"><SchoolNameForm context={c}/><SchoolTypeForm key={c.schoolType} context={c}/></div>
           </section>
           {editable&&<section className="settings-subgroup" id="settings-connections" aria-label="외부 서비스 연동">
             <SchoolInformationSettings context={c}/><SchoolLinkSettings context={c}/>
@@ -249,11 +249,43 @@ function YearForm({
   );
 }
 
+function SchoolNameForm({context:c}:{context:Context}) {
+  const m=useMutation();
+  const [saved,setSaved]=useState(c.workspace.name);
+  const [name,setName]=useState(c.workspace.name);
+  const editable=c.role==="admin";
+  useEffect(()=>{
+    setName(current=>current===saved?c.workspace.name:current);
+    setSaved(c.workspace.name);
+  // Synchronize external changes without discarding an unsaved input.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[c.workspace.name]);
+  const changed=name.trim()!==saved;
+  return <form className="school-name-settings school-basic-field-form" onSubmit={e=>{
+    e.preventDefault();
+    const next=name.trim();
+    if(!editable||!next||!changed||m.pending)return;
+    m.execute(()=>renameSchool({workspaceId:c.workspace.id,name:next,previousName:saved}),value=>{
+      setSaved(value);
+      setName(value);
+    },"학교명을 변경했습니다.");
+  }}>
+    <label htmlFor="settings-school-name">학교명</label>
+    <div className="school-basic-field-row">
+      <input id="settings-school-name" name="school_name" value={name} onChange={e=>setName(e.target.value)} maxLength={80} required disabled={!editable||m.pending} autoComplete="off"/>
+      {editable&&<Button type="submit" variant="outline" disabled={m.pending||!changed||!name.trim()}>학교명 저장</Button>}
+    </div>
+    <p className="field-hint">학교명만 변경되며 기존 학년도 자료와 구성원, 나이스 연결은 유지됩니다.</p>
+    <InlineNotice mutation={m}/>
+  </form>;
+}
+
 function SchoolTypeForm({ context: c }: { context: Context }) {
   const m = useMutation();
+  const [schoolType,setType]=useState<string>(c.schoolType);
   return (
     <form
-      className="panel school-type-settings"
+      className="school-type-settings school-basic-field-form"
       onSubmit={(e) => {
         e.preventDefault();
         const f = new FormData(e.currentTarget);
@@ -262,26 +294,15 @@ function SchoolTypeForm({ context: c }: { context: Context }) {
         );
       }}
     >
-      <Field
-        label="학교급"
-        id="settings-school-type"
-        hint="초등학교는 1~6학년, 중·고등학교는 1~3학년으로 구성됩니다."
-      >
-        <select
-          id="settings-school-type"
-          name="school_type"
-          defaultValue={c.schoolType}
-          disabled={c.role !== "admin" || m.pending}
-        >
-          {schoolTypes.map((type) => (
-            <option key={type}>{type}</option>
-          ))}
+      <label htmlFor="settings-school-type">학교급</label>
+      <div className="school-basic-field-row">
+        <select id="settings-school-type" name="school_type" value={schoolType} onChange={e=>setType(e.target.value)} disabled={c.role!=="admin"||m.pending}>
+          {schoolTypes.map(type=><option key={type}>{type}</option>)}
         </select>
-      </Field>
-      <InlineNotice mutation={m} />
-      {c.role === "admin" ? (
-        <SubmitButton pending={m.pending}>학교급 저장</SubmitButton>
-      ) : null}
+        {c.role==="admin"&&<Button type="submit" variant="outline" disabled={m.pending||schoolType===c.schoolType}>학교급 저장</Button>}
+      </div>
+      <p className="field-hint">초등학교는 1~6학년, 중·고등학교는 1~3학년으로 구성됩니다.</p>
+      <InlineNotice mutation={m}/>
     </form>
   );
 }

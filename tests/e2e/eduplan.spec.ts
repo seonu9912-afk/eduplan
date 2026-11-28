@@ -1044,3 +1044,24 @@ test("high-school draft retains credit units in cells and deletion impact", asyn
     page.getByRole("button", { name: "[초안] 국어 과목 삭제", exact: true }),
   ).toBeVisible();
 });
+
+test("school rename preserves workspace identity and survives reload",async({page})=>{
+ await loginAs(page,admin);
+ await page.getByRole("button",{name:"학교 만들기",exact:true}).click();
+ const dialog=page.getByRole("dialog");
+ const original="학교명 변경 검증 "+Date.now();
+ await dialog.getByLabel("학교명",{exact:true}).fill(original);
+ await dialog.getByLabel("지역",{exact:true}).fill("서울특별시");
+ await dialog.getByRole("button",{name:"학교 작업공간 만들기",exact:true}).click();
+ await expect(page).toHaveURL(/\/app\/[^/]+\/settings/);
+ const path=new URL(page.url()).pathname;
+ await page.locator(".settings-hub-nav").getByRole("link",{name:/학교 정보/}).click();
+ const name=page.locator(".school-settings-hub").getByLabel("학교명",{exact:true});
+ await expect(name).toHaveValue(original);
+ await name.fill(original+" 개명");
+ await page.getByRole("button",{name:"학교명 저장",exact:true}).click();
+ await expect(page.getByText("학교명을 변경했습니다.",{exact:true})).toBeVisible();
+ await page.reload();
+ await expect(name).toHaveValue(original+" 개명");
+ expect(new URL(page.url()).pathname).toBe(path);
+});

@@ -131,3 +131,19 @@
  .school-settings-hub .academic-year-class-form .settings-save button { width:auto; min-height:44px; }
  .school-settings-hub .academic-year-prepare[data-slot="button"] { font-size:12px; padding-inline:8px; }
 }
+
+/* School name and level are independent edits with compact shared rows. */
+@media screen {
+ .school-settings-hub .school-basic-fields { display:grid; gap:16px; min-width:0; padding-bottom:4px; }
+ .school-settings-hub .school-basic-field-form { display:grid; gap:6px; min-width:0; padding:0; border:0; background:transparent; box-shadow:none; }
+ .school-settings-hub .school-basic-field-form > label { font-size:13px; font-weight:600; }
+ .school-settings-hub .school-basic-field-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; min-width:0; }
+ .school-settings-hub .school-basic-field-row > :is(input,select) { width:100%; min-width:0; min-height:44px; font-size:16px; }
+ .school-settings-hub .school-basic-field-row > button[data-slot="button"] { min-height:44px; padding-inline:10px; font-size:13px; white-space:nowrap; }
+ .school-settings-hub .school-basic-field-form > .field-hint { margin:0; font-size:12px; line-height:1.5; }
+ .school-settings-hub #settings-connections { margin-top:0; }
+}
+@media screen and (max-width:767px) {
+ .school-settings-hub .school-basic-fields .school-type-settings { padding:0; border:0; }
+ .school-settings-hub .school-basic-field-row > button[data-slot="button"] { font-size:12px; padding-inline:8px; }
+}
