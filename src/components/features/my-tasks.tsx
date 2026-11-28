@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowUpRight, Ellipsis, ListTodo, Plus } from "lucide-react";
+import { ArrowUpRight, Ellipsis, ListTodo, Plus, X } from "lucide-react";
 import { changeSchoolTask } from "@/app/school-task-actions";
 import { InlineNotice, Modal, useMutation } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,14 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   const roster = data?.directory ?? [];
   const sender = roster.find((teacher) => teacher.user_id === c.userId);
   const m = useMutation();
-  const [clock, setClock] = useState("");
+  const [clock, setClock] = useState({ date: today, time: "" });
+  const [moving, setMoving] = useState<string | null>(null);
+  const [undo, setUndo] = useState<{ id: string } | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const timer = window.setTimeout(() => setUndo(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [undo]);
   const [expanded,setExpanded]=useState(false);
   const summarized=compact||dashboard;
   const [screen, setScreen] = useState<Screen | null>(() => {
@@ -40,7 +47,7 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
   });
   const [confirm, setConfirm] = useState<Confirmation | null>(null);
   useEffect(() => {
-    const tick = () => setClock(seoulClock(new Date()).time.slice(0, 5));
+    const tick = () => { const now = seoulClock(new Date()); setClock({ date: now.date, time: now.time.slice(0, 5) }); };
     const first = setTimeout(tick, 0), timer = setInterval(tick, 30000);
     window.addEventListener("focus", tick);
     return () => { clearTimeout(first); clearInterval(timer); window.removeEventListener("focus", tick); };
@@ -64,7 +71,13 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
       (a.detail.dueTime ?? "24:00").localeCompare(b.detail.dueTime ?? "24:00") ||
       b.task.created_at.localeCompare(a.task.created_at) || a.task.id.localeCompare(b.task.id));
   const pending = mine.filter(({ complete, task }) => !complete && !task.cancelled_at);
-  const finished = mine.filter(({ complete, task }) => complete && !task.cancelled_at);
+  // Keep the just-checked row in its original sorted position during the transition.
+  const activeRows = mine.filter(({ complete, task }) => (!complete || task.id === moving) && !task.cancelled_at);
+  const finished = mine.filter(({ complete, task }) => complete && !task.cancelled_at && task.id !== moving)
+    .sort((a, b) => Date.parse(b.complete!) - Date.parse(a.complete!) || a.task.id.localeCompare(b.task.id));
+  const finishedToday = finished.filter(({ complete }) => seoulClock(new Date(complete!)).date === clock.date);
+  const finishedEarlier = finished.filter(({ complete }) => seoulClock(new Date(complete!)).date !== clock.date);
+  const undoTask = undo && mine.find(({ task, complete }) => task.id === undo.id && !!complete && !task.cancelled_at);
   const cancelled = mine.filter(({ task }) => task.cancelled_at);
   const selected = tasks.find((task) => task.id === screen?.id);
   const editable = selected?.owner_id === c.userId;
@@ -75,8 +88,25 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
     setScreen(next);
   }
   function completeTask(task: SchoolTask, completed: boolean) {
-    m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed }),
-      undefined, completed ? "완료한 할 일로 이동했습니다." : "미완료 할 일로 되돌렸습니다.");
+    if (m.pending || m.isInFlight()) return;
+    setUndo(null);
+    const animate = completed && !screen && navigator.onLine;
+    const started = performance.now();
+    if (animate) setMoving(task.id);
+    m.execute(async () => {
+      try {
+        const result = await changeSchoolTask({ workspace, id: task.id, version: task.version, command: "complete", completed });
+        if (animate && result.ok) {
+          const remaining = 800 - (performance.now() - started);
+          if (remaining > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, remaining));
+        }
+        return result;
+      } finally {
+        if (animate) setMoving(null);
+      }
+    }, () => {
+      if (completed && !screen) setUndo({ id: task.id });
+    }, completed && !screen ? "" : completed ? "할 일을 완료했습니다." : "미완료 할 일로 되돌렸습니다.");
   }
   function confirmChange(task: SchoolTask, change: Confirmation) {
     m.execute(() => changeSchoolTask({ workspace, id: task.id, version: task.version, ...change }), () => {
@@ -84,24 +114,27 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
       if (change.command === "delete") setScreen(null);
     }, "변경했습니다.");
   }
-  function rows(list: typeof mine) {
-    return <ul className="task-list">{list.map(({ task, detail, complete }) => {
+  function rows(list: typeof mine, history: "today" | "earlier" | undefined = undefined) {
+    return <ul className="task-list" data-task-history={history}>{list.map(({ task, detail, complete }) => {
       const { dueDate, dueTime, title } = detail;
-      const deadline = taskDeadlineLabel(dueDate, dueTime, today);
-      const late = !complete && !task.cancelled_at && taskOverdue(dueDate, dueTime, today, clock);
-      return <li className="task-row" key={task.id}>
+      const deadline = taskDeadlineLabel(dueDate, dueTime, clock.date);
+      const transitioning = moving === task.id;
+      const checked = !!complete || transitioning;
+      const late = !checked && !task.cancelled_at && taskOverdue(dueDate, dueTime, clock.date, clock.time);
+      return <li className="task-row" key={task.id} data-complete={checked ? "" : undefined} data-completing={transitioning ? "" : undefined}>
         <label className="task-check">
-          <input type="checkbox" aria-label={`${title} 완료`} checked={!!complete} disabled={m.pending || !!task.cancelled_at}
+          <input type="checkbox" aria-label={`${title} 완료`} checked={checked} disabled={m.pending || transitioning || !!task.cancelled_at}
             onChange={(event) => completeTask(task, event.target.checked)} />
         </label>
         <button type="button" className="task-row-detail" onClick={() => open({ kind: "detail", id: task.id })}>
           <strong>{title}</strong>
-          <span>
+          {history === "earlier" && complete ? <span><time dateTime={complete}>{completedDate.format(new Date(complete))}</time></span> :
+          !history && <span>
             {task.kind === "personal" ? (summarized ? "" : "개인 할 일") : task.department || "배포받은 업무"}
             {deadline && `${task.kind==="personal" && summarized ? "" : " · "}${deadline}`}
             {task.cancelled_at && " · 취소"}
             {late && <b className="task-overdue">기한 경과</b>}
-          </span>
+          </span>}
         </button>
       </li>;
     })}</ul>;
@@ -121,11 +154,23 @@ export function MyTasks({ context: c, today, compact = false, dashboard = false 
           {(sender || authored.length > 0) && <Button type="button" variant="ghost" size="sm" onClick={() => open({ kind: "manage" })}>배포한 업무</Button>}</div></details>}
         </div>
         <div className={dashboard?"task-dashboard-body":undefined}>
-        {pending.length ? <>{rows(summarized&&!expanded?pending.slice(0,5):pending)}{summarized&&pending.length>5&&<button type="button" className="task-expand-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":`나머지 할 일 ${pending.length-5}건 더보기`}</button>}</> : <p className="task-hint">미완료 할 일이 없습니다.</p>}
-        {finished.length > 0 && <Disclosure compact label={`완료한 할 일 (${finished.length})`}>{rows(finished)}</Disclosure>}
+        {activeRows.length ? <>{rows(summarized&&!expanded?activeRows.slice(0,5):activeRows)}{summarized&&activeRows.length>5&&<button type="button" className="task-expand-toggle" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?"접기":`나머지 할 일 ${activeRows.length-5}건 더보기`}</button>}</> : <p className="task-hint">{finishedToday.length ? "모든 할 일을 완료했습니다." : "미완료 할 일이 없습니다."}</p>}
+        {finishedToday.length > 0 && <details className="task-history task-history-today" open>
+          <summary>오늘 완료 <span>{finishedToday.length}건</span></summary>
+          {rows(finishedToday, "today")}
+        </details>}
+        {finishedEarlier.length > 0 && <details className="task-history">
+          <summary>이전에 완료한 할 일 <span>{finishedEarlier.length}건</span></summary>
+          {rows(finishedEarlier, "earlier")}
+        </details>}
         {cancelled.length > 0 && <Disclosure compact label={`취소된 업무 (${cancelled.length})`}>{rows(cancelled)}</Disclosure>}
         </div>
       </> : <p className="task-hint" role="status">할 일을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.</p>}
+      {!screen && undo && <div className="task-undo" role="status">
+        <span>할 일을 완료했습니다.</span>
+        <button type="button" disabled={m.pending || !undoTask} onClick={() => { if (undoTask) completeTask(undoTask.task, false); }}>실행 취소</button>
+        <button type="button" aria-label="완료 알림 닫기" onClick={() => setUndo(null)}><X size={16} /></button>
+      </div>}
       {!screen && <InlineNotice mutation={m} />}
     </details>
 

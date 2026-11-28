@@ -38,9 +38,14 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await dialog(page, "개인 할 일 추가").getByRole("button", { name: "저장", exact: true }).click();
     await expect(scope(page).getByText(privateTask, { exact: true })).toBeVisible();
     await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).check();
-    await expect(scope(page).getByText(/^완료한 할 일 \(\d+\)$/)).toBeVisible();
+    const todayDone = (p: Page) => scope(p).locator(".task-history-today");
+    await expect(todayDone(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).toBeChecked();
+    await expect(scope(page).getByRole("button", { name: "실행 취소", exact: true })).toBeEnabled();
+    await scope(page).getByRole("button", { name: "실행 취소", exact: true }).click();
+    await expect(scope(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).not.toBeChecked();
+    await scope(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true }).check();
+    await expect(todayDone(page).getByRole("checkbox", { name: privateTask+" 완료", exact: true })).toBeChecked();
     await page.reload();
-    await scope(page).getByText(/^완료한 할 일 \(\d+\)$/).click();
     await expect(scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true})).toBeChecked();
     await scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true}).uncheck();
     await expect(scope(page).getByRole("checkbox",{name:privateTask+" 완료",exact:true})).not.toBeChecked();
@@ -66,9 +71,9 @@ test("one shared task flows from distribution and alerts to the home and weekly 
     await dialog(receiver, "할 일 상세").getByRole("button", { name: "닫기" }).click();
     await expect(taskRow(receiver, task).getByText("기한 경과", { exact: true })).toBeVisible();
     await scope(receiver).getByRole("checkbox", { name: `${task} 완료` }).click();
-    await expect(scope(receiver).getByText(/^완료한 할 일 \(\d+\)$/)).toBeVisible();
+    await expect(todayDone(receiver).getByRole("checkbox", { name: task+" 완료", exact: true })).toBeChecked();
     await receiver.goto(plans);
-    await scope(receiver).getByText(/^완료한 할 일 \(\d+\)$/).click();
+    await expect(todayDone(receiver)).toHaveAttribute("open", "");
     await expect(scope(receiver).getByRole("checkbox", { name: `${task} 완료` })).toBeChecked();
     await receiver.getByRole("button", { name: "이전 기간" }).click();
     await expect(scope(receiver).getByRole("checkbox", { name: `${task} 완료` })).toBeChecked();
