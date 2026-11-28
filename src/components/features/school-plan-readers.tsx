@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, PanelLeftClose, PanelLeftOpen, Plus } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Printer, Search, Ellipsis, PanelLeftClose, PanelLeftOpen, Plus, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/common";
 import { canPlan } from "@/lib/planning-completion";
@@ -194,9 +194,9 @@ export function OfficialSchedule({ context: c, today: serverToday, work = false,
           todayDisabled={today < start || today > end} today={() => { setMiniMonthOverride(null); setDate(today); }} /></div>
         <div className="schedule-view-controls">
           <ReaderViewSegment options={options} value={view} label="보기 전환" onChange={(value) => { setMiniMonthOverride(null); setMoreOpen(false); setView(value); }} />
+          {work && view !== "year" && <Button type="button" className="schedule-mobile-view-toggle" variant="ghost" size="icon" aria-label={listView.isList ? "달력으로 보기" : "목록으로 보기"} title={listView.isList ? "달력으로 보기" : "목록으로 보기"} onClick={() => listView.setIsList(!listView.isList)}>{listView.isList ? <CalendarDays size={20} aria-hidden="true" /> : <List size={20} aria-hidden="true" />}</Button>}
           <Button className="schedule-search-toggle" variant="outline" size="sm" aria-label="일정 검색" aria-expanded={searchOpen} onClick={() => { setMoreOpen(false); setSearchOpen((open) => !open); }}><Search size={16} /><span>일정 검색</span></Button>
           <Button className="schedule-more-toggle" variant="outline" size="icon" aria-label="일정 더보기" aria-expanded={moreOpen} aria-controls="schedule-secondary-controls" onClick={() => {setSearchOpen(false);setMoreOpen(open=>!open);}}><Ellipsis size={20}/></Button>
-          {work && view !== "year" && <div className="reader-mobile-view-extra">{displayMode}</div>}
           <div id="schedule-secondary-controls" className="schedule-secondary-controls" data-open={moreOpen}>
           <div className="schedule-view-extra reader-desktop-view-extra" data-open={moreOpen}>{viewExtras}</div>
           {view === "week" && <div className="reader-mobile-weekend-action"><WeekendToggle {...weekend} /></div>}

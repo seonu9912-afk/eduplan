@@ -77,15 +77,27 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
  await expect(tasks).toBeVisible();
  const main=reader.locator(".official-schedule-main");
  if(width<768){
-   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeHidden();
-   const segment=toolbar.getByRole("group",{name:"일정 표시 방식"});
-   expect((await segment.boundingBox())!.width).toBeLessThanOrEqual(150);
+   const toggle=toolbar.locator(".schedule-mobile-view-toggle");
+   await expect(toggle).toBeVisible();
+   const controls=toolbar.locator(".schedule-view-controls");
+   const geometry=await controls.evaluate(el=>{
+     const items=Array.from(el.querySelectorAll(":scope > .reader-segments,:scope > .schedule-mobile-view-toggle,:scope > .schedule-search-toggle,:scope > .schedule-more-toggle")).map(node=>node.getBoundingClientRect());
+     return {oneRow:items.every(r=>Math.abs(r.top-items[0].top)<=3),nonOverlap:items.slice(1).every((r,i)=>r.left>=items[i].right-1),fits:items.every(r=>r.right<=el.getBoundingClientRect().right+1)};
+   });
+   expect(geometry).toEqual({oneRow:true,nonOverlap:true,fits:true});
+   await expect(toggle).toHaveAttribute("aria-label","목록으로 보기");
+   await toggle.click();
+   await expect(toggle).toHaveAttribute("aria-label","달력으로 보기");
+   await expect(reader.locator(".calendar-reader-layout")).toHaveAttribute("data-list","");
+   await toggle.click();
+   await expect(toggle).toHaveAttribute("aria-label","목록으로 보기");
    await expect(toolbar.locator('input[type="date"]')).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeHidden();
    expect((await main.boundingBox())!.y).toBeLessThan((await tasks.boundingBox())!.y);
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
-   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeVisible();
+   await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
    await expect(toolbar.getByRole("button",{name:"주말 표시"})).toBeVisible();
    const weekend=toolbar.getByRole("button",{name:"주말 표시"});
    const pressed=await weekend.getAttribute("aria-pressed");
@@ -96,6 +108,7 @@ for(const width of [320,390,430,1440])test(`weekly reader controls and task plac
    await expect(toolbar.getByRole("button",{name:"업무계획 관리"})).toBeVisible();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
  }else{
+   await expect(toolbar.locator(".schedule-mobile-view-toggle")).toBeHidden();
    expect((await tasks.boundingBox())!.x).toBeLessThan((await main.boundingBox())!.x);
    await expect(toolbar.getByRole("group",{name:"일정 표시 방식"})).toBeHidden();
    await toolbar.getByRole("button",{name:"일정 더보기"}).click();
