@@ -3,6 +3,7 @@ import { CloudSun, Sun, Cloud, CloudRain, CloudSnow, CloudSunRain, CircleHelp, U
 import { dateLabel } from "@/lib/domain";
 import { getSchoolMeals } from "@/lib/neis";
 import { getSchoolWeather } from "@/lib/school-weather";
+import { getSchoolAirQuality, dustGrade } from "@/lib/school-air-quality";
 import type { Row } from "@/lib/models";
 import { koreanMealMinutes, type MealEndTimes } from "@/lib/school-meal-selection";
 import { MealSelector } from "./meal-selector";
@@ -55,6 +56,23 @@ async function WeatherSummary({ school, unavailable }: { school?: Row<"schools">
   </>;
 }
 
+async function AirQualitySummary({school,unavailable}:{school?:Row<"schools">|null;unavailable?:boolean}){
+  const result=unavailable?{status:"error" as const}:await getSchoolAirQuality(school);
+  if(result.status!=="available")return <p className="school-air-note" role="status">{{
+    unlinked:"대기질 위치를 확인할 수 없습니다.",
+    unconfigured:"대기질 조회 설정이 없습니다.",
+    missing:"최근 미세먼지 측정 자료가 없습니다.",
+    error:"미세먼지 정보를 불러오지 못했습니다.",
+  }[result.status]}</p>;
+  const air=result.value;
+  return <div className="school-air-quality" aria-label="미세먼지 정보">
+    <div className="school-air-values">{([["미세먼지",air.pm10,"pm10"],["초미세먼지",air.pm25,"pm25"]] as const).map(([label,value,kind])=>{
+      const grade=dustGrade(kind,value);
+      return <div key={kind}><span>{label}</span><b data-grade={grade}>{grade}</b>{value!==null&&<small>{value}㎍/㎥</small>}</div>;
+    })}</div>
+    <p className="school-air-source" title={air.observedAt}>에어코리아 · {air.label} · {air.observedAt.slice(11)} 기준</p>
+  </div>;
+}
 async function MealSummary({ school, today, unavailable, mealEnds }: { school?: Row<"schools"> | null; today: string; unavailable?: boolean; mealEnds: MealEndTimes }) {
   const result = unavailable ? { status: "error" as const } : await getSchoolMeals(school, today);
   if (result.status !== "available") return <>
@@ -79,6 +97,9 @@ export function SchoolHomePublicData({ school, today, unavailable, mealEnds = {}
     <PublicWidget kind="weather" address={school?.weather_location_address || (school?.weather_nx != null && school?.weather_ny != null ? "기존 설정 위치" : undefined)}>
       <Suspense fallback={<Availability>학교 날씨를 불러오는 중…</Availability>}>
         <WeatherSummary school={school} unavailable={unavailable} />
+      </Suspense>
+      <Suspense fallback={<p className="school-air-note">미세먼지 조회 중…</p>}>
+        <AirQualitySummary school={school} unavailable={unavailable}/>
       </Suspense>
     </PublicWidget>
     <PublicWidget kind="meal">

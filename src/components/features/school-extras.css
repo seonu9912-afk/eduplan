@@ -240,3 +240,23 @@
  .weather-location-search-form label:first-child{grid-column:1/-1}
  .weather-location-search-form button[data-slot="button"]{font-size:12px;padding-inline:8px}
 }
+
+@media screen {
+ .school-air-quality{display:grid;gap:4px;min-width:0;border-top:1px solid var(--border);padding-top:8px}
+ .school-air-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}
+ .school-air-values>div{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 5px;min-width:0;font-size:12px}
+ .school-air-values>div>span{color:var(--text-secondary);white-space:nowrap}
+ .school-air-values b{font-size:13px;white-space:nowrap}
+ .school-air-values small{font-size:11px;color:var(--text-secondary);white-space:nowrap}
+ .school-air-values [data-grade="좋음"]{color:#2063ab}
+ .school-air-values [data-grade="보통"]{color:#28734a}
+ .school-air-values [data-grade="나쁨"]{color:#a45712}
+ .school-air-values [data-grade="매우 나쁨"]{color:#b83a3a}
+ .school-air-values [data-grade="정보 없음"]{color:var(--text-secondary)}
+ .school-air-source,.school-air-note{font-size:11px;color:var(--text-secondary);margin:0;overflow-wrap:anywhere}
+ .school-air-note{border-top:1px solid var(--border);padding-top:8px}
+ :root[data-theme="dark"] .school-air-values [data-grade="좋음"]{color:#91bff5}
+ :root[data-theme="dark"] .school-air-values [data-grade="보통"]{color:#82d2a1}
+ :root[data-theme="dark"] .school-air-values [data-grade="나쁨"]{color:#f7bd83}
+ :root[data-theme="dark"] .school-air-values [data-grade="매우 나쁨"]{color:#ffaaaa}
+}

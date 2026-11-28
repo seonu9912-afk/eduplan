@@ -27,3 +27,5 @@ export type SchoolWeather = {
 };
 
 export type WeatherLocationCandidate = { name:string; address:string; selection: {source:"location";schoolId:string;address:string} | {source:"neis";neis_office_code:string;neis_school_code:string} };
+
+export type SchoolAirQuality={pm10:number|null;pm25:number|null;label:string;observedAt:string;scope:"station"|"region"};
